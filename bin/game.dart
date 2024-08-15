@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'uuid.dart';
+import 'cli.dart';
 import 'package:cli_spin/cli_spin.dart';
+import 'package:ansix/ansix.dart';
 import 'package:archive/archive_io.dart';
 
 import 'package:hive_ce/hive.dart';
@@ -11,23 +13,43 @@ class Game {
   String path = "";
   String hash = "";
 
-  Game(this.name, this.path, this.hash) {
+  /// # DO NOT CALL DIRECTLY
+  /// ## Call `Game.init()` instead and await.
+  Game(this.name, this.path, this.hash);
+
+  static Future<Game> init(name, path, hash) async {
+    final game = Game(name, path, hash);
     if (!Directory("$path/.arceus").existsSync()) {
       Directory("$path/.arceus").createSync();
+      if (Platform.isWindows) {
+        await Process.run('attrib', ['+h', "$path/.arceus"]);
+      }
     }
     Hive.init("$path/.arceus");
+    await game.index();
+    return game;
   }
 
   /// # `Future<void>` index() async
   /// ## Load the game's index.
   /// Always call this after creating the game object, to load (or create) the index and other information.
   Future<void> index() async {
+    final spinner =
+        CliSpin(text: "Indexing game \"$name\".", spinner: CliSpinners.star)
+            .start();
     bool alreadyExists = (await Hive.boxExists("index"));
     _index = await Hive.openBox("index");
     if (!alreadyExists) {
       _index?.put("used_hashes", []);
-      createNode("Initial");
+      Cli.indentRight();
+      final initalCommitHash = await createNode("Initial", isFirst: true);
+      final testNode1 =
+          await createNode("Test Node", previous: initalCommitHash);
+      await createNode("Testing Branches", previous: testNode1);
+      await createNode("Testing Branches", previous: testNode1);
+      Cli.indentLeft();
     }
+    spinner.success("Finished indexing game \"$name\". HASH: $hash");
   }
 
   /// # `String` _getUniqueHashForNode()
@@ -45,37 +67,86 @@ class Game {
   /// # `void` createNode(`String name`, {`String? previous`}) async
   /// ## Create a node in time.
   /// Pass the hash of the previous node you want to connect to.
-  void createNode(String name, {String? previous, bool? isFirst}) async {
+  Future<String> createNode(String name,
+      {String? previous, bool? isFirst}) async {
     String hash = _getUniqueHashForNode();
-    bool isFirst = _index!.isEmpty;
+    final spinner = CliSpin(
+            indent: 1,
+            text: "Creating \"$name\" with hash $hash",
+            spinner: CliSpinners.star)
+        .start();
     await _index?.put(
         hash, {"name": name, "previous": previous, "next": [], "files": []});
-    if (isFirst) {
+    if (isFirst ?? false) {
       _index?.put("initialNode", hash);
     }
     if (previous != null) {
       _addNextNode(previous, hash);
     }
-    _saveToNode(hash);
+    Cli.indentRight();
+    await _saveNode(hash);
+    Cli.indentLeft();
+    spinner.success("Successfully added $hash to tree.");
+    return hash;
   }
 
-  Future<void> _saveToNode(String hash) async {
+  Future<void> _saveNode(String hash) async {
     final encoder = ZipFileEncoder();
     encoder.create("$path/.arceus/$hash");
     for (FileSystemEntity entity in Directory(path).listSync()) {
       if (entity is File) {
         final spinner = CliSpin(
+                indent: Cli.indent,
                 text: "Adding ${entity.path} to Node $hash",
                 spinner: CliSpinners.star)
             .start();
-        await encoder.addFile(entity);
+        try {
+          await encoder.addFile(entity);
+        } catch (e) {
+          spinner.warn(
+              "File ${entity.path} could not be added to node (Most likely due to an online storage provider.) Skipping.");
+          continue;
+        }
         spinner.success("Added ${entity.path} to Node $hash successfully.");
       }
     }
   }
 
   void _addNextNode(String hash, String next) {
-    _index?.get(hash)?["next"]?.add(next);
+    final node = _index?.get(hash);
+    if (node != null) {
+      (node["next"] as List<dynamic>).add(next);
+      _index?.put(hash, node);
+    }
+  }
+
+  Future<void> printIndex() async {
+    AnsiX.printTreeView((await getNodeTree()).toJson(),
+        theme: AnsiTreeViewTheme(
+          showListItemIndex: false,
+          headerTheme: AnsiTreeHeaderTheme(hideHeader: true),
+          valueTheme: AnsiTreeNodeValueTheme(hideIfEmpty: true),
+          anchorTheme: AnsiTreeAnchorTheme(
+              style: AnsiBorderStyle.rounded, color: AnsiColor.blueViolet),
+        ));
+  }
+
+  Future<Node> getNodeTree() async {
+    String hash = _index?.get("initialNode");
+    final firstNodeInTree = Node(hash, _index?.get(hash)["name"]);
+    Map<String, Node> nodes = {hash: firstNodeInTree};
+    List<Node> buffer = [firstNodeInTree];
+    while (buffer.isNotEmpty) {
+      final node = buffer.first;
+      nodes[node.hash] = node;
+      for (String next in _index?.get(node.hash)["next"]) {
+        nodes[next] = Node(next, _index?.get(next)["name"]);
+        buffer.add(nodes[next]!);
+        node.addNextNode(nodes[next]!);
+      }
+      buffer.remove(node);
+    }
+    return firstNodeInTree;
   }
 
   // List<int> _findDifferencesInBytes(List<int> a, List<int> b) {
@@ -97,4 +168,28 @@ class Game {
   //   }
   //   return _findDifferencesInBytes(a, b).isNotEmpty;
   // }
+}
+
+class Node {
+  List<Node>? next;
+  String? name;
+  String hash;
+
+  Node(this.hash, this.name);
+
+  void addNextNode(Node node) {
+    next ??= [];
+    next!.add(node);
+  }
+
+  Map<String, dynamic> toJson() {
+    Map<String, dynamic> list = {};
+    String displayName = "$name - $hash";
+    list[displayName] = {};
+    for (int x = 1; x < ((next?.length) ?? 0); x++) {
+      list[displayName].addAll(next?[x].toJson());
+    }
+    list.addAll(next?.first.toJson() ?? {});
+    return list;
+  }
 }

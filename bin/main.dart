@@ -54,7 +54,7 @@ class ListGamesCommand extends Command {
 
   @override
   void run() {
-    Cli.console.writeLine(arceus.listGames());
+    arceus.printGames();
   }
 }
 
@@ -70,6 +70,12 @@ class UniverseCommand extends Command {
   final name = "universe";
   @override
   final description = "Manage a game's universe.";
+
+  UniverseCommand() {
+    addSubcommand(CreateUniverseCommand());
+    addSubcommand(JumpToUniverseCommand());
+    addSubcommand(ListUniversesCommand());
+  }
 }
 
 /// # `class` CreateUniverseCommand extends Command
@@ -88,4 +94,26 @@ class JumpToUniverseCommand extends Command {
   final name = "jump";
   @override
   final description = "Jump to a specific point in time.";
+}
+
+class ListUniversesCommand extends Command {
+  @override
+  final name = "list";
+  @override
+  final description = "List all universes.";
+
+  ListUniversesCommand() {
+    argParser.addOption("game", help: "The hash of the game you want to list.");
+  }
+
+  @override
+  void run() {
+    if (argResults!.wasParsed("game")) {
+      arceus.getGame(argResults!.option("game")!).then(
+        (game) async {
+          await game.printIndex();
+        },
+      );
+    }
+  }
 }

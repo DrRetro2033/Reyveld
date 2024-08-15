@@ -6,11 +6,21 @@ import 'main.dart';
 
 class Cli {
   static Console console = Console();
+  static int _indent = 0;
+  static int get indent => _indent;
 
   static void run() {
     console.clearScreen();
     console.writeLine("Welcome to Arceus!");
     _mainMenu(arceus.isEmpty);
+  }
+
+  static void indentRight() {
+    _indent++;
+  }
+
+  static void indentLeft() {
+    _indent--;
   }
 
   static void _mainMenu(bool hasGames) {

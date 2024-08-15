@@ -4,6 +4,6 @@ final uuid = Uuid();
 
 String generateUUID() {
   String hash = uuid.v4();
-  hash.replaceAll("-", "");
+  hash = hash.replaceAll("-", "");
   return hash;
 }

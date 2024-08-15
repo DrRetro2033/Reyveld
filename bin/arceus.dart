@@ -2,6 +2,7 @@ import "dart:io";
 import "uuid.dart";
 import "game.dart";
 import "dart:convert";
+import 'package:ansix/ansix.dart';
 
 class Arceus {
   final Map<String, dynamic> _index = {};
@@ -43,7 +44,7 @@ class Arceus {
     path = path.replaceAll("\\", "/");
     String hash = _generateUniqueHashForGame();
     _index["games"][hash] = {"name": name, "path": path, "hash": hash};
-    await Game(name, path, hash).index();
+    await Game.init(name, path, hash);
     _save();
   }
 
@@ -52,11 +53,11 @@ class Arceus {
     _save();
   }
 
-  Game getGame(String hash) {
-    if (!_index.containsKey(hash)) {
+  Future<Game> getGame(String hash) async {
+    if (!_index["games"].containsKey(hash)) {
       throw Exception("Game $hash not found.");
     }
-    return Game(
+    return await Game.init(
         _index["games"][hash]["name"], _index["games"][hash]["path"], hash);
   }
 
@@ -67,5 +68,9 @@ class Arceus {
       return _index["games"];
     }
     return {};
+  }
+
+  void printGames() {
+    AnsiX.printTreeView(listGames());
   }
 }
