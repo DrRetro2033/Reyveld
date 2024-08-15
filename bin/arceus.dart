@@ -43,7 +43,7 @@ class Arceus {
     path = path.replaceAll("\\", "/");
     String hash = _generateUniqueHashForGame();
     _index["games"][hash] = {"name": name, "path": path, "hash": hash};
-    await Game(name, path, hash).start();
+    await Game(name, path, hash).index();
     _save();
   }
 

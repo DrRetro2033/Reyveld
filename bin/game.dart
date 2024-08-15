@@ -1,5 +1,8 @@
 import 'dart:io';
 import 'uuid.dart';
+import 'package:cli_spin/cli_spin.dart';
+import 'package:archive/archive_io.dart';
+
 import 'package:hive_ce/hive.dart';
 
 class Game {
@@ -15,10 +18,10 @@ class Game {
     Hive.init("$path/.arceus");
   }
 
-  /// # `Future<void>` start() async
-  /// ## Start the game from the index.
-  /// Always call this after creating a the game object, to load the index and other information.
-  Future<void> start() async {
+  /// # `Future<void>` index() async
+  /// ## Load the game's index.
+  /// Always call this after creating the game object, to load (or create) the index and other information.
+  Future<void> index() async {
     bool alreadyExists = (await Hive.boxExists("index"));
     _index = await Hive.openBox("index");
     if (!alreadyExists) {
@@ -42,7 +45,7 @@ class Game {
   /// # `void` createNode(`String name`, {`String? previous`}) async
   /// ## Create a node in time.
   /// Pass the hash of the previous node you want to connect to.
-  void createNode(String name, {String? previous}) async {
+  void createNode(String name, {String? previous, bool? isFirst}) async {
     String hash = _getUniqueHashForNode();
     bool isFirst = _index!.isEmpty;
     await _index?.put(
@@ -57,14 +60,18 @@ class Game {
   }
 
   Future<void> _saveToNode(String hash) async {
-    Box node = await Hive.openBox(hash);
-    for (FileSystemEntity file in Directory(path).listSync()) {
-      if (file is File) {
-        List<int> data = file.readAsBytesSync();
-        node.put(file.path, data);
+    final encoder = ZipFileEncoder();
+    encoder.create("$path/.arceus/$hash");
+    for (FileSystemEntity entity in Directory(path).listSync()) {
+      if (entity is File) {
+        final spinner = CliSpin(
+                text: "Adding ${entity.path} to Node $hash",
+                spinner: CliSpinners.star)
+            .start();
+        await encoder.addFile(entity);
+        spinner.success("Added ${entity.path} to Node $hash successfully.");
       }
     }
-    node.close();
   }
 
   void _addNextNode(String hash, String next) {

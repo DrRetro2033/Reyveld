@@ -15,6 +15,8 @@ dependencies:
   ansix: ^0.3.3
   dart_console: ^1.2.0
   uuid: ^4.4.2
+  archive: ^3.6.1
+  cli_spin: ^1.0.1
 
 dev_dependencies:
   lints: ^4.0.0
