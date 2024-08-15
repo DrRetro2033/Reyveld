@@ -107,7 +107,7 @@ class FilePattern {
           for (String key in bitfield.keys) {
             int size = 0; // Size of the range of bits.
             bool isPadding = false; // Whether the range of bits is padding.
-            // If it is padding, it just adds the preceding number in the pad command and offsets by it.
+            // If it is padding, it just adds the preceding number in the pad command and skips the if else chain below.
             if (bitfield[key] is int) {
               // Is the key-value pair a number?
               size = bitfield[key] as int;
@@ -120,12 +120,16 @@ class FilePattern {
               throw Exception(
                   "Unsupported bitfield type: ${bitfield[key]}. Not continuing as every subsequent value will be out of alignment.");
             }
+
+            // This is where the data is fetched from the bitfield.
             if (!isPadding) {
               parsedData[key] = _getValueInBitfield(
                   combinedNumber, offset, size); // The value of the bit range.
               // print(((BigInt.one << size) - BigInt.one).toRadixString(2));
               // print("$key: ${(parsedData[key] as int).toRadixString(2)}");
             }
+
+            // Move the offset by the size of the range of bits.
             offset += size;
           }
         }
@@ -135,8 +139,12 @@ class FilePattern {
     return parsedData;
   }
 
+  /// # `int` _getSizeOfCharArray(`String sizeString`)
+  /// ## Returns the size of the char array in bytes.
+  /// The string you should pass must end with a hex or dec number in square brackets. e.g. `char16[16]` or `char16[0x10]`.
   int _getSizeOfCharArray(String sizeString) {
-    String x = sizeString.split("[")[1];
+    String x = sizeString.split("[")[1]; // Decides the size of the char array.
+    //TODO: Replace with a regular expression for typed arrays, not just char16.
     x = x.split("]")[0];
     if (x.startsWith("0x")) {
       return int.parse(x.substring(2), radix: 16);
@@ -144,6 +152,9 @@ class FilePattern {
     return int.parse(x);
   }
 
+  /// # `dynamic` _getValueInBitfield(`BigInt combinedNumber`, `int offset`, `int size`)
+  /// ## Returns the value of the bitfield in the combined number.
+  /// TODO: Add support for signed numbers.
   dynamic _getValueInBitfield(BigInt combinedNumber, int offset, int size) {
     BigInt value =
         ((combinedNumber >> offset) & ((BigInt.one << size) - BigInt.one));
@@ -156,6 +167,8 @@ class FilePattern {
     }
   }
 
+  /// # `int` _getSizeOfBitField(`YamlMap item`)
+  /// ## Returns the size of the bitfield in bytes.
   int _getSizeOfBitField(YamlMap item) {
     int size = 0;
     for (String key in item.keys) {
@@ -169,6 +182,9 @@ class FilePattern {
     return (size / 8).ceil();
   }
 
+  /// # `YamlMap` _getPattern(`String path`)
+  /// ## Returns the parsed pattern.
+  /// This is internal and should not be called directly.
   YamlMap _getPattern(String path) {
     if (!(_parsedPatterns.containsKey(path))) {
       File file = File("${Directory.current.path}/assets/patterns/$path");

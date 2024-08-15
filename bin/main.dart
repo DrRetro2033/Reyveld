@@ -96,6 +96,9 @@ class JumpToUniverseCommand extends Command {
   final description = "Jump to a specific point in time.";
 }
 
+/// # `class` ListUniversesCommand extends Command
+/// ## List all universes.
+/// Uses AnsiX for printing tree views.
 class ListUniversesCommand extends Command {
   @override
   final name = "list";

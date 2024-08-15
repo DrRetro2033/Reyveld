@@ -14,9 +14,10 @@ class Game {
   String hash = "";
 
   /// # DO NOT CALL DIRECTLY
-  /// ## Call `Game.init()` instead and await.
+  /// ## Call `Game.init()` instead and await the result.
   Game(this.name, this.path, this.hash);
 
+  /// # `Future<Game>` init(String name, String path, String hash) async
   static Future<Game> init(name, path, hash) async {
     final game = Game(name, path, hash);
     if (!Directory("$path/.arceus").existsSync()) {
@@ -121,7 +122,7 @@ class Game {
   }
 
   Future<void> printIndex() async {
-    AnsiX.printTreeView((await getNodeTree()).toJson(),
+    AnsiX.printTreeView((await _getNodeTree()).toJson(),
         theme: AnsiTreeViewTheme(
           showListItemIndex: false,
           headerTheme: AnsiTreeHeaderTheme(hideHeader: true),
@@ -131,7 +132,10 @@ class Game {
         ));
   }
 
-  Future<Node> getNodeTree() async {
+  /// # `Future<Node>` _getNodeTree() async
+  /// ## Get the node tree from the index.
+  /// Returns the root node of the tree in the form of a `Node` object.
+  Future<Node> _getNodeTree() async {
     String hash = _index?.get("initialNode");
     final firstNodeInTree = Node(hash, _index?.get(hash)["name"]);
     Map<String, Node> nodes = {hash: firstNodeInTree};
@@ -170,6 +174,10 @@ class Game {
   // }
 }
 
+/// # `class` `Node`
+/// ## A node in the game tree.
+/// Contains a list of the next nodes and the name and hash of the node.
+/// TODO: Move code from inside of `Game` that modifies the tree, and move it here.
 class Node {
   List<Node>? next;
   String? name;
