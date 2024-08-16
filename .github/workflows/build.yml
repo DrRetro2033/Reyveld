@@ -21,7 +21,7 @@ jobs:
         uses: dart-lang/setup-dart@v1.6.5
 
       - name: Build
-        run: dart compile exe ./bin/main.dart --target-os ${{ matrix.platform }} -o ${{ matrix.output }}}
+        run: dart compile exe ./bin/main.dart --target-os ${{ matrix.platform }} -o ${{ matrix.output }}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
