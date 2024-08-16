@@ -19,7 +19,8 @@ jobs:
 
       - name: Setup Dart SDK
         uses: dart-lang/setup-dart@v1.6.5
-
+      - name: Fetch Dependencies
+        run: dart pub get .
       - name: Build
         run: dart compile exe ./bin/main.dart --target-os ${{ matrix.platform }} -o ${{ matrix.output }}
 
