@@ -1,34 +1,10 @@
 name: build
-
 on:
   push:
     branches:
       - main
-      - "feature/*"
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
-  format:
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Setup Dart SDK
-        uses: dart-lang/setup-dart@v1.6.5
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            platform: linux
-            output: "build/releases/example-v0.0.1-alpha.1-linux-amd64.tar.gz"
-          - os: windows-latest
-            platform: windows
-            output: "build/releases/example-v0.0.1-alpha.1-windows-amd64.tar.gz"
-          - os: macos-latest
-            platform: macos
-            output: "build/releases/example-v0.0.1-alpha.1-macos-arm64.tar.gz"
+  call-test:
+    uses: ./.github/workflows/compile.yml
