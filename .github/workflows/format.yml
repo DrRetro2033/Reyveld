@@ -1,0 +1,27 @@
+name: Dart Format Check
+
+on:
+  push:
+    branches:
+      - main
+      - "feature/*"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup Dart SDK
+        uses: dart-lang/setup-dart@v1.6.5
+
+      - name: Run format check
+        run: dart format --set-exit-if-changed .
+
+      - name: Analyze
+        run: dart analyze
