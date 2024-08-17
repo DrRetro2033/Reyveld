@@ -8,7 +8,7 @@
 
 # What is Arceus?
 
-Arceus is a brand new CLI (Command Line Interface) save manager and editor designed to make it easy to manage your saves all in one place.
+Arceus is a brand new CLI (Command Line Interface) save manager and editor inspired by version control software like Git, and designed to make it easy to manage your saves all in one place.
 
 # Features
 
@@ -22,25 +22,33 @@ Arceus can rollback saves to older versions, so if you make any mistakes, your o
 
 ## Human Readable 👓
 
-With file patterns, you can make binary and hexadecimals readable and modify them with ease.
+With file patterns, you can make binary and hexadecimals readable to regular humans and modify them with ease.
+
+## Tiny Size 📁
+
+Arceus does not need any external libraries not already compiled with the app, so Arceus has a small footprint on your computer or app. And as a bonus, no DLLs to worry about!
+
+## Developer Friendly 🤝
+
+Arceus can be used by any developer or player, yes even your! Just don't forget to give credit if you this in your own project.
 
 # Use Cases
 
 ## For Save Editors 📝
 
-The main use case for Arceus is for developers can use Arceus in their save editor to make it easier to focus on what actually matters, the user experience. If you want an example of what you can do with Arceus, check out my other project [MudkiPC](https://github.com/Pokemon-Manager/MudkiPC).
+The main use case for Arceus is for developers. Arceus can be used in save editors to make it easier to focus on what actually matters, the user experience. If you want an example of what you can do with Arceus, check out my other project [MudkiPC](https://github.com/Pokemon-Manager/MudkiPC).
 
 ## For Game Development 💻
 
-Be able to rollback to any point in your game for testing, without having to write debug menus.
+Be able to rollback to any point in your game for testing, give items for debugging, or intentionally corrupt your save for edge cases; without having to write debug menus! You could even use Arceus as a backend for writing and reading saves in any engine!
 
 ## For Multiple Players 🫂
 
-No matter if a game supports multiple saves or not, Arceus can make it easier to have multiple players have their own experience.
+No matter if a game supports multiple saves or not, Arceus can make it easier to have multiple players have their own save. I am looking at you Epic (jk, love your free games!)
 
 ## For Achievement Hunting 🏆
 
-Jump from point to point, so you can easily collect every achievement in a game.
+Jump from point to point in a game, so you can easily collect every achievement in a game without taking up multiple slots or quicksaves.
 
 # Why is it called Arceus?
 
