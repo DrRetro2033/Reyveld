@@ -36,10 +36,10 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux
-            output: "build/releases/arceus.elf"
+            output: build/releases/arceus.elf
           - os: windows-latest
             platform: windows
-            output: "build/releases/arceus.exe"
+            output: build/releases/arceus.exe
           - os: macos-latest
             platform: macos
-            output: "build/releases/arceus.app"
+            output: build/releases/arceus.app
