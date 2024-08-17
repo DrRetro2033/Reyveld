@@ -30,7 +30,7 @@ Arceus does not need any external libraries not already compiled with the app, s
 
 ## Developer Friendly 🤝
 
-Arceus can be used by any developer or player, yes even your! Just don't forget to give credit if you this in your own project.
+Arceus can be used by any developer, yes even you! Just don't forget to give credit if you this in your own project.
 
 # Use Cases
 
