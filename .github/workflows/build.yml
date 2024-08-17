@@ -21,6 +21,8 @@ jobs:
         uses: dart-lang/setup-dart@v1.6.5
       - name: Fetch Dependencies
         run: dart pub get .
+      - name: Make Build Directories
+        run: mkdir -p build/releases
       - name: Build
         run: dart compile exe ./bin/main.dart --target-os ${{ matrix.platform }} -o ${{ matrix.output }}
 
