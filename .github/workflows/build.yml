@@ -31,6 +31,7 @@ jobs:
         with:
           name: ${{ matrix.os }}
           path: ${{ matrix.output }}
+          retention-days: 14
 
     strategy:
       fail-fast: false

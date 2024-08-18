@@ -1,14 +1,13 @@
 import 'dart:io';
 import 'uuid.dart';
 import 'cli.dart';
+import "dart:convert";
 import 'package:cli_spin/cli_spin.dart';
 import 'package:ansix/ansix.dart';
 import 'package:archive/archive_io.dart';
 
-import 'package:hive_ce/hive.dart';
-
 class Game {
-  Box? _index;
+  Map<String, dynamic>? _index;
   String name = "";
   String path = "";
   String hash = "";
@@ -26,9 +25,24 @@ class Game {
         await Process.run('attrib', ['+h', "$path/.arceus"]);
       }
     }
-    Hive.init("$path/.arceus");
+    game._load();
     await game.index();
     return game;
+  }
+
+  Future<void> _save() async {
+    File file = File("$path/.arceus/index");
+    file.createSync(recursive: true);
+    file.writeAsStringSync(jsonEncode(_index));
+  }
+
+  Future<void> _load() async {
+    File file = File("$path/.arceus/index");
+    if (file.existsSync()) {
+      _index = jsonDecode(file.readAsStringSync());
+    } else {
+      _index = {};
+    }
   }
 
   /// # `Future<void>` index() async
@@ -38,10 +52,8 @@ class Game {
     final spinner =
         CliSpin(text: "Indexing game \"$name\".", spinner: CliSpinners.star)
             .start();
-    bool alreadyExists = (await Hive.boxExists("index"));
-    _index = await Hive.openBox("index");
-    if (!alreadyExists) {
-      _index?.put("used_hashes", []);
+    if (!_indexAlreadyExists()) {
+      _index?["used_hashes"] = [];
       Cli.indentRight();
       final initalCommitHash = await createNode("Initial", isFirst: true);
       final testNode1 =
@@ -50,7 +62,16 @@ class Game {
       await createNode("Testing Branches", previous: testNode1);
       Cli.indentLeft();
     }
+    _save();
     spinner.success("Finished indexing game \"$name\". HASH: $hash");
+  }
+
+  bool _indexAlreadyExists() {
+    !Directory("$path/.arceus").existsSync();
+    if (File("$path/.arceus/index").existsSync()) {
+      return true;
+    }
+    return false;
   }
 
   /// # `String` _getUniqueHashForNode()
@@ -58,8 +79,8 @@ class Game {
   String _getUniqueHashForNode() {
     while (true) {
       String hash = generateUUID();
-      if (!_index?.get("used_hashes")?.contains(hash)) {
-        _index?.get("used_hashes")?.add(hash);
+      if (!_index?["used_hashes"].contains(hash)) {
+        _index?["used_hashes"].add(hash);
         return hash;
       }
     }
@@ -76,10 +97,9 @@ class Game {
             text: "Creating \"$name\" with hash $hash",
             spinner: CliSpinners.star)
         .start();
-    await _index?.put(
-        hash, {"name": name, "previous": previous, "next": [], "files": []});
+    _index?[hash] = {"name": name, "hash": hash, "next": []};
     if (isFirst ?? false) {
-      _index?.put("initialNode", hash);
+      _index?["initialNode"] = hash;
     }
     if (previous != null) {
       _addNextNode(previous, hash);
@@ -88,6 +108,7 @@ class Game {
     await _saveNode(hash);
     Cli.indentLeft();
     spinner.success("Successfully added $hash to tree.");
+    _save();
     return hash;
   }
 
@@ -114,10 +135,10 @@ class Game {
   }
 
   void _addNextNode(String hash, String next) {
-    final node = _index?.get(hash);
+    final node = _index?[hash];
     if (node != null) {
       (node["next"] as List<dynamic>).add(next);
-      _index?.put(hash, node);
+      _index?[hash] = node;
     }
   }
 
@@ -136,15 +157,15 @@ class Game {
   /// ## Get the node tree from the index.
   /// Returns the root node of the tree in the form of a `Node` object.
   Future<Node> _getNodeTree() async {
-    String hash = _index?.get("initialNode");
-    final firstNodeInTree = Node(hash, _index?.get(hash)["name"]);
+    String hash = _index?["initialNode"];
+    final firstNodeInTree = Node(hash, _index?[hash]["name"]);
     Map<String, Node> nodes = {hash: firstNodeInTree};
     List<Node> buffer = [firstNodeInTree];
     while (buffer.isNotEmpty) {
       final node = buffer.first;
       nodes[node.hash] = node;
-      for (String next in _index?.get(node.hash)["next"]) {
-        nodes[next] = Node(next, _index?.get(next)["name"]);
+      for (String next in _index?[node.hash]["next"] ?? []) {
+        nodes[next] = Node(next, _index?[next]["name"]);
         buffer.add(nodes[next]!);
         node.addNextNode(nodes[next]!);
       }
