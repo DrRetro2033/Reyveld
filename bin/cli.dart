@@ -4,6 +4,8 @@ import 'package:interact/interact.dart';
 import 'package:dart_console/dart_console.dart';
 import 'main.dart';
 
+/// # `class` Cli
+/// ## The Cli that is shown to the user.
 class Cli {
   static Console console = Console();
   static int _indent = 0;

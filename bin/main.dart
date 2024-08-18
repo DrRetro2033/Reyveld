@@ -1,13 +1,19 @@
+import 'dart:io';
+
 import "package:args/command_runner.dart";
 import 'arceus.dart';
 import 'cli.dart';
 
 var arceus = Arceus();
 
+/// # `void` main(List<String> arguments)
+/// ## Main entry point.
+/// Runs the CLI.
 void main(List<String> arguments) {
   var runner = CommandRunner('arceus', "The ultimate save manager.");
   runner.addCommand(GamesCommand());
   runner.addCommand(UniverseCommand());
+  runner.addCommand(PatternsCommand());
   if (arguments.isNotEmpty) {
     runner.run(arguments);
   } else {
@@ -119,4 +125,42 @@ class ListUniversesCommand extends Command {
       );
     }
   }
+}
+
+class PatternsCommand extends Command {
+  @override
+  final name = "pattern";
+  @override
+  final description = "Manage patterns.";
+
+  PatternsCommand() {
+    addSubcommand(ImportPatternCommand());
+    addSubcommand(ListPatternsCommand());
+  }
+}
+
+class ImportPatternCommand extends Command {
+  @override
+  final name = "import";
+  @override
+  final description = "Import a new pattern to Arceus.";
+
+  ImportPatternCommand() {
+    argParser.addOption("path", help: "The path to the pattern.");
+  }
+
+  @override
+  void run() {
+    if (argResults!.wasParsed("path")) {
+      String path = arceus.fixPath(argResults!.option("path")!);
+      arceus.importPattern(File(path));
+    }
+  }
+}
+
+class ListPatternsCommand extends Command {
+  @override
+  final name = "list";
+  @override
+  final description = "List all patterns.";
 }
