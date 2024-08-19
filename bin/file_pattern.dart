@@ -1,4 +1,7 @@
+import "package:cli_spin/cli_spin.dart";
 import "package:yaml/yaml.dart";
+import "main.dart";
+import "cli.dart";
 import "dart:io";
 import "dart:typed_data";
 
@@ -33,8 +36,9 @@ class FilePattern {
   static final Map<String, dynamic> _parsedPatterns =
       {}; // Patterns already parsed by Arceus.
   YamlMap? _currentPattern;
-  FilePattern(String extension) {
-    _currentPattern = _getPattern("files/$extension.yaml");
+  FilePattern(String path) {
+    path = arceus.fixPath(path);
+    _currentPattern = _getPattern(path);
   }
 
   Map<String, dynamic> read(File file) {
@@ -43,6 +47,11 @@ class FilePattern {
   }
 
   Map<String, dynamic> _read(ByteData data, YamlMap pattern, int address) {
+    final spinner = CliSpin(
+            indent: Cli.indent,
+            text: "Parsing ${_currentPattern!["path"]}",
+            spinner: CliSpinners.star)
+        .start();
     Map<String, dynamic> parsedData = {};
 
     // Imports
@@ -135,7 +144,8 @@ class FilePattern {
         }
       }
     }
-
+    spinner.success("Parsed successfully.");
+    Cli.console.writeLine(parsedData);
     return parsedData;
   }
 
@@ -187,7 +197,7 @@ class FilePattern {
   /// This is internal and should not be called directly.
   YamlMap _getPattern(String path) {
     if (!(_parsedPatterns.containsKey(path))) {
-      File file = File("${Directory.current.path}/assets/patterns/$path");
+      File file = File(path);
       if (file.existsSync()) {
         _parsedPatterns[path] = loadYaml(file.readAsStringSync());
       } else {

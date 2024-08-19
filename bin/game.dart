@@ -55,11 +55,7 @@ class Game {
     if (!_indexAlreadyExists()) {
       _index?["used_hashes"] = [];
       Cli.indentRight();
-      final initalCommitHash = await createNode("Initial", isFirst: true);
-      final testNode1 =
-          await createNode("Test Node", previous: initalCommitHash);
-      await createNode("Testing Branches", previous: testNode1);
-      await createNode("Testing Branches", previous: testNode1);
+      await createNode("Initial", isFirst: true);
       Cli.indentLeft();
     }
     _save();

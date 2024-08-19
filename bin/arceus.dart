@@ -98,28 +98,6 @@ class Arceus {
     AnsiX.printTreeView(_listGames());
   }
 
-  void importPattern(File file) async {
-    if (file.path.split(".").last != "yaml" &&
-        file.path.split(".").last != "yml") {
-      throw Exception("Invalid file type. Must be YAML.");
-    }
-    Directory("${Directory.current.path}/patterns/").createSync();
-    file.copySync(
-        "${Directory.current.path}/patterns/${file.path.split("/").last}");
-  }
-
-  dynamic _listPatterns() {
-    Directory dir = Directory("${Directory.current.path}/patterns/");
-    if (dir.existsSync()) {
-      return dir.listSync();
-    }
-    return {};
-  }
-
-  void printPatterns() {
-    AnsiX.printTreeView(_listPatterns());
-  }
-
   String fixPath(String path) {
     path = path.replaceAll("\"", "");
     return path.replaceAll("\\", "/");

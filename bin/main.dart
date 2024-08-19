@@ -1,23 +1,22 @@
+import 'dart:convert';
 import 'dart:io';
 
 import "package:args/command_runner.dart";
 import 'arceus.dart';
-import 'cli.dart';
+import 'file_pattern.dart';
 
 var arceus = Arceus();
 
 /// # `void` main(List<String> arguments)
 /// ## Main entry point.
 /// Runs the CLI.
-void main(List<String> arguments) {
+Future<dynamic> main(List<String> arguments) async {
   var runner = CommandRunner('arceus', "The ultimate save manager.");
   runner.addCommand(GamesCommand());
   runner.addCommand(UniverseCommand());
-  runner.addCommand(PatternsCommand());
+  runner.addCommand(PatternCommand());
   if (arguments.isNotEmpty) {
-    runner.run(arguments);
-  } else {
-    Cli.run();
+    return await runner.run(arguments);
   }
 }
 
@@ -127,40 +126,34 @@ class ListUniversesCommand extends Command {
   }
 }
 
-class PatternsCommand extends Command {
+class PatternCommand extends Command {
   @override
   final name = "pattern";
   @override
-  final description = "Manage patterns.";
+  final description = "Use patterns to parse data.";
 
-  PatternsCommand() {
-    addSubcommand(ImportPatternCommand());
-    addSubcommand(ListPatternsCommand());
+  PatternCommand() {
+    addSubcommand(ParsePatternCommand());
   }
 }
 
-class ImportPatternCommand extends Command {
+class ParsePatternCommand extends Command {
   @override
-  final name = "import";
+  final name = "parse";
   @override
-  final description = "Import a new pattern to Arceus.";
+  final description = "Parse a file with a pattern to get data.";
 
-  ImportPatternCommand() {
-    argParser.addOption("path", help: "The path to the pattern.");
+  ParsePatternCommand() {
+    argParser.addOption("file");
+    argParser.addOption("pattern");
   }
 
   @override
-  void run() {
-    if (argResults!.wasParsed("path")) {
-      String path = arceus.fixPath(argResults!.option("path")!);
-      arceus.importPattern(File(path));
+  dynamic run() {
+    if (argResults!.wasParsed("file") && argResults!.wasParsed("pattern")) {
+      final file = File(arceus.fixPath(argResults!.option("file")!));
+      final pattern = FilePattern(argResults!.option("pattern")!);
+      return jsonEncode(pattern.read(file));
     }
   }
-}
-
-class ListPatternsCommand extends Command {
-  @override
-  final name = "list";
-  @override
-  final description = "List all patterns.";
 }
