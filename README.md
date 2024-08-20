@@ -8,7 +8,7 @@
 
 # What is Arceus?
 
-Arceus is a brand new CLI (Command Line Interface) save manager and editor inspired by version control software like Git, and designed to make it easy to manage your saves all in one place.
+Arceus is a brand new CLI save manager and editor, inspired by version control software like Git. It is designed to make it easy to manage your saves all in one place.
 
 # Features
 
@@ -30,7 +30,7 @@ Arceus does not need any external libraries not already compiled with the app, s
 
 ## Developer Friendly 🤝
 
-Arceus can be used by any developer, yes even you! Just don't forget to give credit if you use this in your own project.
+Arceus can be used by any developer in their projects, yes even you! Just don't forget to give credit if you use this in your own project.
 
 # Use Cases
 
