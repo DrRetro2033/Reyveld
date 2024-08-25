@@ -1,6 +1,5 @@
 import "dart:io";
 import "uuid.dart";
-import "game.dart";
 import "dart:convert";
 import 'package:ansix/ansix.dart';
 
@@ -51,34 +50,6 @@ class Arceus {
         return hash;
       }
     }
-  }
-
-  /// # `void` addGame(String name, String path)
-  /// ## Add a game to the index.
-  void addGame(String name, String path) async {
-    path = fixPath(path);
-    String hash = _generateUniqueHashForGame();
-    _index["games"][hash] = {"name": name, "path": path, "hash": hash};
-    await Game.init(name, path, hash);
-    _save();
-  }
-
-  /// # `void` removeGame(String hash)
-  /// ## Remove a game from the index.
-  void removeGame(String hash) {
-    _index.remove(hash);
-    _save();
-  }
-
-  /// # `Future<Game>` getGame(String hash) async
-  /// ## Get a game from the index.
-  /// Throws an exception if the game is not found.
-  Future<Game> getGame(String hash) async {
-    if (!_index["games"].containsKey(hash)) {
-      throw Exception("Game $hash not found.");
-    }
-    return await Game.init(
-        _index["games"][hash]["name"], _index["games"][hash]["path"], hash);
   }
 
   bool get isEmpty => _index.isEmpty;
