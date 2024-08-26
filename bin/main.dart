@@ -14,6 +14,7 @@ var arceus = Arceus();
 Future<dynamic> main(List<String> arguments) async {
   var runner = CommandRunner('arceus', "The ultimate save manager.");
   runner.addCommand(ConstellationCommands());
+  runner.addCommand(PatternCommands());
   if (arguments.isNotEmpty) {
     return await runner.run(arguments);
   }
@@ -64,5 +65,35 @@ class ShowMapConstellationCommand extends Command {
   @override
   void run() {
     Constellation(argResults?["path"]).showMap();
+  }
+}
+
+class PatternCommands extends Command {
+  @override
+  String get name => "pattern";
+  @override
+  String get description => "Commands for patterns.";
+
+  PatternCommands() {
+    addSubcommand(ReadPatternCommand());
+  }
+}
+
+class ReadPatternCommand extends Command {
+  @override
+  String get description => "Read a file using a pattern.";
+
+  @override
+  String get name => "read";
+
+  ReadPatternCommand() {
+    argParser.addOption("pattern",
+        abbr: "p", defaultsTo: Directory.current.path);
+    argParser.addOption("file", abbr: "f", defaultsTo: Directory.current.path);
+  }
+
+  @override
+  void run() {
+    FilePattern(argResults?["pattern"]).read(File(argResults?["file"]));
   }
 }
