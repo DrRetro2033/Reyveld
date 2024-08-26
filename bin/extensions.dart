@@ -9,4 +9,9 @@ extension Compression on String {
   String decompress() {
     return utf8.decode(gzip.decode(gzip.encode(utf8.encode(this))));
   }
+
+  String fixPath() {
+    String path = replaceAll("\"", "");
+    return path.replaceAll("\\", "/");
+  }
 }

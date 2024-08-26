@@ -1,6 +1,6 @@
 import "package:cli_spin/cli_spin.dart";
 import "package:yaml/yaml.dart";
-import "main.dart";
+import "extensions.dart";
 import "cli.dart";
 import "dart:io";
 import "dart:typed_data";
@@ -37,7 +37,7 @@ class FilePattern {
       {}; // Patterns already parsed by Arceus.
   YamlMap? _currentPattern;
   FilePattern(String path) {
-    path = arceus.fixPath(path);
+    path = path.fixPath();
     _currentPattern = _getPattern(path);
   }
 

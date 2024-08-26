@@ -1,158 +1,117 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
-// import 'package:archive/archive_io.dart';
-// import 'cli.dart';
-// import 'package:cli_spin/cli_spin.dart';
+
 import 'package:ansix/ansix.dart';
 import 'package:archive/archive_io.dart';
 
-import 'extensions.dart';
 import 'uuid.dart';
+import 'extensions.dart';
 
-/// # `class` Universe
-/// ## A collection of planets that represents a universe.
-/// A universe can be used for a series of games, like for example Mass Effect. Universes will not only help with organizing your saves, but also help with transfering data between planets/games.
-class Universe {
-  List<Planet> planets = [];
-}
+class Galaxy {}
 
-/// # `class` Planet
-/// ## A collection of tree that represents a planet.
-/// Planets are used for a individual game, and keeps data about that game. A planet can be by itself, or can be in an universe.
-class Planet {
+class Constellation {
   String? name;
   String path;
-  List<Tree> trees = [];
+  Directory get directory => Directory(path);
+  String? rootHash;
+  Star? get root => Star(this, hash: rootHash!);
+  set root(Star? value) => rootHash = value?.hash;
+  String? currentStarHash;
+  Star? get currentStar => Star(this, hash: currentStarHash!);
+  set currentStar(Star? value) => currentStarHash = value?.hash;
+  String get constellationPath => "$path/.constellation";
+  Directory get constellationDirectory => Directory(constellationPath);
 
-  String get planetPath {
-    return "$path/.planet";
-  }
-
-  Planet(this.path) {
-    _insurePlanetDirectory();
-  }
-
-  void _insurePlanetDirectory() {
-    if (!(Directory(planetPath).existsSync())) {
-      Directory(planetPath).createSync();
-      if (Platform.isWindows) {
-        Process.runSync('attrib', ['+h', planetPath]);
-      }
-    }
-  }
-}
-
-/// # `class` Tree
-/// ## A tree that represents a file's or directory's history in a forest.
-class Tree {
-  Planet planet;
-  String? name;
-  String associatedPath;
-
-  String get associatedEntry {
-    return associatedPath.split("/").last;
-  }
-
-  String get treePath {
-    return "${planet.planetPath}/$associatedEntry.tree";
-  }
-
-  /// The root leaf of the tree. Not the same as current leaf.
-  Leaf? root;
-
-  /// The leaf the tree is currently on. All commands that modify the tree will always modify the current leaf.
-  /// So if you want to view or change a leaf that is not the current leaf, you need to change the current leaf
-  /// to the leaf you want to view or change.
-  Leaf? currentLeaf;
-
-  Tree(this.associatedPath, this.planet, {this.name}) {
-    if (File(treePath).existsSync()) {
+  Constellation(this.path, {this.name}) {
+    path = path.fixPath();
+    if (constellationDirectory.existsSync()) {
       load();
-    } else {
-      _createRootLeaf();
-      save();
+      return;
+    } else if (name != null) {
+      _createConstellationDirectory();
+      _createRootStar();
+      return;
+    }
+    throw Exception(
+        "Constellation not found: $constellationPath. If the constellation does not exist, you must provide a name.");
+  }
+
+  void _createConstellationDirectory() {
+    constellationDirectory.createSync();
+    if (Platform.isWindows) {
+      Process.runSync('attrib', ['+h', constellationPath]);
     }
   }
 
-  void load() {
-    var file = File(treePath);
-    if (file.existsSync()) {
-      _fromJson(jsonDecode(file.readAsStringSync().decompress()));
-    }
-  }
-
-  void save() {
-    var file = File(treePath);
-    if (!file.existsSync()) {
-      file.createSync();
-    }
-    String json = jsonEncode(_toJson()).compress();
-    file.writeAsStringSync(json);
-  }
-
-  void jumpTo(String leafHash) {
-    _setCurrentLeaf(Leaf(this, hash: leafHash));
-  }
-
-  void jumpToRoot() {
-    _setCurrentLeaf(root!);
-  }
-
-  void jumpToChild(int childIndex) {
-    try {
-      _setCurrentLeaf(currentLeaf!.childern[childIndex]);
-    } catch (e) {
-      throw Exception("Invalid child index.");
-    }
-  }
-
-  void jumpToParent() {
-    _setCurrentLeaf(currentLeaf!.parent ?? root!);
-  }
-
-  void jumpToSibling(int siblingIndex) {
-    _setCurrentLeaf(currentLeaf!.parent!.childern[siblingIndex]);
-  }
-
-  void jumpToMostRecent() {
-    _setCurrentLeaf(root!.getMostRecentLeaf());
-  }
-
-  /// # `void` rollback()
-  /// ## Rollback the tree to the current leaf.
-  void rollback() {
-    currentLeaf?.unarchive();
-  }
-
-  /// # 'void` split(`String` `nameOfNewLeaf`)
-  /// ## Create a new leaf off of the current leaf.
-  void split(String nameOfNewLeaf) {
-    Leaf newLeaf = currentLeaf!.newLeaf(nameOfNewLeaf);
-    _setCurrentLeaf(newLeaf);
-  }
-
-  void _setCurrentLeaf(Leaf leaf) {
-    currentLeaf = leaf;
+  void _createRootStar() {
+    root = Star(this, name: "Initial Star");
+    currentStar = root;
     save();
   }
 
-  void _fromJson(Map<String, dynamic> json) {
+  String generateUniqueStarHash() {
+    while (true) {
+      String hash = generateUUID();
+      if (!(File(getStarPath(hash)).existsSync())) {
+        return hash;
+      }
+    }
+  }
+
+  String getStarPath(String hash) => "$constellationPath/$hash.star";
+
+  ZipFileEncoder createArchive(String hash) {
+    var archive = ZipFileEncoder();
+    if (File(getStarPath(hash)).existsSync()) {
+      archive.open(getStarPath(hash));
+      return archive;
+    }
+    archive.create(getStarPath(hash));
+    for (FileSystemEntity entity in directory.listSync()) {
+      if (entity is File) {
+        if (entity.path.endsWith(".star")) {
+          continue;
+        }
+        archive.addFile(entity);
+      } else if (entity is Directory) {
+        if (entity.path.endsWith(".constellation")) {
+          continue;
+        }
+        archive.addDirectory(entity);
+      }
+    }
+    return archive;
+  }
+
+  Archive getArchive(String hash) {
+    final inputStream = InputFileStream(getStarPath(hash));
+    final archive = ZipDecoder().decodeBuffer(inputStream);
+    return archive;
+  }
+
+  void save() {
+    File file = File("$constellationPath/starmap");
+    file.createSync();
+    file.writeAsStringSync(jsonEncode(toJson()));
+  }
+
+  void load() {
+    File file = File("$constellationPath/starmap");
+    if (file.existsSync()) {
+      fromJson(jsonDecode(file.readAsStringSync()));
+    }
+  }
+
+  void fromJson(Map<String, dynamic> json) {
     name = json["name"];
-    root = Leaf(this, hash: json["root"]);
-    currentLeaf = Leaf(this, hash: json["current"]);
+    rootHash = json["rootHash"];
+    currentStarHash = json["currentStarHash"];
   }
 
-  Map<String, dynamic> _toJson() {
-    return {"name": name, "root": root!.hash, "current": currentLeaf!.hash};
-  }
+  Map<String, dynamic> toJson() =>
+      {"name": name, "rootHash": rootHash, "currentStarHash": currentStarHash};
 
-  void _createRootLeaf() {
-    root = Leaf(this, name: "Initial Leaf");
-    currentLeaf = root!;
-  }
-
-  void printTree() {
+  void showMap() {
     AnsiX.printTreeView((root?.getReadableTree()),
         theme: AnsiTreeViewTheme(
           showListItemIndex: false,
@@ -164,168 +123,100 @@ class Tree {
   }
 }
 
-/// # `Leaf`
-/// ## A leaf in a tree that represents a point in time in a Tree.
-class Leaf {
-  Tree tree;
-  Seed? seed;
-  String? hash;
+class Star {
+  Constellation constellation;
   String? name;
-  late DateTime timeCreated;
-  Leaf? parent;
-  List<Leaf> childern = [];
-
-  Uint8List? bytes;
-
-  Leaf(this.tree, {this.hash, this.name, this.parent}) {
-    if (hash != null && name == null) {
-      load();
-    } else if (hash == null && name != null) {
-      timeCreated = DateTime.now();
+  String? hash;
+  DateTime? createdAt;
+  List<String> children = [];
+  Star(this.constellation, {this.name, this.hash}) {
+    if (name != null && hash == null) {
       _create();
+      save();
+    } else if (name == null && hash != null) {
+      load();
     }
-    throw Exception(
-        "Leaf must have either a hash to load from, or a name to create.");
   }
 
   void _create() {
-    while (true) {
-      hash = generateUUID();
-      if (!(File("${tree.associatedPath}/$hash.leaf").existsSync())) {
-        break;
+    createdAt = DateTime.now();
+    hash = constellation.generateUniqueStarHash();
+  }
+
+  String createChild(String name) {
+    Star star = Star(constellation, name: name);
+    children.add(star.hash!);
+    return star.hash!;
+  }
+
+  Star? getChildStar({String? hash, int? index}) {
+    if (hash == null && index != null) {
+      try {
+        return Star(constellation, hash: children[index]);
+      } catch (e) {
+        return null;
       }
+    } else if (hash != null) {
+      if (!(children.contains(hash))) {
+        throw Exception(
+            "Star not found: $hash. Either the star does not exist or it is not a child of this star.");
+      }
+      return Star(constellation, hash: hash);
     }
-    seed = Seed(tree, path: tree.associatedPath);
-    seed?.archive();
-    save();
+    throw Exception("Must provide either a hash or an index for a child star.");
+  }
+
+  void save() {
+    final archive = constellation.createArchive(hash!);
+    String data = _generateStarFileData();
+    ArchiveFile file = ArchiveFile("star", data.length, data);
+    archive.addArchiveFile(file);
+    archive.closeSync();
   }
 
   void load() {
-    var file = File("${tree.associatedPath}/$hash.leaf");
-    if (file.existsSync()) {
-      String json = file.readAsStringSync().decompress();
-      Map<String, dynamic> data = jsonDecode(json);
-      _fromJson(data);
-    }
+    final archive = constellation.getArchive(hash!);
+    ArchiveFile? file = archive.findFile("star");
+    _fromStarFileData(utf8.decode(file!.content));
   }
 
-  Leaf newLeaf(String name) {
-    Leaf newLeaf = Leaf(tree, name: name, parent: this);
-    childern.add(newLeaf);
-    save();
-    return newLeaf;
+  void extract() {
+    extractFileToDisk(constellation.getStarPath(hash!), constellation.path);
   }
 
-  /// # `Future<void>` save() async
-  /// ## Save the leaf to disk.
-  /// First, Arceus will archive the associated file and then save the leaf to disk.
-  void save() async {
-    String json = jsonEncode(toJson()).compress();
-    if (!(Directory("${Directory.current.path}/.arceus").existsSync())) {
-      Directory("${Directory.current.path}/.arceus").createSync();
-    }
-    var file = File("${Directory.current.path}/.arceus/$hash.leaf");
-    if (!file.existsSync()) {
-      file.createSync();
-    }
-    file.writeAsStringSync(json);
-    for (Leaf child in childern) {
-      child.save();
-    }
-  }
-
-  void _fromJson(Map<String, dynamic> json) {
-    name = json["name"];
-    seed = Seed(tree, hash: json["seed"]);
-    timeCreated = DateTime.parse(json["time"]);
-    List<dynamic> children = json["children"];
-    for (dynamic child in children) {
-      childern.add(Leaf(tree, hash: child));
-    }
-    bytes = utf8.encode(json["bytes"]);
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      "name": name,
-      "seed": seed?.hash,
-      "time": timeCreated.toString(),
-      "children": childern.map((e) => e.hash).toList(),
-      "bytes": utf8.decode(bytes!.toList())
-    };
+  void _fromStarFileData(String data) {
+    fromJson(jsonDecode(data));
   }
 
   Map<String, dynamic> getReadableTree() {
     Map<String, dynamic> list = {};
     String displayName = "$name - $hash";
     list[displayName] = {};
-    for (int x = 1; x < ((childern.length)); x++) {
-      list[displayName].addAll(childern[x].toJson());
+    for (int x = 1; x < ((children.length)); x++) {
+      list[displayName]
+          .addAll(getChildStar(hash: children[x])!.getReadableTree());
     }
-    list.addAll(childern[0].getReadableTree());
+    if (children.isNotEmpty) {
+      list.addAll(getChildStar(index: 0)!.getReadableTree());
+    }
     return list;
   }
 
-  void unarchive() {
-    seed?.unarchive();
+  String _generateStarFileData() {
+    return jsonEncode(toJson());
   }
 
-  Leaf getMostRecentLeaf() {
-    Leaf recent = this;
-    if (childern.isEmpty) {
-      return recent;
-    }
-    for (Leaf child in childern) {
-      if (child.timeCreated.isAfter(recent.timeCreated)) {
-        recent = child;
-      }
-    }
-    return recent.getMostRecentLeaf();
-  }
-}
-
-class Seed {
-  String? hash;
-  String? path;
-  Tree tree;
-
-  Seed(this.tree, {this.path, this.hash}) {
-    if (hash == null && path != null) {
-      _figureOutHash();
-      archive();
+  void fromJson(Map<String, dynamic> json) {
+    name = json["name"];
+    hash = json["hash"];
+    createdAt = DateTime.tryParse(json["createdAt"]);
+    try {
+      children = json["children"];
+    } catch (e) {
+      children = [];
     }
   }
 
-  String get seedPath => "${tree.planet.planetPath}/seeds/$hash.seed";
-
-  void _figureOutHash() {
-    while (true) {
-      hash = generateUUID();
-      if (!(File(seedPath).existsSync())) {
-        break;
-      }
-    }
-  }
-
-  void archive() {
-    var archive = ZipFileEncoder();
-    archive.create(seedPath);
-    if (File(path!).existsSync()) {
-      var file = File(path!);
-      archive.addFile(file);
-    } else if (Directory(path!).existsSync()) {
-      var dir = Directory(path!);
-      for (var entity in dir.listSync()) {
-        if (entity is File) {
-          archive.addFile(entity);
-        } else if (entity is Directory) {
-          archive.addDirectory(entity);
-        }
-      }
-    }
-  }
-
-  void unarchive() {
-    extractFileToDisk(seedPath, "out");
-  }
+  Map<String, dynamic> toJson() =>
+      {"name": name, "hash": hash, "createdAt": createdAt, "children": []};
 }

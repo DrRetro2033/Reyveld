@@ -68,9 +68,4 @@ class Arceus {
   void printGames() {
     AnsiX.printTreeView(_listGames());
   }
-
-  String fixPath(String path) {
-    path = path.replaceAll("\"", "");
-    return path.replaceAll("\\", "/");
-  }
 }

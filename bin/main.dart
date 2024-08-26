@@ -13,25 +13,56 @@ var arceus = Arceus();
 /// Runs the CLI.
 Future<dynamic> main(List<String> arguments) async {
   var runner = CommandRunner('arceus', "The ultimate save manager.");
-  runner.addCommand(OpenCommand());
+  runner.addCommand(ConstellationCommands());
   if (arguments.isNotEmpty) {
     return await runner.run(arguments);
   }
 }
 
-class OpenCommand extends Command {
+class ConstellationCommands extends Command {
   @override
-  String get description => "Open a Planet.";
+  String get name => "const";
+  @override
+  String get description => "Commands for Constellations.";
+
+  ConstellationCommands() {
+    addSubcommand(CreateConstellationCommand());
+    addSubcommand(ShowMapConstellationCommand());
+  }
+}
+
+class CreateConstellationCommand extends Command {
+  @override
+  String get description =>
+      "Creates a new constellation at a given, or current, path.";
 
   @override
-  String get name => "open";
+  String get name => "create";
 
-  OpenCommand() {
-    argParser.addOption("path", abbr: "p");
+  CreateConstellationCommand() {
+    argParser.addOption("path", abbr: "p", defaultsTo: Directory.current.path);
+    argParser.addOption("name", abbr: "n");
   }
 
   @override
   void run() {
-    Planet(argResults?["path"]);
+    Constellation(argResults?["path"], name: argResults?["name"]);
+  }
+}
+
+class ShowMapConstellationCommand extends Command {
+  @override
+  String get description => "Shows the map of a constellation.";
+
+  @override
+  String get name => "map";
+
+  ShowMapConstellationCommand() {
+    argParser.addOption("path", abbr: "p", defaultsTo: Directory.current.path);
+  }
+
+  @override
+  void run() {
+    Constellation(argResults?["path"]).showMap();
   }
 }
