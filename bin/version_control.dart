@@ -38,6 +38,10 @@ class Constellation {
     path = path.fixPath();
     if (constellationDirectory.existsSync()) {
       load();
+      if (currentStarHash == null) {
+        currentStarHash = rootHash;
+        save();
+      }
       return;
     } else if (name != null) {
       _createConstellationDirectory();
@@ -127,6 +131,12 @@ class Constellation {
     } else if (to is Star) {
       currentStar = to;
     }
+  }
+
+  bool checkForDifferences(String? hash) {
+    hash ??= currentStarHash;
+    Star star = Star(this, hash: hash);
+    return star.checkForDifferences();
   }
 }
 

@@ -1,7 +1,6 @@
 import "package:cli_spin/cli_spin.dart";
 import "package:yaml/yaml.dart";
 import "extensions.dart";
-import "cli.dart";
 import "dart:io";
 import "dart:typed_data";
 
@@ -35,20 +34,18 @@ import "dart:typed_data";
 class FilePattern {
   static final Map<String, dynamic> _parsedPatterns =
       {}; // Patterns already parsed by Arceus.
-  YamlMap? _currentPattern;
+  YamlMap? _currentPattern; // The current pattern being parsed.
   FilePattern(String path) {
     path = path.fixPath();
     _currentPattern = _getPattern(path);
   }
 
-  Map<String, dynamic> read(File file) {
-    Uint8List data = file.readAsBytesSync();
+  Map<String, dynamic> read(Uint8List data) {
     return _read(data.buffer.asByteData(), _currentPattern!, 0);
   }
 
   Map<String, dynamic> _read(ByteData data, YamlMap pattern, int address) {
     final spinner = CliSpin(
-            indent: Cli.indent,
             text: "Parsing ${_currentPattern!["path"]}",
             spinner: CliSpinners.star)
         .start();
@@ -145,7 +142,6 @@ class FilePattern {
       }
     }
     spinner.success("Parsed successfully.");
-    Cli.console.writeLine(parsedData);
     return parsedData;
   }
 

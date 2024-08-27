@@ -12,6 +12,11 @@ import "version_control.dart";
 /// Runs the CLI.
 Future<dynamic> main(List<String> arguments) async {
   var runner = CommandRunner('arceus', "The ultimate save manager.");
+  runner.argParser.addOption(
+    "app-path",
+    abbr: "a",
+    defaultsTo: Directory.current.path,
+  );
   runner.addCommand(ConstellationCommands());
   runner.addCommand(PatternCommands());
   if (arguments.isNotEmpty) {
@@ -42,8 +47,8 @@ class CreateConstellationCommand extends Command {
   String get name => "create";
 
   CreateConstellationCommand() {
-    argParser.addOption("path", abbr: "p", defaultsTo: Directory.current.path);
-    argParser.addOption("name", abbr: "n");
+    argParser.addOption("path", abbr: "p", mandatory: true);
+    argParser.addOption("name", abbr: "n", mandatory: true);
   }
 
   @override
@@ -60,7 +65,7 @@ class ShowMapConstellationCommand extends Command {
   String get name => "map";
 
   ShowMapConstellationCommand() {
-    argParser.addOption("path", abbr: "p", defaultsTo: Directory.current.path);
+    argParser.addOption("path", abbr: "p", mandatory: true);
   }
 
   @override
@@ -78,7 +83,7 @@ class CheckForDifferencesCommand extends Command {
   String get name => "check";
 
   CheckForDifferencesCommand() {
-    argParser.addOption("path", abbr: "p", defaultsTo: Directory.current.path);
+    argParser.addOption("path", abbr: "p", mandatory: true);
     argParser.addOption("star", abbr: "s");
   }
 
@@ -89,13 +94,7 @@ class CheckForDifferencesCommand extends Command {
             text:
                 "Checking for differences between current directory and provided star...")
         .start();
-    String? hash;
-    if (argResults?["star"] == null) {
-      hash = constellation.currentStarHash;
-    } else {
-      hash = argResults?["star"];
-    }
-    bool result = Star(constellation, hash: hash).checkForDifferences();
+    bool result = constellation.checkForDifferences(argResults?["star"]);
     if (!result) {
       spinner.success("No differences found.");
     } else {
@@ -114,17 +113,22 @@ class BuildStarFileCommand extends Command {
   String get name => "file";
 
   BuildStarFileCommand() {
-    argParser.addOption("path", abbr: "p", defaultsTo: Directory.current.path);
+    argParser.addOption("path", abbr: "p", mandatory: true);
     argParser.addOption("star", abbr: "s");
-    argParser.addOption("file", abbr: "f", defaultsTo: Directory.current.path);
+    argParser.addOption("file", abbr: "f", mandatory: true);
   }
 
   @override
   Future<Uint8List> run() async {
     Constellation constellation = Constellation(argResults?["path"]);
-    Uint8List result = Star(constellation, hash: argResults?["star"])
-        .buildFile(argResults?["file"])
-        .data;
+    String? hash;
+    if (argResults?["star"] == null) {
+      hash = constellation.currentStarHash;
+    } else {
+      hash = argResults?["star"];
+    }
+    Uint8List result =
+        Star(constellation, hash: hash).buildFile(argResults?["file"]).data;
     return result;
   }
 }
@@ -155,7 +159,7 @@ class ReadPatternCommand extends Command {
 
   @override
   Future<String> run() async {
-    return jsonEncode(
-        FilePattern(argResults?["pattern"]).read(File(argResults?["file"])));
+    return jsonEncode(FilePattern(argResults?["pattern"])
+        .read(File(argResults?["file"]).readAsBytesSync()));
   }
 }
