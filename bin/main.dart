@@ -1,12 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import "package:args/command_runner.dart";
-import 'arceus.dart';
+import 'package:cli_spin/cli_spin.dart';
 import 'file_pattern.dart';
 import "version_control.dart";
-
-var arceus = Arceus();
 
 /// # `void` main(List<String> arguments)
 /// ## Main entry point.
@@ -29,6 +28,8 @@ class ConstellationCommands extends Command {
   ConstellationCommands() {
     addSubcommand(CreateConstellationCommand());
     addSubcommand(ShowMapConstellationCommand());
+    addSubcommand(CheckForDifferencesCommand());
+    addSubcommand(BuildStarFileCommand());
   }
 }
 
@@ -68,6 +69,66 @@ class ShowMapConstellationCommand extends Command {
   }
 }
 
+class CheckForDifferencesCommand extends Command {
+  @override
+  String get description =>
+      "Checks for differences between a star and the current file.";
+
+  @override
+  String get name => "check";
+
+  CheckForDifferencesCommand() {
+    argParser.addOption("path", abbr: "p", defaultsTo: Directory.current.path);
+    argParser.addOption("star", abbr: "s");
+  }
+
+  @override
+  Future<bool> run() async {
+    Constellation constellation = Constellation(argResults?["path"]);
+    final spinner = CliSpin(
+            text:
+                "Checking for differences between current directory and provided star...")
+        .start();
+    String? hash;
+    if (argResults?["star"] == null) {
+      hash = constellation.currentStarHash;
+    } else {
+      hash = argResults?["star"];
+    }
+    bool result = Star(constellation, hash: hash).checkForDifferences();
+    if (!result) {
+      spinner.success("No differences found.");
+    } else {
+      spinner.fail("Differences found.");
+    }
+    return result;
+  }
+}
+
+class BuildStarFileCommand extends Command {
+  @override
+  String get description =>
+      "Gets a file from the constellation from a specific point in time.";
+
+  @override
+  String get name => "file";
+
+  BuildStarFileCommand() {
+    argParser.addOption("path", abbr: "p", defaultsTo: Directory.current.path);
+    argParser.addOption("star", abbr: "s");
+    argParser.addOption("file", abbr: "f", defaultsTo: Directory.current.path);
+  }
+
+  @override
+  Future<Uint8List> run() async {
+    Constellation constellation = Constellation(argResults?["path"]);
+    Uint8List result = Star(constellation, hash: argResults?["star"])
+        .buildFile(argResults?["file"])
+        .data;
+    return result;
+  }
+}
+
 class PatternCommands extends Command {
   @override
   String get name => "pattern";
@@ -94,6 +155,7 @@ class ReadPatternCommand extends Command {
 
   @override
   Future<String> run() async {
-    return jsonEncode(FilePattern(argResults?["pattern"]).read(File(argResults?["file"])));
+    return jsonEncode(
+        FilePattern(argResults?["pattern"]).read(File(argResults?["file"])));
   }
 }
