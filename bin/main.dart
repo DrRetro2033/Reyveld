@@ -128,7 +128,8 @@ class BuildStarFileCommand extends Command {
       hash = argResults?["star"];
     }
     Uint8List result =
-        Star(constellation, hash: hash).buildFile(argResults?["file"]).data;
+        Star(constellation, hash: hash).buildFile(argResults?["file"]).data ??
+            Uint8List(0);
     return result;
   }
 }

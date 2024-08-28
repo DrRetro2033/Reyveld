@@ -11,8 +11,13 @@ import 'extensions.dart';
 
 class Galaxy {}
 
+/// # `class` Constellation
+/// ## Represents a constellation.
+/// Is similar to how a normal Git repository works, with an initial commit acting as the root star.
+/// However, the plan is for Arceus to be able to do more with stars in the future,
+/// so just using Git as a backbone would limit the scope of this project.
 class Constellation {
-  String? name;
+  String? name; // The name of the constellation.
   String path; // The path to the folder this constellation is in.
   Directory get directory => Directory(
       path); // Fetches a directory object from the path this constellation is in.
@@ -52,6 +57,8 @@ class Constellation {
         "Constellation not found: $constellationPath. If the constellation does not exist, you must provide a name.");
   }
 
+  /// # `void` _createConstellationDirectory()
+  /// ## Creates the directory the constellation stores its data in.
   void _createConstellationDirectory() {
     constellationDirectory.createSync();
     if (Platform.isWindows) {
@@ -74,10 +81,16 @@ class Constellation {
     }
   }
 
+  /// # `String` getStarPath(`String` hash)
+  /// ## Returns a path for a star with the given hash.
   String getStarPath(String hash) => "$constellationPath/$hash.star";
 
   // ============================================================================
   // These methods are for saving and loading the constellation.
+
+  /// # `void` save()
+  /// ## Saves the constellation to disk.
+  /// This includes the root star and the current star hashes.
   void save() {
     File file = File("$constellationPath/starmap");
     file.createSync();
@@ -107,8 +120,7 @@ class Constellation {
   /// So, if for example the constellation is at `C:/Example/` and the file is at `C:/Example/example.txt`,
   /// the filename should be `example.txt`.
   DiffFile getDiffFile(String filename) {
-    return DiffFile(
-        "$path/$filename", File("$path/$filename").readAsBytesSync());
+    return DiffFile(file: File("$path/$filename"));
   }
 
   /// # `void` showMap()
@@ -140,6 +152,11 @@ class Constellation {
   }
 }
 
+/// # `class` Star
+/// ## Represents a star in the constellation.
+/// Stars can be thought as an analog to Git commits.
+/// They are saved as a `.star` file in the constellation's directory.
+/// A `.star` file literally is just a ZIP file, so you can open them in 7Zip or WinRAR.
 class Star {
   Constellation constellation;
   String? name; // The name of the star.
@@ -215,12 +232,10 @@ class Star {
 
   DiffFile buildFile(String filename) {
     if (parent != null) {
-      return DiffFile(filename,
-              parent!.archive.findFile(filename)!.content as Uint8List) +
+      return DiffFile(file: archive.findFile(filename)) +
           parent!.buildFile(filename);
     } else {
-      return DiffFile(
-          filename, archive.findFile(filename)!.content as Uint8List);
+      return DiffFile(file: archive.findFile(filename));
     }
   }
 
@@ -235,10 +250,6 @@ class Star {
 
   ZipFileEncoder _createArchive(String hash) {
     var archive = ZipFileEncoder();
-    if (File(constellation.getStarPath(hash)).existsSync()) {
-      archive.open(constellation.getStarPath(hash));
-      return archive;
-    }
     archive.create(constellation.getStarPath(hash));
     for (FileSystemEntity entity in constellation.directory.listSync()) {
       if (entity is File) {
@@ -253,6 +264,8 @@ class Star {
         archive.addDirectory(entity);
       }
     }
+    final file = File(constellation.getStarPath(hash));
+    file.statSync();
     return archive;
   }
 
@@ -274,6 +287,10 @@ class Star {
     return list;
   }
 
+  /// # `String` _generateStarFileData()
+  /// ## Generates the data for the `star` file inside the `.star`.
+  /// Inside a `.star` file, there is a single file just called `star` with no extension.
+  /// This file contains the star's data in JSON format.
   String _generateStarFileData() {
     return jsonEncode(toJson());
   }
@@ -309,10 +326,7 @@ class Star {
     spinner.success("There are no new files.");
     for (ArchiveFile file in archive.files) {
       if (file.isFile && file.name != "star") {
-        DiffFile diff = DiffFile(
-          file.name,
-          file.content as Uint8List,
-        );
+        DiffFile diff = DiffFile(file: file);
         DiffFile other = constellation.getDiffFile(file.name);
         if (diff != other) {
           return true;
@@ -326,55 +340,88 @@ class Star {
       {"name": name, "createdAt": createdAt.toString(), "children": []};
 }
 
+/// # `class` DiffFile
+/// ## A simple object that contains a file's path and its contents.
+/// It allows for easy diffing and masking.
+/// The class uses operators for quickly checking for differences, but also creating masks.
+///
+/// Checking if Different:
+/// ```dart
+/// DiffFile diff = DiffFile(file: File("example.txt"));
+/// DiffFile other = DiffFile(file: File("example.txt"));
+/// if (diff != other) {
+///   print("Different");
+/// }
+/// ```
+/// Creating a Mask:
+/// ```dart
+/// DiffFile diff = DiffFile(file: File("example.txt"));
+/// DiffFile other = DiffFile(file: File("example.txt"));
+/// DiffFile mask = diff - other;
+/// ```
+/// Applying a Mask:
+/// ```dart
+///  DiffFile diff = DiffFile(file: File("example.txt"));
+///  DiffFile other = DiffFile(file: File("example.txt"));
+///  DiffFile built = diff + other;
+/// ```
 class DiffFile {
-  String path;
-  Uint8List data = Uint8List(0);
-  DiffFile(this.path, this.data);
+  String? path;
+  Uint8List? data;
+  DiffFile({Object? file, this.path, this.data}) {
+    if (file is File) {
+      path = file.path;
+      data = file.readAsBytesSync();
+    } else if (file is ArchiveFile) {
+      path = file.name;
+      data = file.content as Uint8List;
+    }
+  }
 
   DiffFile _createDiffMask(DiffFile other) {
     final spinner =
-        CliSpin(text: "Creating diff mask for ${path.split("/").last}...")
+        CliSpin(text: "Creating diff mask for ${path!.split("/").last}...")
             .start();
     Uint8List diff = Uint8List(0);
     int x = 0;
-    while (x < data.length) {
-      if (data[x] != other.data[x]) {
-        diff.add(data[x]);
+    while (x < data!.length) {
+      if (data![x] != other.data![x]) {
+        diff.add(data![x]);
       } else {
         diff.add(0);
       }
       x += 1;
     }
-    if (x < other.data.length) {
-      diff.addAll(other.data.sublist(x));
+    if (x < other.data!.length) {
+      diff.addAll(other.data!.sublist(x));
     }
-    spinner.success("Created diff mask for ${path.split("/").last}.");
-    return DiffFile(path, diff);
+    spinner.success("Created diff mask for ${path!.split("/").last}.");
+    return DiffFile(path: path, data: diff);
   }
 
   DiffFile _buildDiffFile(DiffFile other) {
     Uint8List diff = Uint8List(0);
     int x = 0;
-    while (x < data.length) {
-      if (other.data[x] == 0) {
-        diff.add(data[x]);
+    while (x < data!.length) {
+      if (other.data![x] == 0) {
+        diff.add(data![x]);
       } else {
-        diff.add(other.data[x]);
+        diff.add(other.data![x]);
       }
       x += 1;
     }
-    if (x < other.data.length) {
-      diff.addAll(other.data.sublist(x));
+    if (x < other.data!.length) {
+      diff.addAll(other.data!.sublist(x));
     }
-    return DiffFile(path, diff);
+    return DiffFile(path: path, data: diff);
   }
 
   @override
   int get hashCode => path.hashCode ^ data.hashCode;
 
   bool _checkForDifferences(DiffFile other) {
-    for (int x = 0; x < data.length; x++) {
-      if (data[x] != other.data[x]) {
+    for (int x = 0; x < data!.length; x++) {
+      if (data![x] != other.data![x]) {
         return true;
       }
     }
@@ -387,13 +434,13 @@ class DiffFile {
       return false;
     }
     final spinner = CliSpin(
-      text: "Checking ${path.split("/").last}...",
+      text: "Checking ${path?.split("/").last}...",
     ).start();
-    if (data.length != other.data.length && !_checkForDifferences(other)) {
-      spinner.fail("${path.split("/").last} is different.");
+    if (data?.length != other.data?.length && !_checkForDifferences(other)) {
+      spinner.fail("${path?.split("/").last} is different.");
       return false;
     }
-    spinner.success("${path.split("/").last} has not changed.");
+    spinner.success("${path?.split("/").last} has not changed.");
     return true;
   }
 
