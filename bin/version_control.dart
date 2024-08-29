@@ -114,15 +114,6 @@ class Constellation {
       {"name": name, "rootHash": rootHash, "currentStarHash": currentStarHash};
   // ============================================================================
 
-  /// # `DiffFile` getDiffFile(`String` filename)
-  /// ## Returns a `DiffFile` object with the contents of the given file currently.
-  /// The filename must be relative to the constellation's path.
-  /// So, if for example the constellation is at `C:/Example/` and the file is at `C:/Example/example.txt`,
-  /// the filename should be `example.txt`.
-  DiffFile getDiffFile(String filename) {
-    return DiffFile(file: File("$path/$filename"));
-  }
-
   /// # `void` showMap()
   /// ## Shows the map of the constellation.
   /// This is a tree view of the constellation's stars and their children.
@@ -137,6 +128,14 @@ class Constellation {
         ));
   }
 
+  operator [](Object to) {
+    if (to is String && doesStarExist(to)) {
+      currentStar = Star(this, hash: to);
+    } else if (to is Star) {
+      currentStar = to;
+    }
+  }
+
   operator >>(Object to) {
     if (to is String && doesStarExist(to)) {
       currentStar = Star(this, hash: to);
@@ -148,7 +147,7 @@ class Constellation {
   bool checkForDifferences(String? hash) {
     hash ??= currentStarHash;
     Star star = Star(this, hash: hash);
-    return star.checkForDifferences();
+    return Dossier(star).checkForDifferences();
   }
 }
 
@@ -213,6 +212,15 @@ class Star {
     throw Exception("Must provide either a hash or an index for a child star.");
   }
 
+  /// # `Star` getParentStar()
+  /// ## Returns the parent star.
+  Star? getParentStar() {
+    if (parentHash == null) return null;
+    return Star(constellation, hash: parentHash);
+  }
+
+  /// # `void` save()
+  /// ## Saves the star to disk.
   void save() {
     final encoder = _createArchive(hash!);
     String data = _generateStarFileData();
@@ -221,6 +229,8 @@ class Star {
     encoder.closeSync();
   }
 
+  /// # `void` load()
+  /// ## Loads the star from disk.
   void load() {
     ArchiveFile? file = archive.findFile("star");
     _fromStarFileData(utf8.decode(file!.content));
@@ -228,15 +238,6 @@ class Star {
 
   void extract() {
     extractFileToDisk(constellation.getStarPath(hash!), constellation.path);
-  }
-
-  DiffFile buildFile(String filename) {
-    if (parent != null) {
-      return DiffFile(file: archive.findFile(filename)) +
-          parent!.buildFile(filename);
-    } else {
-      return DiffFile(file: archive.findFile(filename));
-    }
   }
 
   Archive getArchive() {
@@ -273,6 +274,9 @@ class Star {
     fromJson(jsonDecode(data));
   }
 
+  /// # `Map<String, dynamic>` getReadableTree()
+  /// ## Returns a readable tree of the star.
+  /// This is useful for debugging.
   Map<String, dynamic> getReadableTree() {
     Map<String, dynamic> list = {};
     String displayName = "$name - $hash";
@@ -295,6 +299,8 @@ class Star {
     return jsonEncode(toJson());
   }
 
+  /// # `void` fromJson(`Map<String, dynamic>` json)
+  /// ## Converts the JSON data into a `Star` object.
   void fromJson(Map<String, dynamic> json) {
     name = json["name"];
     createdAt = DateTime.tryParse(json["createdAt"]);
@@ -305,150 +311,245 @@ class Star {
     }
   }
 
+  /// # `Map<String, dynamic>` toJson()
+  /// ## Converts the `Star` object into a JSON object.
+  Map<String, dynamic> toJson() =>
+      {"name": name, "createdAt": createdAt.toString(), "children": _children};
+}
+
+/// # `class` `Dossier`
+/// ## A wrapper for the internal and external file systems.
+/// Acts as a wrapper for the internal file system (i.e. Inside a `.star` file) and the external file system (i.e. Inside the current directory).
+class Dossier {
+  Star star;
+
+  Dossier(this.star);
+
   /// # `bool` checkForDifferences()
   /// ## Checks to see if the star's contents is different from the current directory.
   bool checkForDifferences() {
-    final spinner = CliSpin(text: "Checking for new files...").start();
+    bool check =
+        false; // The main check. If any of the preceding checks fail, this will be true, which means that there is a difference.
+
+    // There are four checks that need to be done:
+    // 1. Check for new files.
+    // 2. Check for removed files.
+    // 3. Check for moved files.
+    // 4. Check for changed files.
+
+    // Check for new files.
+    var spinner = CliSpin(text: "Checking for new files...").start();
+    List<String> newFiles = [];
     for (FileSystemEntity entity
-        in constellation.directory.listSync(recursive: true)) {
+        in star.constellation.directory.listSync(recursive: true)) {
       if (entity is File &&
           (!entity.path.endsWith(".star") &&
               !entity.path.endsWith("starmap"))) {
-        if (archive.findFile(entity.path
-                .replaceFirst("${constellation.path}\\", "")
-                .fixPath()) ==
+        if (star.archive
+                .findFile(entity.path.makeRelPath(star.constellation.path)) ==
             null) {
-          spinner.fail("New file found: ${entity.path}");
-          return true;
+          newFiles.add(entity.path.makeRelPath(star.constellation.path));
         }
       }
     }
-    spinner.success("There are no new files.");
-    for (ArchiveFile file in archive.files) {
-      if (file.isFile && file.name != "star") {
-        DiffFile diff = DiffFile(file: file);
-        DiffFile other = constellation.getDiffFile(file.name);
-        if (diff != other) {
-          return true;
-        }
+    if (newFiles.isNotEmpty) {
+      spinner.fail("There is ${newFiles.length} new files.");
+      for (String file in newFiles) {
+        print(file);
       }
+      check = true;
+    } else {
+      spinner.success("There are no new files.");
     }
-    return false;
-  }
 
-  Map<String, dynamic> toJson() =>
-      {"name": name, "createdAt": createdAt.toString(), "children": []};
+    // Check for removed files.
+    spinner = CliSpin(text: "Checking for removed files...").start();
+    List<String> removedFiles = [];
+    for (ArchiveFile file in star.archive.files) {
+      if (file.isFile && file.name != "star") {
+        if (!File("${star.constellation.path}/${file.name}").existsSync()) {
+          removedFiles.add(file.name);
+        }
+      }
+    }
+    if (removedFiles.isNotEmpty) {
+      spinner.fail("There is ${removedFiles.length} removed files.");
+      for (String file in removedFiles) {
+        print(file);
+      }
+      check = true;
+    } else {
+      spinner.success("There are no removed files.");
+    }
+
+    // Check for moved files. Done after new and removed files, as they can be used here to make a cross reference.
+    spinner = CliSpin(text: "Checking for moved files...").start();
+    List<String> movedFiles = [];
+    for (String file in removedFiles) {
+      if (newFiles.any((e) => e.getFilename() == file.getFilename())) {
+        ExternalFile externalFile = ExternalFile(
+            "${star.constellation.path}/${newFiles.firstWhere((e) => e.getFilename() == file.getFilename())}");
+        InternalFile internalFile = InternalFile(star, file);
+        if (externalFile == internalFile) {
+          movedFiles.add(file);
+        }
+      }
+    }
+    if (movedFiles.isNotEmpty) {
+      spinner.fail("There is ${movedFiles.length} moved files.");
+      for (String file in movedFiles) {
+        print(file);
+      }
+      check = true;
+    } else {
+      spinner.success("There are no moved files.");
+    }
+
+    // Check for changed files.
+    for (ArchiveFile file in star.archive.files) {
+      if (file.isFile &&
+          file.name != "star" &&
+          !removedFiles.contains(file.name)) {
+        DossierFile dossierFile = DossierFile(star, "star://${file.name}");
+        spinner =
+            CliSpin(text: "Checking for changes to: ${file.name}...").start();
+        if (dossierFile.hasChanged()) {
+          spinner.fail("${file.name} has changed");
+          check = true;
+        }
+        spinner.success("${file.name} has not changed");
+      }
+    }
+    return check;
+  }
 }
 
-/// # `class` DiffFile
-/// ## A simple object that contains a file's path and its contents.
-/// It allows for easy diffing and masking.
-/// The class uses operators for quickly checking for differences, but also creating masks.
-///
-/// Checking if Different:
-/// ```dart
-/// DiffFile diff = DiffFile(file: File("example.txt"));
-/// DiffFile other = DiffFile(file: File("example.txt"));
-/// if (diff != other) {
-///   print("Different");
-/// }
-/// ```
-/// Creating a Mask:
-/// ```dart
-/// DiffFile diff = DiffFile(file: File("example.txt"));
-/// DiffFile other = DiffFile(file: File("example.txt"));
-/// DiffFile mask = diff - other;
-/// ```
-/// Applying a Mask:
-/// ```dart
-///  DiffFile diff = DiffFile(file: File("example.txt"));
-///  DiffFile other = DiffFile(file: File("example.txt"));
-///  DiffFile built = diff + other;
-/// ```
-class DiffFile {
-  String? path;
-  Uint8List? data;
-  DiffFile({Object? file, this.path, this.data}) {
-    if (file is File) {
-      path = file.path;
-      data = file.readAsBytesSync();
-    } else if (file is ArchiveFile) {
-      path = file.name;
-      data = file.content as Uint8List;
+/// # `class` `DossierFile`
+/// ## A wrapper for the internal and external for a single file in both the internal and external file systems.
+class DossierFile {
+  Star star;
+  String path;
+  String? filename;
+  InternalFile? internalFile;
+  ExternalFile? externalFile;
+
+  DossierFile(this.star, this.path) {
+    if (path.startsWith(star.constellation.path)) {
+      filename = path.makeRelPath(star.constellation.path);
+    } else if (path.startsWith("star://")) {
+      filename = path.replaceFirst("star://", "");
+    } else {
+      throw Exception("Invalid path: $path");
     }
+    open();
   }
 
-  DiffFile _createDiffMask(DiffFile other) {
-    final spinner =
-        CliSpin(text: "Creating diff mask for ${path!.split("/").last}...")
-            .start();
-    Uint8List diff = Uint8List(0);
-    int x = 0;
-    while (x < data!.length) {
-      if (data![x] != other.data![x]) {
-        diff.add(data![x]);
-      } else {
-        diff.add(0);
-      }
-      x += 1;
-    }
-    if (x < other.data!.length) {
-      diff.addAll(other.data!.sublist(x));
-    }
-    spinner.success("Created diff mask for ${path!.split("/").last}.");
-    return DiffFile(path: path, data: diff);
+  /// # `void` open()
+  /// ## Opens the internal and external version of the file.
+  void open() {
+    externalFile = ExternalFile("${star.constellation.path}/${filename!}");
+    internalFile = InternalFile(star, filename!);
   }
 
-  DiffFile _buildDiffFile(DiffFile other) {
-    Uint8List diff = Uint8List(0);
-    int x = 0;
-    while (x < data!.length) {
-      if (other.data![x] == 0) {
-        diff.add(data![x]);
-      } else {
-        diff.add(other.data![x]);
-      }
-      x += 1;
-    }
-    if (x < other.data!.length) {
-      diff.addAll(other.data!.sublist(x));
-    }
-    return DiffFile(path: path, data: diff);
+  /// # `bool` hasChanged()
+  /// ## Checks to see if the star's contents is different from the current directory.
+  bool hasChanged() {
+    // ignore: unrelated_type_equality_checks
+    return internalFile != externalFile;
   }
+}
 
-  @override
-  int get hashCode => path.hashCode ^ data.hashCode;
-
-  bool _checkForDifferences(DiffFile other) {
-    for (int x = 0; x < data!.length; x++) {
-      if (data![x] != other.data![x]) {
+/// # `mixin` `CheckForDifferencesInData`
+/// ## A mixin to check for differences in data, for use in the `BaseFile` class.
+mixin CheckForDifferencesInData {
+  bool _check(Uint8List data1, Uint8List data2) {
+    if (data1.length != data2.length) {
+      return true;
+    }
+    for (int x = 0; x < data1.length; x++) {
+      if (data1[x] != data2[x]) {
         return true;
       }
     }
     return false;
   }
+}
+
+/// # `class` `BaseFile`
+/// ## A base class for internal and external files.
+/// Represents an internal file (i.e. inside a `.star` file) or an external file (i.e. inside the current directory).
+sealed class BaseFile with CheckForDifferencesInData {
+  String path;
+  Uint8List get data => Uint8List(0);
+  set data(Uint8List newData) {
+    throw UnimplementedError(
+        "Not implemented. Please implement in a subclass.");
+  }
+
+  BaseFile(this.path);
 
   @override
   operator ==(Object other) {
-    if (other is! DiffFile) {
-      return false;
+    if (other is BaseFile) {
+      return !_check(data, other.data);
     }
-    final spinner = CliSpin(
-      text: "Checking ${path?.split("/").last}...",
-    ).start();
-    if (data?.length != other.data?.length && !_checkForDifferences(other)) {
-      spinner.fail("${path?.split("/").last} is different.");
-      return false;
-    }
-    spinner.success("${path?.split("/").last} has not changed.");
-    return true;
+    return false;
   }
 
-  operator +(DiffFile other) {
-    return _buildDiffFile(other);
+  @override
+  int get hashCode => data.hashCode;
+}
+
+/// # `class` `InternalFile` extends `BaseFile`
+/// ## Represents an internal file (i.e. inside a `.star` file).
+class InternalFile extends BaseFile {
+  Star star;
+
+  @override
+  Uint8List get data => build();
+
+  @override
+  set data(Uint8List newData) {
+    if (star.archive.findFile(path) != null) {
+      throw Exception("You cannot set data for a existing file inside a star.");
+    }
+    star.archive.addFile(ArchiveFile(path, newData.length, newData));
   }
 
-  operator -(DiffFile other) {
-    return _createDiffMask(other);
+  InternalFile(this.star, super.path) {
+    if (star.getArchive().findFile(path) == null) {
+      throw Exception(
+          "File not found: $path. Please check the path and star and try again.");
+    }
+  }
+
+  Uint8List build() {
+    Star? currentStar = star.getParentStar();
+    Uint8List data = star.getArchive().findFile(path)?.content as Uint8List;
+    while (currentStar != null) {
+      Uint8List content =
+          currentStar.getArchive().findFile(path)?.content as Uint8List;
+      for (int x = 0; x < data.length; x++) {
+        if (data[x] == 0) {
+          data[x] = content[x];
+        }
+      }
+      currentStar = currentStar.getParentStar();
+    }
+    return data;
+  }
+}
+
+/// # `class` ExternalFile extends `BaseFile`
+/// ## Represents an external file (i.e. inside the current directory).
+class ExternalFile extends BaseFile {
+  ExternalFile(super.path);
+
+  @override
+  Uint8List get data => File(path).readAsBytesSync();
+
+  @override
+  set data(Uint8List newData) {
+    File(path).writeAsBytesSync(newData);
   }
 }

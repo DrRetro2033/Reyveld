@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import "package:args/command_runner.dart";
 import 'package:cli_spin/cli_spin.dart';
@@ -34,7 +33,7 @@ class ConstellationCommands extends Command {
     addSubcommand(CreateConstellationCommand());
     addSubcommand(ShowMapConstellationCommand());
     addSubcommand(CheckForDifferencesCommand());
-    addSubcommand(BuildStarFileCommand());
+    addSubcommand(ConstellationJumpToCommand());
   }
 }
 
@@ -104,33 +103,22 @@ class CheckForDifferencesCommand extends Command {
   }
 }
 
-class BuildStarFileCommand extends Command {
+class ConstellationJumpToCommand extends Command {
   @override
   String get description =>
-      "Gets a file from the constellation from a specific point in time.";
+      "Jumps to a star in the constellation. Must call extract if you want the star to be extracted.";
 
   @override
-  String get name => "file";
+  String get name => "jump";
 
-  BuildStarFileCommand() {
+  ConstellationJumpToCommand() {
     argParser.addOption("path", abbr: "p", mandatory: true);
-    argParser.addOption("star", abbr: "s");
-    argParser.addOption("file", abbr: "f", mandatory: true);
+    argParser.addOption("star", abbr: "s", mandatory: true);
   }
 
   @override
-  Future<Uint8List> run() async {
-    Constellation constellation = Constellation(argResults?["path"]);
-    String? hash;
-    if (argResults?["star"] == null) {
-      hash = constellation.currentStarHash;
-    } else {
-      hash = argResults?["star"];
-    }
-    Uint8List result =
-        Star(constellation, hash: hash).buildFile(argResults?["file"]).data ??
-            Uint8List(0);
-    return result;
+  void run() {
+    Constellation(argResults?["path"])[argResults?["star"]];
   }
 }
 
