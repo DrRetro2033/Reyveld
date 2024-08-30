@@ -323,6 +323,10 @@ class Star {
 class Dossier {
   Star star;
 
+  String addSymbol = "A".bold().green();
+  String removeSymbol = "D".bold().red();
+  String moveSymbol = "→".bold().aqua();
+  String modifiedSymbol = "M".bold().yellow();
   Dossier(this.star);
 
   /// # `bool` checkForDifferences()
@@ -352,15 +356,7 @@ class Dossier {
         }
       }
     }
-    if (newFiles.isNotEmpty) {
-      spinner.fail("There is ${newFiles.length} new files.");
-      for (String file in newFiles) {
-        print(file);
-      }
-      check = true;
-    } else {
-      spinner.success("There are no new files.");
-    }
+    spinner.stop();
 
     // Check for removed files.
     spinner = CliSpin(text: "Checking for removed files...").start();
@@ -372,37 +368,54 @@ class Dossier {
         }
       }
     }
-    if (removedFiles.isNotEmpty) {
-      spinner.fail("There is ${removedFiles.length} removed files.");
-      for (String file in removedFiles) {
-        print(file);
-      }
-      check = true;
-    } else {
-      spinner.success("There are no removed files.");
-    }
+    spinner.stop();
 
     // Check for moved files. Done after new and removed files, as they can be used here to make a cross reference.
     spinner = CliSpin(text: "Checking for moved files...").start();
-    List<String> movedFiles = [];
+    Map<String, String> movedFiles = {};
     for (String file in removedFiles) {
       if (newFiles.any((e) => e.getFilename() == file.getFilename())) {
         ExternalFile externalFile = ExternalFile(
             "${star.constellation.path}/${newFiles.firstWhere((e) => e.getFilename() == file.getFilename())}");
         InternalFile internalFile = InternalFile(star, file);
         if (externalFile == internalFile) {
-          movedFiles.add(file);
+          movedFiles[file] =
+              newFiles.firstWhere((e) => e.getFilename() == file.getFilename());
         }
       }
     }
     if (movedFiles.isNotEmpty) {
-      spinner.fail("There is ${movedFiles.length} moved files.");
-      for (String file in movedFiles) {
-        print(file);
+      spinner.stop();
+      for (String file in movedFiles.keys) {
+        print("$file $moveSymbol ${movedFiles[file]}");
       }
       check = true;
     } else {
       spinner.success("There are no moved files.");
+    }
+
+    if (newFiles.isNotEmpty) {
+      for (String file in newFiles) {
+        if (movedFiles.containsValue(file)) {
+          continue;
+        }
+        print("$addSymbol $file");
+        check = true;
+      }
+    } else {
+      spinner.success("There are no new files.");
+    }
+
+    if (removedFiles.isNotEmpty) {
+      for (String file in removedFiles) {
+        if (movedFiles.containsKey(file)) {
+          continue;
+        }
+        print("$removeSymbol $file");
+        check = true;
+      }
+    } else {
+      spinner.success("There are no removed files.");
     }
 
     // Check for changed files.
@@ -414,10 +427,10 @@ class Dossier {
         spinner =
             CliSpin(text: "Checking for changes to: ${file.name}...").start();
         if (dossierFile.hasChanged()) {
-          spinner.fail("${file.name} has changed");
+          print("$modifiedSymbol ${file.name}");
           check = true;
         }
-        spinner.success("${file.name} has not changed");
+        spinner.stop();
       }
     }
     return check;
@@ -488,6 +501,8 @@ sealed class BaseFile with CheckForDifferencesInData {
 
   BaseFile(this.path);
 
+  /// # `operator` `==`
+  /// ## Checks to see if the file is different from another file.
   @override
   operator ==(Object other) {
     if (other is BaseFile) {
