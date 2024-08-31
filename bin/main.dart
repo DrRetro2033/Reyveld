@@ -36,6 +36,7 @@ class ConstellationCommands extends Command {
     addSubcommand(ShowMapConstellationCommand());
     addSubcommand(CheckForDifferencesCommand());
     addSubcommand(ConstellationJumpToCommand());
+    addSubcommand(ConstellationBranchCommand());
   }
 }
 
@@ -121,6 +122,24 @@ class ConstellationJumpToCommand extends Command {
   @override
   void run() {
     Constellation(argResults?["path"])[argResults?["star"]];
+  }
+}
+
+class ConstellationBranchCommand extends Command {
+  @override
+  String get description =>
+      "Creates a new branch in the constellation from the current star.";
+  @override
+  String get name => "branch";
+
+  ConstellationBranchCommand() {
+    argParser.addOption("path", abbr: "p", mandatory: true);
+    argParser.addOption("name", abbr: "n", mandatory: true);
+  }
+
+  @override
+  void run() {
+    Constellation(argResults?["path"]).branch(argResults?["name"]);
   }
 }
 

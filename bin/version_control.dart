@@ -19,6 +19,7 @@ class Galaxy {}
 class Constellation {
   String? name; // The name of the constellation.
   String path; // The path to the folder this constellation is in.
+
   Directory get directory => Directory(
       path); // Fetches a directory object from the path this constellation is in.
   String? rootHash; // The hash of the root star.
@@ -128,17 +129,21 @@ class Constellation {
         ));
   }
 
-  operator [](Object to) {
-    if (to is String && doesStarExist(to)) {
-      currentStar = Star(this, hash: to);
-    } else if (to is Star) {
-      currentStar = to;
+  String? branch(String name) {
+    return currentStar?.createChild(name);
+  }
+
+  // List<String> listChildren(String hash) {}
+
+  void jumpTo(String? hash) {
+    if (doesStarExist(hash ?? rootHash!)) {
+      currentStar = Star(this, hash: hash ?? rootHash!);
     }
   }
 
-  operator >>(Object to) {
+  operator [](Object to) {
     if (to is String && doesStarExist(to)) {
-      currentStar = Star(this, hash: to);
+      jumpTo(to);
     } else if (to is Star) {
       currentStar = to;
     }
@@ -150,6 +155,8 @@ class Constellation {
     return Dossier(star).checkForDifferences();
   }
 }
+
+class Starmap {}
 
 /// # `class` Star
 /// ## Represents a star in the constellation.
@@ -171,14 +178,14 @@ class Star {
     parentHash = value?.hash;
   }
 
-  List<String> _children = []; // The hashes of the children stars.
+  // List<String> get _children =>
+  //     constellation.get; // The hashes of the children stars.
 
   Archive get archive => getArchive();
 
   Star(this.constellation, {this.name, this.hash}) {
     if (name != null && hash == null) {
       _create();
-      save();
     } else if (name == null && hash != null) {
       load();
     }
@@ -187,11 +194,30 @@ class Star {
   void _create() {
     createdAt = DateTime.now();
     hash = constellation.generateUniqueStarHash();
+    ZipFileEncoder archive = ZipFileEncoder();
+    archive.create(constellation.getStarPath(hash!));
+    for (FileSystemEntity entity in constellation.directory.listSync()) {
+      if (entity is File) {
+        if (entity.path.endsWith(".star")) {
+          continue;
+        }
+        archive.addFile(entity);
+      } else if (entity is Directory) {
+        if (entity.path.endsWith(".constellation")) {
+          continue;
+        }
+        archive.addDirectory(entity);
+      }
+    }
+    archive.closeSync();
   }
 
   String createChild(String name) {
-    Star star = Star(constellation, name: name)..parent = this;
-    _children.add(star.hash!);
+    if (!constellation.checkForDifferences(hash)) {
+      throw Exception(
+          "Cannot create a child star when there are no differences. Please make changes and try again.");
+    }
+    Star star = Star(constellation, name: name);
     return star.hash!;
   }
 
@@ -219,16 +245,6 @@ class Star {
     return Star(constellation, hash: parentHash);
   }
 
-  /// # `void` save()
-  /// ## Saves the star to disk.
-  void save() {
-    final encoder = _createArchive(hash!);
-    String data = _generateStarFileData();
-    ArchiveFile file = ArchiveFile("star", data.length, data);
-    encoder.addArchiveFile(file);
-    encoder.closeSync();
-  }
-
   /// # `void` load()
   /// ## Loads the star from disk.
   void load() {
@@ -241,32 +257,8 @@ class Star {
   }
 
   Archive getArchive() {
-    if (!(File(constellation.getStarPath(hash!)).existsSync())) {
-      save();
-    }
     final inputStream = InputFileStream(constellation.getStarPath(hash!));
     final archive = ZipDecoder().decodeBuffer(inputStream);
-    return archive;
-  }
-
-  ZipFileEncoder _createArchive(String hash) {
-    var archive = ZipFileEncoder();
-    archive.create(constellation.getStarPath(hash));
-    for (FileSystemEntity entity in constellation.directory.listSync()) {
-      if (entity is File) {
-        if (entity.path.endsWith(".star")) {
-          continue;
-        }
-        archive.addFile(entity);
-      } else if (entity is Directory) {
-        if (entity.path.endsWith(".constellation")) {
-          continue;
-        }
-        archive.addDirectory(entity);
-      }
-    }
-    final file = File(constellation.getStarPath(hash));
-    file.statSync();
     return archive;
   }
 
@@ -303,6 +295,7 @@ class Star {
   /// ## Converts the JSON data into a `Star` object.
   void fromJson(Map<String, dynamic> json) {
     name = json["name"];
+    parentHash = json["parent"];
     createdAt = DateTime.tryParse(json["createdAt"]);
     try {
       _children = json["children"];
@@ -313,20 +306,26 @@ class Star {
 
   /// # `Map<String, dynamic>` toJson()
   /// ## Converts the `Star` object into a JSON object.
-  Map<String, dynamic> toJson() =>
-      {"name": name, "createdAt": createdAt.toString(), "children": _children};
+  Map<String, dynamic> toJson() => {
+        "name": name,
+        "createdAt": createdAt.toString(),
+        "children": _children,
+        "parent": parentHash
+      };
 }
 
 /// # `class` `Dossier`
 /// ## A wrapper for the internal and external file systems.
 /// Acts as a wrapper for the internal file system (i.e. Inside a `.star` file) and the external file system (i.e. Inside the current directory).
 class Dossier {
-  Star star;
+  Star star; // The star used for the internal file system.
 
+  // The following are used for the CLI:
   String addSymbol = "A".bold().green();
   String removeSymbol = "D".bold().red();
   String moveSymbol = "→".bold().aqua();
   String modifiedSymbol = "M".bold().yellow();
+
   Dossier(this.star);
 
   /// # `bool` checkForDifferences()
