@@ -20,18 +20,10 @@ class Constellation {
   String? name; // The name of the constellation.
   String path; // The path to the folder this constellation is in.
 
+  late Starmap starmap;
+
   Directory get directory => Directory(
       path); // Fetches a directory object from the path this constellation is in.
-  String? rootHash; // The hash of the root star.
-  Star? get root =>
-      Star(this, hash: rootHash!); // Fetches the root star as a Star object.
-  set root(Star? value) => rootHash =
-      value?.hash; // Sets the root star hash with the given Star object.
-  String? currentStarHash; // The hash of the current star.
-  Star? get currentStar => Star(this,
-      hash: currentStarHash!); // Fetches the current star as a Star object.
-  set currentStar(Star? value) => currentStarHash =
-      value?.hash; // Sets the current star hash with the given Star object.
 
   bool doesStarExist(String hash) => File(getStarPath(hash)).existsSync();
 
@@ -44,14 +36,16 @@ class Constellation {
     path = path.fixPath();
     if (constellationDirectory.existsSync()) {
       load();
-      if (currentStarHash == null) {
-        currentStarHash = rootHash;
+      if (starmap.currentStarHash == null) {
+        starmap.currentStarHash = starmap.rootHash;
         save();
       }
       return;
     } else if (name != null) {
       _createConstellationDirectory();
+      starmap = Starmap(this);
       _createRootStar();
+      save();
       return;
     }
     throw Exception(
@@ -68,8 +62,8 @@ class Constellation {
   }
 
   void _createRootStar() {
-    root = Star(this, name: "Initial Star");
-    currentStar = root;
+    starmap.root = Star(this, name: "Initial Star");
+    starmap.currentStar = starmap.root;
     save();
   }
 
@@ -107,19 +101,161 @@ class Constellation {
 
   void fromJson(Map<String, dynamic> json) {
     name = json["name"];
-    rootHash = json["rootHash"];
-    currentStarHash = json["currentStarHash"];
+    starmap = Starmap(this, map: json["map"]);
   }
 
-  Map<String, dynamic> toJson() =>
-      {"name": name, "rootHash": rootHash, "currentStarHash": currentStarHash};
+  Map<String, dynamic> toJson() => {"name": name, "map": starmap.toJson()};
   // ============================================================================
+
+  String? branch(String name) {
+    return starmap.currentStar?.createChild(name);
+  }
+
+  // List<String> listChildren(String hash) {}
+
+  bool checkForDifferences(String? hash) {
+    hash ??= starmap.currentStarHash;
+    Star star = Star(this, hash: hash);
+    return Dossier(star).checkForDifferences();
+  }
+}
+
+/// # `class` Starmap
+/// ## Represents the relationship between stars.
+/// This now contains the root star and the current star.
+/// It also contains the children and parents of each star, in two separate maps, for performance and ease reading and writing.
+class Starmap {
+  Constellation constellation;
+
+  // Maps for storing children and parents.
+  Map<String, List<dynamic>> childMap = {}; // Format: {parent: [children]}
+  Map<String, dynamic> parentMap = {}; // Format: {child: parent}
+
+  Starmap(this.constellation, {Map<dynamic, dynamic>? map}) {
+    if (map == null) {
+      childMap = {};
+      parentMap = {};
+    } else {
+      fromJson(map);
+    }
+  }
+
+  String? rootHash; // The hash of the root star.
+  Star? get root => Star(constellation,
+      hash: rootHash!); // Fetches the root star as a Star object.
+  set root(Star? value) => rootHash =
+      value?.hash; // Sets the root star hash with the given Star object.
+  String? currentStarHash; // The hash of the current star.
+  Star? get currentStar => Star(constellation,
+      hash: currentStarHash!); // Fetches the current star as a Star object.
+  set currentStar(Star? value) => currentStarHash =
+      value?.hash; // Sets the current star hash with the given Star object.
+
+  /// # `void` initEntry(`String` hash)
+  /// ## Initializes the entry for the given hash.
+  /// Called by `Star` when a new star is created.
+  void initEntry(String hash) {
+    if (childMap[hash] != null) {
+      return;
+    }
+    childMap[hash] = [];
+  }
+
+  /// # `void` jumpTo(`String?` hash)
+  /// ## Changes the current star to the star with the given hash.
+  void jumpTo(String? hash) {
+    if (constellation.doesStarExist(hash ?? rootHash!)) {
+      currentStar = Star(constellation, hash: hash ?? rootHash!);
+    }
+  }
+
+  /// # `operator` `[]` jumpTo(`Star` star)
+  /// ## Changes the current star to the given star.
+  /// You can pass a hash or a star object.
+  operator [](Object to) {
+    if (to is String && constellation.doesStarExist(to)) {
+      jumpTo(to);
+    } else if (to is Star) {
+      currentStar = to;
+    }
+  }
+
+  Map<dynamic, dynamic> toJson() {
+    return {
+      "root": rootHash,
+      "current": currentStarHash,
+      "children": childMap,
+      "parents": parentMap
+    };
+  }
+
+  void fromJson(Map<dynamic, dynamic> json) {
+    rootHash = json["root"];
+    currentStarHash = json["current"];
+    for (String hash in json["children"].keys) {
+      childMap[hash] = json["children"][hash];
+    }
+    for (String hash in json["parents"].keys) {
+      parentMap[hash] = json["parents"][hash];
+    }
+  }
+
+  /// # `List<Star>` getChildren(`Star` parent)
+  /// ## Returns a list of all children of the given parent.
+  /// The list will be empty if the parent has no children.
+  List<Star> getChildren(Star parent) {
+    List<Star> children = [];
+    for (String hash in getChildrenHashes(parent.hash!)) {
+      children.add(Star(constellation, hash: hash));
+    }
+    return children;
+  }
+
+  /// # `List<String>` getChildrenHashes(`String` parent)
+  /// ## Returns a list of all children hashes of the given parent.
+  /// The list will be empty if the parent has no children.
+  List getChildrenHashes(String parent) {
+    return childMap[parent] ?? <String>[];
+  }
+
+  /// # `void` addRelationship(`Star` parent, `Star` child)
+  /// ## Adds the given child to the given parent.
+  void addRelationship(Star parent, Star child) {
+    if (parentMap[child.hash] != null) {
+      throw Exception("Star already has a parent.");
+    }
+
+    if (childMap[parent.hash] == null) {
+      childMap[parent.hash!] = [];
+    }
+    childMap[parent.hash!]?.add(child.hash!);
+    parentMap[child.hash!] = parent.hash!;
+    constellation.save();
+  }
+
+  /// # `Map<String, dynamic>` getReadableTree(`String` curHash)
+  /// ## Returns a tree view of the constellation.
+  Map<String, dynamic> getReadableTree(String curHash) {
+    Map<String, dynamic> list = {};
+    String displayName = "Star $curHash";
+    if (currentStarHash == curHash) {
+      displayName += "✨";
+    }
+    list[displayName] = {};
+    for (int x = 1; x < ((getChildrenHashes(curHash).length)); x++) {
+      list[displayName].addAll(getReadableTree(getChildrenHashes(curHash)[x]));
+    }
+    if (getChildrenHashes(curHash).isNotEmpty) {
+      list.addAll(getReadableTree(getChildrenHashes(curHash)[0]));
+    }
+    return list;
+  }
 
   /// # `void` showMap()
   /// ## Shows the map of the constellation.
   /// This is a tree view of the constellation's stars and their children.
   void showMap() {
-    AnsiX.printTreeView((root?.getReadableTree()),
+    AnsiX.printTreeView(getReadableTree(rootHash!),
         theme: AnsiTreeViewTheme(
           showListItemIndex: false,
           headerTheme: AnsiTreeHeaderTheme(hideHeader: true),
@@ -128,35 +264,7 @@ class Constellation {
               style: AnsiBorderStyle.rounded, color: AnsiColor.blueViolet),
         ));
   }
-
-  String? branch(String name) {
-    return currentStar?.createChild(name);
-  }
-
-  // List<String> listChildren(String hash) {}
-
-  void jumpTo(String? hash) {
-    if (doesStarExist(hash ?? rootHash!)) {
-      currentStar = Star(this, hash: hash ?? rootHash!);
-    }
-  }
-
-  operator [](Object to) {
-    if (to is String && doesStarExist(to)) {
-      jumpTo(to);
-    } else if (to is Star) {
-      currentStar = to;
-    }
-  }
-
-  bool checkForDifferences(String? hash) {
-    hash ??= currentStarHash;
-    Star star = Star(this, hash: hash);
-    return Dossier(star).checkForDifferences();
-  }
 }
-
-class Starmap {}
 
 /// # `class` Star
 /// ## Represents a star in the constellation.
@@ -184,6 +292,7 @@ class Star {
   Archive get archive => getArchive();
 
   Star(this.constellation, {this.name, this.hash}) {
+    constellation.starmap.initEntry(hash ?? "");
     if (name != null && hash == null) {
       _create();
     } else if (name == null && hash != null) {
@@ -196,6 +305,8 @@ class Star {
     hash = constellation.generateUniqueStarHash();
     ZipFileEncoder archive = ZipFileEncoder();
     archive.create(constellation.getStarPath(hash!));
+    String content = _generateStarFileData();
+    archive.addArchiveFile(ArchiveFile("star", content.length, content));
     for (FileSystemEntity entity in constellation.directory.listSync()) {
       if (entity is File) {
         if (entity.path.endsWith(".star")) {
@@ -218,24 +329,10 @@ class Star {
           "Cannot create a child star when there are no differences. Please make changes and try again.");
     }
     Star star = Star(constellation, name: name);
+    constellation.starmap.addRelationship(this, star);
+    constellation.starmap.currentStar = star;
+    constellation.save();
     return star.hash!;
-  }
-
-  Star? getChildStar({String? hash, int? index}) {
-    if (hash == null && index != null) {
-      try {
-        return Star(constellation, hash: _children[index]);
-      } catch (e) {
-        return null;
-      }
-    } else if (hash != null) {
-      if (!(_children.contains(hash))) {
-        throw Exception(
-            "Star not found: $hash. Either the star does not exist or it is not a child of this star.");
-      }
-      return Star(constellation, hash: hash);
-    }
-    throw Exception("Must provide either a hash or an index for a child star.");
   }
 
   /// # `Star` getParentStar()
@@ -266,23 +363,6 @@ class Star {
     fromJson(jsonDecode(data));
   }
 
-  /// # `Map<String, dynamic>` getReadableTree()
-  /// ## Returns a readable tree of the star.
-  /// This is useful for debugging.
-  Map<String, dynamic> getReadableTree() {
-    Map<String, dynamic> list = {};
-    String displayName = "$name - $hash";
-    list[displayName] = {};
-    for (int x = 1; x < ((_children.length)); x++) {
-      list[displayName]
-          .addAll(getChildStar(hash: _children[x])!.getReadableTree());
-    }
-    if (_children.isNotEmpty) {
-      list.addAll(getChildStar(index: 0)!.getReadableTree());
-    }
-    return list;
-  }
-
   /// # `String` _generateStarFileData()
   /// ## Generates the data for the `star` file inside the `.star`.
   /// Inside a `.star` file, there is a single file just called `star` with no extension.
@@ -295,13 +375,7 @@ class Star {
   /// ## Converts the JSON data into a `Star` object.
   void fromJson(Map<String, dynamic> json) {
     name = json["name"];
-    parentHash = json["parent"];
     createdAt = DateTime.tryParse(json["createdAt"]);
-    try {
-      _children = json["children"];
-    } catch (e) {
-      _children = [];
-    }
   }
 
   /// # `Map<String, dynamic>` toJson()
@@ -309,8 +383,6 @@ class Star {
   Map<String, dynamic> toJson() => {
         "name": name,
         "createdAt": createdAt.toString(),
-        "children": _children,
-        "parent": parentHash
       };
 }
 
@@ -342,6 +414,67 @@ class Dossier {
 
     // Check for new files.
     var spinner = CliSpin(text: "Checking for new files...").start();
+    List<String> newFiles = listAddedFiles();
+    spinner.stop();
+
+    // Check for removed files.
+    spinner = CliSpin(text: "Checking for removed files...").start();
+    List<String> removedFiles = listRemovedFiles();
+    spinner.stop();
+
+    // Check for moved files. Done after new and removed files, as they can be used here to make a cross reference.
+    spinner = CliSpin(text: "Checking for moved files...").start();
+    Map<String, String> movedFiles = listMovedFiles(newFiles, removedFiles);
+    if (movedFiles.isNotEmpty) {
+      check = true;
+      spinner.stop();
+      for (String file in movedFiles.keys) {
+        print("$file $moveSymbol ${movedFiles[file]}");
+      }
+    } else {
+      spinner.success("There are no moved files.");
+    }
+
+    if (newFiles.isNotEmpty) {
+      check = true;
+      for (String file in newFiles) {
+        if (movedFiles.containsValue(file)) {
+          continue;
+        }
+        print("$addSymbol $file");
+      }
+    } else {
+      spinner.success("There are no new files.");
+    }
+
+    if (removedFiles.isNotEmpty) {
+      check = true;
+      for (String file in removedFiles) {
+        if (movedFiles.containsKey(file)) {
+          continue;
+        }
+        print("$removeSymbol $file");
+      }
+    } else {
+      spinner.success("There are no removed files.");
+    }
+
+    // Check for changed files.
+    spinner = CliSpin(text: "Checking for changed files...").start();
+    List<String> changedFiles = listChangedFiles(removedFiles);
+    if (changedFiles.isNotEmpty) {
+      spinner.stop();
+      check = true;
+      for (String file in changedFiles) {
+        print("$modifiedSymbol $file");
+      }
+    } else {
+      spinner.success("There are no changed files.");
+    }
+    return check;
+  }
+
+  List<String> listAddedFiles() {
     List<String> newFiles = [];
     for (FileSystemEntity entity
         in star.constellation.directory.listSync(recursive: true)) {
@@ -355,10 +488,10 @@ class Dossier {
         }
       }
     }
-    spinner.stop();
+    return newFiles;
+  }
 
-    // Check for removed files.
-    spinner = CliSpin(text: "Checking for removed files...").start();
+  List<String> listRemovedFiles() {
     List<String> removedFiles = [];
     for (ArchiveFile file in star.archive.files) {
       if (file.isFile && file.name != "star") {
@@ -367,10 +500,11 @@ class Dossier {
         }
       }
     }
-    spinner.stop();
+    return removedFiles;
+  }
 
-    // Check for moved files. Done after new and removed files, as they can be used here to make a cross reference.
-    spinner = CliSpin(text: "Checking for moved files...").start();
+  Map<String, String> listMovedFiles(
+      List<String> newFiles, List<String> removedFiles) {
     Map<String, String> movedFiles = {};
     for (String file in removedFiles) {
       if (newFiles.any((e) => e.getFilename() == file.getFilename())) {
@@ -383,56 +517,22 @@ class Dossier {
         }
       }
     }
-    if (movedFiles.isNotEmpty) {
-      spinner.stop();
-      for (String file in movedFiles.keys) {
-        print("$file $moveSymbol ${movedFiles[file]}");
-      }
-      check = true;
-    } else {
-      spinner.success("There are no moved files.");
-    }
+    return movedFiles;
+  }
 
-    if (newFiles.isNotEmpty) {
-      for (String file in newFiles) {
-        if (movedFiles.containsValue(file)) {
-          continue;
-        }
-        print("$addSymbol $file");
-        check = true;
-      }
-    } else {
-      spinner.success("There are no new files.");
-    }
-
-    if (removedFiles.isNotEmpty) {
-      for (String file in removedFiles) {
-        if (movedFiles.containsKey(file)) {
-          continue;
-        }
-        print("$removeSymbol $file");
-        check = true;
-      }
-    } else {
-      spinner.success("There are no removed files.");
-    }
-
-    // Check for changed files.
+  List<String> listChangedFiles(List<String> removedFiles) {
+    List<String> changedFiles = [];
     for (ArchiveFile file in star.archive.files) {
       if (file.isFile &&
           file.name != "star" &&
           !removedFiles.contains(file.name)) {
         DossierFile dossierFile = DossierFile(star, "star://${file.name}");
-        spinner =
-            CliSpin(text: "Checking for changes to: ${file.name}...").start();
         if (dossierFile.hasChanged()) {
-          print("$modifiedSymbol ${file.name}");
-          check = true;
+          changedFiles.add(file.name);
         }
-        spinner.stop();
       }
     }
-    return check;
+    return changedFiles;
   }
 }
 

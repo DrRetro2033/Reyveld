@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:ansix/ansix.dart';
+// import 'package:ansix/ansix.dart';
 import "package:args/command_runner.dart";
 import 'package:cli_spin/cli_spin.dart';
 import 'file_pattern.dart';
@@ -11,7 +11,7 @@ import "version_control.dart";
 /// ## Main entry point.
 /// Runs the CLI.
 Future<dynamic> main(List<String> arguments) async {
-  AnsiX.ensureSupportsAnsi();
+  // AnsiX.ensureSupportsAnsi();
   var runner = CommandRunner('arceus', "The ultimate save manager.");
   runner.argParser.addOption(
     "app-path",
@@ -72,7 +72,7 @@ class ShowMapConstellationCommand extends Command {
 
   @override
   void run() {
-    Constellation(argResults?["path"]).showMap();
+    Constellation(argResults?["path"]).starmap.showMap();
   }
 }
 
@@ -121,7 +121,7 @@ class ConstellationJumpToCommand extends Command {
 
   @override
   void run() {
-    Constellation(argResults?["path"])[argResults?["star"]];
+    Constellation(argResults?["path"]).starmap[argResults?["star"]];
   }
 }
 
