@@ -169,7 +169,7 @@ class ReadPatternCommand extends Command {
 
   @override
   dynamic run() {
-    return jsonEncode(FilePattern(argResults?["pattern"])
-        .read(File(argResults?["file"]).readAsBytesSync()));
+    return FilePattern(argResults?["pattern"])
+        .read(File(argResults?["file"]).readAsBytesSync());
   }
 }
