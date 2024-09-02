@@ -1,5 +1,5 @@
 import 'dart:io';
-
+import 'dart:convert';
 // import 'package:ansix/ansix.dart';
 import "package:args/command_runner.dart";
 import 'package:cli_spin/cli_spin.dart';
@@ -169,7 +169,7 @@ class ReadPatternCommand extends Command {
 
   @override
   dynamic run() {
-    return FilePattern(argResults!.option("pattern")!.fixPath())
-        .read(File(argResults!.option("file")!.fixPath()).readAsBytesSync());
+    return jsonEncode(FilePattern(argResults!.option("pattern")!.fixPath())
+        .read(File(argResults!.option("file")!.fixPath()).readAsBytesSync()));
   }
 }
