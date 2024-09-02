@@ -1,10 +1,10 @@
-import 'dart:convert';
 import 'dart:io';
 
 // import 'package:ansix/ansix.dart';
 import "package:args/command_runner.dart";
 import 'package:cli_spin/cli_spin.dart';
 import 'file_pattern.dart';
+import 'extensions.dart';
 import "version_control/constellation.dart";
 
 /// # `void` main(List<String> arguments)
@@ -169,7 +169,7 @@ class ReadPatternCommand extends Command {
 
   @override
   dynamic run() {
-    return FilePattern(argResults?["pattern"])
-        .read(File(argResults?["file"]).readAsBytesSync());
+    return FilePattern(argResults!.option("file")!.fixPath())
+        .read(File(argResults!.option("file")!.fixPath()).readAsBytesSync());
   }
 }
