@@ -193,6 +193,9 @@ class FilePattern {
   /// This is internal and should not be called directly.
   YamlMap _getPattern(String path) {
     if (!(_parsedPatterns.containsKey(path))) {
+      if (path.startsWith("./")) {
+        path = Directory.current.path + path.substring(1);
+      }
       File file = File(path);
       if (file.existsSync()) {
         _parsedPatterns[path] = loadYaml(file.readAsStringSync());
