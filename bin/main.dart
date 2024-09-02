@@ -170,6 +170,6 @@ class ReadPatternCommand extends Command {
   @override
   dynamic run() {
     return FilePattern(argResults!.option("file")!.fixPath())
-        .read(File(argResults!.option("file")!.fixPath()).readAsBytesSync());
+        .read(File(argResults!.option("pattern")!.fixPath()).readAsBytesSync());
   }
 }
