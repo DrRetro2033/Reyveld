@@ -168,7 +168,7 @@ class ReadPatternCommand extends Command {
   }
 
   @override
-  Future<String> run() async {
+  String run() {
     return jsonEncode(FilePattern(argResults?["pattern"])
         .read(File(argResults?["file"]).readAsBytesSync()));
   }
