@@ -5,7 +5,7 @@ import 'dart:io';
 import "package:args/command_runner.dart";
 import 'package:cli_spin/cli_spin.dart';
 import 'file_pattern.dart';
-import "version_control.dart";
+import "version_control/constellation.dart";
 
 /// # `void` main(List<String> arguments)
 /// ## Main entry point.
