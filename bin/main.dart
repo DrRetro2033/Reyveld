@@ -168,7 +168,7 @@ class ReadPatternCommand extends Command {
   }
 
   @override
-  String run() {
+  dynamic run() {
     return jsonEncode(FilePattern(argResults?["pattern"])
         .read(File(argResults?["file"]).readAsBytesSync()));
   }
