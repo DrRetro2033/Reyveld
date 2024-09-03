@@ -21,9 +21,9 @@ Future<dynamic> main(List<String> arguments) async {
     abbr: "a",
     defaultsTo: Directory.current.path,
   );
-  currentPath = runner.argParser.parse(arguments)["app-path"];
   runner.addCommand(ConstellationCommands());
   runner.addCommand(PatternCommands());
+  currentPath = runner.argParser.parse(arguments)["app-path"];
   if (arguments.isNotEmpty) {
     return await runner.run(arguments);
   }
@@ -173,7 +173,10 @@ class ReadPatternCommand extends Command {
 
   @override
   dynamic run() {
-    return jsonEncode(FilePattern(argResults!.option("pattern")!.fixPath())
-        .read(File(argResults!.option("file")!.fixPath()).readAsBytesSync()));
+    String json = jsonEncode(
+        FilePattern(argResults!.option("pattern")!.fixPath()).read(
+            File(argResults!.option("file")!.fixPath()).readAsBytesSync()));
+    print(json);
+    return json;
   }
 }
