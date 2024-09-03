@@ -1,6 +1,7 @@
 import "package:cli_spin/cli_spin.dart";
 import "package:yaml/yaml.dart";
 import "extensions.dart";
+import 'main.dart';
 import "dart:io";
 import "dart:typed_data";
 
@@ -194,7 +195,7 @@ class FilePattern {
   YamlMap _getPattern(String path) {
     if (!(_parsedPatterns.containsKey(path))) {
       if (path.startsWith("./")) {
-        path = Directory.current.path + path.substring(1);
+        path = currentPath + path.substring(1);
       }
       File file = File(path);
       if (file.existsSync()) {

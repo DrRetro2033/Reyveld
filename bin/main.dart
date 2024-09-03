@@ -10,6 +10,9 @@ import "version_control/constellation.dart";
 /// # `void` main(List<String> arguments)
 /// ## Main entry point.
 /// Runs the CLI.
+
+late String currentPath;
+
 Future<dynamic> main(List<String> arguments) async {
   // AnsiX.ensureSupportsAnsi();
   var runner = CommandRunner('arceus', "The ultimate save manager.");
@@ -18,6 +21,7 @@ Future<dynamic> main(List<String> arguments) async {
     abbr: "a",
     defaultsTo: Directory.current.path,
   );
+  currentPath = runner.argParser.parse(arguments)["app-path"];
   runner.addCommand(ConstellationCommands());
   runner.addCommand(PatternCommands());
   if (arguments.isNotEmpty) {
