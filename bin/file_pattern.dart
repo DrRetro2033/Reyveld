@@ -75,9 +75,17 @@ class FilePattern {
 
           if ((item["size"] as String).contains("char16")) {
             String string = "";
+            bool endAtZero = item.containsKey("endAtZero") && item["endAtZero"];
             for (int i = 0;
                 i < (_getSizeOfCharArray(item["size"]) * 2);
                 i += 2) {
+              if (endAtZero &&
+                  string.isNotEmpty &&
+                  data.getUint16(
+                          item["address"] + address + i, Endian.little) ==
+                      0) {
+                break;
+              }
               string += String.fromCharCode(
                   data.getUint16(item["address"] + address + i, Endian.little));
             }
