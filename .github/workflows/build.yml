@@ -24,7 +24,7 @@ jobs:
       - name: Make Build Directories
         run: mkdir -p build/releases
       - name: Build
-        run: dart compile exe ./bin/main.dart --target-os ${{ matrix.platform }} -o ${{ matrix.output }}
+        run: dart compile exe ./bin/main.dart --target-os ${{ matrix.platform }} -o build/releases/${{ matrix.output }}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -48,7 +48,7 @@ jobs:
           cd arceus
           mkdir -p ${{ matrix.platform }}
           cd ${{ matrix.platform }}
-          cp -r ../../../../ ${{ matrix.output }}
+          cp -r ../../../../build/releases/ ${{ matrix.output }}
           git commit -m "Update Arceus"
     strategy:
       fail-fast: false
@@ -56,10 +56,10 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux
-            output: build/releases/arceus.elf
+            output: arceus.elf
           - os: windows-latest
             platform: windows
-            output: build/releases/arceus.exe
+            output: arceus.exe
           - os: macos-latest
             platform: macos
-            output: build/releases/arceus.app
+            output: arceus.app
