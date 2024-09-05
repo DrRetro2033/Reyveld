@@ -47,7 +47,7 @@ jobs:
           cd assets
           cd arceus
           cp -r ../../../build/releases/${{ matrix.platform }} ./
-          git add ${{ matrix.output }}
+          git add ./
           git commit "Update Arceus"
           git push
     strategy:
