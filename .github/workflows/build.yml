@@ -33,23 +33,34 @@ jobs:
           path: ${{ matrix.output }}
           retention-days: 14
 
-      - name: Update MudkiPC
+      # - name: Update MudkiPC
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #     GITHUB_USER: ${{ github.actor }}
+      #   run: |
+      #     git clone https://github.com/Pokemon-Manager/MudkiPC.git
+      #     cd MudkiPC
+      #     git config user.name "${GITHUB_USER}"
+      #     git switch arceus
+      #     git pull
+      #     cd assets
+      #     cd arceus
+      #     cp -r ../../../build/releases/${{ matrix.platform }} ./
+      #     git add ./
+      #     git commit -m "Update Arceus"
+      #     git push
+      - name: Create Pull Request to MudkiPC
+        uses: haiiliin/action-pull-request-another-repo@v1.0.3
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git clone https://github.com/Pokemon-Manager/MudkiPC.git
-          cd MudkiPC
-          ls
-          git checkout main
-          git pull
-          cd assets
-          cd arceus
-          cp -r ../../../build/releases/${{ matrix.platform }} ./
-          git add ./
-          git commit -m "Update Arceus"
-          git push
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
+          API_TOKEN_GITHUB: ${{ secrets.API_TOKEN_GITHUB }}
+        with:
+          source_folder: build/releases/${{ matrix.platform }}
+          destination_repo: Pokemon-Manager/MudkiPC
+          destination_folder: assets/arceus/${{ matrix.platform }}
+          destination_head_branch: main
+          user_email: ${{ github.actor }}@users.noreply.github.com
+          user_name: ${{ github.actor }}
+          title: "Update Arceus - ${{ matrix.platform }}"
 
     strategy:
       fail-fast: false
