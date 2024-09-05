@@ -48,7 +48,7 @@ jobs:
           cd arceus
           mkdir -p ${{ matrix.platform }}
           cd ${{ matrix.platform }}
-          cp -r ${{ matrix.output }} ./
+          cp -r ../../../../${{ matrix.output }}
           git commit -m "Update Arceus"
     strategy:
       fail-fast: false
