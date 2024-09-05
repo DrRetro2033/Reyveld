@@ -49,6 +49,7 @@ jobs:
           mkdir -p ${{ matrix.platform }}
           cd ${{ matrix.platform }}
           cp -r ../../../../build/releases/ ${{ matrix.output }}
+          git add ${{ matrix.output }}
           git commit -m "Update Arceus"
     strategy:
       fail-fast: false
