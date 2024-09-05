@@ -33,6 +33,19 @@ jobs:
           path: ${{ matrix.output }}
           retention-days: 14
 
+      - name: Update MudkiPC
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git clone https://github.com/Pokemon-Manager/MudkiPC.git
+          cd MudkiPC
+          git config user.name "${GITHUB_ACTOR}"
+          git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+          git checkout main
+          git pull
+          cd assets/arceus/${{ matrix.platform }}/
+          cp -r ${{ matrix.output }} ./
+          git commit -m "Update Arceus"
     strategy:
       fail-fast: false
       matrix:
