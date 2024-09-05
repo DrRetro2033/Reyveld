@@ -46,11 +46,11 @@ jobs:
           git pull
           cd assets
           cd arceus
-          mkdir -p ${{ matrix.platform }}
           cd ${{ matrix.platform }}
-          cp -r ../../../../build/releases/ ${{ matrix.output }}
+          cp -r ../../../../build/releases ${{ matrix.output }}
           git add ${{ matrix.output }}
           git commit -m "Update Arceus"
+          git push origin main
     strategy:
       fail-fast: false
       matrix:
