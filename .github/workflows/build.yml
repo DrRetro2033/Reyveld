@@ -48,7 +48,7 @@ jobs:
           cd arceus
           cp -r ../../../build/releases/${{ matrix.platform }} ./
           git add ./
-          git commit "Update Arceus"
+          git commit -m "Update Arceus"
           git push
     strategy:
       fail-fast: false
