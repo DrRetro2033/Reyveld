@@ -43,7 +43,7 @@ jobs:
           git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
           git checkout main
           git pull
-          cd assets/arceus/${{ matrix.platform }}/
+          cd ./assets/arceus/${{ matrix.platform }}/
           cp -r ${{ matrix.output }} ./
           git commit -m "Update Arceus"
     strategy:
