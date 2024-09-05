@@ -57,7 +57,8 @@ jobs:
           source_folder: build/releases/${{ matrix.platform }}
           destination_repo: Pokemon-Manager/MudkiPC
           destination_folder: assets/arceus/${{ matrix.platform }}
-          destination_head_branch: main
+          destination_head_branch: arceus
+          destination_base_branch: main
           user_email: ${{ github.actor }}@users.noreply.github.com
           user_name: ${{ github.actor }}
           title: "Update Arceus - ${{ matrix.platform }}"
