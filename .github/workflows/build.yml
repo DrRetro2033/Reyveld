@@ -49,8 +49,8 @@ jobs:
           cd ${{ matrix.platform }}
           cp -r ../../../../build/releases ${{ matrix.output }}
           git add ${{ matrix.output }}
-          git commit -m "Update Arceus"
-          git push origin main
+          git commit "Update Arceus"
+          git push
     strategy:
       fail-fast: false
       matrix:
