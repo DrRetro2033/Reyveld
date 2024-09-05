@@ -24,7 +24,7 @@ jobs:
       - name: Make Build Directories
         run: mkdir -p build/releases
       - name: Build
-        run: dart compile exe ./bin/main.dart --target-os ${{ matrix.platform }} -o build/releases/${{ matrix.output }}
+        run: dart compile exe ./bin/main.dart --target-os ${{ matrix.platform }} -o build/releases/${{ matrix.platform }}/${{ matrix.output }}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -46,8 +46,7 @@ jobs:
           git pull
           cd assets
           cd arceus
-          cd ${{ matrix.platform }}
-          cp -r ../../../../build/releases ${{ matrix.output }}
+          cp -r ../../../../build/releases/${{ matrix.platform }} /${{ matrix.platform }}/${{ matrix.output }}
           git add ${{ matrix.output }}
           git commit "Update Arceus"
           git push
