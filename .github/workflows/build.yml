@@ -36,6 +36,7 @@ jobs:
       - name: Update MudkiPC
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
         run: |
           git clone https://github.com/Pokemon-Manager/MudkiPC.git
           cd MudkiPC
@@ -50,6 +51,7 @@ jobs:
           git add ./
           git commit -m "Update Arceus"
           git push
+
     strategy:
       fail-fast: false
       matrix:
