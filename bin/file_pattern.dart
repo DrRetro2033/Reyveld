@@ -32,62 +32,14 @@ import "dart:typed_data";
 ///     is_egg: 1 # You can even have a boolean in a bitfield!
 ///     is_nicknamed: 1
 /// ```
-class FilePattern {
+
+/// # `Pattern`
+/// ## A pattern in Arceus.
+/// This is a mixin, as it is used by `FilePattern` and `PatternImport`.
+mixin Pattern {
   static final Map<String, dynamic> _parsedPatterns =
       {}; // Patterns already parsed by Arceus.
-  YamlMap? _currentPattern; // The current pattern being parsed.
-  FilePattern(String path) {
-    path = path.fixPath();
-    _currentPattern = _getPattern(path);
-  }
-
-  Map<String, dynamic> read(Uint8List data) {
-    return _read(data.buffer.asByteData(), _currentPattern!, 0);
-  }
-
-  Map<String, dynamic> _read(ByteData data, YamlMap pattern, int address) {
-    final spinner = CliSpin(
-            text: "Parsing ${_currentPattern!["path"]}",
-            spinner: CliSpinners.star)
-        .start();
-    Map<String, dynamic> parsedData = {};
-
-    // Imports
-    if (pattern.containsKey("imports")) {
-      for (YamlMap import in pattern["imports"]) {
-        parsedData.addAll(_read(
-            data, _getPattern(import["path"]), import["address"] + address));
-      }
-    }
-
-    // Everything else
-    for (String key in pattern.keys) {
-      dynamic item = pattern[key];
-      // print("key: $key, item: $item");
-      if (item is YamlMap) {
-        if (PatternVariable.tryParse(item)) {
-          /// Variables.
-          print("Parsing variable: $key");
-          parsedData[key] =
-              PatternVariable.fromYaml(item).getData(data, address);
-        } else if (PatternArray.tryParse(item)) {
-          /// Arrays.
-          print("Parsing array: $key");
-          parsedData[key] = PatternArray.fromYaml(item).getData(data, address);
-        } else if (PatternBitfield.tryParse(item)) {
-          /// Bitfields.
-          print("Parsing bitfield: $key");
-          parsedData
-              .addAll(PatternBitfield.fromYaml(item).getData(data, address));
-        } else {
-          throw Exception("Unknown item type defined in pattern. $key");
-        }
-      }
-    }
-
-    spinner.success("Parsed successfully.");
-    return parsedData;
-  }
+  List<PatternObject> objects = [];
 
   /// # `YamlMap` _getPattern(`String path`)
   /// ## Returns the parsed pattern.
@@ -106,13 +58,66 @@ class FilePattern {
     }
     return _parsedPatterns[path];
   }
+
+  void parse(YamlMap pattern, {int? addressOffset}) {
+    if (pattern.containsKey("imports")) {
+      for (YamlMap import in pattern["imports"]) {
+        if (PatternImport.tryParse(import)) {
+          objects.add(PatternImport.fromYaml(import));
+        }
+      }
+    }
+
+    for (String key in pattern.keys) {
+      dynamic item = pattern[key];
+      if (item is YamlMap) {
+        if (PatternVariable.tryParse(item)) {
+          objects.add(PatternVariable.fromYaml(key, item));
+        } else if (PatternArray.tryParse(item)) {
+          objects.add(PatternArray.fromYaml(key, item));
+        } else if (PatternBitfield.tryParse(item)) {
+          objects.add(PatternBitfield.fromYaml(key, item));
+        }
+      }
+    }
+  }
+
+  Map<String, dynamic> _read(ByteData data, int address) {
+    final spinner =
+        CliSpin(text: "Reading...", spinner: CliSpinners.star).start();
+    Map<String, dynamic> parsedData = {};
+
+    for (PatternObject object in objects) {
+      if ([PatternVariable, PatternArray, PatternBitfield]
+          .any((e) => object.runtimeType == e)) {
+        parsedData[object.name] = object.getData(data, address);
+      } else if (object.runtimeType == PatternImport) {
+        parsedData.addAll(object.getData(data, address));
+      }
+    }
+
+    spinner.success("Parsed successfully.");
+    return parsedData;
+  }
+}
+
+class FilePattern with Pattern {
+  FilePattern(String path) {
+    path = path.fixPath();
+    parse(_getPattern(path));
+  }
+
+  Map<String, dynamic> read(Uint8List data) {
+    return _read(data.buffer.asByteData(), 0);
+  }
 }
 
 abstract class PatternObject {
+  String name;
   int address;
   dynamic size;
   int get byteSize => (size == null) ? 0 : int.parse(size!);
-  PatternObject(this.address, {this.size});
+  PatternObject(this.name, this.address, {this.size});
   static bool tryParse(YamlMap item) {
     return false;
   }
@@ -120,16 +125,60 @@ abstract class PatternObject {
   dynamic getData(ByteData data, int offsetAddress) {
     return null;
   }
+
+  void setData(ByteData data, int offsetAddress, dynamic value) {
+    return;
+  }
 }
 
+class PatternImport extends PatternObject with Pattern {
+  PatternImport(String path, super.name, super.address, {super.size}) {
+    parse(_getPattern(path));
+  }
+
+  static bool tryParse(YamlMap item) {
+    if (!item.containsKey("path")) {
+      return false;
+    }
+
+    if (!item.containsKey("address")) {
+      return false;
+    }
+    return true;
+  }
+
+  @override
+  dynamic getData(ByteData data, int offsetAddress) {
+    return _read(data, offsetAddress);
+  }
+
+  factory PatternImport.fromYaml(YamlMap item) {
+    dynamic count;
+    if (!item.containsKey("count")) {
+      count = 1;
+    } else {
+      count = item["count"];
+    }
+    return PatternImport(item["path"], "import", item["address"] as int,
+        size: count);
+  }
+}
+
+/// # `PatternVariable`
+/// ## A variable in the pattern.
+/// ```yaml
+/// example:
+///   size: u8
+///   address: 0x00
+/// ```
 class PatternVariable extends PatternObject {
-  PatternVariable(super.address, {super.size});
+  PatternVariable(super.name, super.address, {super.size});
 
   @override
   int get byteSize => _byteSize();
 
-  factory PatternVariable.fromYaml(YamlMap item) {
-    return PatternVariable(item["address"] as int,
+  factory PatternVariable.fromYaml(String name, YamlMap item) {
+    return PatternVariable(name, item["address"] as int,
         size: item["size"] as String);
   }
 
@@ -178,12 +227,20 @@ class PatternVariable extends PatternObject {
   }
 }
 
+/// # `PatternArray`
+/// ## An array in the pattern.
+/// ```yaml
+/// example:
+///   size: char16[0x0C]
+///   address: 0x00
+///   endAtZero: true
 class PatternArray extends PatternObject {
   bool? endAtZero;
-  PatternArray(super.address, {super.size, this.endAtZero});
+  PatternArray(super.name, super.address, {super.size, this.endAtZero});
 
-  factory PatternArray.fromYaml(YamlMap item) {
+  factory PatternArray.fromYaml(String name, YamlMap item) {
     return PatternArray(
+      name,
       item["address"] as int,
       size: item["size"] as String,
       endAtZero: item["endAtZero"] as bool?,
@@ -192,17 +249,14 @@ class PatternArray extends PatternObject {
 
   static bool tryParse(YamlMap item) {
     if (!item.containsKey("address")) {
-      print("No Address.");
       return false;
     }
 
     if (!item.containsKey("size")) {
-      print("No Size.");
       return false;
     }
 
     if (item["size"] is! String) {
-      print("Size is not a string.");
       return false;
     }
     if (["char16"].any((element) =>
@@ -210,7 +264,6 @@ class PatternArray extends PatternObject {
         (item["size"] as String).endsWith("]"))) {
       int? hexSize = _getSizeOfCharArray(item["size"] as String);
       if (hexSize == null) {
-        print("Invalid size.");
         return false;
       }
       return true;
@@ -243,12 +296,21 @@ class PatternArray extends PatternObject {
   }
 }
 
+/// # `PatternBitfield`
+/// ## A bitfield in the pattern.
+/// ```yaml
+/// example:
+///   address: 0x00
+///   bits:
+///     test1: 1
+///     test2: 3
+/// ```
 class PatternBitfield extends PatternObject {
   YamlMap? bitfield;
-  PatternBitfield(super.address, this.bitfield, {super.size});
+  PatternBitfield(super.name, super.address, this.bitfield, {super.size});
 
-  factory PatternBitfield.fromYaml(YamlMap item) {
-    return PatternBitfield(item["address"] as int, item["bits"],
+  factory PatternBitfield.fromYaml(String name, YamlMap item) {
+    return PatternBitfield(name, item["address"] as int, item["bits"],
         size: _getSizeOfBitField(item["bits"]));
   }
 
