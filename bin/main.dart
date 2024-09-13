@@ -180,3 +180,25 @@ class ReadPatternCommand extends Command {
     return json;
   }
 }
+
+class WritePatternCommand extends Command {
+  @override
+  String get description => "Write a file using a pattern.";
+
+  @override
+  String get name => "write";
+
+  WritePatternCommand() {
+    argParser.addOption("data", abbr: "d", mandatory: true);
+    argParser.addOption("pattern",
+        abbr: "p", defaultsTo: Directory.current.path);
+    argParser.addOption("file", abbr: "f", defaultsTo: Directory.current.path);
+  }
+
+  @override
+  dynamic run() {
+    FilePattern(argResults!.option("pattern")!.fixPath()).write(
+        File(argResults!.option("file")!.fixPath()),
+        jsonDecode(argResults!.option("data")!));
+  }
+}

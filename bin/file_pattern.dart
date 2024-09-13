@@ -59,7 +59,7 @@ mixin Pattern {
     return _parsedPatterns[path];
   }
 
-  void parse(YamlMap pattern, {int? addressOffset}) {
+  void _parse(YamlMap pattern) {
     if (pattern.containsKey("imports")) {
       for (YamlMap import in pattern["imports"]) {
         if (PatternImport.tryParse(import)) {
@@ -99,16 +99,34 @@ mixin Pattern {
     spinner.success("Parsed successfully.");
     return parsedData;
   }
+
+  ByteData _write(ByteData data, int address, Map<String, dynamic> dataMap) {
+    for (PatternObject object in objects) {
+      if ([PatternVariable, PatternArray, PatternBitfield]
+          .any((e) => object.runtimeType == e)) {
+        data = object.setData(data, address, dataMap[object.name]);
+      } else if (object is PatternImport) {
+        data = object._write(data, address, dataMap);
+      }
+    }
+    return data;
+  }
 }
 
 class FilePattern with Pattern {
   FilePattern(String path) {
     path = path.fixPath();
-    parse(_getPattern(path));
+    _parse(_getPattern(path));
   }
 
   Map<String, dynamic> read(Uint8List data) {
     return _read(data.buffer.asByteData(), 0);
+  }
+
+  void write(File file, Map<String, dynamic> dataMap) {
+    ByteData data = file.readAsBytesSync().buffer.asByteData();
+    _write(data, 0, dataMap);
+    file.writeAsBytesSync(data.buffer.asUint8List());
   }
 }
 
@@ -116,6 +134,8 @@ abstract class PatternObject {
   String name;
   int address;
   dynamic size;
+
+  Set<String> get requiredKeys => {};
   int get byteSize => (size == null) ? 0 : int.parse(size!);
   PatternObject(this.name, this.address, {this.size});
   static bool tryParse(YamlMap item) {
@@ -126,14 +146,18 @@ abstract class PatternObject {
     return null;
   }
 
-  void setData(ByteData data, int offsetAddress, dynamic value) {
-    return;
+  ByteData setData(ByteData data, int offsetAddress, dynamic value) {
+    throw UnimplementedError("Not implemented. Please use a subclass.");
+  }
+
+  bool dataValidation(dynamic value) {
+    throw Exception("Not implemented.");
   }
 }
 
 class PatternImport extends PatternObject with Pattern {
   PatternImport(String path, super.name, super.address, {super.size}) {
-    parse(_getPattern(path));
+    _parse(_getPattern(path));
   }
 
   static bool tryParse(YamlMap item) {
@@ -150,6 +174,12 @@ class PatternImport extends PatternObject with Pattern {
   @override
   dynamic getData(ByteData data, int offsetAddress) {
     return _read(data, offsetAddress);
+  }
+
+  @override
+  ByteData setData(ByteData data, int offsetAddress, dynamic value) {
+    throw Exception(
+        "Imports are read-only, they cannot be written to. Treat imported patterns as if they were part of the pattern, not a separate file.");
   }
 
   factory PatternImport.fromYaml(YamlMap item) {
