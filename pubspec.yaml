@@ -6,16 +6,20 @@ version: 0.0.1
 environment:
   sdk: ^3.5.0-180.3.beta
 
+isar_version: &isar_version 3.1.0 # define the version to be used
+
 # Add regular dependencies here.
 dependencies:
   args: ^2.4.2
   yaml: ^3.1.2
-  ansix: ^0.3.3
   dart_console: ^1.2.0
   uuid: ^4.4.2
   archive: ^3.6.1
   cli_spin: ^1.0.1
+  isar: *isar_version
 
 dev_dependencies:
+  isar_generator: *isar_version
+  build_runner: any
   lints: ^4.0.0
   test: ^1.24.0
