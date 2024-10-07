@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'dart:convert';
-// import 'package:ansix/ansix.dart';
 import "package:args/command_runner.dart";
 import 'package:cli_spin/cli_spin.dart';
 import 'file_pattern.dart';
@@ -21,26 +20,25 @@ Future<dynamic> main(List<String> arguments) async {
     abbr: "a",
     defaultsTo: Directory.current.path,
   );
-  runner.addCommand(ConstellationCommands());
-  runner.addCommand(PatternCommands());
-  currentPath = runner.argParser.parse(arguments)["app-path"];
+  currentPath = Directory.current.path;
+  if (arguments.contains("--app-path") || arguments.contains("-a")) {
+    currentPath = arguments[
+        arguments.indexWhere((e) => e == "--app-path" || e == "-a") + 1];
+  }
+  if (!Constellation.checkForConstellation(currentPath)) {
+    runner.addCommand(CreateConstellationCommand());
+  } else {
+    runner.addCommand(ShowMapConstellationCommand());
+    runner.addCommand(CheckForDifferencesCommand());
+    runner.addCommand(ConstellationJumpToCommand());
+    runner.addCommand(ConstellationGrowCommand());
+    runner.addCommand(ConstellationDeleteCommand());
+  }
+  runner.addCommand(ReadPatternCommand());
+  runner.addCommand(WritePatternCommand());
+
   if (arguments.isNotEmpty) {
     return await runner.run(arguments);
-  }
-}
-
-class ConstellationCommands extends Command {
-  @override
-  String get name => "const";
-  @override
-  String get description => "Commands for Constellations.";
-
-  ConstellationCommands() {
-    addSubcommand(CreateConstellationCommand());
-    addSubcommand(ShowMapConstellationCommand());
-    addSubcommand(CheckForDifferencesCommand());
-    addSubcommand(ConstellationJumpToCommand());
-    addSubcommand(ConstellationBranchCommand());
   }
 }
 
@@ -53,49 +51,53 @@ class CreateConstellationCommand extends Command {
   String get name => "create";
 
   CreateConstellationCommand() {
-    argParser.addOption("path", abbr: "p", mandatory: true);
     argParser.addOption("name", abbr: "n", mandatory: true);
+    argParser.addMultiOption("user", abbr: "u", defaultsTo: Iterable.empty());
   }
 
   @override
   void run() {
-    Constellation(argResults?["path"], name: argResults?["name"]);
+    List<String>? users = argResults?["user"];
+    if (users?.isEmpty ?? true) {
+      Constellation(currentPath, name: argResults?["name"]);
+    } else {
+      Constellation(currentPath, name: argResults?["name"], users: users!);
+    }
   }
 }
 
 class ShowMapConstellationCommand extends Command {
   @override
-  String get description => "Shows the map of a constellation.";
+  String get description => "Get the map of a constellation.";
 
   @override
   String get name => "map";
 
-  ShowMapConstellationCommand() {
-    argParser.addOption("path", abbr: "p", mandatory: true);
-  }
+  ShowMapConstellationCommand();
 
   @override
-  void run() {
-    Constellation(argResults?["path"]).starmap.showMap();
+  dynamic run() {
+    Constellation constellation = Constellation(currentPath);
+    constellation.starmap?.showMap();
+    return jsonEncode(constellation.starmap?.toJson());
   }
 }
 
 class CheckForDifferencesCommand extends Command {
   @override
   String get description =>
-      "Checks for differences between a star and the current file.";
+      "Checks for differences between the current star and what is currently in the directory.";
 
   @override
   String get name => "check";
 
   CheckForDifferencesCommand() {
-    argParser.addOption("path", abbr: "p", mandatory: true);
     argParser.addOption("star", abbr: "s");
   }
 
   @override
   Future<bool> run() async {
-    Constellation constellation = Constellation(argResults?["path"]);
+    Constellation constellation = Constellation(currentPath);
     final spinner = CliSpin(
             text:
                 "Checking for differences between current directory and provided star...")
@@ -112,49 +114,48 @@ class CheckForDifferencesCommand extends Command {
 
 class ConstellationJumpToCommand extends Command {
   @override
-  String get description =>
-      "Jumps to a star in the constellation. Must call extract if you want the star to be extracted.";
+  String get description => "Jumps to a different star in the constellation.";
 
   @override
   String get name => "jump";
 
   ConstellationJumpToCommand() {
-    argParser.addOption("path", abbr: "p", mandatory: true);
     argParser.addOption("star", abbr: "s", mandatory: true);
   }
 
   @override
   void run() {
-    Constellation(argResults?["path"]).starmap[argResults?["star"]];
+    Constellation(currentPath).starmap?[argResults?["star"]];
   }
 }
 
-class ConstellationBranchCommand extends Command {
+class ConstellationGrowCommand extends Command {
   @override
   String get description =>
-      "Creates a new branch in the constellation from the current star.";
+      "Continues the from the current star to a new star in the constellation. Will branch if necessary.";
   @override
-  String get name => "branch";
+  String get name => "grow";
 
-  ConstellationBranchCommand() {
-    argParser.addOption("path", abbr: "p", mandatory: true);
+  ConstellationGrowCommand() {
     argParser.addOption("name", abbr: "n", mandatory: true);
   }
 
   @override
   void run() {
-    Constellation(argResults?["path"]).branch(argResults?["name"]);
+    Constellation(currentPath).grow(argResults?["name"]);
   }
 }
 
-class PatternCommands extends Command {
+class ConstellationDeleteCommand extends Command {
   @override
-  String get name => "pattern";
-  @override
-  String get description => "Commands for patterns.";
+  String get description => "Deletes the constellation. Be CAREFUL!";
 
-  PatternCommands() {
-    addSubcommand(ReadPatternCommand());
+  @override
+  String get name => "delete";
+
+  @override
+  void run() {
+    Constellation(currentPath).delete();
   }
 }
 

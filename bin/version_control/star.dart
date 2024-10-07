@@ -1,6 +1,7 @@
 import 'package:archive/archive_io.dart';
 import 'dart:convert';
 import 'constellation.dart';
+import 'users.dart';
 import 'dart:io';
 
 /// # `class` Star
@@ -14,6 +15,8 @@ class Star {
   String? hash; // The hash of the star.
   DateTime? createdAt; // The time the star was created.
   String? parentHash; // The hash of the parent star.
+  String? _userHash; // The hash of the user who this star belongs to.
+  User? get user => constellation.userIndex?.getUser(_userHash!);
   Star? get parent {
     if (parentHash == null) return null;
     return Star(constellation, hash: parentHash);
@@ -28,12 +31,20 @@ class Star {
 
   Archive get archive => getArchive();
 
-  Star(this.constellation, {this.name, this.hash}) {
-    constellation.starmap.initEntry(hash ?? "");
-    if (name != null && hash == null) {
+  Star(
+    this.constellation, {
+    this.name,
+    this.hash,
+    User? user,
+  }) {
+    constellation.starmap?.initEntry(hash ?? "");
+    if (name != null && user != null) {
+      _userHash = user.hash;
       _create();
-    } else if (name == null && hash != null) {
+    } else if (hash != null) {
       load();
+    } else {
+      throw Exception("Star must have either a name and a user, or a hash.");
     }
   }
 
@@ -66,8 +77,8 @@ class Star {
           "Cannot create a child star when there are no differences. Please make changes and try again.");
     }
     Star star = Star(constellation, name: name);
-    constellation.starmap.addRelationship(this, star);
-    constellation.starmap.currentStar = star;
+    constellation.starmap?.addRelationship(this, star);
+    constellation.starmap?.currentStar = star;
     constellation.save();
     return star.hash!;
   }
@@ -113,12 +124,11 @@ class Star {
   void fromJson(Map<String, dynamic> json) {
     name = json["name"];
     createdAt = DateTime.tryParse(json["createdAt"]);
+    _userHash = json["user"];
   }
 
   /// # `Map<String, dynamic>` toJson()
   /// ## Converts the `Star` object into a JSON object.
-  Map<String, dynamic> toJson() => {
-        "name": name,
-        "createdAt": createdAt.toString(),
-      };
+  Map<String, dynamic> toJson() =>
+      {"name": name, "createdAt": createdAt.toString(), "user": _userHash};
 }

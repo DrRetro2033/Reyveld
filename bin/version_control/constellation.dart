@@ -8,17 +8,16 @@ import '../extensions.dart';
 
 import 'star.dart';
 import 'dossier.dart';
+import 'users.dart';
 
 /// # `class` Constellation
 /// ## Represents a constellation.
-/// Is similar to how a normal Git repository works, with an initial commit acting as the root star.
-/// However, the plan is for Arceus to be able to do more with stars in the future,
-/// so just using Git as a backbone would limit the scope of this project.
 class Constellation {
   String? name; // The name of the constellation.
   String path; // The path to the folder this constellation is in.
 
-  late Starmap starmap;
+  Starmap? starmap;
+  UserIndex? userIndex;
 
   Directory get directory => Directory(
       path); // Fetches a directory object from the path this constellation is in.
@@ -30,17 +29,20 @@ class Constellation {
   Directory get constellationDirectory => Directory(
       constellationPath); // Fetches a directory object from the path the constellation stores its data in.
 
-  Constellation(this.path, {this.name}) {
+  Constellation(this.path,
+      {this.name, Iterable<String> users = const ["host"]}) {
     path = path.fixPath();
     if (constellationDirectory.existsSync()) {
       load();
-      if (starmap.currentStarHash == null) {
-        starmap.currentStarHash = starmap.rootHash;
+      if (starmap?.currentStarHash == null) {
+        starmap?.currentStarHash = starmap?.rootHash;
         save();
       }
       return;
     } else if (name != null) {
       _createConstellationDirectory();
+      userIndex = UserIndex(constellationPath);
+      userIndex?.createUsers(users);
       starmap = Starmap(this);
       _createRootStar();
       save();
@@ -60,18 +62,21 @@ class Constellation {
   }
 
   void _createRootStar() {
-    starmap.root = Star(this, name: "Initial Star");
-    starmap.currentStar = starmap.root;
+    starmap?.root =
+        Star(this, name: "Initial Star", user: userIndex?.getHostUser());
+    starmap?.currentStar = starmap?.root;
     save();
   }
 
   String generateUniqueStarHash() {
-    while (true) {
+    for (int i = 0; i < 100; i++) {
       String hash = generateUUID();
       if (!(doesStarExist(hash))) {
         return hash;
       }
     }
+    throw Exception(
+        "Unable to generate a unique star hash. Either you are extremely unlucky or there are zero unique hashes left.");
   }
 
   /// # `String` getStarPath(`String` hash)
@@ -102,19 +107,30 @@ class Constellation {
     starmap = Starmap(this, map: json["map"]);
   }
 
-  Map<String, dynamic> toJson() => {"name": name, "map": starmap.toJson()};
+  Map<String, dynamic> toJson() => {"name": name, "map": starmap?.toJson()};
   // ============================================================================
 
-  String? branch(String name) {
-    return starmap.currentStar?.createChild(name);
+  // # `String?` grow(`String` name)
+  // ## Creates a new star with the given name and returns the hash of the new star at the current star.
+  String? grow(String name) {
+    return starmap?.currentStar?.createChild(name);
   }
 
   // List<String> listChildren(String hash) {}
 
+  void delete() {
+    constellationDirectory.deleteSync(recursive: true);
+    starmap = null;
+  }
+
   bool checkForDifferences(String? hash) {
-    hash ??= starmap.currentStarHash;
+    hash ??= starmap?.currentStarHash;
     Star star = Star(this, hash: hash);
     return Dossier(star).checkForDifferences();
+  }
+
+  static bool checkForConstellation(String path) {
+    return Directory("$path/.constellation").existsSync();
   }
 }
 
@@ -235,7 +251,7 @@ class Starmap {
   /// ## Returns a tree view of the constellation.
   Map<String, dynamic> getReadableTree(String curHash) {
     Map<String, dynamic> list = {};
-    String displayName = "Star $curHash";
+    String displayName = curHash;
     if (currentStarHash == curHash) {
       displayName += "✨";
     }
