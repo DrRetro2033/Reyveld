@@ -1,29 +1,46 @@
 import 'dart:io';
+import 'package:ansix/ansix.dart';
+
 import '../uuid.dart';
 
 class UserIndex {
   static const String filenameOfUserIndex = "userindex";
+  static const AnsiGridTheme gridTheme = AnsiGridTheme(
+      headerTextTheme: AnsiTextTheme(
+          backgroundColor: AnsiColor.blueViolet,
+          alignment: AnsiTextAlignment.center));
   String? filepath;
   UserIndex(String path) {
     filepath = "$path/$filenameOfUserIndex";
+    users = _load();
   }
 
-  List<User> get users => _load();
+  late List<User> users;
+
+  List<List<Object?>> get rows {
+    List<List<Object?>> rows = [];
+    rows.add(<Object?>["#", "Name"]);
+    for (User user in users) {
+      rows.add(<Object?>[user.hash.toString(), user.name.toString()]);
+    }
+    return rows;
+  }
 
   List<User> _load() {
     List<User> users = [];
     final file = File(filepath!);
     if (file.existsSync()) {
       for (String line in file.readAsLinesSync()) {
-        users.add(User.fromString(line));
+        users.add(User.fromString(this, line));
       }
     }
     return users;
   }
 
-  void _save(List<User> users) {
+  void _save() {
     final file = File(filepath!);
     file.createSync(recursive: true);
+    file.writeAsStringSync("", mode: FileMode.writeOnly); // clear file
     for (User user in users) {
       file.writeAsStringSync("${user.toString()}\n", mode: FileMode.append);
     }
@@ -44,14 +61,13 @@ class UserIndex {
   }
 
   void createUser(String name) {
-    List<User> x = users;
-    if (x.any((element) => element.name == name)) {
+    if (users.any((element) => element.name == name)) {
       print("Not recommended to have two users with the same name.");
     }
     String? hash;
     for (int i = 0; i < 100; i++) {
       hash = User.generateUniqueUserHash();
-      if (!x.any((element) => element.hash == hash)) {
+      if (!users.any((element) => element.hash == hash)) {
         break;
       }
       hash = null;
@@ -59,22 +75,34 @@ class UserIndex {
     if (hash == null) {
       throw Exception("Unable to generate a unique user hash.");
     }
-    User user = User(name, hash);
-    x.add(user);
-    _save(x);
+    User user = User(this, name, hash);
+    users.add(user);
+    _save();
     print("Created user: ${user.name}");
+  }
+
+  void displayUsers() {
+    final AnsiGrid verticalGrid = AnsiGrid.fromRows(rows, theme: gridTheme);
+    print(verticalGrid);
   }
 }
 
 class User {
   static const int lengthOfHash = 8;
-  String? name;
+  UserIndex userIndex;
+  String? _name;
+  String get name => _name!;
+  set name(String value) {
+    _name = value;
+    userIndex._save();
+  }
+
   late String hash;
-  User(this.name, this.hash);
+  User(this.userIndex, this._name, this.hash);
 
   @override
   String toString() {
-    return "$hash$name";
+    return "$hash$_name";
   }
 
   static String generateUniqueUserHash() {
@@ -82,9 +110,9 @@ class User {
     return hash.substring(0, lengthOfHash);
   }
 
-  factory User.fromString(String string) {
+  factory User.fromString(UserIndex userIndex, String string) {
     String hash = string.substring(0, lengthOfHash);
     String name = string.substring(lengthOfHash);
-    return User(name, hash);
+    return User(userIndex, name, hash);
   }
 }

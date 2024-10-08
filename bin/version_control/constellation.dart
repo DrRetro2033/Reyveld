@@ -32,6 +32,7 @@ class Constellation {
   Constellation(this.path,
       {this.name, Iterable<String> users = const ["host"]}) {
     path = path.fixPath();
+    userIndex = UserIndex(constellationPath);
     if (constellationDirectory.existsSync()) {
       load();
       if (starmap?.currentStarHash == null) {
@@ -41,7 +42,6 @@ class Constellation {
       return;
     } else if (name != null) {
       _createConstellationDirectory();
-      userIndex = UserIndex(constellationPath);
       userIndex?.createUsers(users);
       starmap = Starmap(this);
       _createRootStar();

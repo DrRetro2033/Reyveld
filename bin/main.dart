@@ -33,6 +33,7 @@ Future<dynamic> main(List<String> arguments) async {
     runner.addCommand(ConstellationJumpToCommand());
     runner.addCommand(ConstellationGrowCommand());
     runner.addCommand(ConstellationDeleteCommand());
+    runner.addCommand(UsersCommands());
   }
   runner.addCommand(ReadPatternCommand());
   runner.addCommand(WritePatternCommand());
@@ -68,7 +69,7 @@ class CreateConstellationCommand extends Command {
 
 class ShowMapConstellationCommand extends Command {
   @override
-  String get description => "Get the map of a constellation.";
+  String get description => "Get the map of the constellation.";
 
   @override
   String get name => "map";
@@ -143,6 +144,50 @@ class ConstellationGrowCommand extends Command {
   @override
   void run() {
     Constellation(currentPath).grow(argResults?["name"]);
+  }
+}
+
+class UsersCommands extends Command {
+  @override
+  String get description => "Contains commands for users in the constellation.";
+  @override
+  String get name => "users";
+
+  UsersCommands() {
+    addSubcommand(UsersListCommand());
+    addSubcommand(UsersRenameCommand());
+  }
+}
+
+class UsersListCommand extends Command {
+  @override
+  String get description => "Lists the users in the constellation.";
+  @override
+  String get name => "list";
+
+  @override
+  void run() {
+    Constellation(currentPath).userIndex?.displayUsers();
+  }
+}
+
+class UsersRenameCommand extends Command {
+  @override
+  String get description => "Renames a user in the constellation.";
+  @override
+  String get name => "rename";
+
+  UsersRenameCommand() {
+    argParser.addOption("user-hash", abbr: "u", mandatory: true);
+    argParser.addOption("new-name", abbr: "n", mandatory: true);
+  }
+
+  @override
+  void run() {
+    Constellation(currentPath)
+        .userIndex
+        ?.getUser(argResults?["user-hash"])
+        .name = argResults?["new-name"];
   }
 }
 
