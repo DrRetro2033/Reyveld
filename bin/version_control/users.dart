@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:ansix/ansix.dart';
 
 import '../uuid.dart';
+import '../extensions.dart';
 
 class UserIndex {
   static const String filenameOfUserIndex = "userindex";
@@ -78,7 +79,7 @@ class UserIndex {
     User user = User(this, name, hash);
     users.add(user);
     _save();
-    print("Created user: ${user.name}");
+    // print("Created user: ${user.name} with hash: ${user.hash}");
   }
 
   void displayUsers() {
@@ -88,7 +89,8 @@ class UserIndex {
 }
 
 class User {
-  static const int lengthOfHash = 8;
+  static const int _lengthOfHash = 8;
+  static int get _lengthOfHashInFile => _lengthOfHash ~/ 2;
   UserIndex userIndex;
   String? _name;
   String get name => _name!;
@@ -102,17 +104,17 @@ class User {
 
   @override
   String toString() {
-    return "$hash$_name";
+    return "${hash.fromHexToCodes()}$_name";
   }
 
   static String generateUniqueUserHash() {
     String hash = generateUUID();
-    return hash.substring(0, lengthOfHash);
+    return hash.substring(0, _lengthOfHash);
   }
 
   factory User.fromString(UserIndex userIndex, String string) {
-    String hash = string.substring(0, lengthOfHash);
-    String name = string.substring(lengthOfHash);
-    return User(userIndex, name, hash);
+    String hash = string.substring(0, _lengthOfHashInFile);
+    String name = string.substring(_lengthOfHashInFile);
+    return User(userIndex, name, hash.fromCodesToHex());
   }
 }
