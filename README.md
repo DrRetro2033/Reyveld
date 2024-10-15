@@ -9,25 +9,39 @@
 
 # What is Arceus?
 
-Arceus is a brand new CLI save manager and editor, inspired by version control software like Git. It is designed to make it easy to manage your saves all in one place.
+Arceus is a brand new CLI save manager and editor, inspired by version control software like Git. It is designed to make an easy to manage location for your saves.
+
+
+> [!Note]
+> If you want an example of what you can do with Arceus, check out my other project [MudkiPC](https://github.com/Pokemon-Manager/MudkiPC).
 
 # Features
 
-## Branch Off Into Different Universes 🌌
+## Branch Off Into Different Timelines 🌌
 
-With Arceus, you can branch saves into new universes, so multiple versions of one save can exist at the same time.
+With Arceus, you can branch saves into new timelines, so multiple versions of one save can exist at the same time.
 
 ## Rollback to Older Saves 🕔
 
 Arceus can rollback saves to older versions, so if you make any mistakes, your original savefile is still intact.
 
-## Human Readable 👓
+## Go Beyond with Add-Ons 📦
 
-With file patterns, you can make binary and hexadecimals readable to regular humans and modify them with ease.
+With the help of [dart_eval](https://pub.dev/packages/dart_eval), Arceus can be upgraded to read and write files for any number of games!
+
+> [!Note]
+> In the future, I am planning to add built-in functionalty for easier creation of transfer tools, akin to Pokémon Bank. For now, however, you are going to need to build your own transfer tools.
+
+> [!IMPORTANT]
+> Also, I am not planning to add support for any other lanaguge for add-on development. You have to use Dart. Sorry!
 
 ## Tiny Size 📁
 
 Arceus does not need any external libraries not already compiled with the app, so Arceus has a small footprint on your computer or app. And as a bonus, no DLLs to worry about!
+
+## Cross Platform 🖥️📱
+
+Arceus can run on any modern device!
 
 ## Developer Friendly 🤝
 
@@ -37,7 +51,7 @@ Arceus can be used by any developer in their projects, yes even you! Just don't 
 
 ## For Save Editors 📝
 
-The main use case for Arceus is for developers. Arceus can be used in save editors to make it easier to focus on what actually matters, the user experience. If you want an example of what you can do with Arceus, check out my other project [MudkiPC](https://github.com/Pokemon-Manager/MudkiPC).
+The main use case for Arceus is for developers wanting to make a save editor. Arceus can be used in save editors to make it easier to focus on what actually matters, the features.
 
 ## For Game Development 💻
 
@@ -45,11 +59,15 @@ Be able to rollback to any point in your game for testing, give items for debugg
 
 ## For Multiple Players 🫂
 
-No matter if a game supports multiple saves or not, Arceus can make it easier to have multiple players have their own save. I am looking at you Epic (jk, love your free games!)
+No matter if a game supports multiple saves or not, Arceus can make it easier to have multiple players have their own save!
 
 ## For Achievement Hunting 🏆
 
 Jump from point to point in a game, so you can easily collect every achievement in a game without taking up multiple slots or quicksaves.
+
+## For Reverse Engineering 🔧
+
+Binary files can be a bit tricky to find differences in, but Arceus is designed to detect the smallest differences in a file's lifetime.
 
 # Why is it called Arceus?
 
