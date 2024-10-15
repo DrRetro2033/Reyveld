@@ -13,21 +13,33 @@ import 'users.dart';
 /// # `class` Constellation
 /// ## Represents a constellation.
 class Constellation {
-  String? name; // The name of the constellation.
-  String path; // The path to the folder this constellation is in.
+  /// The name of the constellation.
+  String? name;
 
+  /// The path to the folder this constellation is in.
+  String path;
+
+  /// The starmap of the constellation.
   Starmap? starmap;
+
+  /// The user index of the constellation.
   UserIndex? userIndex;
 
-  Directory get directory => Directory(
-      path); // Fetches a directory object from the path this constellation is in.
+  // Fetches a directory object from the path this constellation is in.
+  Directory get directory => Directory(path);
 
+  /// # `bool` doesStarExist(`String` hash)
+  /// ## Checks if a star exists in the constellation.
+  /// Returns `true` if the star exists, `false` otherwise.
   bool doesStarExist(String hash) => File(getStarPath(hash)).existsSync();
 
-  String get constellationPath =>
-      "$path/.constellation"; // The path to the folder the constellation stores its data in.
-  Directory get constellationDirectory => Directory(
-      constellationPath); // Fetches a directory object from the path the constellation stores its data in.
+  /// The path to the folder the constellation stores its data in. (The `.constellation` folder)
+  String get constellationPath => "$path/.constellation";
+
+  String get addonFolderPath => "$constellationPath/addons";
+
+  /// Fetches a directory object that represents the `constellationPath` folder.
+  Directory get constellationDirectory => Directory(constellationPath);
 
   Constellation(this.path,
       {this.name, Iterable<String> users = const ["host"]}) {
@@ -123,12 +135,18 @@ class Constellation {
     starmap = null;
   }
 
+  /// # `bool` checkForDifferences()
+  /// ## Checks if the constellation has differences between the current star and the root star.
+  /// Returns `true` if there are differences, `false` otherwise.
   bool checkForDifferences(String? hash) {
     hash ??= starmap?.currentStarHash;
     Star star = Star(this, hash: hash);
     return Dossier(star).checkForDifferences();
   }
 
+  /// # `bool` checkForConstellation(`String` path)
+  /// ## Checks if the constellation exists at the given path.
+  /// Returns `true` if the constellation exists, `false` otherwise.
   static bool checkForConstellation(String path) {
     return Directory("$path/.constellation").existsSync();
   }

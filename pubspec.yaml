@@ -15,6 +15,7 @@ dependencies:
   uuid: ^4.4.2
   archive: ^3.6.1
   cli_spin: ^1.0.1
+  dart_eval: ^0.7.9
 
 dev_dependencies:
   lints: ^4.0.0
