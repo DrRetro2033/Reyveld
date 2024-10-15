@@ -2,7 +2,8 @@
 
 ### The modern save manager and editor.
 
-### NOTICE: This is still in alpha.
+> [!Warning]
+> This is still in alpha.
 
 ![Arceus](https://archives.bulbagarden.net/media/upload/thumb/9/9e/0493Arceus.png/900px-0493Arceus.png)
 
