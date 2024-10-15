@@ -4,6 +4,7 @@ import "package:args/command_runner.dart";
 import 'package:cli_spin/cli_spin.dart';
 import 'file_pattern.dart';
 import 'extensions.dart';
+import 'scripting/addons.dart';
 import "version_control/constellation.dart";
 
 /// # `void` main(List<String> arguments)
@@ -34,6 +35,9 @@ Future<dynamic> main(List<String> arguments) async {
     runner.addCommand(ConstellationGrowCommand());
     runner.addCommand(ConstellationDeleteCommand());
     runner.addCommand(UsersCommands());
+    runner.addCommand(CompileAddOnCommand());
+    runner.addCommand(ListAddOnsCommand());
+    runner.addCommand(ViewAddOnFingerprintCommand());
   }
   runner.addCommand(ReadPatternCommand());
   runner.addCommand(WritePatternCommand());
@@ -246,5 +250,53 @@ class WritePatternCommand extends Command {
     FilePattern(argResults!.option("pattern")!.fixPath()).write(
         File(argResults!.option("file")!.fixPath()),
         jsonDecode(argResults!.option("data")!));
+  }
+}
+
+class CompileAddOnCommand extends Command {
+  @override
+  String get description => "Compile an add-on for Arceus.";
+
+  @override
+  String get name => "compile";
+
+  CompileAddOnCommand() {
+    argParser.addOption("project-path", abbr: "p", mandatory: true);
+  }
+
+  @override
+  dynamic run() {
+    final constellation = Constellation(currentPath.fixPath());
+    AddOn(constellation,
+            projectPath: argResults!.option("project-path")!.fixPath())
+        .compile();
+  }
+}
+
+class ListAddOnsCommand extends Command {
+  @override
+  String get description => "Lists the add-ons in the constellation.";
+  @override
+  String get name => "add-ons";
+
+  @override
+  void run() {
+    Constellation(currentPath).displayAddOns();
+  }
+}
+
+class ViewAddOnFingerprintCommand extends Command {
+  @override
+  String get description => "View the fingerprint of an add-on.";
+  @override
+  String get name => "fingerprint";
+
+  ViewAddOnFingerprintCommand() {
+    argParser.addOption("name", abbr: "n", mandatory: true);
+  }
+
+  @override
+  dynamic run() {
+    Constellation(currentPath).displayAddOnFingerprint(argResults?["name"]);
   }
 }
