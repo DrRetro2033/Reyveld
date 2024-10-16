@@ -2,7 +2,7 @@
 
 ### The modern save manager and editor.
 
-> [!Warning]
+> [!WARNING]
 > This is still in alpha.
 
 ![Arceus](https://archives.bulbagarden.net/media/upload/thumb/9/9e/0493Arceus.png/900px-0493Arceus.png)
@@ -11,8 +11,7 @@
 
 Arceus is a brand new CLI save manager and editor, inspired by version control software like Git. It is designed to make an easy to manage location for your saves.
 
-
-> [!Note]
+> [!NOTE]
 > If you want an example of what you can do with Arceus, check out my other project [MudkiPC](https://github.com/Pokemon-Manager/MudkiPC).
 
 # Features
@@ -29,8 +28,8 @@ Arceus can rollback saves to older versions, so if you make any mistakes, your o
 
 With the help of [dart_eval](https://pub.dev/packages/dart_eval), Arceus can be upgraded to read and write files for any number of games!
 
-> [!Note]
-> In the future, I am planning to add built-in functionalty for easier creation of transfer tools, akin to Pokémon Bank. For now, however, you are going to need to build your own transfer tools.
+> [!NOTE]
+> In the future, I am planning to add built-in functionalty for easier creation of transfer tools, akin to Pokémon Bank. For now, you are going to need to build your own transfer tools.
 
 > [!IMPORTANT]
 > Also, I am not planning to add support for any other lanaguge for add-on development. You have to use Dart. Sorry!
