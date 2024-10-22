@@ -8,7 +8,6 @@ import '../extensions.dart';
 
 import 'star.dart';
 import 'dossier.dart';
-import '../scripting/addons.dart';
 import 'users.dart';
 
 /// # `class` Constellation
@@ -36,12 +35,6 @@ class Constellation {
 
   /// The path to the folder the constellation stores its data in. (The `.constellation` folder)
   String get constellationPath => "$path/.constellation";
-
-  /// The path to the folder the constellation stores its addons in.
-  String get addonFolderPath => "$constellationPath/addons";
-
-  /// Fetches a directory object that represents the `addonFolderPath` folder.
-  Directory get addonDirectory => Directory(addonFolderPath);
 
   /// Fetches a directory object that represents the `constellationPath` folder.
   Directory get constellationDirectory => Directory(constellationPath);
@@ -154,21 +147,6 @@ class Constellation {
   /// Returns `true` if the constellation exists, `false` otherwise.
   static bool checkForConstellation(String path) {
     return Directory("$path/.constellation").existsSync();
-  }
-
-  void displayAddOns() {
-    for (var file in addonDirectory.listSync()) {
-      print('- ${file.path.fixPath().split("/").last.split(".").first}');
-    }
-  }
-
-  void displayAddOnFingerprint(argResult) {
-    if (argResult == null) {
-      print("No add-on specified. Use --help for more information.");
-      return;
-    }
-    AddOn addOn = AddOn(this, addonName: argResult);
-    print(addOn.fingerprint);
   }
 }
 

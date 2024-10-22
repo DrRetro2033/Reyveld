@@ -13,7 +13,6 @@ import '../extensions.dart';
 /// Acts as a wrapper for the internal file system (i.e. Inside a `.star` file) and the external file system (i.e. Inside the current directory).
 class Dossier {
   Star star; // The star used for the internal file system.
-
   // The following are used for the CLI:
   String addSymbol = "A".bold().green();
   String removeSymbol = "D".bold().red();
@@ -101,8 +100,9 @@ class Dossier {
     for (FileSystemEntity entity
         in star.constellation.directory.listSync(recursive: true)) {
       if (entity is File &&
-          (!entity.path.endsWith(".star") &&
-              !entity.path.endsWith("starmap"))) {
+          (!entity.path
+              .fixPath()
+              .contains(star.constellation.constellationPath))) {
         if (star.archive
                 .findFile(entity.path.makeRelPath(star.constellation.path)) ==
             null) {

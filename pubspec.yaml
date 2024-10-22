@@ -16,7 +16,21 @@ dependencies:
   archive: ^3.6.1
   cli_spin: ^1.0.1
   dart_eval: ^0.7.9
+  petitparser: any
+  arceus_addon_dependencies:
+    git:
+      url: https://github.com/DrRetro2033/arceus_addon_dependencies.git
+      ref: main
+  hetu_script: ^0.3.12
 
 dev_dependencies:
   lints: ^4.0.0
   test: ^1.24.0
+
+ffigen:
+  name: "squirrel_bindings"
+  description: "FFI bindings to the Squirrel scripting language"
+  headers:
+    entry-points:
+      - "bin/src/squirrel3/include/squirrel.h"
+  output: "bin/scripting/squirrel_bindings.dart"
