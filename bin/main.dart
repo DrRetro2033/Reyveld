@@ -1,10 +1,13 @@
 import 'dart:io';
 import 'dart:convert';
-import "package:args/command_runner.dart";
+import 'package:args/command_runner.dart';
 import 'package:cli_spin/cli_spin.dart';
 import 'file_pattern.dart';
 import 'extensions.dart';
-import "version_control/constellation.dart";
+import 'version_control/constellation.dart';
+import 'version_control/star.dart';
+import 'arceus.dart';
+import 'package:interact/interact.dart';
 
 /// # `void` main(List<String> arguments)
 /// ## Main entry point.
@@ -16,14 +19,27 @@ Future<dynamic> main(List<String> arguments) async {
   // AnsiX.ensureSupportsAnsi();
   var runner = CommandRunner('arceus', "The ultimate save manager.");
   runner.argParser.addOption(
-    "app-path",
-    abbr: "a",
+    "path",
+    abbr: "p",
     defaultsTo: Directory.current.path,
   );
+  runner.argParser.addOption("const",
+      abbr: "c",
+      help:
+          "Use a constellation name instead of an path. Only works after using --path to create the constellation.");
   currentPath = Directory.current.path;
-  if (arguments.contains("--app-path") || arguments.contains("-a")) {
-    currentPath = arguments[
-        arguments.indexWhere((e) => e == "--app-path" || e == "-a") + 1];
+  if (arguments.contains("--path") || arguments.contains("-p")) {
+    currentPath =
+        arguments[arguments.indexWhere((e) => e == "--path" || e == "-p") + 1];
+  }
+  if (arguments.contains("--const") || arguments.contains("-c")) {
+    final constellationName =
+        arguments[arguments.indexWhere((e) => e == "--const" || e == "-c") + 1];
+    if (!Arceus.doesConstellationExist(constellationName)) {
+      throw Exception(
+          "Constellation with the name of $constellationName does not exist");
+    }
+    currentPath = Arceus.getConstellationPath(constellationName)!;
   }
   if (!Constellation.checkForConstellation(currentPath)) {
     runner.addCommand(CreateConstellationCommand());
@@ -35,8 +51,7 @@ Future<dynamic> main(List<String> arguments) async {
     runner.addCommand(ConstellationDeleteCommand());
     runner.addCommand(UsersCommands());
   }
-  runner.addCommand(ReadPatternCommand());
-  runner.addCommand(WritePatternCommand());
+  runner.addCommand(ArceusConstellationsCommand());
 
   if (arguments.isNotEmpty) {
     return await runner.run(arguments);
@@ -52,18 +67,25 @@ class CreateConstellationCommand extends Command {
   String get name => "create";
 
   CreateConstellationCommand() {
-    argParser.addOption("name", abbr: "n", mandatory: true);
     argParser.addMultiOption("user", abbr: "u", defaultsTo: Iterable.empty());
   }
 
   @override
   void run() {
-    List<String>? users = argResults?["user"];
-    if (users?.isEmpty ?? true) {
-      Constellation(currentPath, name: argResults?["name"]);
-    } else {
-      Constellation(currentPath, name: argResults?["name"], users: users!);
+    final spinner = CliSpin().start("Creating constellation...");
+    try {
+      List<String>? users = argResults?["user"];
+      if (users?.isEmpty ?? true) {
+        Constellation(path: currentPath, name: argResults?.rest.join(" "));
+      } else {
+        Constellation(
+            path: currentPath, name: argResults?.rest.join(" "), users: users!);
+      }
+    } catch (e) {
+      spinner.fail("Unable to create constellation.");
+      return;
     }
+    spinner.success("Constellation created.");
   }
 }
 
@@ -78,7 +100,7 @@ class ShowMapConstellationCommand extends Command {
 
   @override
   dynamic run() {
-    Constellation constellation = Constellation(currentPath);
+    Constellation constellation = Constellation(path: currentPath);
     constellation.starmap?.showMap();
     return jsonEncode(constellation.starmap?.toJson());
   }
@@ -92,18 +114,16 @@ class CheckForDifferencesCommand extends Command {
   @override
   String get name => "check";
 
-  CheckForDifferencesCommand() {
-    argParser.addOption("star", abbr: "s");
-  }
+  CheckForDifferencesCommand();
 
   @override
   Future<bool> run() async {
-    Constellation constellation = Constellation(currentPath);
+    Constellation constellation = Constellation(path: currentPath);
     final spinner = CliSpin(
             text:
                 "Checking for differences between current directory and provided star...")
         .start();
-    bool result = constellation.checkForDifferences(argResults?["star"]);
+    bool result = constellation.checkForDifferences();
     if (!result) {
       spinner.success("No differences found.");
     } else {
@@ -115,18 +135,31 @@ class CheckForDifferencesCommand extends Command {
 
 class ConstellationJumpToCommand extends Command {
   @override
-  String get description => "Jumps to a different star in the constellation.";
+  String get description =>
+      "Jumps to a different star in the constellation. Give a trailing hash to jump to a specific star.";
 
   @override
   String get name => "jump";
 
-  ConstellationJumpToCommand() {
-    argParser.addOption("star", abbr: "s", mandatory: true);
-  }
+  ConstellationJumpToCommand();
 
   @override
   void run() {
-    Constellation(currentPath).starmap?[argResults?["star"]];
+    CliSpin? spinner = CliSpin().start("Jumping to star...");
+    if (argResults!.rest.isEmpty) {
+      spinner.fail(" Please provide a star hash to jump to.");
+      return;
+    }
+    String hash = argResults!.rest.join("");
+
+    try {
+      final star = Constellation(path: currentPath).starmap?[hash] as Star;
+      star.makeCurrent();
+      spinner.success("Jumped to star \"${star.name}\".");
+    } catch (e) {
+      spinner.fail(" Star with the hash of \"$hash\" not found.");
+      return;
+    }
   }
 }
 
@@ -138,12 +171,39 @@ class ConstellationGrowCommand extends Command {
   String get name => "grow";
 
   ConstellationGrowCommand() {
-    argParser.addOption("name", abbr: "n", mandatory: true);
+    argParser.addOption("name", abbr: "n", mandatory: true, hide: true);
   }
 
   @override
   void run() {
-    Constellation(currentPath).grow(argResults?["name"]);
+    Constellation(path: currentPath).grow(argResults?["name"]);
+  }
+}
+
+class TrimCommand extends Command {
+  @override
+  String get description =>
+      "Trims the branch at the current star. Will confirm before proceeding, unless --force is provided.";
+  @override
+  String get name => "trim";
+
+  TrimCommand() {
+    argParser.addFlag("force", abbr: "f", defaultsTo: false);
+  }
+
+  @override
+  void run() {
+    if (!argResults!["force"]) {
+      final confirm = Confirm(
+              prompt:
+                  "Are you sure you want to trim off the current star? (Will delete the current star and its children.)",
+              defaultValue: false)
+          .interact();
+      if (!confirm) {
+        return;
+      }
+    }
+    Constellation(path: currentPath);
   }
 }
 
@@ -167,7 +227,7 @@ class UsersListCommand extends Command {
 
   @override
   void run() {
-    Constellation(currentPath).userIndex?.displayUsers();
+    Constellation(path: currentPath).userIndex?.displayUsers();
   }
 }
 
@@ -184,7 +244,7 @@ class UsersRenameCommand extends Command {
 
   @override
   void run() {
-    Constellation(currentPath)
+    Constellation(path: currentPath)
         .userIndex
         ?.getUser(argResults?["user-hash"])
         .name = argResults?["new-name"];
@@ -200,7 +260,7 @@ class ConstellationDeleteCommand extends Command {
 
   @override
   void run() {
-    Constellation(currentPath).delete();
+    Constellation(path: currentPath).delete();
   }
 }
 
@@ -212,8 +272,7 @@ class ReadPatternCommand extends Command {
   String get name => "read";
 
   ReadPatternCommand() {
-    argParser.addOption("pattern",
-        abbr: "p", defaultsTo: Directory.current.path);
+    argParser.addOption("pattern", defaultsTo: Directory.current.path);
     argParser.addOption("file", abbr: "f", defaultsTo: Directory.current.path);
   }
 
@@ -247,4 +306,33 @@ class WritePatternCommand extends Command {
         File(argResults!.option("file")!.fixPath()),
         jsonDecode(argResults!.option("data")!));
   }
+}
+
+class ArceusConstellationsCommand extends Command {
+  @override
+  String get description => "Lists all constellations.";
+  @override
+  String get name => "consts";
+
+  @override
+  void run() {
+    if (Arceus.empty()) {
+      print("No constellations found! Create one with the 'create' command.");
+    }
+    Arceus.getConstellationNames().forEach((e) => print("🌃 $e"));
+  }
+}
+
+class ArceusInstallCommand extends Command {
+  @override
+  String get description => "Installs Arceus as an global applation.";
+  @override
+  String get name => "install";
+}
+
+class ArceusUninstallCommand extends Command {
+  @override
+  String get description => "Uninstalls Arceus.";
+  @override
+  String get name => "uninstall";
 }

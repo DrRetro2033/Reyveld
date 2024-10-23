@@ -72,11 +72,12 @@ class Star {
   }
 
   String createChild(String name) {
-    if (!constellation.checkForDifferences(hash)) {
+    if (!constellation.checkForDifferences()) {
       throw Exception(
           "Cannot create a child star when there are no differences. Please make changes and try again.");
     }
-    Star star = Star(constellation, name: name);
+    Star star = Star(constellation,
+        name: name, user: constellation.userIndex?.getHostUser());
     constellation.starmap?.addRelationship(this, star);
     constellation.starmap?.currentStar = star;
     constellation.save();
@@ -97,8 +98,25 @@ class Star {
     _fromStarFileData(utf8.decode(file!.content));
   }
 
-  void extract() {
-    extractFileToDisk(constellation.getStarPath(hash!), constellation.path);
+  void _extract() {
+    constellation.clear();
+    for (ArchiveFile file in getArchive().files) {
+      if (file.isFile && file.name != "star") {
+        final x = File("${constellation.path}/${file.name}");
+        if (!x.existsSync()) {
+          x.createSync(recursive: true);
+        }
+        x.writeAsBytesSync(file.content);
+      }
+    }
+  }
+
+  /// # `void` makeCurrent()
+  /// ## Makes the star the current star in the constellation.
+  void makeCurrent() {
+    _extract();
+    constellation.starmap?.currentStar = this;
+    constellation.save();
   }
 
   Archive getArchive() {
@@ -117,6 +135,22 @@ class Star {
   /// This file contains the star's data in JSON format.
   String _generateStarFileData() {
     return jsonEncode(toJson());
+  }
+
+  Star getMostRecentStar() {
+    if (constellation.starmap!.getChildren(this).isEmpty) {
+      return this;
+    }
+    if (constellation.starmap!.getChildren(this).length == 1) {
+      return constellation.starmap!.getChildren(this)[0].getMostRecentStar();
+    }
+    Star mostRecentStar = constellation.starmap!.getChildren(this)[0];
+    for (Star child in constellation.starmap!.getChildren(this)) {
+      if (child.createdAt!.isAfter(mostRecentStar.createdAt!)) {
+        mostRecentStar = child;
+      }
+    }
+    return mostRecentStar.getMostRecentStar();
   }
 
   /// # `void` fromJson(`Map<String, dynamic>` json)
