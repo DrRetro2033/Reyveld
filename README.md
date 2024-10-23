@@ -26,13 +26,10 @@ Arceus can rollback saves to older versions, so if you make any mistakes, your o
 
 ## Go Beyond with Add-Ons 📦
 
-With the help of [dart_eval](https://pub.dev/packages/dart_eval), Arceus can be upgraded to read and write files for any number of games!
+With the help of ~~[dart_eval](https://pub.dev/packages/dart_eval)~~, Arceus can be upgraded to read and write files for any number of games!
 
 > [!NOTE]
 > In the future, I am planning to add built-in functionalty for easier creation of transfer tools, akin to Pokémon Bank. For now, you are going to need to build your own transfer tools.
-
-> [!IMPORTANT]
-> Also, I am not planning to add support for any other lanaguge for add-on development. You have to use Dart. Sorry!
 
 ## Tiny Size 📁
 
