@@ -24,13 +24,14 @@ jobs:
       - name: Make Build Directories
         run: mkdir -p build/releases/${{ matrix.platform }}
       - name: Build
-        run: dart compile exe ./bin/main.dart --target-os ${{ matrix.platform }} -o build/releases/${{ matrix.platform }}/${{ matrix.output }}
-
+        run: dart compile exe ./bin/main.dart --target-os ${{ matrix.platform }} -o build/releases/${{ matrix.platform }}/${{ matrix.output}}
+      - name: Add Installer Scripts to Build
+        run: cp ./scripts/installers/${{ matrix.platform }}/* build/releases/${{ matrix.platform }}/
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.os }}
-          path: build/releases/${{ matrix.platform }}/${{ matrix.output }}
+          path: build/releases/${{ matrix.platform }}/
           retention-days: 14
     strategy:
       fail-fast: false
