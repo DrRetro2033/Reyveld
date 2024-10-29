@@ -1,15 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:ansix/ansix.dart';
-
 import '../uuid.dart';
 import '../arceus.dart';
 import '../extensions.dart';
-
 import 'star.dart';
 import 'dossier.dart';
 import 'users.dart';
+
+import 'package:terminal_decorate/terminal_decorate.dart';
 
 /// # `class` Constellation
 /// ## Represents a constellation.
@@ -39,6 +38,12 @@ class Constellation {
 
   /// Fetches a directory object that represents the `constellationPath` folder.
   Directory get constellationDirectory => Directory(constellationPath);
+
+  /// The path to the folder the constellation stores its addons in.
+  String get addonFolderPath => "$constellationPath/addons";
+
+  /// Fetches a directory object that represents the `addonFolderPath` folder.
+  Directory get addonDirectory => Directory(addonFolderPath);
 
   Constellation(
       {String? path, String? name, Iterable<String> users = const ["host"]}) {
@@ -100,7 +105,7 @@ class Constellation {
       }
     }
     throw Exception(
-        "Unable to generate a unique star hash. Either you are extremely unlucky or there are zero unique hashes left.");
+        "Unable to generate a unique star hash. Either you are extremely unlucky or there are no more unique hashes left to use!");
   }
 
   /// # `String` getStarPath(`String` hash)
@@ -136,14 +141,21 @@ class Constellation {
 
   /// # `String?` grow(`String` name)
   /// ## Creates a new star with the given name and returns the hash of the new star at the current star.
-  String? grow(String name) {
-    return starmap?.currentStar?.createChild(name);
+  String? grow(String name, {bool force = false}) {
+    return starmap?.currentStar?.createChild(name, force: force);
   }
 
   void delete() {
     Arceus.removeConstellation(name);
     constellationDirectory.deleteSync(recursive: true);
     starmap = null;
+  }
+
+  /// # `void` trim()
+  /// ## Trims the current star and all of its children.
+  /// This will not discard any changes in files, BUT will destroy previous changes in files.
+  void trim() {
+    starmap?.currentStar?.trim();
   }
 
   /// # `void` resetToCurrentStar()
@@ -178,6 +190,12 @@ class Constellation {
   /// Returns `true` if the constellation exists, `false` otherwise.
   static bool checkForConstellation(String path) {
     return Directory("$path/.constellation").existsSync();
+  }
+
+  void displayAddOns() {
+    for (var file in addonDirectory.listSync()) {
+      print('- ${file.path.fixPath().split("/").last.split(".").first}');
+    }
   }
 }
 
@@ -230,8 +248,29 @@ class Starmap {
     }
   }
 
+  List<String> _getEndingHashes() {
+    List<String> endings = [];
+    for (String hash in childMap.keys) {
+      if (childMap[hash]!.isEmpty) {
+        endings.add(hash);
+      }
+    }
+    return endings;
+  }
+
   Star _getMostRecentStar() {
-    return root!.getMostRecentStar();
+    List<String> endings = _getEndingHashes();
+    if (endings.isEmpty) {
+      throw Exception("WHAT? How are there no ending stars?");
+    }
+    Star mostRecentStar = Star(constellation, hash: endings[0]);
+    for (int i = 1; i < endings.length; i++) {
+      Star star = Star(constellation, hash: endings[i]);
+      if (mostRecentStar.createdAt!.compareTo(star.createdAt!) > 0) {
+        mostRecentStar = star;
+      }
+    }
+    return mostRecentStar;
   }
 
   /// # `operator` `[]` jumpTo(`Star` star)
@@ -315,36 +354,46 @@ class Starmap {
     constellation.save();
   }
 
-  /// # `Map<String, dynamic>` getReadableTree(`String` curHash)
-  /// ## Returns a tree view of the constellation.
-  Map<String, dynamic> getReadableTree(String curHash) {
-    Map<String, dynamic> list = {};
-    String displayName = Star(constellation, hash: curHash)
-        .name!; // Change this to what you want the display name to be.
-    if (currentStarHash == curHash) {
-      displayName += "✨";
-    }
-    list[displayName] = {};
-    for (int x = 1; x < ((getChildrenHashes(curHash).length)); x++) {
-      list[displayName].addAll(getReadableTree(getChildrenHashes(curHash)[x]));
-    }
-    if (getChildrenHashes(curHash).isNotEmpty) {
-      list.addAll(getReadableTree(getChildrenHashes(curHash)[0]));
-    }
-    return list;
-  }
-
   /// # `void` showMap()
   /// ## Shows the map of the constellation.
   /// This is a tree view of the constellation's stars and their children.
   void showMap() {
-    AnsiX.printTreeView(getReadableTree(rootHash!),
-        theme: AnsiTreeViewTheme(
-          showListItemIndex: false,
-          headerTheme: AnsiTreeHeaderTheme(hideHeader: true),
-          valueTheme: AnsiTreeNodeValueTheme(hideIfEmpty: true),
-          anchorTheme: AnsiTreeAnchorTheme(
-              style: AnsiBorderStyle.rounded, color: AnsiColor.blueViolet),
-        ));
+    print(root!.getDisplayName());
+    if (root!.isAlone) {
+      return;
+    }
+    List<Star> children = getChildren(root!);
+    for (Star star in children) {
+      if (children.last == star) {
+        _printChildren(star, 0, isLast: true);
+        break;
+      }
+      _printChildren(star, 0);
+    }
+  }
+
+  void _printChildren(Star parent, int level,
+      {bool isBranch = false, bool isLast = false}) {
+    String indent = " " * level;
+    String pipeing = (isLast || (parent.isAlone && isBranch)) ? "╰─" : "├─";
+    String shell = level == 0 ? "" : "│ ";
+    print(
+        "   ${shell.magenta}$indent${pipeing.magenta} ${parent.getDisplayName()}");
+    List<Star> children = getChildren(parent);
+    // indent = "\t" * (level + 1);
+    if (parent.singleChild) {
+      if (!isBranch) {
+        level += 1;
+      }
+      _printChildren(children.first, level, isBranch: true);
+      return;
+    }
+    for (Star child in children) {
+      if (children.last == child) {
+        _printChildren(child, level + 1, isLast: true);
+        break;
+      }
+      _printChildren(child, level + 1);
+    }
   }
 }

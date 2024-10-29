@@ -26,8 +26,19 @@ class Star {
     parentHash = value?.hash;
   }
 
-  // List<String> get _children =>
-  //     constellation.get; // The hashes of the children stars.
+  List<Star> get children => constellation.starmap!.getChildren(this);
+
+  /// # `bool` singleChild
+  /// ## Does this star only have a single child?
+  bool get singleChild => children.length == 1;
+
+  /// # `bool` isAlone
+  /// ## Does this star have no children?
+  bool get isAlone => children.isEmpty;
+
+  /// # `bool` isCurrent
+  /// ## Is this star the current star?
+  bool get isCurrent => hash == constellation.starmap?.currentStarHash;
 
   Archive get archive => getArchive();
 
@@ -71,8 +82,11 @@ class Star {
     archive.closeSync();
   }
 
-  String createChild(String name) {
-    if (!constellation.checkForDifferences()) {
+  /// # `String` createChild(`String` name)
+  /// ## Creates a new star with the given name.
+  /// It returns the hash of the new star.
+  String createChild(String name, {bool force = false}) {
+    if (!constellation.checkForDifferences() && !force) {
       throw Exception(
           "Cannot create a child star when there are no differences. Please make changes and try again.");
     }
@@ -153,6 +167,8 @@ class Star {
     return mostRecentStar.getMostRecentStar();
   }
 
+  void trim() {}
+
   /// # `void` fromJson(`Map<String, dynamic>` json)
   /// ## Converts the JSON data into a `Star` object.
   void fromJson(Map<String, dynamic> json) {
@@ -165,4 +181,12 @@ class Star {
   /// ## Converts the `Star` object into a JSON object.
   Map<String, dynamic> toJson() =>
       {"name": name, "createdAt": createdAt.toString(), "user": _userHash};
+
+  String getDisplayName() {
+    if (isCurrent) {
+      return "${name!} ✨";
+    } else {
+      return name!;
+    }
+  }
 }

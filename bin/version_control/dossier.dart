@@ -34,63 +34,64 @@ class Dossier {
     // 4. Check for changed files.
 
     // Check for new files.
-    var spinner = CliSpin(text: "Checking for new files...").start();
+    var spinner = CliSpin(text: " Checking for new files...").start();
     List<String> newFiles = listAddedFiles();
     spinner.stop();
-
     // Check for removed files.
-    spinner = CliSpin(text: "Checking for removed files...").start();
+    spinner = CliSpin(text: " Checking for removed files...").start();
     List<String> removedFiles = listRemovedFiles();
     spinner.stop();
 
     // Check for moved files. Done after new and removed files, as they can be used here to make a cross reference.
-    spinner = CliSpin(text: "Checking for moved files...").start();
+    spinner = CliSpin(text: " Checking for moved files...").start();
     Map<String, String> movedFiles = listMovedFiles(newFiles, removedFiles);
     if (movedFiles.isNotEmpty) {
       check = true;
       spinner.stop();
       for (String file in movedFiles.keys) {
-        print("$file $moveSymbol ${movedFiles[file]}");
+        print("  $file $moveSymbol ${movedFiles[file]}");
       }
     } else {
-      spinner.success("There are no moved files.");
+      spinner.success(" There are no moved files.");
     }
 
     if (newFiles.isNotEmpty) {
       check = true;
+      spinner.fail(" New files found:");
       for (String file in newFiles) {
         if (movedFiles.containsValue(file)) {
           continue;
         }
-        print("$addSymbol $file");
+        print("  $addSymbol $file");
       }
     } else {
-      spinner.success("There are no new files.");
+      spinner.success(" There are no new files.");
     }
 
     if (removedFiles.isNotEmpty) {
       check = true;
+      spinner.fail(" Removed files found:");
       for (String file in removedFiles) {
         if (movedFiles.containsKey(file)) {
           continue;
         }
-        print("$removeSymbol $file");
+        print("  $removeSymbol $file");
       }
     } else {
-      spinner.success("There are no removed files.");
+      spinner.success(" There are no removed files.");
     }
 
     // Check for changed files.
-    spinner = CliSpin(text: "Checking for changed files...").start();
+    spinner = CliSpin(text: " Checking for changed files...").start();
     List<String> changedFiles = listChangedFiles(removedFiles);
     if (changedFiles.isNotEmpty) {
-      spinner.stop();
+      spinner.fail(" Changed files found:");
       check = true;
       for (String file in changedFiles) {
-        print("$modifiedSymbol $file");
+        print("  $modifiedSymbol $file");
       }
     } else {
-      spinner.success("There are no changed files.");
+      spinner.success(" There are no changed files.");
     }
     return check;
   }

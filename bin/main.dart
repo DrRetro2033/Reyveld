@@ -1,13 +1,15 @@
 import 'dart:io';
 import 'dart:convert';
+import 'package:ansix/ansix.dart';
 import 'package:args/command_runner.dart';
 import 'package:cli_spin/cli_spin.dart';
-import 'file_pattern.dart';
-import 'extensions.dart';
 import 'version_control/constellation.dart';
 import 'version_control/star.dart';
 import 'arceus.dart';
+import 'scripting/addon.dart';
 import 'package:interact/interact.dart';
+import 'cli.dart';
+// import 'package:cli_completion/cli_completion.dart';
 
 /// # `void` main(List<String> arguments)
 /// ## Main entry point.
@@ -51,6 +53,9 @@ Future<dynamic> main(List<String> arguments) async {
     runner.addCommand(ConstellationDeleteCommand());
     runner.addCommand(UsersCommands());
   }
+  runner.addCommand(ReadFileCommand());
+  runner.addCommand(InstallPackagedAddonCommand());
+  runner.addCommand(AddonCompileCommand());
   runner.addCommand(ArceusConstellationsCommand());
 
   if (arguments.isNotEmpty) {
@@ -58,7 +63,13 @@ Future<dynamic> main(List<String> arguments) async {
   }
 }
 
-class CreateConstellationCommand extends Command {
+abstract class ArceusCommand extends Command {
+  String getRest() {
+    return argResults?.rest.join(" ") ?? "";
+  }
+}
+
+class CreateConstellationCommand extends ArceusCommand {
   @override
   String get description =>
       "Creates a new constellation at a given, or current, path.";
@@ -76,10 +87,9 @@ class CreateConstellationCommand extends Command {
     try {
       List<String>? users = argResults?["user"];
       if (users?.isEmpty ?? true) {
-        Constellation(path: currentPath, name: argResults?.rest.join(" "));
+        Constellation(path: currentPath, name: getRest());
       } else {
-        Constellation(
-            path: currentPath, name: argResults?.rest.join(" "), users: users!);
+        Constellation(path: currentPath, name: getRest(), users: users!);
       }
     } catch (e) {
       spinner.fail("Unable to create constellation.");
@@ -89,7 +99,7 @@ class CreateConstellationCommand extends Command {
   }
 }
 
-class ShowMapConstellationCommand extends Command {
+class ShowMapConstellationCommand extends ArceusCommand {
   @override
   String get description => "Get the map of the constellation.";
 
@@ -106,7 +116,7 @@ class ShowMapConstellationCommand extends Command {
   }
 }
 
-class CheckForDifferencesCommand extends Command {
+class CheckForDifferencesCommand extends ArceusCommand {
   @override
   String get description =>
       "Checks for differences between the current star and what is currently in the directory.";
@@ -121,19 +131,19 @@ class CheckForDifferencesCommand extends Command {
     Constellation constellation = Constellation(path: currentPath);
     final spinner = CliSpin(
             text:
-                "Checking for differences between current directory and provided star...")
+                " Checking for differences between current directory and provided star...")
         .start();
     bool result = constellation.checkForDifferences();
     if (!result) {
-      spinner.success("No differences found.");
+      spinner.success(" No differences found.");
     } else {
-      spinner.fail("Differences found.");
+      spinner.fail(" Differences found.");
     }
     return result;
   }
 }
 
-class ConstellationJumpToCommand extends Command {
+class ConstellationJumpToCommand extends ArceusCommand {
   @override
   String get description =>
       "Jumps to a different star in the constellation. Give a trailing hash to jump to a specific star.";
@@ -150,7 +160,7 @@ class ConstellationJumpToCommand extends Command {
       spinner.fail(" Please provide a star hash to jump to.");
       return;
     }
-    String hash = argResults!.rest.join("");
+    String hash = getRest();
 
     try {
       final star = Constellation(path: currentPath).starmap?[hash] as Star;
@@ -163,7 +173,7 @@ class ConstellationJumpToCommand extends Command {
   }
 }
 
-class ConstellationGrowCommand extends Command {
+class ConstellationGrowCommand extends ArceusCommand {
   @override
   String get description =>
       "Continues the from the current star to a new star in the constellation. Will branch if necessary.";
@@ -171,16 +181,17 @@ class ConstellationGrowCommand extends Command {
   String get name => "grow";
 
   ConstellationGrowCommand() {
-    argParser.addOption("name", abbr: "n", mandatory: true, hide: true);
+    argParser.addFlag("force", abbr: "f", defaultsTo: false);
   }
 
   @override
   void run() {
-    Constellation(path: currentPath).grow(argResults?["name"]);
+    Constellation(path: currentPath)
+        .grow(getRest(), force: argResults!["force"]);
   }
 }
 
-class TrimCommand extends Command {
+class TrimCommand extends ArceusCommand {
   @override
   String get description =>
       "Trims the branch at the current star. Will confirm before proceeding, unless --force is provided.";
@@ -203,11 +214,11 @@ class TrimCommand extends Command {
         return;
       }
     }
-    Constellation(path: currentPath);
+    Constellation(path: currentPath).trim();
   }
 }
 
-class UsersCommands extends Command {
+class UsersCommands extends ArceusCommand {
   @override
   String get description => "Contains commands for users in the constellation.";
   @override
@@ -219,7 +230,7 @@ class UsersCommands extends Command {
   }
 }
 
-class UsersListCommand extends Command {
+class UsersListCommand extends ArceusCommand {
   @override
   String get description => "Lists the users in the constellation.";
   @override
@@ -251,64 +262,120 @@ class UsersRenameCommand extends Command {
   }
 }
 
-class ConstellationDeleteCommand extends Command {
+class ConstellationDeleteCommand extends ArceusCommand {
   @override
   String get description => "Deletes the constellation. Be CAREFUL!";
 
   @override
   String get name => "delete";
 
+  ConstellationDeleteCommand() {
+    argParser.addFlag("force", abbr: "f", defaultsTo: false);
+  }
+
   @override
   void run() {
+    if (!argResults!["force"]) {
+      final confirm = Confirm(
+              prompt:
+                  "Are you sure you want to delete the constellation? (Will delete EVERYTHING in the constellation.)",
+              defaultValue: false)
+          .interact();
+      if (!confirm) {
+        return;
+      }
+    }
     Constellation(path: currentPath).delete();
   }
 }
 
-class ReadPatternCommand extends Command {
+class AddonCompileCommand extends ArceusCommand {
   @override
-  String get description => "Read a file using a pattern.";
+  String get description => "Packages an addon for distribution.";
+  @override
+  String get name => "compile";
 
+  AddonCompileCommand() {
+    argParser.addOption("output",
+        abbr: "o", help: "The output folder the addon should be compiled to.");
+    argParser.addFlag("install-global",
+        abbr: "g", help: "Install globally after compiling.");
+  }
+
+  @override
+  void run() {
+    if (getRest().isEmpty) {
+      throw Exception("Please provide the project path for the addon.");
+    }
+    String projectPath = getRest();
+    String outputPath = projectPath;
+
+    if (argResults!["output"] != null) {
+      outputPath = argResults!["output"]!;
+    }
+    CliSpin spinner = CliSpin().start(" Packaging addon... 🍱");
+    final addon = Addon.package(projectPath, outputPath);
+    spinner.success(" Addon packaged successfully at ${addon.path}! 🎉");
+
+    if (argResults!["install-global"]) {
+      spinner = CliSpin().start(" Installing addon globally... 🍱");
+      Addon.installGlobally(addon.path);
+      spinner.success(" Addon installed globally successfully! 🎉");
+    }
+  }
+}
+
+class InstallPackagedAddonCommand extends ArceusCommand {
+  @override
+  String get description => "Installs a packaged addon.";
+  @override
+  String get name => "install";
+
+  InstallPackagedAddonCommand() {
+    argParser.addFlag("global",
+        abbr: "g", help: "Install the addon globally for all constellations.");
+    // argParser.addFlag("copy",
+    //     abbr: "c", help: "Copy the addon instead of moving it.");
+  }
+
+  @override
+  void run() {
+    if (getRest().isEmpty) {
+      throw Exception(
+          "Please provide the path to the addon. Addon files must end in *.arcaddon.");
+    }
+    String addonFile = getRest();
+    CliSpin spinner = CliSpin().start(" Installing addon... 🍱");
+    if (argResults!["global"]) {
+      Addon.installGlobally(addonFile);
+    } else if (Constellation.checkForConstellation(currentPath)) {
+      Addon.installLocally(addonFile);
+    } else {
+      throw Exception(
+          "Please either install as a global addon or give a valid constellation first.");
+    }
+    spinner.success(" Addon installed successfully! 🎉");
+  }
+}
+
+class ReadFileCommand extends ArceusCommand {
+  @override
+  String get description => "Try reading a file with an associated addon.";
   @override
   String get name => "read";
 
-  ReadPatternCommand() {
-    argParser.addOption("pattern", defaultsTo: Directory.current.path);
-    argParser.addOption("file", abbr: "f", defaultsTo: Directory.current.path);
-  }
-
   @override
   dynamic run() {
-    String json = jsonEncode(
-        FilePattern(argResults!.option("pattern")!.fixPath()).read(
-            File(argResults!.option("file")!.fixPath()).readAsBytesSync()));
-    print(json);
-    return json;
+    if (getRest().isEmpty) {
+      throw Exception("Please provide the file to read.");
+    }
+    String file = getRest();
+    print(AnsiTreeView(PatternAddon.getAssoiatedAddon(file).read(file),
+        theme: Cli.treeTheme));
   }
 }
 
-class WritePatternCommand extends Command {
-  @override
-  String get description => "Write a file using a pattern.";
-
-  @override
-  String get name => "write";
-
-  WritePatternCommand() {
-    argParser.addOption("data", abbr: "d", mandatory: true);
-    argParser.addOption("pattern",
-        abbr: "p", defaultsTo: Directory.current.path);
-    argParser.addOption("file", abbr: "f", defaultsTo: Directory.current.path);
-  }
-
-  @override
-  dynamic run() {
-    FilePattern(argResults!.option("pattern")!.fixPath()).write(
-        File(argResults!.option("file")!.fixPath()),
-        jsonDecode(argResults!.option("data")!));
-  }
-}
-
-class ArceusConstellationsCommand extends Command {
+class ArceusConstellationsCommand extends ArceusCommand {
   @override
   String get description => "Lists all constellations.";
   @override
@@ -319,20 +386,7 @@ class ArceusConstellationsCommand extends Command {
     if (Arceus.empty()) {
       print("No constellations found! Create one with the 'create' command.");
     }
-    Arceus.getConstellationNames().forEach((e) => print("🌃 $e"));
+    Arceus.getConstellationEntries()
+        .forEach((e) => print("🌃 ${e.name} - ${e.path}"));
   }
-}
-
-class ArceusInstallCommand extends Command {
-  @override
-  String get description => "Installs Arceus as an global applation.";
-  @override
-  String get name => "install";
-}
-
-class ArceusUninstallCommand extends Command {
-  @override
-  String get description => "Uninstalls Arceus.";
-  @override
-  String get name => "uninstall";
 }

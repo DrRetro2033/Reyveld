@@ -4,8 +4,7 @@ import 'extensions.dart';
 
 class Arceus {
   static String get _appDataPath => _getAppDataPath();
-  static String get _programFilesPath => _getAppDataPath();
-  static String get _executablePath => "$_programFilesPath/arceus.exe";
+  static String get globalAddonPath => "$_appDataPath/addons";
   static File get _constellationIndex => File("$_appDataPath/config");
 
   static String _getAppDataPath() {
@@ -71,5 +70,23 @@ class Arceus {
     return _getConstellations().keys.toList();
   }
 
+  static List<ConstellationEntry> getConstellationEntries() {
+    return _getConstellations()
+        .entries
+        .map((e) => ConstellationEntry(e.key, e.value))
+        .toList();
+  }
+
+  static String getTempFolder() {
+    return Directory.systemTemp.createTempSync("arceus").path;
+  }
+
   static bool empty() => _getConstellations().isEmpty;
+}
+
+class ConstellationEntry {
+  final String name;
+  final String path;
+
+  ConstellationEntry(this.name, this.path);
 }

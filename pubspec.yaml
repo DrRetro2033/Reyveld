@@ -12,13 +12,14 @@ dependencies:
   yaml: ^3.1.2
   ansix: ^0.3.3
   dart_console: ^1.2.0
-  uuid: ^4.4.2
+  uuid: any
   archive: ^3.6.1
   cli_spin: ^1.0.1
   dart_eval: ^0.7.9
-  hetu_script: ^0.3.12
   terminal_decorate: ^0.3.0
   interact: ^2.2.0
+  lua_dardo: ^0.0.5
+  cli_completion: ^0.5.0
 
 dev_dependencies:
   lints: ^4.0.0
