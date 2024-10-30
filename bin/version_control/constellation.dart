@@ -1,14 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:ansix/ansix.dart';
+
 import '../uuid.dart';
 import '../arceus.dart';
 import '../extensions.dart';
+import '../cli.dart';
 import 'star.dart';
 import 'dossier.dart';
 import 'users.dart';
-
-import 'package:terminal_decorate/terminal_decorate.dart';
 
 /// # `class` Constellation
 /// ## Represents a constellation.
@@ -358,42 +359,23 @@ class Starmap {
   /// ## Shows the map of the constellation.
   /// This is a tree view of the constellation's stars and their children.
   void showMap() {
-    print(root!.getDisplayName());
-    if (root!.isAlone) {
-      return;
-    }
-    List<Star> children = getChildren(root!);
-    for (Star star in children) {
-      if (children.last == star) {
-        _printChildren(star, 0, isLast: true);
-        break;
-      }
-      _printChildren(star, 0);
-    }
+    print(AnsiTreeView(_getTree(root!, {}), theme: Cli.treeTheme));
   }
 
-  void _printChildren(Star parent, int level,
-      {bool isBranch = false, bool isLast = false}) {
-    String indent = " " * level;
-    String pipeing = (isLast || (parent.isAlone && isBranch)) ? "╰─" : "├─";
-    String shell = level == 0 ? "" : "│ ";
-    print(
-        "   ${shell.magenta}$indent${pipeing.magenta} ${parent.getDisplayName()}");
-    List<Star> children = getChildren(parent);
-    // indent = "\t" * (level + 1);
-    if (parent.singleChild) {
-      if (!isBranch) {
-        level += 1;
+  Map<String, dynamic> _getTree(Star star, Map<String, dynamic> tree,
+      {bool branch = false}) {
+    tree[star.getDisplayName()] = {};
+    if (star.singleChild) {
+      if (branch) {
+        tree[star.getDisplayName()].addAll(_getTree(star.children.first, {}));
+        return tree;
       }
-      _printChildren(children.first, level, isBranch: true);
-      return;
-    }
-    for (Star child in children) {
-      if (children.last == child) {
-        _printChildren(child, level + 1, isLast: true);
-        break;
+      return _getTree(star.children.first, tree);
+    } else {
+      for (Star child in getChildren(star)) {
+        tree[star.getDisplayName()].addAll(_getTree(child, {}, branch: true));
       }
-      _printChildren(child, level + 1);
     }
+    return tree;
   }
 }

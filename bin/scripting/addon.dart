@@ -22,11 +22,11 @@ mixin Lua {
   /// Returns the state, with the script loaded.
   LuaState _initLuaVM(
       String script, Map<String, int Function(LuaState)> dartFunctions) {
+    // print(script);
     LuaState state = LuaState.newState();
     state.openLibs();
     for (String key in dartFunctions.keys) {
-      state.pushDartFunction(dartFunctions[key]!);
-      state.setGlobal(key);
+      state.register(key, dartFunctions[key]!);
     }
     state.doString(script);
     return state;
@@ -375,6 +375,8 @@ class TestAddon extends Addon {
 /// The pattern feature set is used to read and write to files with a specific format.
 /// It requires a `read` and `write` function.
 class PatternAddon extends Addon with Lua {
+  static const bool defaultIsLittleEndian = false;
+
   @override
   Map<String, int Function(LuaState)> get dartFunctions => {
         "ru8": readU8,
@@ -386,13 +388,13 @@ class PatternAddon extends Addon with Lua {
         "rfield": readBitfield,
         "validate": validateTable
       };
-  Uint8List? data;
+  ByteData? data;
 
   PatternAddon(super.path);
 
   Map<String, dynamic> read(String file) {
     LuaState state = _initLuaVM(_getCode(), dartFunctions);
-    data = File(file).readAsBytesSync();
+    data = File(file).readAsBytesSync().buffer.asByteData();
     state.getGlobal("read");
     state.pushString(file);
     state.pCall(1, 1, 0);
@@ -454,42 +456,41 @@ class PatternAddon extends Addon with Lua {
 
   int readU8(LuaState state) {
     int address = _getAddressFromLua(state);
-    state.pushInteger(data![address]);
+    state.pushInteger(data!.getUint8(address));
     return 1;
   }
 
   int readU16(LuaState state) {
     int address = _getAddressFromLua(state);
-    state.pushInteger(data![address] << 8 | data![address + 1]);
+    bool isLittleEndian =
+        state.isBoolean(2) ? state.toBoolean(2) : defaultIsLittleEndian;
+    state.pushInteger(
+        data!.getUint16(address, isLittleEndian ? Endian.little : Endian.big));
     return 1;
   }
 
   int readU32(LuaState state) {
     int address = _getAddressFromLua(state);
-    state.pushInteger(data![address] << 24 |
-        data![address + 1] << 16 |
-        data![address + 2] << 8 |
-        data![address + 3]);
+    bool isLittleEndian =
+        state.isBoolean(2) ? state.toBoolean(2) : defaultIsLittleEndian;
+    state.pushInteger(
+        data!.getUint32(address, isLittleEndian ? Endian.little : Endian.big));
     return 1;
   }
 
   int readU64(LuaState state) {
     int address = _getAddressFromLua(state);
-    state.pushInteger(data![address] << 56 |
-        data![address + 1] << 48 |
-        data![address + 2] << 40 |
-        data![address + 3] << 32 |
-        data![address + 4] << 24 |
-        data![address + 5] << 16 |
-        data![address + 6] << 8 |
-        data![address + 7]);
+    bool isLittleEndian =
+        state.isBoolean(2) ? state.toBoolean(2) : defaultIsLittleEndian;
+    state.pushInteger(
+        data!.getUint64(address, isLittleEndian ? Endian.little : Endian.big));
     return 1;
   }
 
   int readString8(LuaState state) {
     int address = _getAddressFromLua(state);
     int length = _getAddressFromLua(state);
-    String string = utf8.decode(data!.sublist(address, address + length));
+    String string = utf8.decode(data!.buffer.asUint8List(address, length));
     state.pushString(string);
     return 1;
   }
@@ -497,9 +498,9 @@ class PatternAddon extends Addon with Lua {
   int readString16(LuaState state) {
     final address = _getAddressFromLua(state, idx: 1);
     int length = _getAddressFromLua(state, idx: 2);
-    length *= 2;
-    String string =
-        String.fromCharCodes(data!.sublist(address, address + length).toList());
+    // length *= 2;
+    String string = String.fromCharCodes(
+        data!.buffer.asUint16List(address, length).toList());
     state.pushString(string);
     return 1;
   }
@@ -510,26 +511,33 @@ class PatternAddon extends Addon with Lua {
     int size = 0;
     Map<String, int> sizedTable = {};
     for (String key in table.keys) {
-      if (table[key] is int) {
-        size += table[key] as int;
-        sizedTable[key] = table[key] as int;
-      } else if (table[key] is String &&
-          (table[key] as String).startsWith("pad")) {
-        size += int.parse((table[key] as String).substring(3));
-        sizedTable[key] = int.parse((table[key] as String).substring(3));
-      } else {
-        try {
-          sizedTable[key] = int.parse(table[key]);
-          size += sizedTable[key] as int;
-        } catch (e) {
-          sizedTable[key] = 0;
-        }
-        continue;
+      if (table[key] is Map<String, dynamic>) {
+        Map<String, dynamic> subTable = table[key] as Map<String, dynamic>;
+        sizedTable[subTable["1"]] = subTable["2"];
+
+        size += sizedTable[subTable["1"]]!;
       }
+      // if (table[key] is int) {
+      //   size += table[key] as int;
+      //   sizedTable[key] = table[key] as int;
+      // } else if (table[key] is String &&
+      //     (table[key] as String).startsWith("pad")) {
+      //   size += int.parse((table[key] as String).substring(3));
+      //   sizedTable[key] = int.parse((table[key] as String).substring(3));
+      // } else {
+      //   try {
+      //     sizedTable[key] = int.parse(table[key]);
+      //     size += sizedTable[key] as int;
+      //   } catch (e) {
+      //     print(e);
+      //   }
+      //   continue;
+      // }
     }
     int byteSize = (size / 8).ceil();
     BigInt combinedBitfield = BigInt.zero;
-    for (int i in data!.sublist(address, address + byteSize)) {
+    for (int i
+        in data!.buffer.asUint8List(address, byteSize).toList().reversed) {
       combinedBitfield = (combinedBitfield << 8) | BigInt.from(i);
     }
 
