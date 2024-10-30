@@ -11,9 +11,6 @@
 
 Arceus is a brand new CLI save manager and editor, inspired by version control software like Git. It is designed to make an easy to manage location for your saves.
 
-> [!NOTE]
-> If you want an example of what you can do with Arceus, check out my other project [MudkiPC](https://github.com/Pokemon-Manager/MudkiPC).
-
 # Features
 
 ## Branch Off Into Different Timelines 🌌
@@ -24,9 +21,13 @@ With Arceus, you can branch saves into new timelines, so multiple versions of on
 
 Arceus can rollback saves to older versions, so if you make any mistakes, your original savefile is still intact.
 
+## Keep track of YOUR saves 👥
+
+Multiple people can play the same game even if the game is not designed for switching between different players.
+
 ## Go Beyond with Add-Ons 📦
 
-With the help of ~~[dart_eval](https://pub.dev/packages/dart_eval)~~, Arceus can be upgraded to read and write files for any number of games!
+Arceus has Lua built-in, with the help of [lua_dardo](https://pub.dev/packages/lua_dardo). It means that Arceus can be used as a save editor for literally any game!
 
 > [!NOTE]
 > In the future, I am planning to add built-in functionalty for easier creation of transfer tools, akin to Pokémon Bank. For now, you are going to need to build your own transfer tools.
@@ -42,6 +43,28 @@ Arceus can run on any modern device!
 ## Developer Friendly 🤝
 
 Arceus can be used by any developer in their projects, yes even you! Just don't forget to give credit if you use this in your own project.
+
+> [!NOTE]
+> If you want an example of what you can do with Arceus, check out my other project [MudkiPC](https://github.com/Pokemon-Manager/MudkiPC).
+
+# Planned Features for the Future
+
+## Frontend GUI 🖱️
+Create a Frontend for Arceus to make it even simpler to use.
+
+## Save on Close ❌
+Everytime you close a game, Arceus will grow a star, making sure you can return to previous save even if you forget to use Arceus.
+
+## Cloud Backups ☁️
+Have your game save transfer between devices and be completely safe from losing progress. 
+
+|Planned | Service |
+| --- | --- |
+| ✅ | Google Drive |
+| ✅ | OneDrive |
+| ⚠️ | Dropbox |
+| ⚠️ | Self-hosted |
+| ❌ | iCloud |
 
 # Use Cases
 
@@ -61,7 +84,7 @@ No matter if a game supports multiple saves or not, Arceus can make it easier to
 
 Jump from point to point in a game, so you can easily collect every achievement in a game without taking up multiple slots or quicksaves.
 
-## For Reverse Engineering 🔧
+## For Reverse Engineering 📋
 
 Binary files can be a bit tricky to find differences in, but Arceus is designed to detect the smallest differences in a file's lifetime.
 
