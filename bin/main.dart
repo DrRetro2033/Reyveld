@@ -3,12 +3,14 @@ import 'dart:convert';
 import 'package:ansix/ansix.dart';
 import 'package:args/command_runner.dart';
 import 'package:cli_spin/cli_spin.dart';
+import 'package:console/console.dart';
 import 'version_control/constellation.dart';
 import 'version_control/star.dart';
 import 'arceus.dart';
 import 'scripting/addon.dart';
 import 'package:interact/interact.dart';
 import 'cli.dart';
+import 'hex_editor/editor.dart';
 // import 'package:cli_completion/cli_completion.dart';
 
 /// # `void` main(List<String> arguments)
@@ -19,6 +21,7 @@ late String currentPath;
 
 Future<dynamic> main(List<String> arguments) async {
   // AnsiX.ensureSupportsAnsi();
+  Console.init();
   var runner = CommandRunner('arceus', "The ultimate save manager.");
   runner.argParser.addOption(
     "path",
@@ -55,6 +58,7 @@ Future<dynamic> main(List<String> arguments) async {
   }
   runner.addCommand(ReadFileCommand());
   runner.addCommand(InstallPackagedAddonCommand());
+  runner.addCommand(OpenFileCommand());
   runner.addCommand(AddonCompileCommand());
   runner.addCommand(ArceusConstellationsCommand());
 
@@ -388,5 +392,24 @@ class ArceusConstellationsCommand extends ArceusCommand {
     }
     Arceus.getConstellationEntries()
         .forEach((e) => print("🌃 ${e.name} - ${e.path}"));
+  }
+}
+
+class OpenFileCommand extends ArceusCommand {
+  @override
+  String get description => "Opens a file.";
+  @override
+  String get name => "open";
+
+  @override
+  Future<void> run() async {
+    if (getRest().isEmpty) {
+      throw Exception("Please provide the file to open.");
+    }
+    String file = getRest();
+    if (!File(file).existsSync()) {
+      throw Exception("File $file not found.");
+    }
+    HexEditor(File(file)).interact();
   }
 }

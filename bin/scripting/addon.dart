@@ -508,6 +508,8 @@ class PatternAddon extends Addon with Lua {
   int readBitfield(LuaState state) {
     int address = _getAddressFromLua(state);
     Map<String, dynamic> table = _getTableFromState(state);
+    bool reverse = state.isBoolean(3) ? state.toBoolean(3) : false;
+    print(reverse);
     int size = 0;
     Map<String, int> sizedTable = {};
     for (String key in table.keys) {
@@ -536,8 +538,8 @@ class PatternAddon extends Addon with Lua {
     }
     int byteSize = (size / 8).ceil();
     BigInt combinedBitfield = BigInt.zero;
-    for (int i
-        in data!.buffer.asUint8List(address, byteSize).toList().reversed) {
+    List<int> bytes = data!.buffer.asUint8List(address, byteSize).toList();
+    for (int i in reverse ? bytes.reversed : bytes) {
       combinedBitfield = (combinedBitfield << 8) | BigInt.from(i);
     }
 
