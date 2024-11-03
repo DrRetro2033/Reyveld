@@ -15,7 +15,7 @@ class Cli {
     if (Platform.isWindows) {
       // Use 'cls' for Windows
       // Process.runSync("cls", [], runInShell: true);
-      stdout.write('\x1B[2J\x1B[0;0H');
+      stdout.write('\x1B[2J\x1B[0;3J');
     } else {
       // ANSI escape code to clear the terminal for Unix-based systems
       Process.runSync("clear", [], runInShell: true);

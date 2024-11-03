@@ -1,13 +1,14 @@
 import 'dart:io';
 import 'dart:typed_data';
+
 import 'package:chalkdart/chalkstrings.dart';
 import 'package:dart_console/dart_console.dart';
 import 'package:interact/src/framework/framework.dart';
+import '../cli.dart';
 
 class HexEditor extends Component<ByteData> {
   final File _file;
   final console = Console();
-  String? lastFrame;
 
   HexEditor(this._file) {
     data = _file.readAsBytesSync().buffer.asByteData();
@@ -18,14 +19,19 @@ class HexEditor extends Component<ByteData> {
 }
 
 class HexEditorState extends State<HexEditor> {
+  static const int _minDataHeight = 15;
   int address = 0;
-  List<int> byteColor = [255, 255, 255];
-  List<int> byte16Color = [140, 140, 140];
-  List<int> byte32Color = [100, 100, 100];
-  List<int> byte64Color = [80, 80, 80];
+  final List<int> byteColor = [255, 255, 255];
+  final List<int> byte16Color = [140, 140, 140];
+  final List<int> byte32Color = [100, 100, 100];
+  final List<int> byte64Color = [80, 80, 80];
 
   String getByteAt(int address) {
     return component.data!.getUint8(address).toRadixString(16).padLeft(2, "0");
+  }
+
+  bool isValidAddress(int address) {
+    return address >= 0 && address < component.data!.lengthInBytes;
   }
 
   @override
@@ -37,81 +43,118 @@ class HexEditorState extends State<HexEditor> {
   @override
   void dispose() {
     context.showCursor();
-
     super.dispose();
   }
 
   @override
   void render() {
     component.console.resetCursorPosition();
-    component.console.clearScreen();
-    final editor = StringBuffer();
+    Cli.clearTerminal();
+    // component.console.clearScreen();
+    int usableRows = component.console.windowHeight - _minDataHeight;
+    int linesAboveBelow = usableRows ~/ 2;
+    int startLine = (address ~/ 16) - linesAboveBelow;
+    int endLine = (address ~/ 16) + linesAboveBelow;
 
-    for (int i = 0; i < component.data!.lengthInBytes; i++) {
-      if ((i) % 16 == 0) {
-        editor.write("\n");
-      } else if (i % 8 == 0) {
-        editor.write(" ");
-      } else {
-        editor.write("│");
+    // Adjust start and end to ensure full screen is used
+    if (startLine < 0) {
+      startLine = 0;
+      endLine = startLine + usableRows;
+    } else if (endLine >= ((component.data!.lengthInBytes / 16).ceil())) {
+      endLine = (component.data!.lengthInBytes / 16).ceil();
+      startLine = endLine - usableRows;
+      if (startLine < 0) startLine = 0; // Ensure we don't go below zero
+    }
+
+    final editor = StringBuffer();
+    context.write("\t\t00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n"
+        .padLeft(8, " ")); // Address Headers
+    final body = StringBuffer();
+    for (int x = startLine * 16 < 0 ? 0 : startLine * 16;
+        x < component.data!.lengthInBytes && x < endLine * 16;
+        x += 16) {
+      final line = StringBuffer("");
+      line.write("${x.toRadixString(16).padLeft(8, "0")}\t"); // Address Labels
+      for (int leftHalf = 0; leftHalf < 8; leftHalf++) {
+        // Left Half of 16 bytes
+        int byteAddress = x + leftHalf;
+        if (!isValidAddress(byteAddress)) {
+          line.write("  ");
+        } else {
+          String byte = getByteAt(byteAddress);
+          String value = getFormatted(byteAddress, byte);
+          line.write(value);
+        }
+        if (leftHalf != 7) {
+          line.write(isValidAddress(byteAddress) ? "│" : " ");
+        }
       }
-      String value = getByteAt(i);
-      if (i == address) {
-        value =
-            getByteAt(i).bgRgb(byteColor[0], byteColor[1], byteColor[2]).black;
-      } else if (i == address + 1) {
-        value =
-            value.bgRgb(byte16Color[0], byte16Color[1], byte16Color[2]).black;
-      } else if (i >= address + 2 && i <= address + 3) {
-        value =
-            value.bgRgb(byte32Color[0], byte32Color[1], byte32Color[2]).black;
-      } else if (i >= address + 4 && i <= address + 7) {
-        value =
-            value.bgRgb(byte64Color[0], byte64Color[1], byte64Color[2]).black;
+      line.write(" ");
+      // Checks to see if there is a second half of 8 bytes
+      for (int rightHalf = 8; rightHalf < 16; rightHalf++) {
+        // Right Half of 16 bytes
+        int byteAddress = x + rightHalf;
+        if (!isValidAddress(byteAddress)) {
+          line.write("  ");
+        } else {
+          String byte = getByteAt(byteAddress);
+          String value = getFormatted(byteAddress, byte);
+          line.write(value);
+        }
+        if (rightHalf != 15) {
+          line.write(isValidAddress(byteAddress) ? "│" : " ");
+        }
       }
-      editor.write(value);
+      line.write("\t│");
+      for (int j = 0; j < 16; j++) {
+        if (isValidAddress(x + j)) {
+          final char = component.data!.getUint8(x + j);
+          final charString =
+              _isPrintable(char) ? String.fromCharCode(char) : '.';
+          line.write(getFormatted(x + j, charString));
+        } else {
+          line.write(' ');
+        }
+      }
+      body.write("${line.toString()}\n");
+    }
+    if (startLine != 0) {
+      //Notifies user that there is more data above
+      context.write("\t".padLeft(16, " "));
+      context.write("───────────────────────^───────────────────────\n");
+    } else {
+      context.write("\n");
+    }
+    context.write(body.toString());
+    if (endLine != ((component.data!.lengthInBytes / 16).ceil())) {
+      //Notifies user that there is more data below
+      context.write("\t".padLeft(16, " "));
+      context.write("───────────────────────v───────────────────────\n");
+    } else {
+      context.write("\n");
     }
     editor.writeln();
     editor.writeln("Address: 0x${address.toRadixString(16)} ");
     editor.write("u8:".bgRgb(byteColor[0], byteColor[1], byteColor[2]).black);
     editor.writeln("${component.data!.getUint8(address)}");
-    if (address + 1 < component.data!.lengthInBytes) {
-      editor.writeln("Little Endian:");
-    }
-    if (address + 1 < component.data!.lengthInBytes) {
-      editor.write(
-          "\tu16:".bgRgb(byte16Color[0], byte16Color[1], byte16Color[2]).black);
-      editor.write("${component.data!.getUint16(address, Endian.little)}\n");
-    }
-    if (address + 3 < component.data!.lengthInBytes) {
-      editor.write(
-          "\tu32:".bgRgb(byte32Color[0], byte32Color[1], byte32Color[2]).black);
-      editor.write("${component.data!.getUint32(address, Endian.little)}\n");
-    }
-    if (address + 7 < component.data!.lengthInBytes) {
-      editor.write(
-          "\tu64:".bgRgb(byte64Color[0], byte64Color[1], byte64Color[2]).black);
-      editor.write("${component.data!.getUint64(address, Endian.little)}\n");
-    }
-    if (address + 1 < component.data!.lengthInBytes) {
-      editor.writeln("Big Endian:");
-    }
-    if (address + 1 < component.data!.lengthInBytes) {
-      editor.write(
-          "\tu16:".bgRgb(byte16Color[0], byte16Color[1], byte16Color[2]).black);
-      editor.write("${component.data!.getUint16(address, Endian.big)}\n");
-    }
-    if (address + 3 < component.data!.lengthInBytes) {
-      editor.write(
-          "\tu32:".bgRgb(byte32Color[0], byte32Color[1], byte32Color[2]).black);
-      editor.write("${component.data!.getUint32(address, Endian.big)}\n");
-    }
-    if (address + 7 < component.data!.lengthInBytes) {
-      editor.write(
-          "\tu64:".bgRgb(byte64Color[0], byte64Color[1], byte64Color[2]).black);
-      editor.write("${component.data!.getUint64(address, Endian.big)}\n");
-    }
     context.write(editor.toString());
+  }
+
+  String getFormatted(int byteAddress, String value) {
+    if (byteAddress == address) {
+      value = value.bgRgb(byteColor[0], byteColor[1], byteColor[2]).black;
+    } else if (byteAddress == address + 1) {
+      value = value.bgRgb(byte16Color[0], byte16Color[1], byte16Color[2]).black;
+    } else if (byteAddress >= address + 2 && byteAddress <= address + 3) {
+      value = value.bgRgb(byte32Color[0], byte32Color[1], byte32Color[2]).black;
+    } else if (byteAddress >= address + 4 && byteAddress <= address + 7) {
+      value = value.bgRgb(byte64Color[0], byte64Color[1], byte64Color[2]).black;
+    }
+    return value;
+  }
+
+  bool _isPrintable(int charCode) {
+    return charCode >= 32 && charCode <= 126;
   }
 
   @override
@@ -119,7 +162,6 @@ class HexEditorState extends State<HexEditor> {
     while (true) {
       final key = context.readKey();
       bool quit = false;
-
       switch (key.controlChar) {
         case ControlCharacter.arrowUp:
           setState(() {
