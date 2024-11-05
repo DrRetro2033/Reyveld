@@ -410,6 +410,7 @@ class OpenFileCommand extends ArceusCommand {
     if (!File(file).existsSync()) {
       throw Exception("File $file not found.");
     }
-    HexEditor(File(file)).interact();
+    await HexEditor(File(file)).interact();
+    exit(0);
   }
 }
