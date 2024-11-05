@@ -23,7 +23,7 @@ Arceus can rollback saves to older versions, so if you make any mistakes, your o
 
 ## Keep track of YOUR saves 👥
 
-Multiple people can play the same game even if the game is not designed for switching between different players.
+Multiple people can play the same game even if the game is not designed for switching between different players. All you need to do is create a user profile!
 
 ## Go Beyond with Add-Ons 📦
 
@@ -31,6 +31,9 @@ Arceus has Lua built-in, with the help of [lua_dardo](https://pub.dev/packages/l
 
 > [!NOTE]
 > In the future, I am planning to add built-in functionalty for easier creation of transfer tools, akin to Pokémon Bank. For now, you are going to need to build your own transfer tools.
+
+## Built-In Hex Editor #️⃣
+Arceus has a CLI hex editor that allows you can use to edit saves, see changes, and test Plug-Ins.
 
 ## Tiny Size 📁
 
