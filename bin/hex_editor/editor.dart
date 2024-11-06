@@ -5,7 +5,7 @@ import 'dart:async';
 import 'package:chalkdart/chalkstrings.dart';
 import 'package:dart_console/dart_console.dart';
 import '../cli.dart';
-import '../extensions.dart';
+import '../version_control/dossier.dart';
 
 enum Views {
   byteViewer,
@@ -16,16 +16,17 @@ enum Views {
 enum Formats { u8, u16, u32, u64 }
 
 class HexEditor {
-  final File _file;
+  final Plasma _primaryFile;
+  final keyboard = KeyboardInput();
   Views currentView = Views.byteViewer;
-  HexEditor(this._file) {
-    data = _file.readAsBytesSync().buffer.asByteData();
-  }
-  ByteData? data;
+  HexEditor(this._primaryFile);
+  ByteData get data => _primaryFile.data;
   Endian dataEndian = Endian.little;
   static const int _minDataHeight = 7;
   int address = 0;
   Formats currentFormat = Formats.u8;
+  String? _currentValue;
+  bool error = false;
   final List<int> byteColor = [255, 255, 255];
   final List<int> byte16Color = [140, 140, 140];
   final List<int> byte32Color = [100, 100, 100];
@@ -34,13 +35,13 @@ class HexEditor {
   /// # `String` getByteAt(int address)
   /// ## Get the byte at the given address as a hex string.
   String getByteAt(int address) {
-    return data!.getUint8(address).toRadixString(16).padLeft(2, "0");
+    return data.getUint8(address).toRadixString(16).padLeft(2, "0");
   }
 
   /// # `bool` isValidAddress(int address)
   /// ## Check if an address is valid.
   bool isValidAddress(int address) {
-    return address >= 0 && address < data!.lengthInBytes;
+    return address >= 0 && address < data.lengthInBytes;
   }
 
   /// # `void` render()
@@ -51,8 +52,15 @@ class HexEditor {
     // console.clearScreen();
 
     Cli.moveCursorToTopLeft();
-    stdout.writeln(_file.path.getFilename().italic);
-    stdout.writeln("");
+    stdout.write(_primaryFile.getFilename().italic);
+    if (_primaryFile.isTracked()) {
+      stdout.write(" (Tracked)");
+    }
+    if (currentView == Views.byteViewer) {
+      stdout.write(" - Ctrl+Q to quit. Ctrl+S to save.");
+    }
+
+    stdout.writeln();
     stdout.write(renderBody());
     stdout.writeln();
 
@@ -76,8 +84,8 @@ class HexEditor {
     if (startLine < 0) {
       startLine = 0;
       endLine = startLine + usableRows;
-    } else if (endLine >= ((data!.lengthInBytes / 16).ceil())) {
-      endLine = (data!.lengthInBytes / 16).ceil();
+    } else if (endLine >= ((data.lengthInBytes / 16).ceil())) {
+      endLine = (data.lengthInBytes / 16).ceil();
       startLine = endLine - usableRows;
       if (startLine < 0) startLine = 0; // Ensure we don't go below zero
     }
@@ -85,7 +93,7 @@ class HexEditor {
     full.write("\t\t00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n"
         .padLeft(8, " ")); // Address Headers
     for (int x = startLine * 16 < 0 ? 0 : startLine * 16;
-        x < data!.lengthInBytes && x < endLine * 16;
+        x < data.lengthInBytes && x < endLine * 16;
         x += 16) {
       final line = StringBuffer("");
       line.write("${x.toRadixString(16).padLeft(8, "0")}\t"); // Address Labels
@@ -122,7 +130,7 @@ class HexEditor {
       line.write("\t│");
       for (int j = 0; j < 16; j++) {
         if (isValidAddress(x + j)) {
-          final char = data!.getUint8(x + j);
+          final char = data.getUint8(x + j);
           final charString =
               _isPrintable(char) ? String.fromCharCode(char) : '.';
           line.write(getFormatted(x + j, charString));
@@ -140,7 +148,7 @@ class HexEditor {
       full.write("\n");
     }
     full.write(body.toString());
-    if (endLine < ((data!.lengthInBytes / 16).ceil())) {
+    if (endLine < ((data.lengthInBytes / 16).ceil())) {
       //Notifies user that there is more data below
       full.write("\t".padLeft(16, " "));
       full.write("───────────────────────v───────────────────────\n");
@@ -150,23 +158,55 @@ class HexEditor {
     return full.toString();
   }
 
+  /// # `String` getValues(int byteAddress)
+  /// ## Get the values of the different formats at the given address.
+  /// The values are formatted as a string with the header in the corresponding
+  /// color and the value in the same color.
+  /// If the current view is the data footer, the current format is highlighted.
+  /// If the current view is not the data footer, it adds a note to press E to
+  /// edit any of these values.
   String getValues(int byteAddress) {
     StringBuffer values = StringBuffer();
     for (Formats format in Formats.values) {
       // Add all the formats to the values buffer.
+      error = false;
       String? value;
       String? header;
       switch (format) {
         case Formats.u8:
           header = "u8".bgRgb(byteColor[0], byteColor[1], byteColor[2]).black;
-          value = data!.getUint8(address).toString();
+          if (currentFormat == Formats.u8 && _currentValue != null) {
+            if (int.tryParse(_currentValue!) != null) {
+              int x = int.tryParse(_currentValue!)!;
+              if (x.toRadixString(2).length > 8 || x < 0) {
+                error = true;
+              }
+            } else {
+              error = true;
+            }
+            value = _currentValue.toString();
+          } else {
+            value = data.getUint8(address).toString();
+          }
           break;
         case Formats.u16:
           if (isValidAddress(byteAddress + 1)) {
             header = "u16"
                 .bgRgb(byte16Color[0], byte16Color[1], byte16Color[2])
                 .black;
-            value = data!.getUint16(address, dataEndian).toString();
+            if (currentFormat == Formats.u16 && _currentValue != null) {
+              if (int.tryParse(_currentValue!) != null) {
+                int x = int.tryParse(_currentValue!)!;
+                if (x.toRadixString(2).length > 16 || x < 0) {
+                  error = true;
+                }
+              } else {
+                error = true;
+              }
+              value = _currentValue.toString();
+            } else {
+              value = data.getUint16(address, dataEndian).toString();
+            }
           }
           break;
         case Formats.u32:
@@ -174,16 +214,41 @@ class HexEditor {
             header = "u32"
                 .bgRgb(byte32Color[0], byte32Color[1], byte32Color[2])
                 .black;
-            value =
-                data!.getUint32(address, dataEndian).toStringAsExponential(2);
+            if (currentFormat == Formats.u32 && _currentValue != null) {
+              if (int.tryParse(_currentValue!) != null) {
+                int x = int.tryParse(_currentValue!)!;
+                if (x.toRadixString(2).length > 32 || x < 0) {
+                  error = true;
+                }
+              } else {
+                error = true;
+              }
+              value = _currentValue.toString();
+            } else {
+              value =
+                  data.getUint32(address, dataEndian).toStringAsExponential(2);
+            }
           }
           break;
         case Formats.u64:
-          header =
-              "u64".bgRgb(byte64Color[0], byte64Color[1], byte64Color[2]).black;
           if (isValidAddress(byteAddress + 7)) {
-            value =
-                data!.getUint64(address, dataEndian).toStringAsExponential(2);
+            header = "u64"
+                .bgRgb(byte64Color[0], byte64Color[1], byte64Color[2])
+                .black;
+            if (currentFormat == Formats.u64 && _currentValue != null) {
+              if (int.tryParse(_currentValue!) != null) {
+                int x = int.tryParse(_currentValue!)!;
+                if (x.toRadixString(2).length > 64 || x < 0) {
+                  error = true;
+                }
+              } else {
+                error = true;
+              }
+              value = _currentValue.toString();
+            } else {
+              value =
+                  data.getUint64(address, dataEndian).toStringAsExponential(2);
+            }
           }
           break;
       }
@@ -191,7 +256,11 @@ class HexEditor {
         continue;
       }
       if (currentView == Views.dataFooter && currentFormat == format) {
-        value = value.bgMagentaBright.black;
+        if (!error) {
+          value = value.bgMagentaBright.black;
+        } else {
+          value = value.bgRedBright.black;
+        }
       }
       values.write("$header $value| ");
     }
@@ -211,6 +280,9 @@ class HexEditor {
     } else if (byteAddress >= address + 4 && byteAddress <= address + 7) {
       value = value.bgRgb(byte64Color[0], byte64Color[1], byte64Color[2]).black;
     }
+    if (_primaryFile.unsavedChanges().containsKey(byteAddress)) {
+      value = value.brightYellow;
+    }
     return value;
   }
 
@@ -225,6 +297,7 @@ class HexEditor {
         case 'e':
           currentView = Views.dataFooter;
           currentFormat = Formats.u8;
+          _currentValue = null;
           render();
           break;
       }
@@ -238,7 +311,7 @@ class HexEditor {
         }
         break;
       case ControlCharacter.arrowDown:
-        if (!(address + 0x10 >= data!.lengthInBytes)) {
+        if (!(address + 0x10 >= data.lengthInBytes)) {
           address += 0x10;
           render();
         }
@@ -250,13 +323,17 @@ class HexEditor {
         }
         break;
       case ControlCharacter.arrowRight:
-        if (!(address + 0x01 >= data!.lengthInBytes)) {
+        if (!(address + 0x01 >= data.lengthInBytes)) {
           address += 0x01;
           render();
         }
         break;
       case ControlCharacter.ctrlQ:
         quit = true;
+        break;
+      case ControlCharacter.ctrlS:
+        _primaryFile.save();
+        render();
         break;
       default:
         break;
@@ -269,12 +346,21 @@ class HexEditor {
   }
 
   void _dataFooterView(Key key) {
+    if (!key.isControl) {
+      _currentValue ??= "";
+      _currentValue = _currentValue! + key.char;
+      render();
+    }
     switch (key.controlChar) {
       case ControlCharacter.ctrlQ:
         currentView = Views.byteViewer;
+        _currentValue = null;
         render();
         break;
       case ControlCharacter.arrowLeft:
+        if (_currentValue != null) {
+          break;
+        }
         int newIndex = currentFormat.index - 1;
         if (newIndex < 0) {
           break;
@@ -283,6 +369,9 @@ class HexEditor {
         render();
         break;
       case ControlCharacter.arrowRight:
+        if (_currentValue != null) {
+          break;
+        }
         int newIndex = currentFormat.index + 1;
         if (newIndex >= Formats.values.length) {
           break;
@@ -290,6 +379,39 @@ class HexEditor {
         currentFormat = Formats.values[newIndex];
         render();
         break;
+      case ControlCharacter.backspace:
+        if (_currentValue != null && _currentValue!.isNotEmpty) {
+          _currentValue =
+              _currentValue!.substring(0, _currentValue!.length - 1);
+          render();
+        }
+        break;
+      case ControlCharacter.enter:
+        if (_currentValue != null && !error && _currentValue!.isNotEmpty) {
+          try {
+            switch (currentFormat) {
+              case Formats.u8:
+                data.setUint8(address, int.parse(_currentValue!));
+                break;
+              case Formats.u16:
+                data.setUint16(address, int.parse(_currentValue!), dataEndian);
+                break;
+              case Formats.u32:
+                data.setUint32(address, int.parse(_currentValue!), dataEndian);
+                break;
+              case Formats.u64:
+                data.setUint64(address, int.parse(_currentValue!), dataEndian);
+                break;
+            }
+            _currentValue = null;
+            render();
+          } catch (e) {
+            Cli.clearTerminal();
+            rethrow;
+          }
+          currentView = Views.byteViewer;
+          render();
+        }
       default:
         break;
     }
@@ -299,7 +421,6 @@ class HexEditor {
     int lastHeight = 1;
     int lastWidth = 1;
     bool quit = false;
-    final keyboard = KeyboardInput();
     Cli.hideCursor();
     keyboard.onKeyPress.listen((key) {
       switch (currentView) {
@@ -323,6 +444,6 @@ class HexEditor {
     }
     Cli.showCursor();
     keyboard.dispose();
-    return data!;
+    return data;
   }
 }

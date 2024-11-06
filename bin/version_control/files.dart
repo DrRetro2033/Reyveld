@@ -1,31 +1,15 @@
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:archive/archive_io.dart';
+import '../extensions.dart';
 import 'star.dart';
-
-/// # `mixin` `CheckForDifferencesInData`
-/// ## A mixin to check for differences in data, for use in the `BaseFile` class.
-mixin CheckForDifferencesInData {
-  bool _check(Uint8List data1, Uint8List data2) {
-    if (data1.length != data2.length) {
-      return true;
-    }
-    for (int x = 0; x < data1.length; x++) {
-      if (data1[x] != data2[x]) {
-        return true;
-      }
-    }
-    return false;
-  }
-}
 
 /// # `class` `BaseFile`
 /// ## A base class for internal and external files.
 /// Represents an internal file (i.e. inside a `.star` file) or an external file (i.e. inside the current directory).
-sealed class BaseFile with CheckForDifferencesInData {
+sealed class BaseFile {
   String path;
-  Uint8List get data => Uint8List(0);
-  set data(Uint8List newData) {
+  ByteData get data => ByteData(0);
+  set data(ByteData newData) {
     throw UnimplementedError(
         "Not implemented. Please implement in a subclass.");
   }
@@ -37,7 +21,7 @@ sealed class BaseFile with CheckForDifferencesInData {
   @override
   operator ==(Object other) {
     if (other is BaseFile) {
-      return !_check(data, other.data);
+      data.checkForDifferences(other.data);
     }
     return false;
   }
@@ -52,14 +36,11 @@ class InternalFile extends BaseFile {
   Star star;
 
   @override
-  Uint8List get data => build();
+  ByteData get data => _build();
 
   @override
-  set data(Uint8List newData) {
-    if (star.archive.findFile(path) != null) {
-      throw Exception("You cannot set data for a existing file inside a star.");
-    }
-    star.archive.addFile(ArchiveFile(path, newData.length, newData));
+  set data(ByteData newData) {
+    throw Exception("You cannot set data for an internal file.");
   }
 
   InternalFile(this.star, super.path) {
@@ -69,7 +50,7 @@ class InternalFile extends BaseFile {
     }
   }
 
-  Uint8List build() {
+  ByteData _build() {
     Star? currentStar = star.getParentStar();
     Uint8List data = star.getArchive().findFile(path)?.content as Uint8List;
     while (currentStar != null) {
@@ -82,7 +63,7 @@ class InternalFile extends BaseFile {
       }
       currentStar = currentStar.getParentStar();
     }
-    return data;
+    return data.buffer.asByteData();
   }
 }
 
@@ -92,10 +73,10 @@ class ExternalFile extends BaseFile {
   ExternalFile(super.path);
 
   @override
-  Uint8List get data => File(path).readAsBytesSync();
+  ByteData get data => File(path).readAsBytesSync().buffer.asByteData();
 
   @override
-  set data(Uint8List newData) {
-    File(path).writeAsBytesSync(newData);
+  set data(ByteData newData) {
+    File(path).writeAsBytesSync(newData.buffer.asUint8List().toList());
   }
 }

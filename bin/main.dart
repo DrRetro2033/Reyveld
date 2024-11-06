@@ -11,6 +11,7 @@ import 'scripting/addon.dart';
 import 'package:interact/interact.dart';
 import 'cli.dart';
 import 'hex_editor/editor.dart';
+import 'version_control/dossier.dart';
 // import 'package:cli_completion/cli_completion.dart';
 
 /// # `void` main(List<String> arguments)
@@ -40,7 +41,7 @@ Future<dynamic> main(List<String> arguments) async {
   if (arguments.contains("--const") || arguments.contains("-c")) {
     final constellationName =
         arguments[arguments.indexWhere((e) => e == "--const" || e == "-c") + 1];
-    if (!Arceus.doesConstellationExist(constellationName)) {
+    if (!Arceus.doesConstellationExist(name: constellationName)) {
       throw Exception(
           "Constellation with the name of $constellationName does not exist");
     }
@@ -97,7 +98,7 @@ class CreateConstellationCommand extends ArceusCommand {
       }
     } catch (e) {
       spinner.fail("Unable to create constellation.");
-      return;
+      rethrow;
     }
     spinner.success("Constellation created.");
   }
@@ -410,7 +411,7 @@ class OpenFileCommand extends ArceusCommand {
     if (!File(file).existsSync()) {
       throw Exception("File $file not found.");
     }
-    await HexEditor(File(file)).interact();
+    await HexEditor(Plasma.fromFile(File(file))).interact();
     exit(0);
   }
 }

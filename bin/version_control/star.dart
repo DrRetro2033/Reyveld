@@ -14,16 +14,16 @@ class Star {
   String? name; // The name of the star.
   String? hash; // The hash of the star.
   DateTime? createdAt; // The time the star was created.
-  String? parentHash; // The hash of the parent star.
+  String? _parentHash; // The hash of the parent star.
   String? _userHash; // The hash of the user who this star belongs to.
   User? get user => constellation.userIndex?.getUser(_userHash!);
   Star? get parent {
-    if (parentHash == null) return null;
-    return Star(constellation, hash: parentHash);
+    if (_parentHash == null) return null;
+    return Star(constellation, hash: _parentHash);
   }
 
   set parent(Star? value) {
-    parentHash = value?.hash;
+    _parentHash = value?.hash;
   }
 
   List<Star> get children => constellation.starmap!.getChildren(this);
@@ -55,10 +55,13 @@ class Star {
     } else if (hash != null) {
       load();
     } else {
-      throw Exception("Star must have either a name and a user, or a hash.");
+      throw Exception("Star must have a name and user, or a hash.");
     }
   }
 
+  /// # `void` _create()
+  /// ## Creates the star and saves it to the constellation.
+  /// It also adds the star to the constellation's starmap.
   void _create() {
     createdAt = DateTime.now();
     hash = constellation.generateUniqueStarHash();
@@ -101,8 +104,8 @@ class Star {
   /// # `Star` getParentStar()
   /// ## Returns the parent star.
   Star? getParentStar() {
-    if (parentHash == null) return null;
-    return Star(constellation, hash: parentHash);
+    if (_parentHash == null) return null;
+    return Star(constellation, hash: _parentHash);
   }
 
   /// # `void` load()

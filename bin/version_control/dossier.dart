@@ -1,12 +1,13 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:archive/archive_io.dart';
 
 import 'star.dart';
 import 'package:ansix/ansix.dart';
 import 'package:cli_spin/cli_spin.dart';
-import 'files.dart';
 import '../extensions.dart';
+import '../arceus.dart';
 
 /// # `class` `Dossier`
 /// ## A wrapper for the internal and external file systems.
@@ -131,9 +132,9 @@ class Dossier {
     Map<String, String> movedFiles = {};
     for (String file in removedFiles) {
       if (newFiles.any((e) => e.getFilename() == file.getFilename())) {
-        ExternalFile externalFile = ExternalFile(
-            "${star.constellation.path}/${newFiles.firstWhere((e) => e.getFilename() == file.getFilename())}");
-        InternalFile internalFile = InternalFile(star, file);
+        Plasma externalFile = Plasma.fromFile(File(
+            "${star.constellation.path}/${newFiles.firstWhere((e) => e.getFilename() == file.getFilename())}"));
+        Plasma internalFile = Plasma.fromStar(star, file);
         if (externalFile == internalFile) {
           movedFiles[file] =
               newFiles.firstWhere((e) => e.getFilename() == file.getFilename());
@@ -149,8 +150,10 @@ class Dossier {
       if (file.isFile &&
           file.name != "star" &&
           !removedFiles.contains(file.name)) {
-        DossierFile dossierFile = DossierFile(star, "star://${file.name}");
-        if (dossierFile.hasChanged()) {
+        Plasma internalFile = Plasma.fromStar(star, file.name);
+        Plasma externalFile =
+            Plasma.fromFile(File("${star.constellation.path}/${file.name}"));
+        if (externalFile != internalFile) {
           changedFiles.add(file.name);
         }
       }
@@ -159,37 +162,85 @@ class Dossier {
   }
 }
 
-/// # `class` `DossierFile`
-/// ## A wrapper for the internal and external for a single file in both the internal and external file systems.
-class DossierFile {
-  Star star;
-  String path;
-  String? filename;
-  InternalFile? internalFile;
-  ExternalFile? externalFile;
+enum Origin { internal, external }
 
-  DossierFile(this.star, this.path) {
-    if (path.startsWith(star.constellation.path)) {
-      filename = path.makeRelPath(star.constellation.path);
-    } else if (path.startsWith("star://")) {
-      filename = path.replaceFirst("star://", "");
+class Plasma {
+  Star? star;
+  String? pathInStar;
+  File? file;
+  ByteData? _originalData;
+  final ByteData data;
+  final Origin origin;
+
+  /// # `Plasma`(`ByteData` data)
+  /// DO NOT CALL THIS DIRECTLY, USE ONE OF THE FACTORY METHODS.
+  Plasma(this.data, this.origin, {this.star, this.file, this.pathInStar}) {
+    _originalData = Uint8List.fromList(data.buffer.asUint8List().toList())
+        .buffer
+        .asByteData();
+  }
+
+  @override
+  // ignore: hash_and_equals
+  operator ==(Object other) {
+    if (other is Plasma) {
+      return data.checkForDifferences(other.data);
     } else {
-      throw Exception("Invalid path: $path");
+      return false;
     }
-    open();
   }
 
-  /// # `void` open()
-  /// ## Opens the internal and external version of the file.
-  void open() {
-    externalFile = ExternalFile("${star.constellation.path}/${filename!}");
-    internalFile = InternalFile(star, filename!);
+  factory Plasma.fromFile(File file) {
+    return Plasma(file.readAsBytesSync().buffer.asByteData(), Origin.external,
+        file: file);
   }
 
-  /// # `bool` hasChanged()
-  /// ## Checks to see if the star's contents is different from the current directory.
-  bool hasChanged() {
-    // ignore: unrelated_type_equality_checks
-    return internalFile != externalFile;
+  factory Plasma.fromStar(Star star, String pathInStar) {
+    return Plasma(
+        (star.archive.findFile(pathInStar)!.content as Uint8List)
+            .buffer
+            .asByteData(),
+        Origin.internal,
+        star: star,
+        pathInStar: pathInStar);
+  }
+
+  void save() {
+    if (origin == Origin.internal) {
+      throw Exception(
+          "Cannot save plasma from inside a star. Please try again with external file instead.");
+    }
+    file!.writeAsBytesSync(data.buffer.asUint8List());
+    _originalData = Uint8List.fromList(data.buffer.asUint8List().toList())
+        .buffer
+        .asByteData();
+  }
+
+  String getFilename() {
+    if (origin == Origin.internal) {
+      return pathInStar!.getFilename();
+    } else {
+      return file!.path.getFilename();
+    }
+  }
+
+  bool isTracked() {
+    if (origin == Origin.internal) {
+      return true;
+    } else {
+      return Arceus.doesConstellationExist(path: file!.path);
+    }
+  }
+
+  Map<int, int> unsavedChanges() {
+    Map<int, int> changes = {};
+    for (int i = 0; i < data.lengthInBytes; ++i) {
+      if (i >= _originalData!.lengthInBytes) {
+        changes[i] = data.getUint8(i);
+      } else if (data.getUint8(i) != _originalData!.getUint8(i)) {
+        changes[i] = data.getUint8(i);
+      }
+    }
+    return changes;
   }
 }

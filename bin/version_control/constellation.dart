@@ -52,7 +52,7 @@ class Constellation {
       throw Exception("Must provide either a path or a name.");
     } else if (path == null &&
         name != null &&
-        Arceus.doesConstellationExist(name)) {
+        Arceus.doesConstellationExist(name: name)) {
       path = Arceus.getConstellationPath(name)!;
     } else {
       path = path;
@@ -65,11 +65,12 @@ class Constellation {
         starmap?.currentStarHash = starmap?.rootHash;
         save();
       }
-      if (!Arceus.doesConstellationExist(this.name)) {
+      if (!Arceus.doesConstellationExist(name: this.name)) {
         Arceus.addConstellation(this.name, path);
       }
       return;
     } else if (name != null) {
+      this.name = name;
       _createConstellationDirectory();
       userIndex?.createUsers(users);
       starmap = Starmap(this);

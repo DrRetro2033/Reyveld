@@ -71,6 +71,8 @@ class Cli {
 /// Do NOT create two instances of this class at the same time, as it will cause synchronization issues.
 class KeyboardInput {
   static final Console _console = Console();
+  Isolate? _isolate;
+  Capability? _cap;
   final StreamController<Key> _controller = StreamController<Key>();
 
   KeyboardInput() {
@@ -86,7 +88,7 @@ class KeyboardInput {
     // }
 
     final receivePort = ReceivePort();
-    await Isolate.spawn(_listenForInput, receivePort.sendPort);
+    _isolate = await Isolate.spawn(_listenForInput, receivePort.sendPort);
     receivePort.listen((key) {
       _controller.add(key);
     });
@@ -101,5 +103,13 @@ class KeyboardInput {
 
   void dispose() {
     _controller.close();
+  }
+
+  void pause() {
+    _cap = _isolate?.pause();
+  }
+
+  void resume() {
+    _isolate?.resume(_cap!);
   }
 }

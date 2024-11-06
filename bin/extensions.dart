@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 extension Compression on String {
   String fixPath() {
     String path = replaceAll("\"", "");
@@ -37,5 +39,19 @@ extension Compression on String {
   String getFilename() {
     String path = fixPath();
     return path.split("/").last;
+  }
+}
+
+extension DifferenceChecking on ByteData {
+  bool checkForDifferences(ByteData other) {
+    if (other.lengthInBytes != lengthInBytes) {
+      return true;
+    }
+    for (int i = 0; i < lengthInBytes; i++) {
+      if (getUint8(i) != other.getUint8(i)) {
+        return true;
+      }
+    }
+    return false;
   }
 }

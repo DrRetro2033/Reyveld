@@ -30,12 +30,25 @@ class Arceus {
     return jsonDecode(_constellationIndex.readAsStringSync());
   }
 
-  static bool doesConstellationExist(String name) {
-    return _getConstellations().containsKey(name);
+  static bool doesConstellationExist({String? name, String? path}) {
+    if (name != null) {
+      return _getConstellations().containsKey(name);
+    } else if (path != null) {
+      List<String> pathList = path.fixPath().split('/');
+      while (pathList.length > 1) {
+        if (Directory("${pathList.join('/')}/.constellation").existsSync()) {
+          return true;
+        }
+        pathList.removeLast();
+      }
+      return false;
+    } else {
+      return false;
+    }
   }
 
   static void addConstellation(String name, String path) {
-    if (doesConstellationExist(name)) {
+    if (doesConstellationExist(name: name)) {
       throw Exception("Constellation already exists");
     }
     final index = _getConstellations();
@@ -44,7 +57,7 @@ class Arceus {
   }
 
   static void removeConstellation(String name) {
-    if (!doesConstellationExist(name)) {
+    if (!doesConstellationExist(name: name)) {
       throw Exception("Constellation does not exist");
     }
     final index = _getConstellations();
@@ -60,7 +73,7 @@ class Arceus {
   }
 
   static String? getConstellationPath(String name) {
-    if (!doesConstellationExist(name)) {
+    if (!doesConstellationExist(name: name)) {
       throw Exception("Constellation does not exist");
     }
     return _getConstellations()[name];

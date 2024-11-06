@@ -20,6 +20,7 @@ dependencies:
   interact: ^2.2.0
   lua_dardo: ^0.0.5
   cli_completion: ^0.5.0
+  hashlib: ^1.21.0
 
 dev_dependencies:
   lints: ^4.0.0
