@@ -40,6 +40,11 @@ extension Compression on String {
     String path = fixPath();
     return path.split("/").last;
   }
+
+  String getExtension() {
+    String path = fixPath();
+    return path.split(".").last;
+  }
 }
 
 extension DifferenceChecking on ByteData {

@@ -12,14 +12,12 @@ dependencies:
   yaml: ^3.1.2
   ansix: ^0.3.3
   dart_console: ^1.2.0
-  console: ^4.1.0
   uuid: any
   archive: ^3.6.1
   cli_spin: ^1.0.1
   chalkdart: ^2.2.1
   interact: ^2.2.0
   lua_dardo: ^0.0.5
-  cli_completion: ^0.5.0
   hashlib: ^1.21.0
 
 dev_dependencies:

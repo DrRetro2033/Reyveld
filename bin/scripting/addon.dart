@@ -67,6 +67,25 @@ mixin Lua {
     }
     return resultTable;
   }
+
+  void call(LuaState state, String functionName,
+      {List<dynamic> args = const []}) {
+    state.getGlobal(functionName);
+    for (dynamic arg in args) {
+      if (arg is String) {
+        state.pushString(arg);
+      } else if (arg is int) {
+        state.pushInteger(arg);
+      } else if (arg is bool) {
+        state.pushBoolean(arg);
+      } else if (arg is double) {
+        state.pushNumber(arg);
+      } else {
+        state.pushNil();
+      }
+    }
+    state.pCall(args.length, 1, 0);
+  }
 }
 
 /// # `class` `Addon`
@@ -392,15 +411,12 @@ class PatternAddon extends Addon with Lua {
 
   PatternAddon(super.path);
 
-  Map<String, dynamic> read(String file) {
+  Map<String, dynamic> read(String file, {bool showResults = true}) {
     LuaState state = _initLuaVM(_getCode(), dartFunctions);
     data = File(file).readAsBytesSync().buffer.asByteData();
-    state.getGlobal("read");
-    state.pushString(file);
-    state.pCall(1, 1, 0);
-
+    call(state, "read", args: [file, file.getExtension()]);
     Map<String, dynamic> resultTable = _getTableFromState(state);
-    if (resultTable.isEmpty) {
+    if (resultTable.isEmpty && showResults) {
       print("❌ Failed to read data from $file");
     } else {
       print("✅ Read data from $file");
@@ -506,18 +522,22 @@ class PatternAddon extends Addon with Lua {
   }
 
   int readBitfield(LuaState state) {
+    bool reverse = false;
+    if (state.getTop() == 3) {
+      reverse = state.isBoolean(3) ? state.toBoolean(3) : false;
+      state.pop(1);
+    }
     int address = _getAddressFromLua(state);
     Map<String, dynamic> table = _getTableFromState(state);
-    bool reverse = state.isBoolean(3) ? state.toBoolean(3) : false;
-    print(reverse);
     int size = 0;
     Map<String, int> sizedTable = {};
     for (String key in table.keys) {
       if (table[key] is Map<String, dynamic>) {
         Map<String, dynamic> subTable = table[key] as Map<String, dynamic>;
-        sizedTable[subTable["1"]] = subTable["2"];
+        sizedTable[subTable["1"]] = subTable[
+            "2"]; // Done like this, so plug-in devlopers don't need to type a key for every bit chunk.
 
-        size += sizedTable[subTable["1"]]!;
+        size += sizedTable[subTable["1"]]!; // Move
       }
       // if (table[key] is int) {
       //   size += table[key] as int;
@@ -539,10 +559,9 @@ class PatternAddon extends Addon with Lua {
     int byteSize = (size / 8).ceil();
     BigInt combinedBitfield = BigInt.zero;
     List<int> bytes = data!.buffer.asUint8List(address, byteSize).toList();
-    for (int i in reverse ? bytes.reversed : bytes) {
+    for (int i in (reverse ? bytes.reversed : bytes)) {
       combinedBitfield = (combinedBitfield << 8) | BigInt.from(i);
     }
-
     int offset = 0;
     Map<String, dynamic> finalTable = {};
     for (String key in sizedTable.keys) {

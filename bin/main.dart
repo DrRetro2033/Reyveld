@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:ansix/ansix.dart';
 import 'package:args/command_runner.dart';
 import 'package:cli_spin/cli_spin.dart';
-import 'package:console/console.dart';
 import 'version_control/constellation.dart';
 import 'version_control/star.dart';
 import 'arceus.dart';
@@ -22,7 +21,6 @@ late String currentPath;
 
 Future<dynamic> main(List<String> arguments) async {
   // AnsiX.ensureSupportsAnsi();
-  Console.init();
   var runner = CommandRunner('arceus', "The ultimate save manager.");
   runner.argParser.addOption(
     "path",
