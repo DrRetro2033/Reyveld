@@ -54,6 +54,8 @@ Click on the badge below and download the lastest artifact.
 
 [![Build](https://github.com/DrRetro2033/Arceus/actions/workflows/build.yml/badge.svg)](https://github.com/DrRetro2033/Arceus/actions/workflows/build.yml)
 
+![How to download artifacts.](images/download_archive.GIF)
+
 # Planned Features for the Future
 
 ## Frontend GUI 🖱️
