@@ -46,9 +46,13 @@ Arceus can run on any modern device!
 ## Developer Friendly 🤝
 
 Arceus can be used by any developer in their projects, yes even you! Just don't forget to give credit if you use this in your own project.
-
 > [!NOTE]
 > If you want an example of what you can do with Arceus, check out my other project [MudkiPC](https://github.com/Pokemon-Manager/MudkiPC).
+
+# Want to Try?
+Click on the badge below and download the lastest artifact.
+
+[![Build](https://github.com/DrRetro2033/Arceus/actions/workflows/build.yml/badge.svg)](https://github.com/DrRetro2033/Arceus/actions/workflows/build.yml)
 
 # Planned Features for the Future
 
