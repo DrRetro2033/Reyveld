@@ -253,14 +253,14 @@ class Starmap {
   List<String> _getEndingHashes() {
     List<String> endings = [];
     for (String hash in childMap.keys) {
-      if (childMap[hash]!.isEmpty) {
+      if (childMap[hash]!.isEmpty && hash.isNotEmpty) {
         endings.add(hash);
       }
     }
     return endings;
   }
 
-  Star _getMostRecentStar() {
+  Star getMostRecentStar() {
     List<String> endings = _getEndingHashes();
     if (endings.isEmpty) {
       throw Exception("WHAT? How are there no ending stars?");
@@ -281,7 +281,7 @@ class Starmap {
   operator [](Object hash) {
     if (hash is String) {
       if (hash == "recent") {
-        return _getMostRecentStar();
+        return getMostRecentStar();
       } else if (hash == "root") {
         return root;
       } else if (hash.startsWith("back")) {

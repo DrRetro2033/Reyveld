@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'constellation.dart';
 import 'users.dart';
 import 'dart:io';
+import '../version_control/dossier.dart';
 
 /// # `class` Star
 /// ## Represents a star in the constellation.
@@ -140,6 +141,10 @@ class Star {
     final inputStream = InputFileStream(constellation.getStarPath(hash!));
     final archive = ZipDecoder().decodeBuffer(inputStream);
     return archive;
+  }
+
+  Plasma getPlasma(String pathOfFileInStar) {
+    return Plasma.fromStar(this, pathOfFileInStar);
   }
 
   void _fromStarFileData(String data) {

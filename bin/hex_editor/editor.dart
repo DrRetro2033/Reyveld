@@ -8,6 +8,7 @@ import '../cli.dart';
 import '../version_control/dossier.dart';
 
 enum Views {
+  jumpToAddress,
   byteViewer,
   dataFooter,
   changeLog,
@@ -17,9 +18,10 @@ enum Formats { u8, u16, u32, u64 }
 
 class HexEditor {
   final Plasma _primaryFile;
+  Plasma? _secondaryFile;
+  Map<int, int> differences = {};
   final keyboard = KeyboardInput();
   Views currentView = Views.byteViewer;
-  HexEditor(this._primaryFile);
   ByteData get data => _primaryFile.data;
   Endian dataEndian = Endian.little;
   static const int _minDataHeight = 7;
@@ -31,6 +33,13 @@ class HexEditor {
   final List<int> byte16Color = [140, 140, 140];
   final List<int> byte32Color = [100, 100, 100];
   final List<int> byte64Color = [80, 80, 80];
+
+  HexEditor(this._primaryFile) {
+    if (_primaryFile.isTracked()) {
+      _secondaryFile = _primaryFile.findOlderVersion();
+      differences = _primaryFile.getDifferences(_secondaryFile!);
+    }
+  }
 
   /// # `String` getByteAt(int address)
   /// ## Get the byte at the given address as a hex string.
@@ -66,7 +75,30 @@ class HexEditor {
 
     // Write address at bottom left.
     Cli.moveCursorToBottomLeft();
-    stdout.write("Address: 0x${address.toRadixString(16)} ");
+    stdout.write("A".underline.bold);
+    stdout.write("ddress: ");
+    if (currentView == Views.jumpToAddress) {
+      if (_currentValue != null) {
+        int? x;
+        if (_currentValue!.startsWith("0x")) {
+          x = int.tryParse(_currentValue!.substring(2), radix: 16);
+        } else {
+          x = int.tryParse(_currentValue!);
+        }
+
+        if (x != null && x >= 0 && x < data.lengthInBytes) {
+          stdout.write(_currentValue!.bgBrightMagenta.black);
+        } else {
+          stdout.write(_currentValue!.bgBrightRed.black);
+          error = true;
+        }
+      } else {
+        stdout.write("0x${address.toRadixString(16)}".bgBrightMagenta.black);
+      }
+    } else {
+      stdout.write("0x${address.toRadixString(16)}");
+    }
+    stdout.write(" ");
     stdout.write(getValues(address));
   }
 
@@ -95,7 +127,8 @@ class HexEditor {
     for (int x = startLine * 16 < 0 ? 0 : startLine * 16;
         x < data.lengthInBytes && x < endLine * 16;
         x += 16) {
-      final line = StringBuffer("");
+      // 16 bytes per line, with a gap between every eight bytes.
+      final line = StringBuffer(""); // The line to be printed
       line.write("${x.toRadixString(16).padLeft(8, "0")}\t"); // Address Labels
       for (int leftHalf = 0; leftHalf < 8; leftHalf++) {
         // Left Half of 16 bytes
@@ -282,6 +315,8 @@ class HexEditor {
     }
     if (_primaryFile.unsavedChanges().containsKey(byteAddress)) {
       value = value.brightYellow;
+    } else if (differences.containsKey(byteAddress)) {
+      value = value.brightCyan;
     }
     return value;
   }
@@ -298,6 +333,10 @@ class HexEditor {
           currentView = Views.dataFooter;
           currentFormat = Formats.u8;
           _currentValue = null;
+          render();
+          break;
+        case 'a':
+          currentView = Views.jumpToAddress;
           render();
           break;
       }
@@ -333,6 +372,9 @@ class HexEditor {
         break;
       case ControlCharacter.ctrlS:
         _primaryFile.save();
+        if (_secondaryFile != null) {
+          differences = _primaryFile.getDifferences(_secondaryFile!);
+        }
         render();
         break;
       default:
@@ -380,11 +422,7 @@ class HexEditor {
         render();
         break;
       case ControlCharacter.backspace:
-        if (_currentValue != null && _currentValue!.isNotEmpty) {
-          _currentValue =
-              _currentValue!.substring(0, _currentValue!.length - 1);
-          render();
-        }
+        _backspaceCurrentValue();
         break;
       case ControlCharacter.enter:
         if (_currentValue != null && !error && _currentValue!.isNotEmpty) {
@@ -417,6 +455,49 @@ class HexEditor {
     }
   }
 
+  void _jumpToAddressView(Key key) {
+    if (!key.isControl) {
+      _currentValue ??= "";
+      _currentValue = _currentValue! + key.char;
+      render();
+    }
+    switch (key.controlChar) {
+      case ControlCharacter.backspace:
+        _backspaceCurrentValue();
+      case ControlCharacter.ctrlQ:
+        currentView = Views.byteViewer;
+        _currentValue = null;
+        render();
+        break;
+      case ControlCharacter.enter:
+        if (_currentValue != null && !error && _currentValue!.isNotEmpty) {
+          try {
+            if (_currentValue!.startsWith("0x")) {
+              _currentValue = _currentValue!.substring(2);
+              address = int.parse(_currentValue!, radix: 16);
+            } else {
+              address = int.parse(_currentValue!);
+            }
+            _currentValue = null;
+            currentView = Views.byteViewer;
+            render();
+          } catch (e) {
+            Cli.clearTerminal();
+            rethrow;
+          }
+        }
+      default:
+        break;
+    }
+  }
+
+  void _backspaceCurrentValue() {
+    if (_currentValue != null && _currentValue!.isNotEmpty) {
+      _currentValue = _currentValue!.substring(0, _currentValue!.length - 1);
+      render();
+    }
+  }
+
   Future<ByteData> interact() async {
     int lastHeight = 1;
     int lastWidth = 1;
@@ -430,6 +511,8 @@ class HexEditor {
         case Views.dataFooter:
           _dataFooterView(key);
           break;
+        case Views.jumpToAddress:
+          _jumpToAddressView(key);
         default:
           break;
       }

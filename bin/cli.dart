@@ -5,7 +5,6 @@ import 'package:ansix/ansix.dart';
 import 'package:dart_console/dart_console.dart';
 
 class Cli {
-  static final Console _console = Console();
   static int get windowWidth => stdout.terminalColumns;
   static int get windowHeight => stdout.terminalLines;
   static int _lastWindowWidth = 0;

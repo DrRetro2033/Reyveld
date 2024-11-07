@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'extensions.dart';
+import 'version_control/constellation.dart';
 
 class Arceus {
   static String get _appDataPath => _getAppDataPath();
@@ -45,6 +46,17 @@ class Arceus {
     } else {
       return false;
     }
+  }
+
+  static Constellation? getConstellationFromPath(String path) {
+    List<String> pathList = path.fixPath().split('/');
+    while (pathList.length > 1) {
+      if (Directory("${pathList.join('/')}/.constellation").existsSync()) {
+        return Constellation(path: pathList.join('/'));
+      }
+      pathList.removeLast();
+    }
+    return null;
   }
 
   static void addConstellation(String name, String path) {

@@ -8,6 +8,7 @@ import 'package:ansix/ansix.dart';
 import 'package:cli_spin/cli_spin.dart';
 import '../extensions.dart';
 import '../arceus.dart';
+import 'constellation.dart';
 
 /// # `class` `Dossier`
 /// ## A wrapper for the internal and external file systems.
@@ -162,8 +163,14 @@ class Dossier {
   }
 }
 
+/// # `enum` `Origin`
+/// ## The origin of a `Plasma` object.
+/// The origin can either internal (from a star) or external (from the current directory).
 enum Origin { internal, external }
 
+/// # `class` `Plasma`
+/// ## A wrapper for the internal and external file systems.
+/// Its called plasma because its one of the building blocks of a star.
 class Plasma {
   Star? star;
   String? pathInStar;
@@ -173,7 +180,7 @@ class Plasma {
   final Origin origin;
 
   /// # `Plasma`(`ByteData` data)
-  /// DO NOT CALL THIS DIRECTLY, USE ONE OF THE FACTORY METHODS.
+  /// DO NOT CALL THIS DIRECTLY, USE ONE OF THE FACTORY METHODS ([Plasma.fromFile], [Plasma.fromStar]).
   Plasma(this.data, this.origin, {this.star, this.file, this.pathInStar}) {
     _originalData = Uint8List.fromList(data.buffer.asUint8List().toList())
         .buffer
@@ -242,5 +249,38 @@ class Plasma {
       }
     }
     return changes;
+  }
+
+  /// # `Map<int, int>` getDifferences(Plasma other)
+  /// ## Compares the current plasma to another plasma.
+  /// Returns a map of the differences between the two plasmas.
+  /// The keys are the addresses of the differences, and the values are the values at those addresses in the current plasma.
+  Map<int, int> getDifferences(Plasma other) {
+    Map<int, int> differences = {};
+    for (int i = 0; i < data.lengthInBytes; ++i) {
+      if (i >= _originalData!.lengthInBytes) {
+        differences[i] = data.getUint8(i);
+      } else if (data.getUint8(i) != other.data.getUint8(i)) {
+        differences[i] = data.getUint8(i);
+      }
+    }
+    return differences;
+  }
+
+  Plasma? findOlderVersion() {
+    if (origin == Origin.internal) {
+      if (star!.parent != null) {
+        return Plasma.fromStar(star!.parent!, pathInStar!);
+      }
+    } else if (origin == Origin.external) {
+      if (Arceus.doesConstellationExist(path: file!.path)) {
+        Constellation x = Arceus.getConstellationFromPath(file!.path)!;
+        print(file!.path.fixPath().replaceFirst("${x.path}/", ""));
+        return x.starmap
+            ?.getMostRecentStar()
+            .getPlasma(file!.path.fixPath().replaceFirst("${x.path}/", ""));
+      }
+    }
+    return null;
   }
 }
