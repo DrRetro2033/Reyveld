@@ -33,7 +33,7 @@ Arceus has Lua built-in, with the help of [lua_dardo](https://pub.dev/packages/l
 > In the future, I am planning to add built-in functionalty for easier creation of transfer tools, akin to Pokémon Bank. For now, you are going to need to build your own transfer tools.
 
 ## Built-In Hex Editor #️⃣
-Arceus has a CLI hex editor that allows you can use to edit saves, see changes, and test Plug-Ins.
+Arceus has a CLI hex editor that allows you to edit saves, see changes, and test Plug-Ins.
 
 ## Tiny Size 📁
 
