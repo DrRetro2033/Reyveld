@@ -1,6 +1,6 @@
-# Arceus
-
-### The modern save manager and editor.
+<h1 align="center">Arceus</h1>
+<h2 align="center">The modern save manager and editor.</h2>
+<h3 align="center"><a href="https://drretros-organization.gitbook.io/arceus/">Documentation</a></h3>
 
 > [!WARNING]
 > This is still in alpha.
