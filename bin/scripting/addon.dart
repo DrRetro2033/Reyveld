@@ -16,6 +16,8 @@ enum AddonFeatureSets {
   patterns,
 }
 
+/// # `mixin` Lua
+/// ## A mixin that provides functions for working with Lua.
 mixin Lua {
   /// # `LuaState` `_initLuaVM`
   /// ## Initializes a new Lua State.
@@ -68,6 +70,9 @@ mixin Lua {
     return resultTable;
   }
 
+  /// # `void` call(LuaState state, String functionName, {List<dynamic> args = const []})
+  /// ## Calls a function in the Lua VM.
+  /// Doesn't return anything.
   void call(LuaState state, String functionName,
       {List<dynamic> args = const []}) {
     state.getGlobal(functionName);
@@ -88,7 +93,7 @@ mixin Lua {
   }
 }
 
-/// # `class` `Addon`
+/// # `class` Addon
 /// ## The base class for all Addon projects.
 abstract class Addon {
   String path;
@@ -103,42 +108,52 @@ abstract class Addon {
   Map<String, int Function(LuaState)> get dartFunctions;
   Addon(this.path);
 
+  /// # `AddonDetails` _getDetails()
+  /// ## Returns the details of the addon.
+  /// It is separated by `---END-OF-DETAILS---`.
   AddonDetails _getDetails() {
     return AddonDetails(
         loadYaml(decodedString.split("---END-OF-DETAILS---")[0]));
   }
 
+  /// # `String` _getCode()
+  /// ## Returns the code of the addon.
+  /// It is separated by `---END-OF-DETAILS---`.
   String _getCode() {
     return decodedString.split("---END-OF-DETAILS---")[1];
   }
 
-  /// # `factory` `Addon.package()`
+  /// # `factory` Addon.package()
   /// ## Packages an addon project into a `*.arcaddon` file.
   /// Returns an `Addon` object.
   factory Addon.package(String pathToProject, String packageTo) {
-    pathToProject = pathToProject.fixPath();
-    Directory projectDirectory = Directory(pathToProject);
+    pathToProject = pathToProject.fixPath(); // Fix path
+    Directory projectDirectory =
+        Directory(pathToProject); // Get project directory
     if (!projectDirectory.existsSync()) {
       print("❌ Directory for packing was not found!");
       exit(1);
     }
     File addonDetailFile = File("$pathToProject/addon.yaml");
     if (!addonDetailFile.existsSync()) {
-      print("❌ Addon YAML was not found!");
+      print(
+          "❌ Addon YAML was not found!"); // Throw error if addon.yaml does not exist.
     }
     if (!Directory(packageTo).existsSync()) {
-      throw Exception("❌ Directory for packing does not exist!");
+      throw Exception(
+          "❌ Directory for packing does not exist!"); // Throw error if project directory does not exist.
     }
 
-    AddonDetails details =
-        AddonDetails(loadYaml(addonDetailFile.readAsStringSync()));
+    AddonDetails details = AddonDetails(
+        loadYaml(addonDetailFile.readAsStringSync())); // Get addon details
 
     if (!details.isVaild()) {
       throw Exception(
-          "❌ Addon YAML is not valid! Not packaging addon until it is valid! Please read Arceus documentation for more information.");
+          "❌ Addon YAML is not valid! Not packaging addon until it is valid! Please read Arceus documentation for more information."); // Throw error if addon.yaml is not valid.
     }
 
-    String name = details.name.toLowerCase().replaceAll(' ', "_");
+    String name = details.name.toLowerCase().replaceAll(' ',
+        "_"); // Get addon name, replace spaces with underscores for addon file name.
     final addonFilePath = "${packageTo.fixPath()}/$name.arcaddon";
 
     if (File(addonFilePath).existsSync()) {
@@ -154,11 +169,12 @@ abstract class Addon {
         element.start,
         element.end,
         "",
-      );
+      ); // Remove require portion
       File entity = projectDirectory.listSync(recursive: true).firstWhere(
               (e) => e is File && e.path.endsWith("${element.group(1)}.lua"))
-          as File;
-      compiled += "\n${entity.readAsStringSync()}";
+          as File; // Get file
+      compiled +=
+          "\n${entity.readAsStringSync()}"; // Add the contents of the file to code.
     }
 
     // Replace hex values with their decimal value as lua_dardo does not support hex.
@@ -168,7 +184,7 @@ abstract class Addon {
           int.tryParse(match.group(0)!.substring(2), radix: 16).toString());
     }
 
-    // Finally, combine it into a single file.
+    // Finally, combine it into a single file, and write it to the addon file.
     File addonFile = File(addonFilePath);
     addonFile.createSync(recursive: true);
     addonFile.writeAsBytesSync(gzip.encoder.convert("""
@@ -180,6 +196,8 @@ abstract class Addon {
     return Addon.load(addonFilePath);
   }
 
+  /// # `factory` Addon.load()
+  /// ## Loads an addon from a `*.arcaddon` file.
   factory Addon.load(String pathToAddonFile) {
     if (!File(pathToAddonFile).existsSync()) {
       throw Exception("File not found: $pathToAddonFile");
@@ -194,6 +212,8 @@ abstract class Addon {
     }
   }
 
+  /// # `factory` Addon.installGlobally()
+  /// ## Installs an addon globally.
   factory Addon.installGlobally(String pathToAddonFile,
       {bool deleteOld = true}) {
     if (!File(pathToAddonFile).existsSync()) {
@@ -217,6 +237,8 @@ abstract class Addon {
         "${Arceus.globalAddonPath}/${pathToAddonFile.getFilename()}");
   }
 
+  /// # `factory` Addon.installLocally()
+  /// ## Installs an addon locally to the current constellation.
   factory Addon.installLocally(String pathToAddonFile,
       {bool deleteOld = true}) {
     if (!File(pathToAddonFile).existsSync()) {
@@ -235,6 +257,9 @@ abstract class Addon {
         "${Constellation(path: currentPath).addonFolderPath}/${pathToAddonFile.getFilename()}");
   }
 
+  /// # `static` getInstalledAddons()
+  /// ## Returns a list of all installed addons.
+  ///
   static List<Addon> getInstalledAddons() {
     List<Addon> addons = <Addon>[];
     for (FileSystemEntity entity
@@ -373,7 +398,7 @@ ${_details.toString()}
   }
 }
 
-/// # `class` `TestAddon`
+/// # `class` TestAddon
 /// ## An addon for testing purposes.
 /// Used in the `load` function to make sure that the addon is not only valid, but to also get the details, without comitting to a specific subclass.
 class TestAddon extends Addon {
@@ -389,7 +414,7 @@ class TestAddon extends Addon {
   }
 }
 
-/// # `class` `PatternAddon`
+/// # `class` PatternAddon
 /// ## An addon that uses the `patterns` feature set.
 /// The pattern feature set is used to read and write to files with a specific format.
 /// It requires a `read` and `write` function.
@@ -452,6 +477,8 @@ class PatternAddon extends Addon with Lua {
     throw Exception("No patterns addon found!");
   }
 
+  /// # `int` _getAddressFromLua
+  /// ## Get the address from the lua state from the stack.
   int _getAddressFromLua(LuaState state, {int idx = 1}) {
     int? address = 0;
     if (state.isString(idx)) {
@@ -470,12 +497,19 @@ class PatternAddon extends Addon with Lua {
     return address;
   }
 
+  /// # `int` readU8
+  /// ## Read a single byte from the data at the given address.
+  /// Puts the byte onto the lua stack.
   int readU8(LuaState state) {
     int address = _getAddressFromLua(state);
     state.pushInteger(data!.getUint8(address));
     return 1;
   }
 
+  /// # `int` readU16
+  /// ## Read a single byte from the data at the given address.
+  /// Puts the byte onto the lua stack.
+  /// The `isLittleEndian` parameter is optional and defaults to `defaultIsLittleEndian`.
   int readU16(LuaState state) {
     int address = _getAddressFromLua(state);
     bool isLittleEndian =
@@ -485,6 +519,10 @@ class PatternAddon extends Addon with Lua {
     return 1;
   }
 
+  /// # `int` readU32
+  /// ## Read a single byte from the data at the given address.
+  /// Puts the byte onto the lua stack.
+  /// The `isLittleEndian` parameter is optional and defaults to `defaultIsLittleEndian`.
   int readU32(LuaState state) {
     int address = _getAddressFromLua(state);
     bool isLittleEndian =
@@ -494,6 +532,10 @@ class PatternAddon extends Addon with Lua {
     return 1;
   }
 
+  /// # `int` readU64
+  /// ## Read a single byte from the data at the given address.
+  /// Puts the byte onto the lua stack.
+  /// The `isLittleEndian` parameter is optional and defaults to `defaultIsLittleEndian`.
   int readU64(LuaState state) {
     int address = _getAddressFromLua(state);
     bool isLittleEndian =
@@ -503,6 +545,9 @@ class PatternAddon extends Addon with Lua {
     return 1;
   }
 
+  /// # `int` readString8
+  /// ## Read a string of bytes from the data at the given address and length.
+  /// Puts the string onto the lua stack.
   int readString8(LuaState state) {
     int address = _getAddressFromLua(state);
     int length = _getAddressFromLua(state);
@@ -511,6 +556,9 @@ class PatternAddon extends Addon with Lua {
     return 1;
   }
 
+  /// # `int` readString16
+  /// ## Read a string of bytes (in the encoding of UTF-16) from the data at the given address and length.
+  /// Puts the string onto the lua stack.
   int readString16(LuaState state) {
     final address = _getAddressFromLua(state, idx: 1);
     int length = _getAddressFromLua(state, idx: 2);
@@ -521,6 +569,10 @@ class PatternAddon extends Addon with Lua {
     return 1;
   }
 
+  /// # `int` readBitfield
+  /// ## Read a bitfield from the data at the given address and bitfield table.
+  /// Puts the bitfield onto the lua stack.
+  /// The `reverse` parameter is optional and defaults to `false`, and it can be used to reverse a bitfield for any reason.
   int readBitfield(LuaState state) {
     bool reverse = false;
     if (state.getTop() == 3) {
@@ -583,6 +635,15 @@ class PatternAddon extends Addon with Lua {
     return 1;
   }
 
+  /// # `int` validateTable
+  /// ## Validate a table against a vaildation table.
+  /// Puts a boolean onto the lua stack.
+  /// It is used to make sure the data being read or written is able to fit into the defined size of bits in the vaildation table, making sure the table is valid.
+  ///
+  /// For example, if the key `test` is in both the table and vaildation table, it will check if the value of `test` is able to fit into the defined size of `test` in the vaildation table.
+  /// Lets say table is `{test: 1}` and the vaildation table is `{test: 1}`. The value of `test` in the table will be checked against the defined size of `test` in the vaildation table. So in this case, test would pass the validation, as 1 is able to fit into 1 bit. However, if I was to change the value of `test` to 2, then `test` would fail the validation, as 2 is not able to fit into 1 bit, which is the defined size of `test` in the vaildation table.
+  ///
+  /// If you're not sure if a value is able to fit into a number of bits, then you can use this statement: 'If value is between 0 and (2^x)-1, then it is vaild', where x is the amount of bits.
   int validateTable(LuaState state) {
     Map<String, dynamic> table = _getTableFromState(state);
     state.pop(1);
@@ -604,6 +665,9 @@ class PatternAddon extends Addon with Lua {
     return 1;
   }
 
+  /// # `Map<String, dynamic>` _validateTable
+  /// ## Validate a table against a vaildation table.
+  /// Used by `validateTable`.
   Map<String, dynamic> _validateTable(
       Map<String, dynamic> vaildationTable, Map<String, dynamic> table) {
     Map<String, dynamic> checkTable = {};
@@ -632,6 +696,8 @@ class PatternAddon extends Addon with Lua {
     return checkTable;
   }
 
+  /// # `dynamic` _getValueInBitfield
+  /// ## Returns the value of the bitfield in the combined number.
   dynamic _getValueInBitfield(BigInt combinedNumber, int offset, int size) {
     BigInt value =
         ((combinedNumber >> offset) & ((BigInt.one << size) - BigInt.one));

@@ -172,12 +172,14 @@ enum Origin { internal, external }
 /// ## A wrapper for the internal and external file systems.
 /// Its called plasma because its one of the building blocks of a star.
 class Plasma {
-  Star? star;
-  String? pathInStar;
-  File? file;
-  ByteData? _originalData;
-  final ByteData data;
-  final Origin origin;
+  Star? star; // The star the plasma is in (only used when plasma is internal).
+  String?
+      pathInStar; // The path of the plasma in the star (only used when plasma is internal).
+  File?
+      file; // The file the plasma is wrapped around (only used when plasma is external).
+  ByteData? _originalData; // The data of the plasma when it was loaded.
+  final ByteData data; // The current data of the plasma.
+  final Origin origin; // The origin of the plasma.
 
   /// # `Plasma`(`ByteData` data)
   /// DO NOT CALL THIS DIRECTLY, USE ONE OF THE FACTORY METHODS ([Plasma.fromFile], [Plasma.fromStar]).
@@ -197,11 +199,17 @@ class Plasma {
     }
   }
 
+  /// # `Plasma` fromFile(File file)
+  /// ## Creates a new plasma from a file.
+  /// The returned plasma will be an external plasma.
   factory Plasma.fromFile(File file) {
     return Plasma(file.readAsBytesSync().buffer.asByteData(), Origin.external,
         file: file);
   }
 
+  /// # `Plasma` fromStar(Star star, String pathInStar)
+  /// ## Creates a new plasma from a star and a path in the star.
+  /// The returned plasma will be an internal plasma.
   factory Plasma.fromStar(Star star, String pathInStar) {
     return Plasma(
         (star.archive.findFile(pathInStar)!.content as Uint8List)
@@ -212,6 +220,9 @@ class Plasma {
         pathInStar: pathInStar);
   }
 
+  /// # `void` save()
+  /// ## Save changes to the file
+  /// Throws an exception if the plasma is internal, as internal plasmas cannot be modified.
   void save() {
     if (origin == Origin.internal) {
       throw Exception(
@@ -223,6 +234,9 @@ class Plasma {
         .asByteData();
   }
 
+  /// # `String` getFilename()
+  /// ## Returns the filename of the plasma.
+  /// The filename will be the same for both internal and external plasma.
   String getFilename() {
     if (origin == Origin.internal) {
       return pathInStar!.getFilename();
@@ -231,6 +245,8 @@ class Plasma {
     }
   }
 
+  /// # `bool` isTracked()
+  /// ## Returns `true` if the plasma is tracked in a constellation, `false` otherwise.
   bool isTracked() {
     if (origin == Origin.internal) {
       return true;
@@ -239,6 +255,9 @@ class Plasma {
     }
   }
 
+  /// # `Map<int, int>` unsavedChanges()
+  /// ## Returns a map of the unsaved changes in the plasma.
+  /// `_originalData` is compared to `data`, where `_originalData` is when it was loaded, and `data` is the modified version.
   Map<int, int> unsavedChanges() {
     Map<int, int> changes = {};
     for (int i = 0; i < data.lengthInBytes; ++i) {
@@ -267,17 +286,22 @@ class Plasma {
     return differences;
   }
 
+  /// # `Plasma?` findOlderVersion()
+  /// ## Returns the older version of the plasma if it exists, or `null` if it doesn't.
+  /// The older version will ALWAYS be an internal plasma, as there can only be one version of an external plasma at one time.
+  /// If this plasma is external, then the version from the current star will be returned.
+  /// If this plasma is internal, then the version from the parent star will be returned.
+  /// If the plasma is external, BUT it is not tracked (i.e. it is not in a constellation), then `null` will be returned.
   Plasma? findOlderVersion() {
     if (origin == Origin.internal) {
       if (star!.parent != null) {
         return Plasma.fromStar(star!.parent!, pathInStar!);
       }
     } else if (origin == Origin.external) {
-      if (Arceus.doesConstellationExist(path: file!.path)) {
+      if (isTracked()) {
         Constellation x = Arceus.getConstellationFromPath(file!.path)!;
         print(file!.path.fixPath().replaceFirst("${x.path}/", ""));
-        return x.starmap
-            ?.getMostRecentStar()
+        return x.starmap?.currentStar!
             .getPlasma(file!.path.fixPath().replaceFirst("${x.path}/", ""));
       }
     }

@@ -8,30 +8,87 @@ import '../cli.dart';
 import '../version_control/dossier.dart';
 
 enum Views {
-  jumpToAddress,
-  byteViewer,
-  dataFooter,
-  changeLog,
+  jumpToAddress, // For jumping to an address.
+  byteViewer, // For moving through the file byte by byte.
+  dataFooter, // For editing data visible in the footer.
+  changeLog, // For looking at the change log. TODO: Needs to be implemented.
 }
 
-enum Formats { u8, u16, u32, u64 }
+enum Formats {
+  u8,
+  u16,
+  u32,
+  u64
+} // The data formats bytes can be displayed and edited in.
 
 class HexEditor {
+  /// # final `Plasma` _primaryFile
+  /// ## The file being edited.
   final Plasma _primaryFile;
+
+  /// # final `Plasma?` _secondaryFile
+  /// ## The older version of the file being used for comparison.
   Plasma? _secondaryFile;
+
+  /// # final `Map<int, int>` differences
+  /// ## The differences between the primary file and the secondary file.
   Map<int, int> differences = {};
+
+  /// # final `KeyboardInput` keyboard
+  /// ## The keyboard input handler.
   final keyboard = KeyboardInput();
+
+  /// # `Views` currentView
+  /// ## The current view of the editor.
+  /// Defaults to `Views.byteViewer`.
   Views currentView = Views.byteViewer;
+
+  /// # `ByteData` data
+  /// ## The data being edited.
+  /// Returns the primary file's data.
   ByteData get data => _primaryFile.data;
+
+  /// # `Endian` dataEndian
+  /// ## The endianness of the data.
+  /// Defaults to `Endian.little`.
   Endian dataEndian = Endian.little;
+
+  /// # static const `int` _minDataHeight`
+  /// ## The minimum height of everything other than the byte viewer.
+  /// Should be replaced with something more dynamic.
   static const int _minDataHeight = 7;
+
+  /// # `int` address
+  /// ## The current address being viewed/edited.
   int address = 0;
+
+  /// # `Formats` currentFormat
+  /// ## The current format of the data being edited.
   Formats currentFormat = Formats.u8;
+
+  /// # `String?` _currentValue
+  /// ## The current value being inputed.
+  /// Used for the `dataFooter` and `jumpToAddress` views.
   String? _currentValue;
+
+  /// # `bool` error
+  /// ## Whether or not an error has occurred.
   bool error = false;
+
+  /// # `List<int>` byteColor
+  /// ## The color label for a byte.
   final List<int> byteColor = [255, 255, 255];
+
+  /// # `List<int>` byte16Color
+  /// ## The color label for a 16-bit range.
   final List<int> byte16Color = [140, 140, 140];
+
+  /// # `List<int>` byte32Color
+  /// ## The color label for a 32-bit range.
   final List<int> byte32Color = [100, 100, 100];
+
+  /// # `List<int>` byte64Color
+  /// ## The color label for a 64-bit range.
   final List<int> byte64Color = [80, 80, 80];
 
   HexEditor(this._primaryFile) {
@@ -102,6 +159,8 @@ class HexEditor {
     stdout.write(getValues(address));
   }
 
+  /// # `String` renderBody()
+  /// ## Render the bytes as the body of the editor.
   String renderBody() {
     final full = StringBuffer();
     final body = StringBuffer();
@@ -303,6 +362,9 @@ class HexEditor {
     return values.toString();
   }
 
+  /// # `String` getFormatted(int byteAddress, String value)
+  /// ## Get the values of the different formats at the given address.
+  /// The values are formatted as a string with the header in the corresponding color.
   String getFormatted(int byteAddress, String value) {
     if (byteAddress == address) {
       value = value.bgRgb(byteColor[0], byteColor[1], byteColor[2]).black;
@@ -321,10 +383,15 @@ class HexEditor {
     return value;
   }
 
+  /// # `bool` _isPrintable(int charCode)
+  /// ## Check if the given character code is printable.
+  /// Used to make sure that no control characters are entered, which would break the editor.
   bool _isPrintable(int charCode) {
     return charCode >= 32 && charCode <= 126;
   }
 
+  /// # `bool` _hexView(Key key)
+  /// ## Handle key presses in the hex view.
   bool _hexView(Key key) {
     bool quit = false;
     if (!key.isControl) {
@@ -387,6 +454,8 @@ class HexEditor {
     return quit;
   }
 
+  /// # `void` _dataFooterView(Key key)
+  /// ## Handle key presses in the data footer view.
   void _dataFooterView(Key key) {
     if (!key.isControl) {
       _currentValue ??= "";
@@ -455,6 +524,8 @@ class HexEditor {
     }
   }
 
+  /// # `void` _jumpToAddressView(Key key)
+  /// ## Handle key presses in the jump to address view.
   void _jumpToAddressView(Key key) {
     if (!key.isControl) {
       _currentValue ??= "";
@@ -491,6 +562,8 @@ class HexEditor {
     }
   }
 
+  /// # `void` _backspaceCurrentValue()
+  /// ## Backspace the `_currentValue`.
   void _backspaceCurrentValue() {
     if (_currentValue != null && _currentValue!.isNotEmpty) {
       _currentValue = _currentValue!.substring(0, _currentValue!.length - 1);
@@ -498,6 +571,8 @@ class HexEditor {
     }
   }
 
+  /// # `Future<ByteData>` interact()
+  /// ## Call this to start the editor for interaction.
   Future<ByteData> interact() async {
     int lastHeight = 1;
     int lastWidth = 1;

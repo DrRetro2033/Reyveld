@@ -277,32 +277,109 @@ class Starmap {
 
   /// # `operator` `[]` jumpTo(`Star` star)
   /// ## Get the star with the given hash.
-  /// You can pass a hash or a star object.
+  /// Pass a hash to get the star with that hash.
+  /// There are some keywords that you can use instead of a hash. Any keywords below can be chained together with `;`:
+  /// - `root`: The root star
+  /// - `recent`: The most recent star
+  /// - `back`: The parent of the current star. Will be clamped to the root star.
+  /// - `back X`: The Xth parent of the current star. Will be clamped to the root star.
+  /// - `forward`: Will return the first child from the current star. Will be clamped to any ending stars.
+  /// - `forward X`: Will return the Xth child from the current star. Will be clamped to any ending stars.
+  /// - `above`: The sibling above the current star. If the sibling doesn't exist, it will try and find a sibling of one of its parents. If that doesn't exist, it will return the root star.
+  /// - `above X`: The Xth sibling above the current star. If the sibling doesn't exist, it will try and find a sibling of one of its parents. If that doesn't exist, it will return the root star.
+  /// - `below`: The sibling below the current star. If the sibling doesn't exist, it will try and find a sibling of one of its parents. If that doesn't exist, it will return the root star.
+  /// - `below X`: The Xth sibling below the current star. If the sibling doesn't exist, it will try and find a sibling of one of its parents. If that doesn't exist, it will return the root star.
+  /// - `next X`: Will return the Xth child from the current star. Will be clamped to a vaild index of the current star's children.
   operator [](Object hash) {
     if (hash is String) {
-      if (hash == "recent") {
-        return getMostRecentStar();
-      } else if (hash == "root") {
-        return root;
-      } else if (hash.startsWith("back")) {
-        final x = hash.replaceFirst("back", "");
-        if (x.isEmpty) return currentStar!.parent!;
-        int i = int.parse(x);
-        Star? star = currentStar;
-        while (i > 0) {
-          if (star!.parent == null) {
-            break;
+      List<String> commands = hash.split(";");
+      Star current = currentStar!;
+      for (String command in commands) {
+        if (command == "recent") {
+          current = getMostRecentStar();
+        } else if (command == "root") {
+          current = root!;
+        } else if (command.startsWith("forward")) {
+          final x = command.replaceFirst("forward", "");
+          int? i = int.tryParse(x);
+          if (i == null) {
+            current = current.getChild(0);
+            continue;
           }
-          star = star.parent;
-          i--;
+          Star? star = current;
+          while (i! > 0) {
+            if (star!.children.isEmpty) {
+              break;
+            }
+            star = star.getChild(0);
+            i--;
+          }
+          current = star!;
+        } else if (command.startsWith("back")) {
+          final x = command.replaceFirst("back", "");
+          int? i = int.tryParse(x);
+          if (i == null) {
+            current = current.parent!;
+            continue;
+          }
+          Star? star = current;
+          while (i! > 0) {
+            if (star!.isRoot) {
+              break;
+            }
+            star = star.parent;
+            i--;
+          }
+          current = star!;
+        } else if (command.startsWith("above")) {
+          final x = command.replaceFirst("above", "");
+          int? i = int.tryParse(x);
+          if (i == null) {
+            current = current.getSiblingAbove();
+            continue;
+          }
+
+          Star? star = current;
+          while (i! > 0) {
+            if (star!.isRoot) {
+              break;
+            }
+            star = star.getSiblingAbove();
+            i--;
+          }
+          current = star!;
+        } else if (command.startsWith("below")) {
+          final x = command.replaceFirst("below", "");
+          int? i = int.tryParse(x);
+          if (i == null) {
+            current = current.getSiblingBelow();
+            continue;
+          }
+          Star? star = current;
+          while (i! > 0) {
+            if (star!.isRoot) {
+              break;
+            }
+            star = star.getSiblingBelow();
+            i--;
+          }
+          current = star!;
+        } else if (command.startsWith("next")) {
+          final x = command.replaceFirst("next", "");
+          int? i = int.tryParse(x);
+          if (i == null) throw Exception("Please provide an index.");
+          current = current.getChild(i - 1);
+        } else if (constellation.doesStarExist(hash)) {
+          current = Star(constellation, hash: hash);
         }
-        return star;
-      } else if (constellation.doesStarExist(hash)) {
-        return Star(constellation, hash: hash);
       }
+      return current;
     }
   }
 
+  /// # `Map` toJson()
+  /// ## Returns a JSON map of the starmap.
+  /// This is used when saving the starmap to disk.
   Map<dynamic, dynamic> toJson() {
     return {
       "root": rootHash,
@@ -312,6 +389,9 @@ class Starmap {
     };
   }
 
+  /// # `void` fromJson(`Map` json)
+  /// ## Uses a JSON map to initialize the starmap.
+  /// This is used when loading the starmap from disk.
   void fromJson(Map<dynamic, dynamic> json) {
     rootHash = json["root"];
     currentStarHash = json["current"];
@@ -343,6 +423,7 @@ class Starmap {
 
   /// # `void` addRelationship(`Star` parent, `Star` child)
   /// ## Adds the given child to the given parent.
+  /// Throws an exception if the child already has a parent.
   void addRelationship(Star parent, Star child) {
     if (parentMap[child.hash] != null) {
       throw Exception("Star already has a parent.");
@@ -356,13 +437,16 @@ class Starmap {
     constellation.save();
   }
 
-  /// # `void` showMap()
-  /// ## Shows the map of the constellation.
+  /// # `void` printMap()
+  /// ## Prints the constellation's stars.
   /// This is a tree view of the constellation's stars and their children.
-  void showMap() {
+  void printMap() {
     print(AnsiTreeView(_getTree(root!, {}), theme: Cli.treeTheme));
   }
 
+  /// # `Map<String, dynamic>` _getTree(`Star` star, `Map<String, dynamic>` tree, {`bool` branch = false})
+  /// ## Returns the tree of the star and its children, for printing.
+  /// This is called recursively, to give a resonable formatting to the tree, by making single children branches be in one column, instead of infinitely nested.
   Map<String, dynamic> _getTree(Star star, Map<String, dynamic> tree,
       {bool branch = false}) {
     tree[star.getDisplayName()] = {};
@@ -378,5 +462,31 @@ class Starmap {
       }
     }
     return tree;
+  }
+
+  /// # `void` trim(`Star` star)
+  /// ## Trims the given star and all of its children.
+  /// This will not discard any changes in files, BUT will destroy previous changes in files.
+  void trim(Star star) {
+    if (star.isRoot) {
+      throw Exception(
+          "Cannot trim the root star. If you want to delete the constellation, call the delete() method in the constellation and not the star.");
+    }
+    List<Star> ancestors = star.getAncestors();
+    for (Star ancestor in ancestors) {
+      removeFromTree(ancestor);
+    }
+    removeFromTree(star);
+    constellation.save();
+  }
+
+  /// # `void` removeFromTree(`Star` star)
+  /// ## Removes the given star from the starmap, for serialization.
+  void removeFromTree(Star star) {
+    if (star.isRoot) {
+      throw Exception("Cannot remove the root star from tree.");
+    }
+    star.parent?.removeChild(star);
+    parentMap.remove(star.hash!);
   }
 }

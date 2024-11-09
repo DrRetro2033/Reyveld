@@ -114,7 +114,7 @@ class ShowMapConstellationCommand extends ArceusCommand {
   @override
   dynamic run() {
     Constellation constellation = Constellation(path: currentPath);
-    constellation.starmap?.showMap();
+    constellation.starmap?.printMap();
     return jsonEncode(constellation.starmap?.toJson());
   }
 }
@@ -154,7 +154,10 @@ class ConstellationJumpToCommand extends ArceusCommand {
   @override
   String get name => "jump";
 
-  ConstellationJumpToCommand();
+  ConstellationJumpToCommand() {
+    argParser.addFlag("print",
+        abbr: "p", defaultsTo: false, help: "Print the tree after jumping.");
+  }
 
   @override
   void run() {
@@ -169,9 +172,12 @@ class ConstellationJumpToCommand extends ArceusCommand {
       final star = Constellation(path: currentPath).starmap?[hash] as Star;
       star.makeCurrent();
       spinner.success("Jumped to star \"${star.name}\".");
+      if (argResults!["print"]) {
+        Constellation(path: currentPath).starmap?.printMap();
+      }
     } catch (e) {
       spinner.fail(" Star with the hash of \"$hash\" not found.");
-      return;
+      rethrow;
     }
   }
 }

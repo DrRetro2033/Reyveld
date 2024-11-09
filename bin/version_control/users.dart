@@ -4,6 +4,10 @@ import 'package:ansix/ansix.dart';
 import '../uuid.dart';
 import '../extensions.dart';
 
+/// # `class` UserIndex
+/// ## A class that represents a user index.
+/// The user index is a file that contains all the users in Arceus.
+/// Right now, the index is unique to each constellation, however in the future, it will be shared across all constellations.
 class UserIndex {
   static const String filenameOfUserIndex = "userindex";
   static const AnsiGridTheme gridTheme = AnsiGridTheme(

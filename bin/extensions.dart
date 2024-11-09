@@ -1,11 +1,20 @@
 import 'dart:typed_data';
 
+/// # `extension` Compression
+/// ## Extension for the `String` class.
+/// Used to compress and decompress strings.
 extension Compression on String {
+  /// # `String` fixPath()
+  /// ## Fixes the path by replacing backslashes with forward slashes.
+  /// This is used to make the path compatible with the operating system.
   String fixPath() {
     String path = replaceAll("\"", "");
     return path.replaceAll("\\", "/");
   }
 
+  /// # `String` makeRelPath(`String` relativeTo)
+  /// ## Makes the path relative to the given path.
+  /// This is used to make the path relative to the given path.
   String makeRelPath(String relativeTo) {
     return replaceFirst("$relativeTo\\", "").fixPath();
   }
@@ -36,17 +45,26 @@ extension Compression on String {
     return finalString;
   }
 
+  /// # `String` getFilename()
+  /// ## Returns the filename of the string.
+  /// The filename will be the same for both internal and external paths.
   String getFilename() {
     String path = fixPath();
     return path.split("/").last;
   }
 
+  /// # `String` getExtension()
+  /// ## Returns the extension of the string.
+  /// The extension will be the same for both internal and external paths.
   String getExtension() {
     String path = fixPath();
     return path.split(".").last;
   }
 }
 
+/// # `extension` DifferenceChecking
+/// ## Extension for the `ByteData` class.
+/// Used to check if two `ByteData` objects are different.
 extension DifferenceChecking on ByteData {
   bool checkForDifferences(ByteData other) {
     if (other.lengthInBytes != lengthInBytes) {
