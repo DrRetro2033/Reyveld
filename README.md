@@ -9,35 +9,36 @@
 
 # What is Arceus?
 
-Arceus is a brand new CLI save manager and editor, inspired by version control software like Git. It is designed to make an easy to manage location for your saves.
+Arceus is a brand-new CLI save manager and editor inspired by version control software like Git. It's designed to provide an easy-to-manage location for your game saves.
 
 # Features
 
 ## Branch Off Into Different Timelines 🌌
 
-With Arceus, you can branch saves into new timelines, so multiple versions of one save can exist at the same time.
+With Arceus, you can create branches of your saves, so multiple versions of one save can exist simultaneously.
 
 ## Rollback to Older Saves 🕔
 
-Arceus can rollback saves to older versions, so if you make any mistakes, your original savefile is still intact.
+Arceus allows you to roll back saves to earlier versions, preserving your original save file in case you make a mistake.
 
 ## Keep track of YOUR saves 👥
 
-Multiple people can play the same game even if the game is not designed for switching between different players. All you need to do is create a user profile!
+Multiple people can play the same game, even if it’s not designed for switching between different players. Just create a user profile!
 
 ## Go Beyond with Add-Ons 📦
 
-Arceus has Lua built-in, with the help of [lua_dardo](https://pub.dev/packages/lua_dardo). It means that Arceus can be used as a save editor for literally any game!
+Arceus includes Lua (thanks to lua_dardo), enabling you to use it for virtually any game.
 
 > [!NOTE]
-> In the future, I am planning to add built-in functionalty for easier creation of transfer tools, akin to Pokémon Bank. For now, you are going to need to build your own transfer tools.
+> In the future, I plan to add built-in functionality for easier transfer tool creation, similar to Pokémon Bank. For now, you’ll need to build your own transfer tools.
 
 ## Built-In Hex Editor #️⃣
-Arceus has a CLI hex editor that allows you can use to edit saves, see changes, and test Plug-Ins.
+
+Arceus includes a CLI hex editor you can use to edit saves, view changes, and test plugins.
 
 ## Tiny Size 📁
 
-Arceus does not need any external libraries not already compiled with the app, so Arceus has a small footprint on your computer or app. And as a bonus, no DLLs to worry about!
+Arceus requires no external libraries not already compiled with the app, so it has a small footprint on your computer. And as a bonus—no DLLs to worry about!
 
 ## Cross Platform 🖥️📱
 
@@ -45,12 +46,12 @@ Arceus can run on any modern device!
 
 ## Developer Friendly 🤝
 
-Arceus can be used by any developer in their projects, yes even you! Just don't forget to give credit if you use this in your own project.
+Any developer can use Arceus in their projects, even you! Just remember to give credit if you incorporate it into your project.
 > [!NOTE]
 > If you want an example of what you can do with Arceus, check out my other project [MudkiPC](https://github.com/Pokemon-Manager/MudkiPC).
 
 # Want to Try?
-Click on the badge below and download the lastest artifact.
+Click the badge below to download the latest artifact.
 
 [![Build](https://github.com/DrRetro2033/Arceus/actions/workflows/build.yml/badge.svg)](https://github.com/DrRetro2033/Arceus/actions/workflows/build.yml)
 
@@ -59,13 +60,13 @@ Click on the badge below and download the lastest artifact.
 # Planned Features for the Future
 
 ## Frontend GUI 🖱️
-Create a Frontend for Arceus to make it even simpler to use.
+Create a frontend for Arceus to make it even simpler to use.
 
 ## Save on Close ❌
-Everytime you close a game, Arceus will grow a star, making sure you can return to previous save even if you forget to use Arceus.
+Whenever you close a game, Arceus will “grow a star,” ensuring you can return to a previous save, even if you forget to use Arceus.
 
 ## Cloud Backups ☁️
-Have your game save transfer between devices and be completely safe from losing progress. 
+Transfer your game saves between devices and keep them safe from data loss.
 
 |Planned | Service |
 | --- | --- |
@@ -83,24 +84,24 @@ The main use case for Arceus is for developers wanting to make a save editor. Ar
 
 ## For Game Development 💻
 
-Be able to rollback to any point in your game for testing, give items for debugging, or intentionally corrupt your save for edge cases; without having to write debug menus! You could even use Arceus as a backend for writing and reading saves in any engine!
+Easily roll back to any point in your game for testing, provide items for debugging, or intentionally corrupt a save to test edge cases—without writing debug menus! You could even use Arceus as a backend for saving and loading data in any engine.
 
 ## For Multiple Players 🫂
 
-No matter if a game supports multiple saves or not, Arceus can make it easier to have multiple players have their own save!
+Even if a game doesn’t support multiple saves, Arceus can make it easy for multiple players to maintain their own saves.
 
 ## For Achievement Hunting 🏆
 
-Jump from point to point in a game, so you can easily collect every achievement in a game without taking up multiple slots or quicksaves.
+Jump to specific points in a game to collect achievements without occupying multiple save slots or using quicksaves.
 
 ## For Reverse Engineering 📋
 
-Binary files can be a bit tricky to find differences in, but Arceus is designed to detect the smallest differences in a file's lifetime.
+Binary files can be challenging to analyze, but Arceus is designed to detect the smallest changes in a file’s history.
 
 # Why is it called Arceus?
 
-The reason I called this program is called Arceus is because Arceus is the literal god of Pokémon, and they have the ability to effect time and space. It is also because this is a large compontent of my other project [MudkiPC](https://github.com/Pokemon-Manager/MudkiPC), which is Pokémon related.
+The program is named Arceus because Arceus is the "god" of Pokémon and has the ability to affect time and space. It’s also named in connection to my other project, [MudkiPC](https://github.com/Pokemon-Manager/MudkiPC), which is Pokémon-related.
 
 # Consider Sponsoring ❤️
 
-I would love to continue working on this for the foreseeable future, however, I am currently in school and this project is a lot of work. Consider sponsoring me on GitHub so I can continue working on this project! If you can't, no worries, you can spread the word about this project instead. Thanks!
+Consider sponsoring me on GitHub to help support this project! If you can’t, no worries—spreading the word about Arceus is equally appreciated. Thank you!
