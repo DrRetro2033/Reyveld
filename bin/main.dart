@@ -18,6 +18,7 @@ import 'version_control/dossier.dart';
 /// Runs the CLI.
 
 late String currentPath;
+late bool isInternal;
 
 Future<dynamic> main(List<String> arguments) async {
   // AnsiX.ensureSupportsAnsi();
@@ -31,6 +32,7 @@ Future<dynamic> main(List<String> arguments) async {
       abbr: "c",
       help:
           "Use a constellation name instead of an path. Only works after using --path to create the constellation.");
+  runner.argParser.addFlag("internal", defaultsTo: false, hide: true);
   currentPath = Directory.current.path;
   if (arguments.contains("--path") || arguments.contains("-p")) {
     currentPath =
@@ -45,6 +47,11 @@ Future<dynamic> main(List<String> arguments) async {
     }
     currentPath = Arceus.getConstellationPath(constellationName)!;
   }
+  if (arguments.contains("--internal") || arguments.contains("-i")) {
+    isInternal = true;
+  } else {
+    isInternal = false;
+  }
   if (!Constellation.checkForConstellation(currentPath)) {
     runner.addCommand(CreateConstellationCommand());
   } else {
@@ -55,6 +62,7 @@ Future<dynamic> main(List<String> arguments) async {
     runner.addCommand(ConstellationDeleteCommand());
     runner.addCommand(UsersCommands());
   }
+  runner.addCommand(DoesConstellationExistCommand());
   runner.addCommand(ReadFileCommand());
   runner.addCommand(InstallPackagedAddonCommand());
   runner.addCommand(OpenFileCommand());
@@ -62,7 +70,11 @@ Future<dynamic> main(List<String> arguments) async {
   runner.addCommand(ArceusConstellationsCommand());
 
   if (arguments.isNotEmpty) {
-    return await runner.run(arguments);
+    dynamic result = await runner.run(arguments);
+    if (result != null && isInternal) {
+      stdout.write(result.toString());
+      exit(0);
+    }
   }
 }
 
@@ -354,7 +366,10 @@ class InstallPackagedAddonCommand extends ArceusCommand {
           "Please provide the path to the addon. Addon files must end in *.arcaddon.");
     }
     String addonFile = getRest();
-    CliSpin spinner = CliSpin().start(" Installing addon... 🍱");
+    CliSpin? spinner;
+    if (!isInternal) {
+      spinner = CliSpin().start(" Installing addon... 🍱");
+    }
     if (argResults!["global"]) {
       Addon.installGlobally(addonFile);
     } else if (Constellation.checkForConstellation(currentPath)) {
@@ -363,7 +378,9 @@ class InstallPackagedAddonCommand extends ArceusCommand {
       throw Exception(
           "Please either install as a global addon or give a valid constellation first.");
     }
-    spinner.success(" Addon installed successfully! 🎉");
+    if (!isInternal) {
+      spinner!.success(" Addon installed successfully! 🎉");
+    }
   }
 }
 
@@ -379,8 +396,9 @@ class ReadFileCommand extends ArceusCommand {
       throw Exception("Please provide the file to read.");
     }
     String file = getRest();
-    print(AnsiTreeView(PatternAddon.getAssoiatedAddon(file).read(file),
-        theme: Cli.treeTheme));
+    dynamic data = PatternAddon.getAssoiatedAddon(file).read(file);
+    if (!isInternal) print(AnsiTreeView(data, theme: Cli.treeTheme));
+    return jsonEncode(data);
   }
 }
 
@@ -393,7 +411,9 @@ class ArceusConstellationsCommand extends ArceusCommand {
   @override
   void run() {
     if (Arceus.empty()) {
-      print("No constellations found! Create one with the 'create' command.");
+      if (!isInternal) {
+        print("No constellations found! Create one with the 'create' command.");
+      }
     }
     Arceus.getConstellationEntries()
         .forEach((e) => print("🌃 ${e.name} - ${e.path}"));
@@ -417,5 +437,22 @@ class OpenFileCommand extends ArceusCommand {
     }
     await HexEditor(Plasma.fromFile(File(file))).interact();
     exit(0);
+  }
+}
+
+class DoesConstellationExistCommand extends ArceusCommand {
+  @override
+  String get description =>
+      "Checks if a constellation exists at the given path.";
+  @override
+  String get name => "exists";
+
+  @override
+  dynamic run() {
+    if (getRest().isEmpty) {
+      return Arceus.doesConstellationExist(path: currentPath);
+    } else {
+      return Arceus.doesConstellationExist(path: getRest());
+    }
   }
 }

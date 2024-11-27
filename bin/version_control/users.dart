@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:ansix/ansix.dart';
 
 import '../uuid.dart';
-import '../extensions.dart';
 
 /// # `class` UserIndex
 /// ## A class that represents a user index.
@@ -108,7 +107,7 @@ class User {
 
   @override
   String toString() {
-    return "${hash.fromHexToCodes()}$_name";
+    return "$hash$_name";
   }
 
   static String generateUniqueUserHash() {
@@ -117,8 +116,8 @@ class User {
   }
 
   factory User.fromString(UserIndex userIndex, String string) {
-    String hash = string.substring(0, _lengthOfHashInFile);
-    String name = string.substring(_lengthOfHashInFile);
-    return User(userIndex, name, hash.fromCodesToHex());
+    String hash = string.substring(0, _lengthOfHash);
+    String name = string.substring(_lengthOfHash);
+    return User(userIndex, name, hash);
   }
 }

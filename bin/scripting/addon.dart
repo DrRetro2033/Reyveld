@@ -2,13 +2,11 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:ansix/ansix.dart';
 import 'package:yaml/yaml.dart';
 import 'package:lua_dardo/lua.dart';
 import '../extensions.dart';
 import '../arceus.dart';
 import '../main.dart';
-import '../cli.dart';
 import '../version_control/constellation.dart';
 
 enum AddonFeatureSets {
@@ -225,8 +223,10 @@ abstract class Addon {
       try {
         file.deleteSync();
       } catch (e) {
-        print(
-            "⚠️ Unable to delete old add-on file. Skipping step and continuing installation.");
+        if (!isInternal) {
+          print(
+              "⚠️ Unable to delete old add-on file. Skipping step and continuing installation.");
+        }
       }
     }
 
@@ -262,19 +262,21 @@ abstract class Addon {
   ///
   static List<Addon> getInstalledAddons() {
     List<Addon> addons = <Addon>[];
-    for (FileSystemEntity entity
-        in Directory(Arceus.globalAddonPath).listSync()) {
-      if (entity is File && entity.path.endsWith(".arcaddon")) {
-        addons.add(Addon.load(entity.path));
-      }
-    }
-
     if (Constellation.checkForConstellation(currentPath)) {
       final constellation = Constellation(path: currentPath);
+      if (!constellation.addonDirectory.existsSync()) {
+        constellation.addonDirectory.createSync();
+      }
       for (FileSystemEntity entity in constellation.addonDirectory.listSync()) {
         if (entity is File && entity.path.endsWith(".arcaddon")) {
           addons.add(Addon.load(entity.path));
         }
+      }
+    }
+    for (FileSystemEntity entity
+        in Directory(Arceus.globalAddonPath).listSync()) {
+      if (entity is File && entity.path.endsWith(".arcaddon")) {
+        addons.add(Addon.load(entity.path));
       }
     }
     return addons;
@@ -333,27 +335,27 @@ class AddonDetails {
   bool isVaild() {
     bool valid = true;
     if (!_hasName()) {
-      print("❌ Addon YAML does not contain a name!");
+      if (!isInternal) print("❌ Addon YAML does not contain a name!");
       valid = false;
     }
     if (!_hasDescription()) {
-      print("❌ Addon YAML does not contain a description!");
+      if (!isInternal) print("❌ Addon YAML does not contain a description!");
       valid = false;
     }
     if (!_hasAuthors()) {
-      print("❌ Addon YAML does not contain any authors!");
+      if (!isInternal) print("❌ Addon YAML does not contain any authors!");
       valid = false;
     }
     if (!_hasVersion()) {
-      print("❌ Addon YAML does not contain a version!");
+      if (!isInternal) print("❌ Addon YAML does not contain a version!");
       valid = false;
     }
     if (!_hasEntrypoint()) {
-      print("❌ Addon YAML does not contain an entrypoint!");
+      if (!isInternal) print("❌ Addon YAML does not contain an entrypoint!");
       valid = false;
     }
     if (!_hasFeatureSets()) {
-      print("❌ Addon YAML does not contain any feature sets!");
+      if (!isInternal) print("❌ Addon YAML does not contain any feature sets!");
       valid = false;
     }
     return valid;
@@ -429,6 +431,7 @@ class PatternAddon extends Addon with Lua {
         "ru64": readU64,
         "rstr8": readString8,
         "rstr16": readString16,
+        "cleanstr": cleanString,
         "rfield": readBitfield,
         "validate": validateTable
       };
@@ -441,10 +444,11 @@ class PatternAddon extends Addon with Lua {
     data = File(file).readAsBytesSync().buffer.asByteData();
     call(state, "read", args: [file, file.getExtension()]);
     Map<String, dynamic> resultTable = _getTableFromState(state);
-    if (resultTable.isEmpty && showResults) {
-      print("❌ Failed to read data from $file");
+    if (resultTable.isEmpty) {
+      if (!isInternal) print("❌ Failed to read data from $file");
+      throw Exception("Failed to read data from $file.");
     } else {
-      print("✅ Read data from $file");
+      if (!isInternal) print("✅ Read data from $file");
     }
     return resultTable;
   }
@@ -569,6 +573,14 @@ class PatternAddon extends Addon with Lua {
     return 1;
   }
 
+  int cleanString(LuaState state) {
+    String? string = state.checkString(1);
+    if (string != null) {
+      state.pushString(string.split('\u0000').first);
+    }
+    return 1;
+  }
+
   /// # `int` readBitfield
   /// ## Read a bitfield from the data at the given address and bitfield table.
   /// Puts the bitfield onto the lua stack.
@@ -651,16 +663,14 @@ class PatternAddon extends Addon with Lua {
     try {
       final checkTable = _validateTable(vaildationTable, table);
       if (checkTable.isNotEmpty) {
-        print("❌ Data Validation failed.");
-        state.pushBoolean(false);
-        print(AnsiTreeView(checkTable, theme: Cli.treeTheme));
+        throw Exception("Data Validation failed.");
       } else {
-        print("✅ Data Validation passed.");
+        if (!isInternal) print("✅ Data Validation passed.");
         state.pushBoolean(true);
       }
     } catch (e) {
       state.pushBoolean(false);
-      print(e);
+      rethrow;
     }
     return 1;
   }

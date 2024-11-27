@@ -333,37 +333,12 @@ class Starmap {
           current = star!;
         } else if (command.startsWith("above")) {
           final x = command.replaceFirst("above", "");
-          int? i = int.tryParse(x);
-          if (i == null) {
-            current = current.getSiblingAbove();
-            continue;
-          }
-
-          Star? star = current;
-          while (i! > 0) {
-            if (star!.isRoot) {
-              break;
-            }
-            star = star.getSiblingAbove();
-            i--;
-          }
-          current = star!;
+          int i = int.tryParse(x) ?? 1;
+          current = current.getSibling(above: i);
         } else if (command.startsWith("below")) {
           final x = command.replaceFirst("below", "");
-          int? i = int.tryParse(x);
-          if (i == null) {
-            current = current.getSiblingBelow();
-            continue;
-          }
-          Star? star = current;
-          while (i! > 0) {
-            if (star!.isRoot) {
-              break;
-            }
-            star = star.getSiblingBelow();
-            i--;
-          }
-          current = star!;
+          int i = int.tryParse(x) ?? 1;
+          current = current.getSibling(below: i);
         } else if (command.startsWith("next")) {
           final x = command.replaceFirst("next", "");
           int? i = int.tryParse(x);
@@ -488,5 +463,37 @@ class Starmap {
     }
     star.parent?.removeChild(star);
     parentMap.remove(star.hash!);
+  }
+
+  List<Star> getStarsAtDepth(int depth) {
+    List<Star> stars = [root!];
+    while (depth > 0) {
+      List<Star> newStars = [];
+      for (Star star in stars) {
+        newStars.addAll(star.children);
+      }
+      stars = newStars;
+      depth--;
+    }
+    return stars;
+  }
+
+  /// # `bool` existAtCoordinates(`int` depth, `int` index)
+  /// ## Returns true if a star exists at the given depth and index.
+  /// Returns false otherwise.
+  bool existAtCoordinates(int depth, int index) {
+    List<Star> stars = getStarsAtDepth(depth);
+    if (index >= 0 && index < stars.length) {
+      return true;
+    }
+    return false;
+  }
+
+  bool existBesideCoordinates(int depth, int index) {
+    if (existAtCoordinates(depth, index - 1) ||
+        existAtCoordinates(depth, index + 1)) {
+      return true;
+    }
+    return false;
   }
 }

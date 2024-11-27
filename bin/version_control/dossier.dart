@@ -11,8 +11,7 @@ import '../arceus.dart';
 import 'constellation.dart';
 
 /// # `class` `Dossier`
-/// ## A wrapper for the internal and external file systems.
-/// Acts as a wrapper for the internal file system (i.e. Inside a `.star` file) and the external file system (i.e. Inside the current directory).
+/// ## A class that checks for differences between the star and the current directory.
 class Dossier {
   Star star; // The star used for the internal file system.
   // The following are used for the CLI:
@@ -57,6 +56,7 @@ class Dossier {
       spinner.success(" There are no moved files.");
     }
 
+    // Check for new files.
     if (newFiles.isNotEmpty) {
       check = true;
       spinner.fail(" New files found:");
@@ -70,6 +70,7 @@ class Dossier {
       spinner.success(" There are no new files.");
     }
 
+    // Check for removed files.
     if (removedFiles.isNotEmpty) {
       check = true;
       spinner.fail(" Removed files found:");
@@ -98,6 +99,8 @@ class Dossier {
     return check;
   }
 
+  /// # `List<String>` listAddedFiles()
+  /// ## Lists all files in the current directory that have been recently added.
   List<String> listAddedFiles() {
     List<String> newFiles = [];
     for (FileSystemEntity entity
@@ -116,6 +119,8 @@ class Dossier {
     return newFiles;
   }
 
+  /// # `List<String>` listRemovedFiles()
+  /// ## Lists all files in the current directory that have been recently removed.
   List<String> listRemovedFiles() {
     List<String> removedFiles = [];
     for (ArchiveFile file in star.archive.files) {
@@ -128,6 +133,8 @@ class Dossier {
     return removedFiles;
   }
 
+  /// # `Map<String, String>` listMovedFiles(`List<String>` newFiles, `List<String>` removedFiles)
+  /// ## Lists all files in the current directory that have been recently moved.
   Map<String, String> listMovedFiles(
       List<String> newFiles, List<String> removedFiles) {
     Map<String, String> movedFiles = {};
@@ -145,6 +152,8 @@ class Dossier {
     return movedFiles;
   }
 
+  /// # `List<String>` listChangedFiles(`List<String>` removedFiles)
+  /// ## Lists all files in the current directory that have been recently changed.
   List<String> listChangedFiles(List<String> removedFiles) {
     List<String> changedFiles = [];
     for (ArchiveFile file in star.archive.files) {
@@ -177,7 +186,7 @@ class Plasma {
       pathInStar; // The path of the plasma in the star (only used when plasma is internal).
   File?
       file; // The file the plasma is wrapped around (only used when plasma is external).
-  ByteData? _originalData; // The data of the plasma when it was loaded.
+  ByteData? _originalData; // The data of the plasma when it was last loaded.
   final ByteData data; // The current data of the plasma.
   final Origin origin; // The origin of the plasma.
 
@@ -289,9 +298,9 @@ class Plasma {
   /// # `Plasma?` findOlderVersion()
   /// ## Returns the older version of the plasma if it exists, or `null` if it doesn't.
   /// The older version will ALWAYS be an internal plasma, as there can only be one version of an external plasma at one time.
-  /// If this plasma is external, then the version from the current star will be returned.
+  /// If this plasma is external, then the version from the current star in the constellation where it is tracked will be returned.
   /// If this plasma is internal, then the version from the parent star will be returned.
-  /// If the plasma is external, BUT it is not tracked (i.e. it is not in a constellation), then `null` will be returned.
+  /// If the plasma is external, BUT it is not tracked, then `null` will be returned.
   Plasma? findOlderVersion() {
     if (origin == Origin.internal) {
       if (star!.parent != null) {

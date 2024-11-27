@@ -19,6 +19,8 @@ dependencies:
   interact: ^2.2.0
   lua_dardo: ^0.0.5
   hashlib: ^1.21.0
+  logger: ^2.5.0
+  talker: ^4.5.1
 
 dev_dependencies:
   lints: ^4.0.0

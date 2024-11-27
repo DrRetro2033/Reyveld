@@ -42,9 +42,9 @@ class Star {
   /// ## Does this star only have a single child?
   bool get singleChild => children.length == 1;
 
-  /// # `bool` isAlone
+  /// # `bool` isSingleParent
   /// ## Does this star have no children?
-  bool get isAlone => children.isEmpty;
+  bool get isSingleParent => children.isEmpty;
 
   /// # `bool` isCurrent
   /// ## Is this star the current star?
@@ -212,18 +212,49 @@ class Star {
     return mostRecentStar.getMostRecentStar();
   }
 
+  /// # `List<Star>` getDescendants()
+  /// ## Returns a list of all descendants of the star.
+  /// The list will be empty if the star has no descendants.
+  List<Star> getDescendants() {
+    List<Star> descendants = [];
+    for (Star child in children) {
+      descendants.add(child);
+      descendants.addAll(child.getDescendants());
+    }
+    return descendants;
+  }
+
+  /// # `List<Star>` getAncestors()
+  /// ## Returns a list of all ancestors of the star.
+  /// The list will be empty if the star has no ancestors, which usually means it is the root star.
   List<Star> getAncestors() {
     List<Star> ancestors = [];
-    for (Star child in children) {
-      ancestors.add(child);
-      ancestors.addAll(child.getAncestors());
+    Star? parent = this.parent;
+    while (parent != null) {
+      ancestors.add(parent);
+      parent = parent.parent;
     }
     return ancestors;
   }
 
+  bool isDescendantOf(Star star) {
+    return getAncestors().contains(star);
+  }
+
+  bool isAncestorOf(Star star) {
+    return getDescendants().contains(star);
+  }
+
+  /// # `void` trim()
+  /// ## Trims the star and all of its children.
+  /// TODO: Add logic to trim the star, and make a confirmation prompt.
   void trim() {}
 
-  void delete() {
+  /// # `void` _delete()
+  /// ## Deletes the star from disk.
+  /// DO NOT USE THIS DIRECTLY, AS IT WILL CORRUPT THE CONSTELLATION IF NOT TRIMED PROPERLY.
+  /// Use the `trim()` method instead.
+  void _delete() {
     File(constellation.getStarPath(hash!)).deleteSync();
   }
 
@@ -240,6 +271,9 @@ class Star {
   Map<String, dynamic> toJson() =>
       {"name": name, "createdAt": createdAt.toString(), "user": _userHash};
 
+  @override
+  String toString() => hash!;
+
   /// # `String` getDisplayName()
   /// ## Returns the name of the star, with a ✨ if it is the current star.
   /// This is used when printing the star to the terminal.
@@ -255,41 +289,61 @@ class Star {
     constellation.starmap?.childMap[hash!]!.remove(star.hash!);
   }
 
+  /// # `Star` getChild(`int` index)
+  /// ## Returns the child star at the given index.
+  ///
   Star getChild(int index) {
-    if (isAlone) return this;
+    if (isSingleParent) {
+      return this; // A failsafe in the case a star does not have any children.
+    }
+    // A safe guard for if any logic breaks in another function, and a index is out of bounds.
     if (index < 0) index = 0;
     if (index >= children.length) index = children.length - 1;
+
     return Star(constellation,
         hash: constellation.starmap!.childMap[hash!]![index]);
   }
 
-  /// # `Star` getSiblingAbove(`int` offset = 1, `int` backtrack = 0)
-  /// ## Returns the sibling star above the current star.
-  /// If there a branch does not have siblings, then it will return the sibling of the next parent that does.
-  Star getSiblingAbove({int offset = 1, int backtrack = 0}) {
-    if (isRoot) {
-      return this;
-    }
-    if (isSingleChild) {
-      return parent!.getSiblingAbove(offset: offset);
-    }
-    int index = childIndex;
-    index -= offset;
-    return parent!.getChild(index);
+  /// # `int` getDepth()
+  /// ## Returns the depth of the star in the starmap.
+  int getDepth() {
+    return getAncestors().length;
   }
 
-  /// # `Star` getSiblingBelow(`int` offset = 1)
-  /// ## Returns the sibling star below the current star.
-  /// If there a branch does not have siblings, then it will return the sibling of the next parent that does.
-  Star getSiblingBelow({int offset = 1}) {
-    if (isRoot) {
+  /// # `int` getIndex()
+  /// ## Returns the index of the star in the starmap.
+  int getIndex() {
+    return constellation.starmap!
+        .getStarsAtDepth(getDepth())
+        .indexWhere((star) => star.hash == hash);
+  }
+
+  /// # `List<Star>` getDeepSiblings()
+  /// ## Returns a list of all siblings of the star at the same depth, including the star itself.
+  List<Star> getDeepSiblings() {
+    int depth = getDepth();
+    int index = getIndex();
+    while (depth > 0) {
+      if (constellation.starmap!.existBesideCoordinates(depth, index)) {
+        break;
+      }
+      depth--;
+    }
+    List<Star> stars = constellation.starmap!.getStarsAtDepth(depth);
+    stars.removeAt(index);
+    stars.insert(index, this);
+    return stars;
+  }
+
+  Star getSibling({int? above, int? below}) {
+    if (above == null && below == null) {
       return this;
     }
-    if (isSingleChild) {
-      return parent!.getSiblingBelow(offset: offset);
-    }
-    int index = childIndex;
-    index += offset;
-    return parent!.getChild(index);
+    above = above == 0 ? 1 : above;
+    below = below == 0 ? 1 : below;
+    List<Star> siblings = getDeepSiblings();
+    int offset = above ??
+        -below!; // If above is null, then below is not null. above will be positive, and below will be negative.
+    return siblings[(getIndex() + offset) % siblings.length];
   }
 }
