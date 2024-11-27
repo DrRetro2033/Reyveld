@@ -169,10 +169,22 @@ class ConstellationJumpToCommand extends ArceusCommand {
   ConstellationJumpToCommand() {
     argParser.addFlag("print",
         abbr: "p", defaultsTo: false, help: "Print the tree after jumping.");
+    argParser.addFlag("force", abbr: "f", defaultsTo: false, hide: true);
   }
 
   @override
   void run() {
+    Constellation constellation = Constellation(path: currentPath);
+    if (!argResults!["force"] && constellation.checkForDifferences()) {
+      final confirm = Confirm(
+              prompt:
+                  "There are uncommitted changes in the current directory!\nIf you jump now before growing, all progress will be lost! Are you sure you want to continue?",
+              defaultValue: false)
+          .interact();
+      if (!confirm) {
+        return;
+      }
+    }
     CliSpin? spinner = CliSpin().start("Jumping to star...");
     if (argResults!.rest.isEmpty) {
       spinner.fail(" Please provide a star hash to jump to.");
@@ -181,11 +193,11 @@ class ConstellationJumpToCommand extends ArceusCommand {
     String hash = getRest();
 
     try {
-      final star = Constellation(path: currentPath).starmap?[hash] as Star;
+      final star = constellation.starmap?[hash] as Star;
       star.makeCurrent();
       spinner.success("Jumped to star \"${star.name}\".");
       if (argResults!["print"]) {
-        Constellation(path: currentPath).starmap?.printMap();
+        constellation.starmap?.printMap();
       }
     } catch (e) {
       spinner.fail(" Star with the hash of \"$hash\" not found.");
