@@ -27,7 +27,7 @@ Multiple people can play the same game, even if it’s not designed for switchin
 
 ## Go Beyond with Add-Ons 📦
 
-Arceus includes Lua (thanks to lua_dardo), enabling you to use it for virtually any game.
+Arceus includes Lua (thanks to lua_dardo), enabling you to edit saves for virtually any game easily.
 
 > [!NOTE]
 > In the future, I plan to add built-in functionality for easier transfer tool creation, similar to Pokémon Bank. For now, you’ll need to build your own transfer tools.
@@ -93,6 +93,14 @@ Even if a game doesn’t support multiple saves, Arceus can make it easy for mul
 ## For Achievement Hunting 🏆
 
 Jump to specific points in a game to collect achievements without occupying multiple save slots or using quicksaves.
+
+## For Speedrunning 🏃‍➡️
+
+Arceus makes it easier to practice routes, find exploits, and keep your personal saves away from your speedrunning attempts.
+
+## For Mods 🛠️
+
+Keep your modded saves away from your main game saves.
 
 ## For Reverse Engineering 📋
 
