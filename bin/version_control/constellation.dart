@@ -465,12 +465,17 @@ class Starmap {
     parentMap.remove(star.hash!);
   }
 
+  /// # `List<Star>` getStarsAtDepth(`int` depth)
+  /// ## Returns a list of all stars at the given depth.
   List<Star> getStarsAtDepth(int depth) {
     List<Star> stars = [root!];
     while (depth > 0) {
       List<Star> newStars = [];
       for (Star star in stars) {
         newStars.addAll(star.children);
+      }
+      if (newStars.isEmpty) {
+        break;
       }
       stars = newStars;
       depth--;
@@ -489,6 +494,9 @@ class Starmap {
     return false;
   }
 
+  /// # `bool` existBesideCoordinates(`int` depth, `int` index)
+  /// ## Returns true if a star exists at the given depth and index.
+  /// Returns false otherwise.
   bool existBesideCoordinates(int depth, int index) {
     if (existAtCoordinates(depth, index - 1) ||
         existAtCoordinates(depth, index + 1)) {
