@@ -11,6 +11,7 @@ import 'package:interact/interact.dart';
 import 'cli.dart';
 import 'hex_editor/editor.dart';
 import 'version_control/dossier.dart';
+import './server.dart';
 // import 'package:cli_completion/cli_completion.dart';
 
 /// # `void` main(List<String> arguments)
@@ -61,6 +62,7 @@ Future<dynamic> main(List<String> arguments) async {
     runner.addCommand(ConstellationGrowCommand());
     runner.addCommand(ConstellationDeleteCommand());
     runner.addCommand(UsersCommands());
+    runner.addCommand(StartServerCommand());
   }
   runner.addCommand(DoesConstellationExistCommand());
   runner.addCommand(ReadFileCommand());
@@ -467,4 +469,18 @@ class DoesConstellationExistCommand extends ArceusCommand {
       return Arceus.doesConstellationExist(path: getRest());
     }
   }
+}
+
+class StartServerCommand extends ArceusCommand {
+  @override
+  String get description => "Starts the Arceus server.";
+
+  @override
+  String get name => "server";
+
+  @override
+  bool get hidden => true;
+
+  @override
+  Future<void> run() async => await ArceusServer.start();
 }
