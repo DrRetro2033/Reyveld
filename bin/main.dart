@@ -11,7 +11,9 @@ import 'package:interact/interact.dart';
 import 'cli.dart';
 import 'hex_editor/editor.dart';
 import 'version_control/dossier.dart';
+import 'extensions.dart';
 import './server.dart';
+import './scripting/addons/feature-sets.dart';
 // import 'package:cli_completion/cli_completion.dart';
 
 /// # `void` main(List<String> arguments)
@@ -75,9 +77,9 @@ Future<dynamic> main(List<String> arguments) async {
     dynamic result = await runner.run(arguments);
     if (result != null && isInternal) {
       stdout.write(result.toString());
-      exit(0);
     }
   }
+  exit(0);
 }
 
 abstract class ArceusCommand extends Command {
@@ -210,8 +212,15 @@ class ConstellationJumpToCommand extends ArceusCommand {
 
 class ConstellationGrowCommand extends ArceusCommand {
   @override
-  String get description =>
-      "Continues the from the current star to a new star in the constellation. Will branch if necessary.";
+  String get summary =>
+      "Grow from the current star to a new star with a given name.";
+
+  @override
+  String get description => """
+Grow from the current star to a new star with a given name.
+
+Growing will commit changes from tracked files into a new star in the constellation. Will branch if necessary. 
+This will fail if there no changes to commit, unless '--force' is provided.""";
   @override
   String get name => "grow";
 
@@ -409,10 +418,13 @@ class ReadFileCommand extends ArceusCommand {
     if (getRest().isEmpty) {
       throw Exception("Please provide the file to read.");
     }
-    String file = getRest();
-    dynamic data = PatternAddon.getAssoiatedAddon(file).read(file);
-    if (!isInternal) print(AnsiTreeView(data, theme: Cli.treeTheme));
-    return jsonEncode(data);
+    String filepath = getRest();
+    File file = File(filepath.fixPath());
+    List<Addon> addons = Addon.getInstalledAddons()
+        .filterByAssociatedFile(filepath.getExtension());
+    Plasma plasma = Plasma.fromFile(file);
+    final result = (addons.first.context as PatternAdddonContext).read(plasma);
+    return jsonEncode(result);
   }
 }
 
@@ -436,7 +448,7 @@ class ArceusConstellationsCommand extends ArceusCommand {
 
 class OpenFileCommand extends ArceusCommand {
   @override
-  String get description => "Opens a file.";
+  String get description => "Opens a file in the Héx Editor.";
   @override
   String get name => "open";
 

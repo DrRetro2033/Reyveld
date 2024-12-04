@@ -9,15 +9,15 @@ import 'version_control/constellation.dart';
 class Arceus {
   /// # `static` `String` _appDataPath
   /// ## The path to the application data directory.
-  static String get _appDataPath => _getAppDataPath();
+  static String get appDataPath => _getAppDataPath();
 
   /// # `static` `String` globalAddonPath
   /// ## The path to the global addons directory.
-  static String get globalAddonPath => "$_appDataPath/addons";
+  static String get globalAddonPath => "$appDataPath/addons";
 
   /// # `static` `File` _constellationIndex
   /// ## The file that contains the list of constellations.
-  static File get _constellationIndex => File("$_appDataPath/config");
+  static File get _constellationIndex => File("$appDataPath/config");
 
   /// # `static` `String` _getAppDataPath
   /// ## Returns the path to the application data directory.
@@ -145,6 +145,10 @@ class Arceus {
   /// # `static` `bool` empty
   /// ## Returns `true` if the list of constellations is empty, `false` otherwise.
   static bool empty() => _getConstellations().isEmpty;
+
+  static String getLibraryPath() {
+    return "${_getAppDataPath()}/lib";
+  }
 }
 
 /// # `class` ConstellationEntry

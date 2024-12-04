@@ -1,4 +1,10 @@
+import 'dart:ffi';
 import 'dart:typed_data';
+
+import 'package:ffi/ffi.dart';
+import 'package:yaml/yaml.dart';
+
+import './scripting/addon.dart';
 
 /// # `extension` Compression
 /// ## Extension for the `String` class.
@@ -62,6 +68,21 @@ extension Compression on String {
   }
 }
 
+extension CNativeString on String {
+  Pointer<Char> toCharPointer() {
+    var nativeUtf8 = toNativeUtf8();
+    var pointer = nativeUtf8.cast<Char>();
+    malloc.free(nativeUtf8);
+    return pointer;
+  }
+}
+
+extension NativeString on Pointer<Char> {
+  String toDartString() {
+    return cast<Utf8>().toDartString();
+  }
+}
+
 /// # `extension` DifferenceChecking
 /// ## Extension for the `ByteData` class.
 /// Used to check if two `ByteData` objects are different.
@@ -76,5 +97,16 @@ extension DifferenceChecking on ByteData {
       }
     }
     return false;
+  }
+}
+
+extension AddonList on List<Addon> {
+  List<Addon> filterByAssociatedFile(String associatedFile) {
+    return where((addon) {
+      if (addon.featureSet != FeatureSets.pattern) return false;
+      return (addon.getMetadata()["associated-files"] as YamlList).any(
+          (extension) =>
+              (extension as String).endsWith(associatedFile.getExtension()));
+    }).toList();
   }
 }
