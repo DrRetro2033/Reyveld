@@ -6,4 +6,3 @@
 build/
 patterns/
 duktape.dll
-src/squirrel3

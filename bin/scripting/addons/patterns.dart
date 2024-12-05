@@ -2,8 +2,8 @@ import 'dart:ffi';
 import 'dart:typed_data';
 
 import '../addon.dart';
-import '../duktape.dart';
-import '../duktape_bindings_generated.dart';
+import '../squirrel.dart';
+import '../squirrel_bindings_generated.dart';
 import '../../version_control/dossier.dart';
 
 class PatternAdddonContext extends AddonContext {
@@ -12,43 +12,55 @@ class PatternAdddonContext extends AddonContext {
   Plasma? plasma;
 
   @override
-  List<DuktapeFunction> get functions => [
-        DuktapeFunction('ru8', {'address': DuktapeType.int}, readU8),
-        DuktapeFunction('ru16',
-            {'address': DuktapeType.int, 'endian': DuktapeType.bool}, readU16),
-        DuktapeFunction('ru32',
-            {'address': DuktapeType.int, 'endian': DuktapeType.bool}, readU32),
-        DuktapeFunction('ru64',
-            {'address': DuktapeType.int, 'endian': DuktapeType.bool}, readU64),
+  List<SquirrelFunction> get functions => [
+        SquirrelFunction(
+            'ru8', {'address': tagSQObjectType.OT_INTEGER}, readU8),
+        SquirrelFunction(
+            'ru16',
+            {
+              'address': tagSQObjectType.OT_INTEGER,
+              'endian': tagSQObjectType.OT_BOOL
+            },
+            readU16),
+        SquirrelFunction(
+            'ru32',
+            {
+              'address': tagSQObjectType.OT_INTEGER,
+              'endian': tagSQObjectType.OT_BOOL
+            },
+            readU32),
+        SquirrelFunction(
+            'ru64',
+            {
+              'address': tagSQObjectType.OT_INTEGER,
+              'endian': tagSQObjectType.OT_BOOL
+            },
+            readU64),
       ];
 
-  Map<String, dynamic> read(Plasma plasma) {
+  Map<dynamic, dynamic> read(Plasma plasma) {
     this.plasma = plasma;
-    final ctx = Duktape.bindings
-        .duk_create_heap(nullptr, nullptr, nullptr, nullptr, nullptr);
-    createAPI(ctx, functions);
-    eval(ctx, addon.code);
-    final result = call(ctx, "read", ["test", "test"]);
-    print(result);
-    dispose(ctx);
+    final vm = Squirrel.run(addon.code);
+    final result = Squirrel.call(vm, "read");
+    Squirrel.dispose(vm);
     return result;
   }
 
-  int readU8(Pointer<duk_hthread> ctx, Map<String, dynamic> params) {
+  int readU8(Pointer<SQVM> ctx, Map<String, dynamic> params) {
     return plasma!.data.getUint8(params['address'] as int);
   }
 
-  int readU16(Pointer<duk_hthread> ctx, Map<String, dynamic> params) {
+  int readU16(Pointer<SQVM> ctx, Map<String, dynamic> params) {
     return plasma!.data.getUint16(params['address'] as int,
         (params['endian'] as bool) ? Endian.little : Endian.big);
   }
 
-  int readU32(Pointer<duk_hthread> ctx, Map<String, dynamic> params) {
+  int readU32(Pointer<SQVM> ctx, Map<String, dynamic> params) {
     return plasma!.data.getUint32(params['address'] as int,
         (params['endian'] as bool) ? Endian.little : Endian.big);
   }
 
-  int readU64(Pointer<duk_hthread> ctx, Map<String, dynamic> params) {
+  int readU64(Pointer<SQVM> ctx, Map<String, dynamic> params) {
     return plasma!.data.getUint64(params['address'] as int,
         (params['endian'] as bool) ? Endian.little : Endian.big);
   }

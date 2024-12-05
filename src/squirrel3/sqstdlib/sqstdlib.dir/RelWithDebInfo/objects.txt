@@ -1,0 +1,8 @@
+C:/Repos/arceus/src/squirrel3/sqstdlib/sqstdlib.dir/RelWithDebInfo/sqstdaux.obj
+C:/Repos/arceus/src/squirrel3/sqstdlib/sqstdlib.dir/RelWithDebInfo/sqstdblob.obj
+C:/Repos/arceus/src/squirrel3/sqstdlib/sqstdlib.dir/RelWithDebInfo/sqstdio.obj
+C:/Repos/arceus/src/squirrel3/sqstdlib/sqstdlib.dir/RelWithDebInfo/sqstdmath.obj
+C:/Repos/arceus/src/squirrel3/sqstdlib/sqstdlib.dir/RelWithDebInfo/sqstdrex.obj
+C:/Repos/arceus/src/squirrel3/sqstdlib/sqstdlib.dir/RelWithDebInfo/sqstdstream.obj
+C:/Repos/arceus/src/squirrel3/sqstdlib/sqstdlib.dir/RelWithDebInfo/sqstdstring.obj
+C:/Repos/arceus/src/squirrel3/sqstdlib/sqstdlib.dir/RelWithDebInfo/sqstdsystem.obj

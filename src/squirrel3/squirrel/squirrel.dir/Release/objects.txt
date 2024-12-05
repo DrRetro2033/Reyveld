@@ -1,0 +1,12 @@
+C:/Repos/arceus/src/squirrel3/squirrel/squirrel.dir/Release/sqapi.obj
+C:/Repos/arceus/src/squirrel3/squirrel/squirrel.dir/Release/sqbaselib.obj
+C:/Repos/arceus/src/squirrel3/squirrel/squirrel.dir/Release/sqclass.obj
+C:/Repos/arceus/src/squirrel3/squirrel/squirrel.dir/Release/sqcompiler.obj
+C:/Repos/arceus/src/squirrel3/squirrel/squirrel.dir/Release/sqdebug.obj
+C:/Repos/arceus/src/squirrel3/squirrel/squirrel.dir/Release/sqfuncstate.obj
+C:/Repos/arceus/src/squirrel3/squirrel/squirrel.dir/Release/sqlexer.obj
+C:/Repos/arceus/src/squirrel3/squirrel/squirrel.dir/Release/sqmem.obj
+C:/Repos/arceus/src/squirrel3/squirrel/squirrel.dir/Release/sqobject.obj
+C:/Repos/arceus/src/squirrel3/squirrel/squirrel.dir/Release/sqstate.obj
+C:/Repos/arceus/src/squirrel3/squirrel/squirrel.dir/Release/sqtable.obj
+C:/Repos/arceus/src/squirrel3/squirrel/squirrel.dir/Release/sqvm.obj

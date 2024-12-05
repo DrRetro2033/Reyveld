@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
 import 'package:ansix/ansix.dart';
@@ -68,10 +69,9 @@ Future<dynamic> main(List<String> arguments) async {
   }
   runner.addCommand(DoesConstellationExistCommand());
   runner.addCommand(ReadFileCommand());
-  runner.addCommand(InstallPackagedAddonCommand());
   runner.addCommand(OpenFileCommand());
-  runner.addCommand(AddonCompileCommand());
   runner.addCommand(ArceusConstellationsCommand());
+  runner.addCommand(AddonsCommand());
 
   if (arguments.isNotEmpty) {
     dynamic result = await runner.run(arguments);
@@ -407,23 +407,91 @@ class InstallPackagedAddonCommand extends ArceusCommand {
   }
 }
 
+class UninstallAddonCommand extends ArceusCommand {
+  @override
+  String get description => "Uninstalls an addon.";
+  @override
+  String get name => "uninstall";
+
+  @override
+  void run() {
+    if (getRest().isEmpty) {
+      throw Exception("Please provide the name of the addon.");
+    }
+    String addonName = getRest();
+    CliSpin? spinner;
+    if (!isInternal) {
+      spinner = CliSpin().start(" Uninstalling addon... 🗑️");
+    }
+
+    final found = Addon.uninstallByName(addonName);
+
+    if (!isInternal && found) {
+      spinner!.success(" Addon uninstalled successfully! 🎉");
+    } else if (!isInternal) {
+      spinner!.fail(" Addon not found! 🚫");
+    }
+  }
+}
+
+class ListAddonsCommand extends ArceusCommand {
+  @override
+  String get description => "Lists all installed addons.";
+  @override
+  String get name => "list";
+
+  @override
+  void run() {
+    List<Addon> addons = Addon.getInstalledAddons();
+    if (addons.isEmpty) {
+      print("No addons installed.");
+    } else {
+      for (Addon addon in addons) {
+        print("🍱 ${addon.name} - ${addon.isGlobal ? "Global" : "Local"}");
+      }
+    }
+  }
+}
+
+class AddonsCommand extends Command {
+  @override
+  String get description => "Commands for working with addons.";
+  @override
+  String get name => "addons";
+
+  AddonsCommand() {
+    addSubcommand(InstallPackagedAddonCommand());
+    addSubcommand(UninstallAddonCommand());
+    addSubcommand(ListAddonsCommand());
+    addSubcommand(AddonCompileCommand());
+  }
+}
+
 class ReadFileCommand extends ArceusCommand {
   @override
-  String get description => "Try reading a file with an associated addon.";
+  String get summary => "Read a file with an associated addon.";
+  @override
+  String get description =>
+      "Reads a file with an addon associated with it, so you can see a simplified view of its data.";
   @override
   String get name => "read";
 
   @override
   dynamic run() {
     if (getRest().isEmpty) {
-      throw Exception("Please provide the file to read.");
+      throw Exception("Please provide a file to read.");
     }
     String filepath = getRest();
     File file = File(filepath.fixPath());
     List<Addon> addons = Addon.getInstalledAddons()
         .filterByAssociatedFile(filepath.getExtension());
+    if (addons.isEmpty && !isInternal) {
+      print("Unable to find an addon associated with this file!");
+      return null;
+    }
     Plasma plasma = Plasma.fromFile(file);
     final result = (addons.first.context as PatternAdddonContext).read(plasma);
+    print(result);
     return jsonEncode(result);
   }
 }

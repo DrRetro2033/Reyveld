@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:yaml/yaml.dart';
 
-import './duktape.dart';
+import './squirrel.dart';
 import './addons/patterns.dart';
 import '../version_control/constellation.dart';
 import '../main.dart';
@@ -19,8 +19,30 @@ class Addon {
   final File addonFile;
 
   String get path => addonFile.path;
+  String get name => getMetadata()["name"];
 
-  late AddonContext context;
+  bool get isGlobal {
+    if (isUninstalled()) {
+      throw Exception("Addon is not installed.");
+    }
+
+    if (Constellation.checkForConstellation(path)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  bool isUninstalled() => !addonFile.existsSync();
+
+  late AddonContext _context;
+
+  AddonContext get context {
+    if (isUninstalled()) {
+      throw Exception("Addon is not installed.");
+    }
+    return _context;
+  }
 
   /// # `String` get code
   /// ## Returns the code of the addon.
@@ -45,10 +67,10 @@ class Addon {
   Addon(this.addonFile) {
     switch (featureSet) {
       case FeatureSets.pattern:
-        context = PatternAdddonContext(this);
+        _context = PatternAdddonContext(this);
         break;
       case FeatureSets.none:
-        context = NoneAdddonContext(this);
+        _context = NoneAdddonContext(this);
         break;
     }
   }
@@ -59,10 +81,17 @@ class Addon {
 
       String body = _getAddonYamlAsString(projectPath);
       body += "\n---END-OF-DETAILS---\n";
-      for (String entrypoint in yaml["entrypoints"]) {
-        body += File("$outputPath/$entrypoint").readAsStringSync();
+      String entrypoint = yaml["entrypoint"];
+      body += File("$projectPath/$entrypoint").readAsStringSync();
+      body += "\n";
+      while (body.contains(RegExp(r"#\s*include\(([a-zA-Z\/\s]*.nut)\s*\)"))) {
+        final match =
+            RegExp(r"#\s*include\(([a-zA-Z\/\s]*.nut)\s*\)").firstMatch(body)!;
+        body.replaceRange(match.start, match.end, "");
+        body += File("$projectPath/${match.group(1)!}").readAsStringSync();
         body += "\n";
       }
+
       Uint8List bytes = utf8.encode(body);
       List<int> compressed = gzip.encoder.convert(bytes);
       File("$outputPath/${(yaml["name"] as String).toLowerCase().replaceAll(" ", "_")}.arcaddon")
@@ -134,7 +163,7 @@ class Addon {
         isVaild = false;
       } else if (metadata["feature-set"] is! String) {
         isVaild = false;
-      } else if (metadata["entrypoints"] is! YamlList) {
+      } else if (metadata["entrypoint"] is! YamlList) {
         isVaild = false;
       }
     }
@@ -189,6 +218,21 @@ class Addon {
         "${Constellation(path: currentPath).addonFolderPath}/${pathToAddonFile.getFilename()}"));
   }
 
+  static bool uninstallByName(String name) {
+    for (Addon addon in getInstalledAddons()) {
+      if (addon.name == name) {
+        addon.uninstall();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void uninstall() {
+    File file = File(path);
+    file.deleteSync();
+  }
+
   /// # `static` getInstalledAddons()
   /// ## Returns a list of all installed addons.
   static List<Addon> getInstalledAddons() {
@@ -238,19 +282,19 @@ class Addon {
   }
 }
 
-abstract class AddonContext with Duktape {
-  List<DuktapeFunction> get functions;
+abstract class AddonContext {
+  List<SquirrelFunction> get functions;
 
   final Addon addon;
 
   AddonContext(this.addon) {
-    Duktape.init("C:/Repos/arceus");
+    Squirrel.init("C:/Repos/arceus");
   }
 }
 
 class NoneAdddonContext extends AddonContext {
   @override
-  List<DuktapeFunction> get functions => [];
+  List<SquirrelFunction> get functions => [];
 
   NoneAdddonContext(super.addon) : super();
 }

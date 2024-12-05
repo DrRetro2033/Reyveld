@@ -30,17 +30,17 @@ dev_dependencies:
 
 ffigen:
   # Run with `flutter pub run ffigen --config ffigen.yaml`.
-  name: DuktapeBindings
+  name: SquirrelBindings
   description: |
-    Bindings for `src/duktape.h`.
+    Bindings for `src/squirrel3/include/squirrel.h`.
 
     Regenerate bindings with `flutter pub run ffigen --config ffigen.yaml`.
-  output: "bin/scripting/duktape_bindings_generated.dart"
+  output: "bin/scripting/squirrel_bindings_generated.dart"
   headers:
     entry-points:
-      - "src/duktape-2.7.0/src/duktape.h"
+      - "src/squirrel3/include/squirrel.h"
     include-directives:
-      - "src/duktape-2.7.0/src/duktape.h"
+      - "src/squirrel3/include/squirrel.h"
   preamble: |
     // ignore_for_file: always_specify_types
     // ignore_for_file: camel_case_types
@@ -49,3 +49,8 @@ ffigen:
     style: any
     length: full
   ignore-source-errors: true
+  silence-enum-warning: true
+  structs:
+    rename:
+      "_(.*)": "$1" # Removes prefix underscores from all structures.
+
