@@ -28,7 +28,7 @@ jobs:
       - name: Build Libraries
         uses: threeal/cmake-action@v2.1.0
         with:
-          source-dir: ./src/squirrel3/squirrel/
+          source-dir: ./src/squirrel3/
           build-dir: build/releases/${{ matrix.platform }}/lib/
       - name: Add Installer Scripts to Build
         run: cp ./scripts/installers/${{ matrix.platform }}/* build/releases/${{ matrix.platform }}/
