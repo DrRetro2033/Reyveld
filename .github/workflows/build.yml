@@ -33,9 +33,9 @@ jobs:
           build-dir: ./src/squirrel3/build/
       - name: Adding files to Artifact
         run:
-          "cp -r ./src/squirrel3/build/squirrel/Debug/squirrel.${{ matrix.library-extension }} ./scripts/installers/${{ matrix.platform }}/lib/squirrel.${{ matrix.library-extension }} |
-          cp -r ./scripts/installers/${{ matrix.platform }}/lib/* build/releases/${{ matrix.platform }}/lib |
-          cp -r ./scripts/installers/${{ matrix.platform }}/* build/releases/${{ matrix.platform }}/"
+          "cp ./src/squirrel3/build/squirrel/Debug/squirrel.${{ matrix.library-extension }} ./scripts/installers/${{ matrix.platform }}/lib/squirrel.${{ matrix.library-extension }} |
+          cp ./scripts/installers/${{ matrix.platform }}/lib/* build/releases/${{ matrix.platform }}/lib |
+          cp ./scripts/installers/${{ matrix.platform }}/* build/releases/${{ matrix.platform }}/"
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
