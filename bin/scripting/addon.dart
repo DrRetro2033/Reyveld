@@ -184,7 +184,7 @@ class Addon {
       try {
         file.deleteSync();
       } catch (e) {
-        if (!isInternal) {
+        if (!Arceus.isInternal) {
           print(
               "⚠️ Unable to delete old add-on file. Skipping step and continuing installation.");
         }
@@ -211,11 +211,11 @@ class Addon {
       file.deleteSync();
     }
     file = File(
-        "${Constellation(path: currentPath).addonFolderPath}/${pathToAddonFile.getFilename()}");
+        "${Constellation(path: Arceus.currentPath).addonFolderPath}/${pathToAddonFile.getFilename()}");
     file.createSync(recursive: true);
     file.writeAsBytesSync(data);
     return Addon(File(
-        "${Constellation(path: currentPath).addonFolderPath}/${pathToAddonFile.getFilename()}"));
+        "${Constellation(path: Arceus.currentPath).addonFolderPath}/${pathToAddonFile.getFilename()}"));
   }
 
   static bool uninstallByName(String name) {
@@ -237,8 +237,8 @@ class Addon {
   /// ## Returns a list of all installed addons.
   static List<Addon> getInstalledAddons() {
     List<Addon> addons = <Addon>[];
-    if (Constellation.checkForConstellation(currentPath)) {
-      final constellation = Constellation(path: currentPath);
+    if (Constellation.checkForConstellation(Arceus.currentPath)) {
+      final constellation = Constellation(path: Arceus.currentPath);
       if (!constellation.addonDirectory.existsSync()) {
         constellation.addonDirectory.createSync();
       }

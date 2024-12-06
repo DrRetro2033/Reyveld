@@ -81,7 +81,7 @@ class Squirrel {
                   func.call,
                   exceptionalReturn: 0)
               .nativeFunction,
-          func.nargs);
+          0);
       bindings.sq_newslot(vm, -3, SQFalse);
       bindings.sq_pop(vm, 1);
     }
@@ -198,7 +198,6 @@ class Squirrel {
     } else if (result == tagSQObjectType.OT_TABLE) {
       bindings.sq_pushnull(vm);
       value = {};
-      // print(getStack(vm));
       while (bindings.sq_next(vm, -2) == 0) {
         (value as Map).putIfAbsent(
             getValueFromStack(vm, index: -2, noPop: true),
@@ -249,10 +248,10 @@ class SquirrelFunction {
 
   int get nargs => arguments.entries.length;
 
-  Map<String, dynamic> _getParams(vm) {
+  Map<String, dynamic> _getParams(Pointer<SQVM> vm) {
     Map<String, dynamic> params = {};
-    int idx = 0;
-    for (String key in arguments.keys) {
+    int idx = -1;
+    for (String key in arguments.keys.toList().reversed) {
       switch (arguments[key]) {
         case tagSQObjectType.OT_STRING:
           params[key] = Squirrel.getValueFromStack(vm,
@@ -275,7 +274,7 @@ class SquirrelFunction {
         default:
           break;
       }
-      idx++;
+      idx--;
     }
     return params;
   }

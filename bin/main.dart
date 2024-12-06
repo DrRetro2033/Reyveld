@@ -21,9 +21,6 @@ import './scripting/addons/feature-sets.dart';
 /// ## Main entry point.
 /// Runs the CLI.
 
-late String currentPath;
-late bool isInternal;
-
 Future<dynamic> main(List<String> arguments) async {
   // AnsiX.ensureSupportsAnsi();
   var runner = CommandRunner('arceus', "The ultimate save manager.");
@@ -37,9 +34,9 @@ Future<dynamic> main(List<String> arguments) async {
       help:
           "Use a constellation name instead of an path. Only works after using --path to create the constellation.");
   runner.argParser.addFlag("internal", defaultsTo: false, hide: true);
-  currentPath = Directory.current.path;
+  Arceus.currentPath = Directory.current.path;
   if (arguments.contains("--path") || arguments.contains("-p")) {
-    currentPath =
+    Arceus.currentPath =
         arguments[arguments.indexWhere((e) => e == "--path" || e == "-p") + 1];
   }
   if (arguments.contains("--const") || arguments.contains("-c")) {
@@ -49,14 +46,14 @@ Future<dynamic> main(List<String> arguments) async {
       throw Exception(
           "Constellation with the name of $constellationName does not exist");
     }
-    currentPath = Arceus.getConstellationPath(constellationName)!;
+    Arceus.currentPath = Arceus.getConstellationPath(constellationName)!;
   }
   if (arguments.contains("--internal") || arguments.contains("-i")) {
-    isInternal = true;
+    Arceus.isInternal = true;
   } else {
-    isInternal = false;
+    Arceus.isInternal = false;
   }
-  if (!Constellation.checkForConstellation(currentPath)) {
+  if (!Constellation.checkForConstellation(Arceus.currentPath)) {
     runner.addCommand(CreateConstellationCommand());
   } else {
     runner.addCommand(ShowMapConstellationCommand());
@@ -75,7 +72,7 @@ Future<dynamic> main(List<String> arguments) async {
 
   if (arguments.isNotEmpty) {
     dynamic result = await runner.run(arguments);
-    if (result != null && isInternal) {
+    if (result != null && Arceus.isInternal) {
       stdout.write(result.toString());
     }
   }
@@ -106,9 +103,9 @@ class CreateConstellationCommand extends ArceusCommand {
     try {
       List<String>? users = argResults?["user"];
       if (users?.isEmpty ?? true) {
-        Constellation(path: currentPath, name: getRest());
+        Constellation(path: Arceus.currentPath, name: getRest());
       } else {
-        Constellation(path: currentPath, name: getRest(), users: users!);
+        Constellation(path: Arceus.currentPath, name: getRest(), users: users!);
       }
     } catch (e) {
       spinner.fail("Unable to create constellation.");
@@ -129,7 +126,7 @@ class ShowMapConstellationCommand extends ArceusCommand {
 
   @override
   dynamic run() {
-    Constellation constellation = Constellation(path: currentPath);
+    Constellation constellation = Constellation(path: Arceus.currentPath);
     constellation.starmap?.printMap();
     return jsonEncode(constellation.starmap?.toJson());
   }
@@ -147,7 +144,7 @@ class CheckForDifferencesCommand extends ArceusCommand {
 
   @override
   Future<bool> run() async {
-    Constellation constellation = Constellation(path: currentPath);
+    Constellation constellation = Constellation(path: Arceus.currentPath);
     final spinner = CliSpin(
             text:
                 " Checking for differences between current directory and provided star...")
@@ -178,7 +175,7 @@ class ConstellationJumpToCommand extends ArceusCommand {
 
   @override
   void run() {
-    Constellation constellation = Constellation(path: currentPath);
+    Constellation constellation = Constellation(path: Arceus.currentPath);
     if (!argResults!["force"] && constellation.checkForDifferences()) {
       final confirm = Confirm(
               prompt:
@@ -230,7 +227,7 @@ This will fail if there no changes to commit, unless '--force' is provided.""";
 
   @override
   void run() {
-    Constellation(path: currentPath)
+    Constellation(path: Arceus.currentPath)
         .grow(getRest(), force: argResults!["force"]);
   }
 }
@@ -258,7 +255,7 @@ class TrimCommand extends ArceusCommand {
         return;
       }
     }
-    Constellation(path: currentPath).trim();
+    Constellation(path: Arceus.currentPath).trim();
   }
 }
 
@@ -282,7 +279,7 @@ class UsersListCommand extends ArceusCommand {
 
   @override
   void run() {
-    Constellation(path: currentPath).userIndex?.displayUsers();
+    Constellation(path: Arceus.currentPath).userIndex?.displayUsers();
   }
 }
 
@@ -299,7 +296,7 @@ class UsersRenameCommand extends Command {
 
   @override
   void run() {
-    Constellation(path: currentPath)
+    Constellation(path: Arceus.currentPath)
         .userIndex
         ?.getUser(argResults?["user-hash"])
         .name = argResults?["new-name"];
@@ -329,7 +326,7 @@ class ConstellationDeleteCommand extends ArceusCommand {
         return;
       }
     }
-    Constellation(path: currentPath).delete();
+    Constellation(path: Arceus.currentPath).delete();
   }
 }
 
@@ -390,18 +387,18 @@ class InstallPackagedAddonCommand extends ArceusCommand {
     }
     String addonFile = getRest();
     CliSpin? spinner;
-    if (!isInternal) {
+    if (!Arceus.isInternal) {
       spinner = CliSpin().start(" Installing addon... 🍱");
     }
     if (argResults!["global"]) {
       Addon.installGlobally(addonFile);
-    } else if (Constellation.checkForConstellation(currentPath)) {
+    } else if (Constellation.checkForConstellation(Arceus.currentPath)) {
       Addon.installLocally(addonFile);
     } else {
       throw Exception(
           "Please either install as a global addon or give a valid constellation first.");
     }
-    if (!isInternal) {
+    if (!Arceus.isInternal) {
       spinner!.success(" Addon installed successfully! 🎉");
     }
   }
@@ -420,15 +417,15 @@ class UninstallAddonCommand extends ArceusCommand {
     }
     String addonName = getRest();
     CliSpin? spinner;
-    if (!isInternal) {
+    if (!Arceus.isInternal) {
       spinner = CliSpin().start(" Uninstalling addon... 🗑️");
     }
 
     final found = Addon.uninstallByName(addonName);
 
-    if (!isInternal && found) {
+    if (!Arceus.isInternal && found) {
       spinner!.success(" Addon uninstalled successfully! 🎉");
-    } else if (!isInternal) {
+    } else if (!Arceus.isInternal) {
       spinner!.fail(" Addon not found! 🚫");
     }
   }
@@ -485,13 +482,15 @@ class ReadFileCommand extends ArceusCommand {
     File file = File(filepath.fixPath());
     List<Addon> addons = Addon.getInstalledAddons()
         .filterByAssociatedFile(filepath.getExtension());
-    if (addons.isEmpty && !isInternal) {
+    if (addons.isEmpty && !Arceus.isInternal) {
       print("Unable to find an addon associated with this file!");
       return null;
     }
     Plasma plasma = Plasma.fromFile(file);
     final result = (addons.first.context as PatternAdddonContext).read(plasma);
-    print(result);
+    if (!Arceus.isInternal) {
+      print(AnsiTreeView(result, theme: Cli.treeTheme));
+    }
     return jsonEncode(result);
   }
 }
@@ -505,7 +504,7 @@ class ArceusConstellationsCommand extends ArceusCommand {
   @override
   void run() {
     if (Arceus.empty()) {
-      if (!isInternal) {
+      if (!Arceus.isInternal) {
         print("No constellations found! Create one with the 'create' command.");
       }
     }
@@ -544,7 +543,7 @@ class DoesConstellationExistCommand extends ArceusCommand {
   @override
   dynamic run() {
     if (getRest().isEmpty) {
-      return Arceus.doesConstellationExist(path: currentPath);
+      return Arceus.doesConstellationExist(path: Arceus.currentPath);
     } else {
       return Arceus.doesConstellationExist(path: getRest());
     }

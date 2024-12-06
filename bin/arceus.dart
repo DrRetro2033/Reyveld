@@ -7,6 +7,9 @@ import 'version_control/constellation.dart';
 /// ## A class that represents the Arceus application.
 /// Contain global functions for Arceus, for example, settings, paths, etc.
 class Arceus {
+  static late String currentPath;
+  static late bool isInternal;
+
   /// # `static` `String` _appDataPath
   /// ## The path to the application data directory.
   static String get appDataPath => _getAppDataPath();

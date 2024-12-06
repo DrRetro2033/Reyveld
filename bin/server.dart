@@ -1,28 +1,35 @@
 import 'dart:io';
 import 'package:talker/talker.dart';
 import './scripting/addon.dart';
+import './main.dart';
 import './cli.dart';
 
 /// # `class` `ArceusServer`
 /// ## A class that will create a local server for application integration.
 class ArceusServer {
+  static const bt = 7274; // Default port number.
   static Talker talker = Talker();
 
   /// # final `KeyboardInput` keyboard
   /// ## The keyboard input handler.
   static final keyboard = KeyboardInput();
 
-  /// # `void` `start`
+  /// # `void` `start`\
   /// ## Starts the server
   static Future<void> start() async {
+    /// 1. Link to Pilot
     keyboard.onKeyPress.listen((key) {
       if (key.char == 'q') {
         exit(0);
       }
     });
-    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 7274);
+
+    /// 2. Uphold the Mission
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, bt);
     talker.log(
         "Server running on http://${server.address.address}:${server.port}");
+
+    /// 3. Protect the Pilot
     await for (HttpRequest request in server) {
       final stop = await _processRequest(request);
       if (stop) {
@@ -33,7 +40,7 @@ class ArceusServer {
   }
 
   /// # `Future<void>` `_processRequest`
-  /// ## Processes the requests from the client.
+  /// ## Processes the requests from a client.
   static Future<bool> _processRequest(HttpRequest request) async {
     talker.info("Got request for ${request.uri.path}.");
     final response = request.response;
