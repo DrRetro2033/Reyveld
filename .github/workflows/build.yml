@@ -29,9 +29,10 @@ jobs:
         uses: threeal/cmake-action@v2.1.0
         with:
           source-dir: ./src/squirrel3/
+          build-dir: ./src/build/
       - name: Adding files to Artifact
         run:
-          "cp -r ./src/squirrel3/squirrel/Debug/squirrel.${{ matrix.library-extension }} ./scripts/installers/${{ matrix.platform }}/lib/squirrel.${{ matrix.library-extension }} |
+          "cp -r ./src/build/squirrel/Debug/squirrel.${{ matrix.library-extension }} ./scripts/installers/${{ matrix.platform }}/lib/squirrel.${{ matrix.library-extension }} |
           cp -r ./scripts/installers/${{ matrix.platform }}/* build/releases/${{ matrix.platform }}/"
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
