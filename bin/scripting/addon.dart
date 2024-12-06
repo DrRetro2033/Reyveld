@@ -6,7 +6,6 @@ import 'package:yaml/yaml.dart';
 import './squirrel.dart';
 import './addons/patterns.dart';
 import '../version_control/constellation.dart';
-import '../main.dart';
 import '../extensions.dart';
 import '../arceus.dart';
 

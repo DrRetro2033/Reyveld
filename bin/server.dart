@@ -1,7 +1,5 @@
 import 'dart:io';
 import 'package:talker/talker.dart';
-import './scripting/addon.dart';
-import './main.dart';
 import './cli.dart';
 
 /// # `class` `ArceusServer`
