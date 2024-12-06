@@ -30,7 +30,6 @@ jobs:
         with:
           source-dir: ./src/squirrel3/
           build-dir: build/releases/${{ matrix.platform }}/lib/
-          args: --clean-first
       - name: Add Installer Scripts to Build
         run: cp ./scripts/installers/${{ matrix.platform }}/* build/releases/${{ matrix.platform }}/
       - name: Upload Artifact
