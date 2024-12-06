@@ -40,8 +40,7 @@ class PatternAdddonContext extends AddonContext {
 
   Map<dynamic, dynamic> read(Plasma plasma) {
     this.plasma = plasma;
-    final vm = Squirrel.run(addon.code);
-    Squirrel.createAPI(vm, functions);
+    final vm = startVM();
     final result = Squirrel.call(vm, "read");
     Squirrel.dispose(vm);
     return result;

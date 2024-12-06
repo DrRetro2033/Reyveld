@@ -230,9 +230,9 @@ class Squirrel {
   }
 }
 
-/// # `void` DuktapeFunction(String name, Map<String, DuktapeType> arguments, dynamic Function(Pointer<duk_hthread> ctx, Map<String, dynamic> params) call)
+/// # `void` DukapeFunction(String name, Map<String, DuktapeType> arguments, dynamic Function(Pointer<duk_hthread> ctx, Map<String, dynamic> params) call)
 /// ## A function that can be called from inside a Duktape instance.
-/// It takes a name, a map of arguments, and a function to call.
+/// It takes a name, a map of arguments, and a function to call.t
 class SquirrelFunction {
   final String name;
 

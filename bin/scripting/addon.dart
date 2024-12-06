@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:yaml/yaml.dart';
 
 import './squirrel.dart';
 import './addons/patterns.dart';
+import './squirrel_bindings_generated.dart';
 import '../version_control/constellation.dart';
 import '../extensions.dart';
 import '../arceus.dart';
@@ -288,6 +290,15 @@ abstract class AddonContext {
 
   AddonContext(this.addon) {
     Squirrel.init("C:/Repos/arceus");
+  }
+
+  /// # `Pointer<SQVM>` startVM()
+  /// ## Starts the Squirrel VM and returns the VM pointer.
+  /// It also creates the API for the Squirrel VM, so be sure all the functions have been added to [functions].
+  Pointer<SQVM> startVM() {
+    final vm = Squirrel.run(addon.code);
+    Squirrel.createAPI(vm, functions);
+    return vm;
   }
 }
 
