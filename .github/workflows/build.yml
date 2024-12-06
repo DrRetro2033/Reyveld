@@ -22,16 +22,18 @@ jobs:
       - name: Fetch Dependencies
         run: dart pub get .
       - name: Make Build Directories
-        run: mkdir -p build/releases/${{ matrix.platform }}
+        run: "mkdir -p build/releases/${{ matrix.platform }} |
+          mkdir -p scripts/installers/${{ matrix.platform }}/lib"
       - name: Build Executable
         run: dart compile exe ./lib/main.dart --target-os ${{ matrix.platform }} -o build/releases/${{ matrix.platform }}/${{ matrix.output}}
       - name: Build Libraries
         uses: threeal/cmake-action@v2.1.0
         with:
           source-dir: ./src/squirrel3/
-          build-dir: build/releases/${{ matrix.platform }}/lib/
-      - name: Add Installer Scripts to Build
-        run: cp ./scripts/installers/${{ matrix.platform }}/* build/releases/${{ matrix.platform }}/
+      - name: Adding files to Artifact
+        run:
+          "cp ./src/squirrel3/squirrel/Debug/squirrel.${{ matrix.library-extension }} ./scripts/installers/${{ matrix.platform }}/lib/squirrel.${{ matrix.library-extension }} |
+          cp ./scripts/installers/${{ matrix.platform }}/* build/releases/${{ matrix.platform }}/"
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -45,9 +47,12 @@ jobs:
           - os: ubuntu-latest
             platform: linux
             output: arceus.elf
+            library-extension: so
           - os: windows-latest
             platform: windows
             output: arceus.exe
+            library-extension: dll
           - os: macos-latest
             platform: macos
             output: arceus.app
+            library-extension: dylib
