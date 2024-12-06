@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 import 'package:yaml/yaml.dart';
 
-import './scripting/addon.dart';
+import 'scripting/addon.dart';
 
 /// # `extension` Compression
 /// ## Extension for the `String` class.

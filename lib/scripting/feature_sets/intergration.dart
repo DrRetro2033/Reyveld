@@ -1,13 +1,11 @@
 import 'dart:ffi';
-import 'dart:io';
-
 import '../addon.dart';
 import '../squirrel.dart';
 import '../squirrel_bindings_generated.dart';
 import 'package:open_url/open_url.dart';
 
 class IntergrationAddonContext extends AddonContext {
-  IntergrationAddonContext(super.addon) : super();
+  IntergrationAddonContext(super.addon);
 
   @override
   List<SquirrelFunction> get functions => [

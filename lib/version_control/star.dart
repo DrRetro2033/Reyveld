@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'constellation.dart';
 import 'users.dart';
 import 'dart:io';
-import '../version_control/dossier.dart';
+import 'dossier.dart';
 
 /// # `class` Star
 /// ## Represents a star in the constellation.

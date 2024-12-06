@@ -2,12 +2,11 @@ import 'dart:ffi';
 
 import 'package:test/test.dart';
 
-import '../bin/scripting/squirrel.dart';
-import '../bin/scripting/squirrel_bindings_generated.dart';
+import '../lib/scripting/squirrel.dart';
+import '../lib/scripting/squirrel_bindings_generated.dart';
 
 void main() {
   test("Squirrel Test", () {
-    Squirrel.init("C:/Repos/arceus");
     final vm = Squirrel.run("""
 function foo(i,f,s)
 {

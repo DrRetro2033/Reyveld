@@ -7,7 +7,7 @@ import '../squirrel_bindings_generated.dart';
 import '../../version_control/dossier.dart';
 
 class PatternAdddonContext extends AddonContext {
-  PatternAdddonContext(super.addon) : super();
+  PatternAdddonContext(super.addon);
 
   Plasma? plasma;
 

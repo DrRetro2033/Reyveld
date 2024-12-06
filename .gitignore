@@ -7,3 +7,4 @@ build/
 patterns/
 duktape.dll
 squirrel.dll
+test_builds/

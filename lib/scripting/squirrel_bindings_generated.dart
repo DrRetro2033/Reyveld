@@ -2436,24 +2436,6 @@ class SquirrelBindings {
           'sq_setnativedebughook');
   late final _sq_setnativedebughook = _sq_setnativedebughookPtr
       .asFunction<void Function(HSQUIRRELVM, SQDEBUGHOOK)>();
-
-  late final ffi.Pointer<ffi.Int> _SQFILE1 = _lookup<ffi.Int>('SQFILE');
-
-  int get SQFILE1 => _SQFILE1.value;
-
-  set SQFILE1(int value) => _SQFILE1.value = value;
-
-  late final ffi.Pointer<ffi.Int> _SQInteger1 = _lookup<ffi.Int>('SQInteger');
-
-  int get SQInteger1 => _SQInteger1.value;
-
-  set SQInteger1(int value) => _SQInteger1.value = value;
-
-  late final ffi.Pointer<ffi.Int> _SQRESULT1 = _lookup<ffi.Int>('SQRESULT');
-
-  int get SQRESULT1 => _SQRESULT1.value;
-
-  set SQRESULT1(int value) => _SQRESULT1.value = value;
 }
 
 final class SQVM extends ffi.Opaque {}
@@ -2695,7 +2677,6 @@ typedef SQFunctionInfo = tagSQFunctionInfo;
 typedef SQRESULT = SQInteger;
 typedef SQHash = ffi.UnsignedLongLong;
 typedef DartSQHash = int;
-typedef SQFILE = ffi.Pointer<ffi.Void>;
 
 const int SQTrue = 1;
 
@@ -2770,9 +2751,3 @@ const int _RT_OUTER = 131072;
 const int SQ_OK = 0;
 
 const int SQ_ERROR = -1;
-
-const int SQ_SEEK_CUR = 0;
-
-const int SQ_SEEK_END = 1;
-
-const int SQ_SEEK_SET = 2;

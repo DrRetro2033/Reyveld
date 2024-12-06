@@ -5,7 +5,7 @@ import 'dart:typed_data';
 import 'package:yaml/yaml.dart';
 
 import './squirrel.dart';
-import './addons/patterns.dart';
+import './feature_sets/feature_sets.dart';
 import './squirrel_bindings_generated.dart';
 import '../version_control/constellation.dart';
 import '../extensions.dart';

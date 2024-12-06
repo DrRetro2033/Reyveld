@@ -13,8 +13,8 @@ import 'cli.dart';
 import 'hex_editor/editor.dart';
 import 'version_control/dossier.dart';
 import 'extensions.dart';
-import './server.dart';
-import './scripting/addons/feature-sets.dart';
+import 'server.dart';
+import 'scripting/feature_sets/feature_sets.dart';
 // import 'package:cli_completion/cli_completion.dart';
 
 /// # `void` main(List<String> arguments)

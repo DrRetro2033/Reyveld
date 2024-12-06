@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:talker/talker.dart';
-import './cli.dart';
+import 'cli.dart';
 
 /// # `class` `ArceusServer`
 /// ## A class that will create a local server for application integration.

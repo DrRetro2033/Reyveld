@@ -36,7 +36,7 @@ ffigen:
     Bindings for `src/squirrel3/include/squirrel.h`.
 
     Regenerate bindings with `flutter pub run ffigen --config ffigen.yaml`.
-  output: "bin/scripting/squirrel_bindings_generated.dart"
+  output: "lib/scripting/squirrel_bindings_generated.dart"
   headers:
     entry-points:
       - "src/squirrel3/include/squirrel.h"
@@ -54,4 +54,3 @@ ffigen:
   structs:
     rename:
       "_(.*)": "$1" # Removes prefix underscores from all structures.
-
