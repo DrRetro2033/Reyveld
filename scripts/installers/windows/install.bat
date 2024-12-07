@@ -40,6 +40,9 @@ if not exist "%INSTALL_DIR%" mkdir "%INSTALL_DIR%"
 REM Copy the executable to the install directory
 copy /Y "%~dp0%APP_NAME%.exe" "%INSTALL_DIR%"
 
+REM Copy Libraries
+xcopy /s "./lib/" "%INSTALL_DIR%/lib/"
+
 REM Add the install directory to the PATH if it's not already present
 for %%i in ("%PATH:;=" "%") do if "%%~i"=="%INSTALL_DIR%" goto :end
 setx PATH "%PATH%;%INSTALL_DIR%"

@@ -25,7 +25,7 @@ jobs:
         run: "mkdir -p build/releases/${{ matrix.platform }} &&
           mkdir ./scripts/installers/${{ matrix.platform }}/lib"
       - name: Build Executable
-        run: dart compile --define=DEBUG=false exe ./lib/main.dart --target-os ${{ matrix.platform }} -o build/releases/${{ matrix.platform }}/${{ matrix.output}}
+        run: dart compile exe --define=DEBUG=false ./lib/main.dart --target-os ${{ matrix.platform }} -o build/releases/${{ matrix.platform }}/${{ matrix.output}}
       - name: Build Squirrel
         uses: threeal/cmake-action@v2.1.0
         with:
