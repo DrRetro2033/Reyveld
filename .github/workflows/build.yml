@@ -33,8 +33,8 @@ jobs:
           build-dir: ./src/squirrel3/
       - name: Adding files to Artifact
         run:
-          "cp -r ./src/squirrel3/ ./scripts/installers/${{ matrix.platform }}/lib/ &&
-          cp -r ./scripts/installers/${{ matrix.platform }}/ build/releases/${{ matrix.platform }}/"
+          "cp ${{ matrix.path-to-squirrel-library }} ./scripts/installers/${{ matrix.platform }}/lib/* &&
+          cp ./scripts/installers/${{ matrix.platform }}/* build/releases/${{ matrix.platform }}/*"
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -48,12 +48,12 @@ jobs:
           - os: ubuntu-latest
             platform: linux
             output: arceus.elf
-            library-extension: so
+            path-to-squirrel-library: ./src/squirrel3/squirrel/libsquirrel.so
           - os: windows-latest
             platform: windows
             output: arceus.exe
-            library-extension: dll
+            path-to-squirrel-library: ./src/squirrel3/squirrel/Debug/squirrel.dll
           - os: macos-latest
             platform: macos
             output: arceus.app
-            library-extension: dylib
+            path-to-squirrel-library: ./src/squirrel3/squirrel/libsquirrel.so
