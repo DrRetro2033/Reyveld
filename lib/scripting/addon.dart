@@ -283,6 +283,11 @@ class Addon {
   }
 }
 
+/// # `AddonContext`
+/// ## An abstract class that represents the context of an addon.
+/// Acts as the bridge between the addon and the Squirrel VM.
+/// Before, Addon was abstract with subclasses acting as different feature sets.
+/// However, this is not the case anymore, as the Squirrel VM is now the same for all feature sets.
 abstract class AddonContext {
   List<SquirrelFunction> get functions;
 
