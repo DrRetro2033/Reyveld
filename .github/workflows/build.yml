@@ -33,7 +33,7 @@ jobs:
           build-dir: ./src/squirrel3/
       - name: Adding files to Artifact
         run:
-          "cp ${{ matrix.path-to-squirrel-library }} ./scripts/installers/${{ matrix.platform }}/lib/* &&
+          "cp ${{ matrix.path-to-squirrel-library }} ./scripts/installers/${{ matrix.platform }}/lib/${{ matrix.rename-squirrel-to }} &&
           cp ./scripts/installers/${{ matrix.platform }}/* build/releases/${{ matrix.platform }}/*"
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -49,11 +49,14 @@ jobs:
             platform: linux
             output: arceus.elf
             path-to-squirrel-library: ./src/squirrel3/squirrel/libsquirrel.so
+            rename-squirrel-to: squirrel.so
           - os: windows-latest
             platform: windows
             output: arceus.exe
             path-to-squirrel-library: ./src/squirrel3/squirrel/Debug/squirrel.dll
+            rename-squirrel-to: squirrel.dll
           - os: macos-latest
             platform: macos
             output: arceus.app
             path-to-squirrel-library: ./src/squirrel3/squirrel/libsquirrel.so
+            rename-squirrel-to: squirrel.dylib
