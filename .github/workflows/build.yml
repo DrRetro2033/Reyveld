@@ -34,7 +34,7 @@ jobs:
       - name: Adding files to Artifact
         run:
           "cp ${{ matrix.path-to-squirrel-library }} ./scripts/installers/${{ matrix.platform }}/lib/${{ matrix.rename-squirrel-to }} &&
-          cp -r --force ./scripts/installers/${{ matrix.platform }}/ ./build/releases/"
+          cp -r ./scripts/installers/${{ matrix.platform }}/ ./build/releases/ --force"
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
