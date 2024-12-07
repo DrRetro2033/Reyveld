@@ -1,3 +1,4 @@
+import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -283,13 +284,20 @@ class Plasma {
   /// ## Compares the current plasma to another plasma.
   /// Returns a map of the differences between the two plasmas.
   /// The keys are the addresses of the differences, and the values are the values at those addresses in the current plasma.
-  Map<int, int> getDifferences(Plasma other) {
-    Map<int, int> differences = {};
-    for (int i = 0; i < data.lengthInBytes; ++i) {
-      if (i >= _originalData!.lengthInBytes) {
-        differences[i] = data.getUint8(i);
+  DifferenceMap getDifferences(Plasma other) {
+    DifferenceMap differences = DifferenceMap();
+    for (int i = 0;
+        i <
+            (other.data.lengthInBytes >= data.lengthInBytes
+                ? other.data.lengthInBytes
+                : data.lengthInBytes); // Get the largest length
+        ++i) {
+      if (i >= data.lengthInBytes) {
+        differences.addAddition(i, other.data.getUint8(i));
+      } else if (i >= other.data.lengthInBytes) {
+        differences.addDeletion(i, data.getUint8(i));
       } else if (data.getUint8(i) != other.data.getUint8(i)) {
-        differences[i] = data.getUint8(i);
+        differences.addChange(i, data.getUint8(i), other.data.getUint8(i));
       }
     }
     return differences;
@@ -315,5 +323,32 @@ class Plasma {
       }
     }
     return null;
+  }
+}
+
+enum ChangeOrigin { from, to }
+
+class DifferenceMap {
+  Map<int, Map<ChangeOrigin, int>> changes = {};
+  Map<int, int> additions = {};
+  Map<int, int> deletions = {};
+
+  void addChange(int address, int from, int to) {
+    changes[address] = {ChangeOrigin.from: from, ChangeOrigin.to: to};
+  }
+
+  void addAddition(int address, int value) {
+    additions[address] = value;
+  }
+
+  void addDeletion(int address, int value) {
+    deletions[address] = value;
+  }
+
+  bool isChanged(int byteAddress) {
+    if (changes.containsKey(byteAddress)) {
+      return true;
+    }
+    return false;
   }
 }

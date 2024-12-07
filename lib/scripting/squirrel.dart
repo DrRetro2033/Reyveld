@@ -1,18 +1,23 @@
 import 'dart:ffi';
 import 'dart:io' show Platform;
+import 'package:arceus/arceus.dart';
 import 'package:ffi/ffi.dart' as ffi;
 import 'package:talker/talker.dart';
 import '../extensions.dart';
 
 import 'squirrel_bindings_generated.dart';
 
-DynamicLibrary _getDylib(String path) {
+DynamicLibrary _getDylib() {
+  if (const bool.fromEnvironment('DEBUG', defaultValue: true)) {
+    return DynamicLibrary.open(
+        "${const String.fromEnvironment('LIBRARY_PATH', defaultValue: 'C://Repos/arceus/')}/squirrel.dll");
+  }
   if (Platform.isMacOS) {
     throw Exception("MacOS is not supported yet.");
   } else if (Platform.isLinux) {
-    return DynamicLibrary.open("$path/squirrel.so");
+    return DynamicLibrary.open("${Arceus.getLibraryPath()}/lib/squirrel.so");
   } else if (Platform.isWindows) {
-    return DynamicLibrary.open("$path/squirrel.dll");
+    return DynamicLibrary.open("${Arceus.getLibraryPath()}/squirrel.dll");
   }
   throw Exception("Unsupported platform.");
 }
@@ -41,7 +46,7 @@ class Squirrel {
   /// # `static` void init(String pathToLibraries)
   /// ## Initializes the Squirrel libraries.
   static init(String pathToLibraries) {
-    bindings = SquirrelBindings(_getDylib(pathToLibraries));
+    bindings = SquirrelBindings(_getDylib());
     isInitialized = true;
   }
 

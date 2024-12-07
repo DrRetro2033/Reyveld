@@ -32,7 +32,7 @@ class HexEditor {
 
   /// # final `Map<int, int>` differences
   /// ## The differences between the primary file and the secondary file.
-  Map<int, int> differences = {};
+  DifferenceMap differences = DifferenceMap();
 
   /// # final `KeyboardInput` keyboard
   /// ## The keyboard input handler.
@@ -377,7 +377,7 @@ class HexEditor {
     }
     if (_primaryFile.unsavedChanges().containsKey(byteAddress)) {
       value = value.brightYellow;
-    } else if (differences.containsKey(byteAddress)) {
+    } else if (differences.isChanged(byteAddress)) {
       value = value.brightCyan;
     }
     return value;

@@ -319,12 +319,15 @@ class Star {
   }
 
   /// # `List<Star>` getDeepSiblings()
-  /// ## Returns a list of all siblings of the star at the same depth, including the star itself.
+  /// ## Returns a list of all of the siblings at the same depth as this star, including this star.
   List<Star> getDeepSiblings() {
-    int depth = getDepth();
-    int index = getIndex();
+    int depth = getDepth(); // Get the depth of this star.
+    int index =
+        getIndex(); // Get the index of this star (i.e. where is it relative to its siblings?)
     while (depth > 0) {
+      // While the depth is greater than 0 (i.e. not the root star)
       if (constellation.starmap!.existBesideCoordinates(depth, index)) {
+        // Are there siblings right next to this star at this depth? If so, then we are done.
         break;
       }
       depth--;
@@ -343,7 +346,9 @@ class Star {
     below = below == 0 ? 1 : below;
     List<Star> siblings = getDeepSiblings();
     int offset = above ??
-        -below!; // If above is null, then below is not null. above will be positive, and below will be negative.
-    return siblings[(getIndex() + offset) % siblings.length];
+        -below!; // If above is null, then below is not null. above will add to the index, while below will subtract.
+    return siblings[(getIndex() + offset) %
+        siblings
+            .length]; // I ❤️ modulo. It's almost magic how easily it can wrap a index around to a vaild range.
   }
 }

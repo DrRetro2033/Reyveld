@@ -129,17 +129,22 @@ class Constellation {
   void load() {
     File file = File("$constellationPath/starmap");
     if (file.existsSync()) {
-      fromJson(jsonDecode(file.readAsStringSync()));
+      _fromJson(jsonDecode(file.readAsStringSync()));
     }
   }
 
-  void fromJson(Map<String, dynamic> json) {
+  /// # `void` fromJson(`Map<String, dynamic>` json)
+  /// ## Converts the JSON data into the data for the constellation.
+  /// This is used when loading the constellation from disk, and is internal, so do not call it directly.
+  void _fromJson(Map<String, dynamic> json) {
     name = json["name"];
     starmap = Starmap(this, map: json["map"]);
   }
 
+  /// # `Map<String, dynamic>` toJson()
+  /// ## Converts the constellation into a JSON map.
+  /// This is used when saving the constellation to disk, and is internal, so do not call it directly.
   Map<String, dynamic> toJson() => {"name": name, "map": starmap?.toJson()};
-  // ============================================================================
 
   /// # `String?` grow(`String` name)
   /// ## Creates a new star with the given name and returns the hash of the new star at the current star.
@@ -147,6 +152,9 @@ class Constellation {
     return starmap?.currentStar?.createChild(name, force: force);
   }
 
+  /// # `void` delete()
+  /// ## Deletes the constellation from disk.
+  /// This will also delete all of the stars in the constellation.
   void delete() {
     Arceus.removeConstellation(name);
     constellationDirectory.deleteSync(recursive: true);
@@ -192,12 +200,6 @@ class Constellation {
   /// Returns `true` if the constellation exists, `false` otherwise.
   static bool checkForConstellation(String path) {
     return Directory("$path/.constellation").existsSync();
-  }
-
-  void displayAddOns() {
-    for (var file in addonDirectory.listSync()) {
-      print('- ${file.path.fixPath().split("/").last.split(".").first}');
-    }
   }
 }
 
@@ -250,6 +252,8 @@ class Starmap {
     }
   }
 
+  /// # `List<String>` _getEndingHashes()
+  /// ## Returns a list of all hashes of stars that have no children, which means they are endings.
   List<String> _getEndingHashes() {
     List<String> endings = [];
     for (String hash in childMap.keys) {
@@ -260,6 +264,9 @@ class Starmap {
     return endings;
   }
 
+  /// # `Star` getMostRecentStar()
+  /// ## Returns the most recent star in the constellation.
+  /// Will first get all the ending stars, then find the one with the most recent creation date.
   Star getMostRecentStar() {
     List<String> endings = _getEndingHashes();
     if (endings.isEmpty) {
@@ -275,21 +282,21 @@ class Starmap {
     return mostRecentStar;
   }
 
-  /// # `operator` `[]` jumpTo(`Star` star)
+  /// # `operator` [](`Star` star)
   /// ## Get the star with the given hash.
   /// Pass a hash to get the star with that hash.
   /// There are some keywords that you can use instead of a hash. Any keywords below can be chained together with `;`:
   /// - `root`: The root star
   /// - `recent`: The most recent star
   /// - `back`: The parent of the current star. Will be clamped to the root star.
-  /// - `back X`: The Xth parent of the current star. Will be clamped to the root star.
+  /// - `back X`: Will return the first child of every star preceeding the current star by X. Will be clamped to the the root star.
   /// - `forward`: Will return the first child from the current star. Will be clamped to any ending stars.
-  /// - `forward X`: Will return the Xth child from the current star. Will be clamped to any ending stars.
+  /// - `forward X`: Will return the first child of every star proceeding the current star by X. Will be clamped to any ending stars.
   /// - `above`: The sibling above the current star. If the sibling doesn't exist, it will try and find a sibling of one of its parents. If that doesn't exist, it will return the root star.
   /// - `above X`: The Xth sibling above the current star. If the sibling doesn't exist, it will try and find a sibling of one of its parents. If that doesn't exist, it will return the root star.
   /// - `below`: The sibling below the current star. If the sibling doesn't exist, it will try and find a sibling of one of its parents. If that doesn't exist, it will return the root star.
   /// - `below X`: The Xth sibling below the current star. If the sibling doesn't exist, it will try and find a sibling of one of its parents. If that doesn't exist, it will return the root star.
-  /// - `next X`: Will return the Xth child from the current star. Will be clamped to a vaild index of the current star's children.
+  /// - `next X`: Will return the Xth child of the current star. Will be wrapped to a vaild index of the current star's children.
   operator [](Object hash) {
     if (hash is String) {
       List<String> commands = hash.split(";");
