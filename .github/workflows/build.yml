@@ -50,7 +50,9 @@ jobs:
           - os: windows-latest
             platform: windows
             output: arceus.exe
-            add-command: "cp ./src/squirrel3/squirrel/Debug/squirrel.dll ./scripts/installers/windows/lib/squirrel.dll && cp -r --force ./scripts/installers/windows/ ./build/releases/"
+            add-command:
+              "Copy-Item -Path ./src/squirrel3/squirrel/Debug/squirrel.dll -Destination ./scripts/installers/windows/lib/squirrel.dll -Force &&
+              Copy-Item -Recurse -Path ./scripts/installers/windows/ -Destination ./build/releases/ -Force"
           - os: macos-latest
             platform: macos
             output: arceus.app
