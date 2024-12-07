@@ -23,7 +23,7 @@ jobs:
         run: dart pub get .
       - name: Make Build Directories
         run: "mkdir -p build/releases/${{ matrix.platform }} ||
-          mkdir -p ./scripts/installers/${{ matrix.platform }}/lib"
+          mkdir ./scripts/installers/${{ matrix.platform }}/lib"
       - name: Build Executable
         run: dart compile exe ./lib/main.dart --target-os ${{ matrix.platform }} -o build/releases/${{ matrix.platform }}/${{ matrix.output}}
       - name: Build Squirrel
