@@ -54,8 +54,8 @@ class Cli {
 
   /// # static `void` moveCursorToBottomLeft()
   /// ## Moves the cursor to the bottom left of the terminal.
-  static void moveCursorToBottomLeft() {
-    stdout.write("\x1B[${stdout.terminalLines};1H");
+  static void moveCursorToBottomLeft([int offset = 0]) {
+    stdout.write("\x1B[${stdout.terminalLines - offset};1H");
   }
 
   /// # static `void` moveCursorToBottomRight()
@@ -135,6 +135,10 @@ class KeyboardInput {
   /// # `void` dispose()
   /// ## Disposes of the keyboard input handler.
   void dispose() {
+    _controller.close();
+    _isolate?.kill();
+    _isolate = null;
+    _cap = null;
     _controller.close();
   }
 

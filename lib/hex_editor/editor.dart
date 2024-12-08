@@ -53,11 +53,6 @@ class HexEditor {
   /// Defaults to `Endian.little`.
   Endian dataEndian = Endian.little;
 
-  /// # static const `int` _minDataHeight`
-  /// ## The minimum height of everything other than the byte viewer.
-  /// Should be replaced with something more dynamic.
-  static const int _minDataHeight = 7;
-
   /// # `int` address
   /// ## The current address being viewed/edited.
   int address = 0;
@@ -89,7 +84,7 @@ class HexEditor {
 
   /// # `List<int>` byte64Color
   /// ## The color label for a 64-bit range.
-  final List<int> byte64Color = [80, 80, 80];
+  final List<int> byte64Color = [60, 60, 60];
 
   HexEditor(this._primaryFile) {
     if (_primaryFile.isTracked()) {
@@ -115,25 +110,41 @@ class HexEditor {
   void render() {
     Cli.moveCursorToTopLeft();
     Cli.clearTerminal();
-    // console.clearScreen();
-
     Cli.moveCursorToTopLeft();
-    stdout.write(_primaryFile.getFilename().italic);
+    final header = getHeader();
+
+    final footer = getFooter();
+    int linesUsedByHeader = header.split('\n').length;
+    int linesUsedByFooter = footer.split('\n').length;
+    stdout.write(header);
+    stdout.write("\n");
+    stdout.write(getBody(
+        (Cli.windowHeight - linesUsedByFooter) - linesUsedByHeader + 5));
+    Cli.moveCursorToBottomLeft(linesUsedByFooter - 1);
+    stdout.write(footer);
+  }
+
+  /// # `String` getHeader()
+  /// ## Get the header of the editor.
+  String getHeader() {
+    String header = "";
+    header += _primaryFile.getFilename().italic;
     if (_primaryFile.isTracked()) {
-      stdout.write(" (Tracked)");
+      header += " (Tracked)";
     }
     if (currentView == Views.byteViewer) {
-      stdout.write(" - Ctrl+Q to quit. Ctrl+S to save.");
+      header += " - Ctrl+Q to quit. Ctrl+S to save.";
     }
+    return header;
+  }
 
-    stdout.writeln();
-    stdout.write(renderBody());
-    stdout.writeln();
-
+  /// # `String` getFooter()
+  /// ## Get the footer of the editor.
+  String getFooter() {
+    String footer = "";
     // Write address at bottom left.
-    Cli.moveCursorToBottomLeft();
-    stdout.write("A".underline.bold);
-    stdout.write("ddress: ");
+    footer += "A".underline.bold;
+    footer += "ddress: ";
     if (currentView == Views.jumpToAddress) {
       if (_currentValue != null) {
         int? x;
@@ -144,48 +155,62 @@ class HexEditor {
         }
 
         if (x != null && x >= 0 && x < data.lengthInBytes) {
-          stdout.write(_currentValue!.bgBrightMagenta.black);
+          footer += _currentValue!.bgBrightMagenta.black;
         } else {
-          stdout.write(_currentValue!.bgBrightRed.black);
+          footer += _currentValue!.bgBrightRed.black;
           error = true;
         }
       } else {
-        stdout.write("0x${address.toRadixString(16)}".bgBrightMagenta.black);
+        footer += "0x${address.toRadixString(16)}".bgBrightMagenta.black;
       }
     } else {
-      stdout.write("0x${address.toRadixString(16)}");
+      footer += "0x${address.toRadixString(16)}";
     }
-    stdout.write(" ");
-    stdout.write(getValues(address));
+    footer += " | Line: ${getLineAddress()} ";
+    footer += getValues(address);
+    return footer;
+  }
+
+  int getLineAddress() {
+    return ((address) >> 1 << 1) ~/ 16;
+  }
+
+  int getFileSizeInLines() {
+    return (((data.lengthInBytes) >> 1 << 1) / 16).ceil();
   }
 
   /// # `String` renderBody()
   /// ## Render the bytes as the body of the editor.
-  String renderBody() {
+  String getBody(int usableRows) {
     final full = StringBuffer();
     final body = StringBuffer();
+    usableRows -= 8;
+    int startLine = 0;
+    int endLine = (getFileSizeInLines());
+    if (usableRows < getFileSizeInLines()) {
+      int linesAboveBelow = usableRows ~/ 2;
+      startLine = getLineAddress() - linesAboveBelow;
+      endLine = getLineAddress() + linesAboveBelow;
 
-    // Calculate start and end lines
-    int usableRows = Cli.windowHeight - _minDataHeight;
-    int linesAboveBelow = usableRows ~/ 2;
-    int startLine = (address ~/ 16) - linesAboveBelow;
-    int endLine = (address ~/ 16) + linesAboveBelow;
-
-    // Adjust start and end to ensure full screen is used
-    if (startLine < 0) {
-      startLine = 0;
-      endLine = startLine + usableRows;
-    } else if (endLine >= ((data.lengthInBytes / 16).ceil())) {
-      endLine = (data.lengthInBytes / 16).ceil();
-      startLine = endLine - usableRows;
-      if (startLine < 0) startLine = 0; // Ensure we don't go below zero
+      // Adjust start and end to ensure full screen is used
+      if (startLine < 0) {
+        endLine += startLine.abs();
+        startLine = 0;
+      }
+      if (endLine > getFileSizeInLines()) {
+        startLine -= endLine - getFileSizeInLines();
+        endLine = getFileSizeInLines();
+      }
     }
 
     full.write("\t\t00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n"
         .padLeft(8, " ")); // Address Headers
-    for (int x = startLine * 16 < 0 ? 0 : startLine * 16;
+    for (int x = startLine * 16;
         x < data.lengthInBytes && x < endLine * 16;
         x += 16) {
+      if (usableRows <= 0) {
+        break;
+      }
       // 16 bytes per line, with a gap between every eight bytes.
       final line = StringBuffer(""); // The line to be printed
       line.write("${x.toRadixString(16).padLeft(8, "0")}\t"); // Address Labels
@@ -231,8 +256,9 @@ class HexEditor {
         }
       }
       body.write("${line.toString()}\n");
+      usableRows--;
     }
-    if (startLine != 0) {
+    if (startLine > 0) {
       //Notifies user that there is more data above
       full.write("\t".padLeft(16, " "));
       full.write("───────────────────────^───────────────────────\n");
@@ -240,7 +266,7 @@ class HexEditor {
       full.write("\n");
     }
     full.write(body.toString());
-    if (endLine < ((data.lengthInBytes / 16).ceil())) {
+    if (endLine < getFileSizeInLines()) {
       //Notifies user that there is more data below
       full.write("\t".padLeft(16, " "));
       full.write("───────────────────────v───────────────────────\n");
@@ -345,6 +371,7 @@ class HexEditor {
           break;
       }
       if (value == null || header == null) {
+        //If there is no value or header, that means it is not availabe during this frame.
         continue;
       }
       if (currentView == Views.dataFooter && currentFormat == format) {
@@ -358,7 +385,12 @@ class HexEditor {
     }
     if (currentView != Views.dataFooter) {
       values.write("Press E to edit any of these values.");
+      values.write("\n");
+      values.write("Ctrl+".underline.bold);
+      values.write("E".underline.bold);
+      values.write("ndian: ${dataEndian == Endian.little ? "Little" : "Big"}");
     }
+
     return values.toString();
   }
 
@@ -410,6 +442,9 @@ class HexEditor {
       return quit;
     }
     switch (key.controlChar) {
+      case ControlCharacter.ctrlE:
+        dataEndian = dataEndian == Endian.little ? Endian.big : Endian.little;
+        render();
       case ControlCharacter.arrowUp:
         if (!(address - 0x10 < 0)) {
           address -= 0x10;
