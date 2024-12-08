@@ -53,8 +53,8 @@ jobs:
             add-command:
               "Copy-Item -Path ./src/squirrel3/squirrel/Debug/squirrel.dll -Destination ./scripts/installers/windows/lib/squirrel.dll -Force &&
               Copy-Item -Recurse -Path ./scripts/installers/windows/ -Destination ./build/releases/ -Force"
-          - os: macos-latest
-            platform: macos
-            output: arceus.app
-            path-to-squirrel-library: ./src/squirrel3/squirrel/libsquirrel.so
-            rename-squirrel-to: squirrel.dylib
+          # - os: macos-latest
+          #   platform: macos
+          #   output: arceus.app
+          #   path-to-squirrel-library: ./src/squirrel3/squirrel/libsquirrel.so
+          #   rename-squirrel-to: squirrel.dylib

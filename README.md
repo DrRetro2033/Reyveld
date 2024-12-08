@@ -9,9 +9,7 @@
 
 # What is Arceus?
 
-Arceus is a brand-new CLI save manager and editor inspired by version control software like Git. It's designed to provide an easy-to-manage location for your game saves.
-
-# Features
+Arceus designed from the ground up to be the ultimate save manager and editor for every game under the sun! Not just Pokémon!
 
 ## Branch Off Into Different Timelines 🌌
 
@@ -27,18 +25,19 @@ Multiple people can play the same game, even if it’s not designed for switchin
 
 ## Go Beyond with Add-Ons 📦
 
-Arceus includes Lua (thanks to lua_dardo), enabling you to edit saves for virtually any game easily.
-
+Arceus intergrates Squirrel, enabling anyone to add new functionality to Arceus. Add-ons make it easy to read and write to files, intergrate game launchers like Steam, and so much more!
 > [!NOTE]
 > In the future, I plan to add built-in functionality for easier transfer tool creation, similar to Pokémon Bank. For now, you’ll need to build your own transfer tools.
 
 ## Built-In Hex Editor #️⃣
 
-Arceus includes a CLI hex editor you can use to edit saves, view changes, and test plugins.
+Arceus includes a CLI hex editor you can use to edit saves, view changes, and test plugins!
+
+![alt text](images/image.png)
 
 ## Tiny Size 📁
 
-Arceus requires no external libraries not already compiled with the app, so it has a small footprint on your computer. And as a bonus—no DLLs to worry about!
+Arceus requires no extra downloads to work, and fits into less than three megabytes!
 
 ## Cross Platform 🖥️📱
 
@@ -60,21 +59,21 @@ Click the badge below to download the latest artifact.
 # Planned Features for the Future
 
 ## Frontend GUI 🖱️
-Create a frontend for Arceus to make it even simpler to use.
+Create a GUI frontend for Arceus to make it even simpler to use.
 
 ## Save on Close ❌
-Whenever you close a game, Arceus will “grow a star,” ensuring you can return to a previous save, even if you forget to use Arceus.
+Whenever you close a game, Arceus will grow a star from the current, ensuring you can return to a previous save without lifting a finger.
 
 ## Cloud Backups ☁️
 Transfer your game saves between devices and keep them safe from data loss.
 
 |Planned | Service |
 | --- | --- |
-| ✅ | Google Drive |
-| ✅ | OneDrive |
-| ⚠️ | Dropbox |
-| ⚠️ | Self-hosted |
-| ❌ | iCloud |
+| ✅ Yes| Google Drive |
+| ✅ Yes| OneDrive |
+| ⚠️ Maybe| Dropbox |
+| ⚠️ Maybe| Self-hosted |
+| ❌ Unlikely| iCloud |
 
 # Use Cases
 

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:ansix/ansix.dart';
 
@@ -54,12 +55,11 @@ class Constellation {
         name != null &&
         Arceus.doesConstellationExist(name: name)) {
       path = Arceus.getConstellationPath(name)!;
-    } else {
-      path = path;
     }
     this.path = path!.fixPath();
     userIndex = UserIndex(constellationPath);
     if (constellationDirectory.existsSync()) {
+      // If the constellation already exists, then load
       load();
       if (starmap?.currentStarHash == null) {
         starmap?.currentStarHash = starmap?.rootHash;
@@ -70,12 +70,14 @@ class Constellation {
       }
       return;
     } else if (name != null) {
+      // If the constellation does not exist, then create it with the provided name
       this.name = name;
       _createConstellationDirectory();
       userIndex?.createUsers(users);
       starmap = Starmap(this);
       _createRootStar();
       save();
+      Arceus.addConstellation(this.name, path);
       return;
     }
     throw Exception(
@@ -126,6 +128,9 @@ class Constellation {
     file.writeAsStringSync(jsonEncode(toJson()));
   }
 
+  /// # `void` load()
+  /// ## Loads the constellation from disk.
+  /// This includes the root star and the current star hashes.
   void load() {
     File file = File("$constellationPath/starmap");
     if (file.existsSync()) {
@@ -140,6 +145,8 @@ class Constellation {
     name = json["name"];
     starmap = Starmap(this, map: json["map"]);
   }
+
+  // ============================================================================
 
   /// # `Map<String, dynamic>` toJson()
   /// ## Converts the constellation into a JSON map.
@@ -162,10 +169,9 @@ class Constellation {
   }
 
   /// # `void` trim()
-  /// ## Trims the current star and all of its children.
-  /// This will not discard any changes in files, BUT will destroy previous changes in files.
-  void trim() {
-    starmap?.currentStar?.trim();
+  /// ## Trims the given or current star and all of its children out of the tree.
+  void trim([Star? star]) {
+    starmap?.trim(star);
   }
 
   /// # `void` resetToCurrentStar()
@@ -190,9 +196,9 @@ class Constellation {
   /// # `bool` checkForDifferences()
   /// ## Checks if the constellation has differences between the current star and the root star.
   /// Returns `true` if there are differences, `false` otherwise.
-  bool checkForDifferences() {
+  bool checkForDifferences([bool showResults = false]) {
     Star star = Star(this, hash: starmap?.currentStarHash);
-    return Dossier(star).checkForDifferences();
+    return Dossier(star).checkForDifferences(showResults);
   }
 
   /// # `bool` checkForConstellation(`String` path)
@@ -252,30 +258,18 @@ class Starmap {
     }
   }
 
-  /// # `List<String>` _getEndingHashes()
-  /// ## Returns a list of all hashes of stars that have no children, which means they are endings.
-  List<String> _getEndingHashes() {
-    List<String> endings = [];
-    for (String hash in childMap.keys) {
-      if (childMap[hash]!.isEmpty && hash.isNotEmpty) {
-        endings.add(hash);
-      }
-    }
-    return endings;
-  }
-
   /// # `Star` getMostRecentStar()
-  /// ## Returns the most recent star in the constellation.
+  /// ## Returns the most recent star that was created in the constellation.
   /// Will first get all the ending stars, then find the one with the most recent creation date.
   Star getMostRecentStar() {
-    List<String> endings = _getEndingHashes();
+    List<Star> endings = getEndings();
     if (endings.isEmpty) {
       throw Exception("WHAT? How are there no ending stars?");
     }
-    Star mostRecentStar = Star(constellation, hash: endings[0]);
+    Star mostRecentStar = endings.first;
     for (int i = 1; i < endings.length; i++) {
-      Star star = Star(constellation, hash: endings[i]);
-      if (mostRecentStar.createdAt!.compareTo(star.createdAt!) > 0) {
+      Star star = endings[i];
+      if (mostRecentStar.createdAt!.compareTo(star.createdAt!) < 0) {
         mostRecentStar = star;
       }
     }
@@ -299,7 +293,7 @@ class Starmap {
   /// - `next X`: Will return the Xth child of the current star. Will be wrapped to a vaild index of the current star's children.
   operator [](Object hash) {
     if (hash is String) {
-      List<String> commands = hash.split(";");
+      List<String> commands = hash.split(",");
       Star current = currentStar!;
       for (String command in commands) {
         if (command == "recent") {
@@ -363,6 +357,7 @@ class Starmap {
   /// ## Returns a JSON map of the starmap.
   /// This is used when saving the starmap to disk.
   Map<dynamic, dynamic> toJson() {
+    childMap.removeWhere((key, value) => value.isEmpty);
     return {
       "root": rootHash,
       "current": currentStarHash,
@@ -449,27 +444,28 @@ class Starmap {
   /// # `void` trim(`Star` star)
   /// ## Trims the given star and all of its children.
   /// This will not discard any changes in files, BUT will destroy previous changes in files.
-  void trim(Star star) {
-    if (star.isRoot) {
-      throw Exception(
-          "Cannot trim the root star. If you want to delete the constellation, call the delete() method in the constellation and not the star.");
-    }
-    List<Star> ancestors = star.getAncestors();
-    for (Star ancestor in ancestors) {
-      removeFromTree(ancestor);
-    }
-    removeFromTree(star);
+  void trim([Star? star]) {
+    star ??= currentStar!; // If no star is given, use the current star.
+    star.parent!.makeCurrent();
+    star.trim(); // Calls the trim function on the star.
     constellation.save();
   }
 
-  /// # `void` removeFromTree(`Star` star)
-  /// ## Removes the given star from the starmap, for serialization.
-  void removeFromTree(Star star) {
+  /// # `void` sterilizeStar(`Star` star)
+  /// ## Will safely remove the given star's relationships from the starmap. Remember to call `save()` in the constellation afterwards.
+  void sterilizeStar(Star star) {
     if (star.isRoot) {
-      throw Exception("Cannot remove the root star from tree.");
+      throw Exception("Cannot sterilize the root star!");
     }
+    _removeFromTree(star);
+  }
+
+  void _removeFromTree(Star star) {
     star.parent?.removeChild(star);
-    parentMap.remove(star.hash!);
+    parentMap.remove(star.hash);
+    if (childMap.containsKey(star.hash)) {
+      childMap.remove(star.hash);
+    }
   }
 
   /// # `List<Star>` getStarsAtDepth(`int` depth)
@@ -488,6 +484,23 @@ class Starmap {
       depth--;
     }
     return stars;
+  }
+
+  List<Star> getEndings() {
+    List<Star> endings = [];
+    List<Star> stars = [root!];
+    while (stars.isNotEmpty) {
+      List<Star> newStars = [];
+      for (Star star in stars) {
+        if (star.hasNoChildren) {
+          endings.add(star);
+        } else {
+          newStars.addAll(star.children);
+        }
+      }
+      stars = newStars;
+    }
+    return endings;
   }
 
   /// # `bool` existAtCoordinates(`int` depth, `int` index)

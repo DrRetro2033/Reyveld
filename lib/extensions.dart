@@ -25,7 +25,7 @@ extension Compression on String {
     return replaceFirst("$relativeTo\\", "").fixPath();
   }
 
-  /// # `String` fromHexToCodes(`String` path)
+  /// # `String` fromHexToCodes()
   /// ## Converts a hex string to character codes.
   /// This is used to convert a readable hex string to a character codes, to save space in files.
   String fromHexToCodes() {
@@ -40,13 +40,13 @@ extension Compression on String {
     throw Exception("Invalid hex string.");
   }
 
-  /// # `String` fromCodesToHex(`String` path)
+  /// # `String` fromCodesToHex()
   /// ## Converts character codes to a hex string.
   /// This is used to convert character codes to a readable hex string, to decrypt Strings from `fromHexToCodes()`.
   String fromCodesToHex() {
     String finalString = "";
     for (int i = 0; i < length; ++i) {
-      finalString += codeUnitAt(i).toRadixString(16);
+      finalString += codeUnitAt(i).toRadixString(16).padLeft(2, "0");
     }
     return finalString;
   }

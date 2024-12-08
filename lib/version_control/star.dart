@@ -12,6 +12,9 @@ import 'dossier.dart';
 /// A `.star` file literally is just a ZIP file, so you can open them in 7Zip or WinRAR.
 class Star {
   Constellation constellation; // The constellation the star belongs to.
+  Starmap get starmap =>
+      constellation.starmap!; // The starmap of the constellation.
+
   String? name; // The name of the star.
   String? hash; // The hash of the star.
   DateTime? createdAt; // The time the star was created.
@@ -27,7 +30,7 @@ class Star {
 
   /// # `List<Star>` children
   /// ## Returns a list of all children of this star from the starmap contained in the constellation.
-  List<Star> get children => constellation.starmap!.getChildren(this);
+  List<Star> get children => starmap.getChildren(this);
 
   /// # `int` childIndex
   /// ## Returns the index of this star in its parent's children list.
@@ -42,9 +45,13 @@ class Star {
   /// ## Does this star only have a single child?
   bool get singleChild => children.length == 1;
 
-  /// # `bool` isSingleParent
+  /// # `bool` hasNoChildren
   /// ## Does this star have no children?
-  bool get isSingleParent => children.isEmpty;
+  bool get hasNoChildren => children.isEmpty;
+
+  /// # `bool` hasChildren
+  /// ## Does this star have children?
+  bool get hasChildren => children.isNotEmpty;
 
   /// # `bool` isCurrent
   /// ## Is this star the current star?
@@ -57,11 +64,6 @@ class Star {
   /// # `bool` isSingleChild
   /// ## Is this star a single child?
   bool get isSingleChild => parent != null ? parent!.singleChild : false;
-
-  /// # `Archive` get archive
-  /// ## Returns the archive of the star.
-  /// The archive is a ZIP file, so you can open it in 7Zip or WinRAR.
-  Archive get archive => getArchive();
 
   /// # `Star`(`Constellation` constellation, {`String?` name, `String?` hash, `User?` user})
   /// ## Creates a new star.
@@ -114,7 +116,7 @@ class Star {
   /// ## Creates a new star with the given name.
   /// It returns the hash of the new star.
   String createChild(String name, {bool force = false}) {
-    if (!constellation.checkForDifferences() && !force) {
+    if (!force && !constellation.checkForDifferences()) {
       throw Exception(
           "Cannot create a child star when there are no differences. Please make changes and try again.");
     }
@@ -136,16 +138,19 @@ class Star {
   /// # `void` _load()
   /// ## Loads the star from disk.
   void _load() {
+    Archive archive = getArchive();
     ArchiveFile? file = archive.findFile("star");
     _fromStarFileData(utf8.decode(file!.content));
+    archive.clearSync();
   }
 
   /// # `void` _extract()
   /// ## Extracts the star from the archive.
   /// This is used when jumping to an existing star.
   void _extract() {
+    Archive archive = getArchive();
     constellation.clear();
-    for (ArchiveFile file in getArchive().files) {
+    for (ArchiveFile file in archive.files) {
       if (file.isFile && file.name != "star") {
         final x = File("${constellation.path}/${file.name}");
         if (!x.existsSync()) {
@@ -154,6 +159,7 @@ class Star {
         x.writeAsBytesSync(file.content);
       }
     }
+    archive.clearSync();
   }
 
   /// # `void` makeCurrent()
@@ -166,6 +172,8 @@ class Star {
 
   /// # `Archive` getArchive()
   /// ## Returns the archive of the star.
+  /// ALWAYS, ALWAYS, ALWAYS call `clearSync()` on the archive after using it.
+  /// If you don't, then trimming the star will not work, and will throw an access error.
   Archive getArchive() {
     final inputStream = InputFileStream(constellation.getStarPath(hash!));
     final archive = ZipDecoder().decodeBuffer(inputStream);
@@ -197,14 +205,14 @@ class Star {
   /// ## Returns the most recent star in the constellation.
   /// If the star has no children, it returns itself.
   Star getMostRecentStar() {
-    if (constellation.starmap!.getChildren(this).isEmpty) {
+    if (starmap.getChildren(this).isEmpty) {
       return this;
     }
-    if (constellation.starmap!.getChildren(this).length == 1) {
-      return constellation.starmap!.getChildren(this)[0].getMostRecentStar();
+    if (starmap.getChildren(this).length == 1) {
+      return starmap.getChildren(this)[0].getMostRecentStar();
     }
-    Star mostRecentStar = constellation.starmap!.getChildren(this)[0];
-    for (Star child in constellation.starmap!.getChildren(this)) {
+    Star mostRecentStar = starmap.getChildren(this)[0];
+    for (Star child in starmap.getChildren(this)) {
       if (child.createdAt!.isAfter(mostRecentStar.createdAt!)) {
         mostRecentStar = child;
       }
@@ -237,6 +245,12 @@ class Star {
     return ancestors;
   }
 
+  bool isChildOf(Star star) =>
+      star.children.any((element) => element.hash == hash);
+
+  bool isParentOf(Star star) =>
+      children.any((element) => element.hash == star.hash);
+
   bool isDescendantOf(Star star) {
     return getAncestors().contains(star);
   }
@@ -247,8 +261,13 @@ class Star {
 
   /// # `void` trim()
   /// ## Trims the star and all of its children.
-  /// TODO: Add logic to trim the star, and make a confirmation prompt.
-  void trim() {}
+  void trim() {
+    for (Star child in children) {
+      child.trim();
+    }
+    starmap.sterilizeStar(this);
+    _delete();
+  }
 
   /// # `void` _delete()
   /// ## Deletes the star from disk.
@@ -293,15 +312,14 @@ class Star {
   /// ## Returns the child star at the given index.
   ///
   Star getChild(int index) {
-    if (isSingleParent) {
+    if (hasNoChildren) {
       return this; // A failsafe in the case a star does not have any children.
     }
     // A safe guard for if any logic breaks in another function, and a index is out of bounds.
     if (index < 0) index = 0;
     if (index >= children.length) index = children.length - 1;
 
-    return Star(constellation,
-        hash: constellation.starmap!.childMap[hash!]![index]);
+    return Star(constellation, hash: starmap.childMap[hash!]![index]);
   }
 
   /// # `int` getDepth()
@@ -313,7 +331,7 @@ class Star {
   /// # `int` getIndex()
   /// ## Returns the index of the star in the starmap.
   int getIndex() {
-    return constellation.starmap!
+    return starmap
         .getStarsAtDepth(getDepth())
         .indexWhere((star) => star.hash == hash);
   }
@@ -326,13 +344,13 @@ class Star {
         getIndex(); // Get the index of this star (i.e. where is it relative to its siblings?)
     while (depth > 0) {
       // While the depth is greater than 0 (i.e. not the root star)
-      if (constellation.starmap!.existBesideCoordinates(depth, index)) {
+      if (starmap.existBesideCoordinates(depth, index)) {
         // Are there siblings right next to this star at this depth? If so, then we are done.
         break;
       }
       depth--;
     }
-    List<Star> stars = constellation.starmap!.getStarsAtDepth(depth);
+    List<Star> stars = starmap.getStarsAtDepth(depth);
     stars.removeAt(index);
     stars.insert(index, this);
     return stars;

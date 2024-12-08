@@ -25,7 +25,7 @@ class Dossier {
 
   /// # `bool` checkForDifferences()
   /// ## Checks to see if the star's contents is different from the current directory.
-  bool checkForDifferences() {
+  bool checkForDifferences([bool showResults = false]) {
     bool check =
         false; // The main check. If any of the preceding checks fail, this will be true, which means that there is a difference.
 
@@ -34,33 +34,40 @@ class Dossier {
     // 2. Check for removed files.
     // 3. Check for moved files.
     // 4. Check for changed files.
-
+    CliSpin? spinner;
     // Check for new files.
-    var spinner = CliSpin(text: " Checking for new files...").start();
+    if (showResults) {
+      spinner = CliSpin(text: " Checking for new files...").start();
+    }
+
     List<String> newFiles = listAddedFiles();
-    spinner.stop();
+    if (showResults) spinner!.stop();
     // Check for removed files.
-    spinner = CliSpin(text: " Checking for removed files...").start();
+    if (showResults) {
+      spinner = CliSpin(text: " Checking for removed files...").start();
+    }
     List<String> removedFiles = listRemovedFiles();
-    spinner.stop();
+    if (showResults) spinner!.stop();
 
     // Check for moved files. Done after new and removed files, as they can be used here to make a cross reference.
-    spinner = CliSpin(text: " Checking for moved files...").start();
+    if (showResults) {
+      spinner = CliSpin(text: " Checking for moved files...").start();
+    }
     Map<String, String> movedFiles = listMovedFiles(newFiles, removedFiles);
     if (movedFiles.isNotEmpty) {
       check = true;
-      spinner.stop();
+      spinner!.stop();
       for (String file in movedFiles.keys) {
         print("  $file $moveSymbol ${movedFiles[file]}");
       }
     } else {
-      spinner.success(" There are no moved files.");
+      spinner?.success(" There are no moved files.");
     }
 
     // Check for new files.
     if (newFiles.isNotEmpty) {
       check = true;
-      spinner.fail(" New files found:");
+      spinner?.fail(" New files found:");
       for (String file in newFiles) {
         if (movedFiles.containsValue(file)) {
           continue;
@@ -68,13 +75,13 @@ class Dossier {
         print("  $addSymbol $file");
       }
     } else {
-      spinner.success(" There are no new files.");
+      spinner?.success(" There are no new files.");
     }
 
     // Check for removed files.
     if (removedFiles.isNotEmpty) {
       check = true;
-      spinner.fail(" Removed files found:");
+      spinner?.fail(" Removed files found:");
       for (String file in removedFiles) {
         if (movedFiles.containsKey(file)) {
           continue;
@@ -82,20 +89,22 @@ class Dossier {
         print("  $removeSymbol $file");
       }
     } else {
-      spinner.success(" There are no removed files.");
+      spinner?.success(" There are no removed files.");
     }
 
     // Check for changed files.
-    spinner = CliSpin(text: " Checking for changed files...").start();
+    if (showResults) {
+      spinner = CliSpin(text: " Checking for changed files...").start();
+    }
     List<String> changedFiles = listChangedFiles(removedFiles);
     if (changedFiles.isNotEmpty) {
-      spinner.fail(" Changed files found:");
+      spinner?.fail(" Changed files found:");
       check = true;
       for (String file in changedFiles) {
         print("  $modifiedSymbol $file");
       }
     } else {
-      spinner.success(" There are no changed files.");
+      spinner?.success(" There are no changed files.");
     }
     return check;
   }
@@ -103,6 +112,7 @@ class Dossier {
   /// # `List<String>` listAddedFiles()
   /// ## Lists all files in the current directory that have been recently added.
   List<String> listAddedFiles() {
+    Archive archive = star.getArchive();
     List<String> newFiles = [];
     for (FileSystemEntity entity
         in star.constellation.directory.listSync(recursive: true)) {
@@ -110,27 +120,30 @@ class Dossier {
           (!entity.path
               .fixPath()
               .contains(star.constellation.constellationPath))) {
-        if (star.archive
+        if (archive
                 .findFile(entity.path.makeRelPath(star.constellation.path)) ==
             null) {
           newFiles.add(entity.path.makeRelPath(star.constellation.path));
         }
       }
     }
+    archive.clearSync();
     return newFiles;
   }
 
   /// # `List<String>` listRemovedFiles()
   /// ## Lists all files in the current directory that have been recently removed.
   List<String> listRemovedFiles() {
+    Archive archive = star.getArchive();
     List<String> removedFiles = [];
-    for (ArchiveFile file in star.archive.files) {
+    for (ArchiveFile file in archive.files) {
       if (file.isFile && file.name != "star") {
         if (!File("${star.constellation.path}/${file.name}").existsSync()) {
           removedFiles.add(file.name);
         }
       }
     }
+    archive.clearSync();
     return removedFiles;
   }
 
@@ -144,7 +157,7 @@ class Dossier {
         Plasma externalFile = Plasma.fromFile(File(
             "${star.constellation.path}/${newFiles.firstWhere((e) => e.getFilename() == file.getFilename())}"));
         Plasma internalFile = Plasma.fromStar(star, file);
-        if (externalFile == internalFile) {
+        if (!externalFile.checkForDifferences(internalFile)) {
           movedFiles[file] =
               newFiles.firstWhere((e) => e.getFilename() == file.getFilename());
         }
@@ -156,19 +169,21 @@ class Dossier {
   /// # `List<String>` listChangedFiles(`List<String>` removedFiles)
   /// ## Lists all files in the current directory that have been recently changed.
   List<String> listChangedFiles(List<String> removedFiles) {
+    Archive archive = star.getArchive();
     List<String> changedFiles = [];
-    for (ArchiveFile file in star.archive.files) {
+    for (ArchiveFile file in archive.files) {
       if (file.isFile &&
           file.name != "star" &&
           !removedFiles.contains(file.name)) {
         Plasma internalFile = Plasma.fromStar(star, file.name);
         Plasma externalFile =
             Plasma.fromFile(File("${star.constellation.path}/${file.name}"));
-        if (externalFile != internalFile) {
+        if (externalFile.checkForDifferences(internalFile)) {
           changedFiles.add(file.name);
         }
       }
     }
+    archive.clearSync();
     return changedFiles;
   }
 }
@@ -180,7 +195,7 @@ enum Origin { internal, external }
 
 /// # `class` `Plasma`
 /// ## A wrapper for the internal and external file systems.
-/// Its called plasma because its one of the building blocks of a star.
+/// Its called plasma because its the biggest building block of a star.
 class Plasma {
   Star? star; // The star the plasma is in (only used when plasma is internal).
   String?
@@ -199,16 +214,6 @@ class Plasma {
         .asByteData();
   }
 
-  @override
-  // ignore: hash_and_equals
-  operator ==(Object other) {
-    if (other is Plasma) {
-      return data.checkForDifferences(other.data);
-    } else {
-      return false;
-    }
-  }
-
   /// # `Plasma` fromFile(File file)
   /// ## Creates a new plasma from a file.
   /// The returned plasma will be an external plasma.
@@ -221,13 +226,16 @@ class Plasma {
   /// ## Creates a new plasma from a star and a path in the star.
   /// The returned plasma will be an internal plasma.
   factory Plasma.fromStar(Star star, String pathInStar) {
-    return Plasma(
-        (star.archive.findFile(pathInStar)!.content as Uint8List)
+    Archive archive = star.getArchive();
+    Plasma plasma = Plasma(
+        (archive.findFile(pathInStar)!.content as Uint8List)
             .buffer
             .asByteData(),
         Origin.internal,
         star: star,
         pathInStar: pathInStar);
+    archive.clearSync();
+    return plasma;
   }
 
   /// # `void` save()
@@ -297,11 +305,13 @@ class Plasma {
       } else if (i >= other.data.lengthInBytes) {
         differences.addDeletion(i, data.getUint8(i));
       } else if (data.getUint8(i) != other.data.getUint8(i)) {
-        differences.addChange(i, data.getUint8(i), other.data.getUint8(i));
+        differences.addModify(i, data.getUint8(i), other.data.getUint8(i));
       }
     }
     return differences;
   }
+
+  bool checkForDifferences(Plasma other) => getDifferences(other).hasChanges();
 
   /// # `Plasma?` findOlderVersion()
   /// ## Returns the older version of the plasma if it exists, or `null` if it doesn't.
@@ -329,12 +339,12 @@ class Plasma {
 enum ChangeOrigin { from, to }
 
 class DifferenceMap {
-  Map<int, Map<ChangeOrigin, int>> changes = {};
+  Map<int, Map<ChangeOrigin, int>> modifications = {};
   Map<int, int> additions = {};
   Map<int, int> deletions = {};
 
-  void addChange(int address, int from, int to) {
-    changes[address] = {ChangeOrigin.from: from, ChangeOrigin.to: to};
+  void addModify(int address, int from, int to) {
+    modifications[address] = {ChangeOrigin.from: from, ChangeOrigin.to: to};
   }
 
   void addAddition(int address, int value) {
@@ -345,8 +355,17 @@ class DifferenceMap {
     deletions[address] = value;
   }
 
-  bool isChanged(int byteAddress) {
-    if (changes.containsKey(byteAddress)) {
+  bool hasChanges() {
+    if (additions.isNotEmpty ||
+        deletions.isNotEmpty ||
+        modifications.isNotEmpty) {
+      return true;
+    }
+    return false;
+  }
+
+  bool isModified(int byteAddress) {
+    if (modifications.containsKey(byteAddress)) {
       return true;
     }
     return false;

@@ -377,7 +377,7 @@ class HexEditor {
     }
     if (_primaryFile.unsavedChanges().containsKey(byteAddress)) {
       value = value.brightYellow;
-    } else if (differences.isChanged(byteAddress)) {
+    } else if (differences.isModified(byteAddress)) {
       value = value.brightCyan;
     }
     return value;

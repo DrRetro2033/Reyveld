@@ -63,10 +63,11 @@ Future<dynamic> main(List<String> arguments) async {
     runner.addCommand(ConstellationDeleteCommand());
     runner.addCommand(UsersCommands());
     runner.addCommand(StartServerCommand());
+    runner.addCommand(TrimCommand());
   }
   runner.addCommand(DoesConstellationExistCommand());
   runner.addCommand(ReadFileCommand());
-  runner.addCommand(OpenFileCommand());
+  runner.addCommand(OpenFileInHexCommand());
   runner.addCommand(ArceusConstellationsCommand());
   runner.addCommand(AddonsCommand());
 
@@ -79,6 +80,9 @@ Future<dynamic> main(List<String> arguments) async {
   exit(0);
 }
 
+/// # `ArceusCommand`
+/// ## An abstract class that represents a command for the Arceus CLI.
+/// Use `getRest()` to get the user input.
 abstract class ArceusCommand extends Command {
   String getRest() {
     return argResults?.rest.join(" ") ?? "";
@@ -99,6 +103,10 @@ class CreateConstellationCommand extends ArceusCommand {
 
   @override
   void run() {
+    if (getRest().isEmpty) {
+      print("Please provide a name for the constellation!");
+      return;
+    }
     final spinner = CliSpin().start("Creating constellation...");
     try {
       List<String>? users = argResults?["user"];
@@ -117,7 +125,14 @@ class CreateConstellationCommand extends ArceusCommand {
 
 class ShowMapConstellationCommand extends ArceusCommand {
   @override
-  String get description => "Get the map of the constellation.";
+  String get summary => "Shows the map of the constellation.";
+
+  @override
+  String get description => """
+Shows the map of the constellation. 
+
+The current star is marked with ✨
+""";
 
   @override
   String get name => "map";
@@ -149,7 +164,7 @@ class CheckForDifferencesCommand extends ArceusCommand {
             text:
                 " Checking for differences between current directory and provided star...")
         .start();
-    bool result = constellation.checkForDifferences();
+    bool result = constellation.checkForDifferences(true);
     if (!result) {
       spinner.success(" No differences found.");
     } else {
@@ -161,8 +176,30 @@ class CheckForDifferencesCommand extends ArceusCommand {
 
 class ConstellationJumpToCommand extends ArceusCommand {
   @override
-  String get description =>
-      "Jumps to a different star in the constellation. Give a trailing hash to jump to a specific star.";
+  String get description => """
+Jumps to a different star in the constellation.
+
+Give it either a star hash, or use the commands below. Replace X with a number:
+- root: Jumps to the root star
+- recent: Jumps to the most recent star
+
+- back: Jumps to the parent of the current star. Will be clamped to the root star.
+- back X:  Will jump to the parent of every star preceeding the current star by X. Will be clamped to the the root star.
+- forward`: Will jump to the first child of the current star. Will be clamped to any ending stars.
+- forward X: Will jump to the Xth child of the current star. Will be clamped to a vaild index of the current star's children.
+
+- above: Jumps to the sibling above the current star. Will wrap around to lowest star.
+- above X: Will jump to the Xth sibling above the current star. Will wrap around to lowest star.
+- below: Jumps to the sibling below the current star. Will wrap around to highest star.
+- below X: Will jump to the Xth sibling above the current star. Will wrap around to lowest star.
+
+- `next X`: Will jump to the Xth child of the current star. Will be wrapped to a vaild index of the current star's children.
+
+You can also chain multiple commands together by adding a comma between each.
+""";
+
+  @override
+  String get summary => "Jumps to a different star in the constellation.";
 
   @override
   String get name => "jump";
@@ -186,7 +223,7 @@ class ConstellationJumpToCommand extends ArceusCommand {
         return;
       }
     }
-    CliSpin? spinner = CliSpin().start("Jumping to star...");
+    CliSpin? spinner = CliSpin().start(" Jumping to star...");
     if (argResults!.rest.isEmpty) {
       spinner.fail(" Please provide a star hash to jump to.");
       return;
@@ -196,7 +233,7 @@ class ConstellationJumpToCommand extends ArceusCommand {
     try {
       final star = constellation.starmap?[hash] as Star;
       star.makeCurrent();
-      spinner.success("Jumped to star \"${star.name}\".");
+      spinner.success(" Jumped to star \"${star.name}\".");
       if (argResults!["print"]) {
         constellation.starmap?.printMap();
       }
@@ -227,6 +264,9 @@ This will fail if there no changes to commit, unless '--force' is provided.""";
 
   @override
   void run() {
+    if (getRest().isEmpty) {
+      throw Exception("Please provide a name for the new star.");
+    }
     Constellation(path: Arceus.currentPath)
         .grow(getRest(), force: argResults!["force"]);
   }
@@ -234,8 +274,15 @@ This will fail if there no changes to commit, unless '--force' is provided.""";
 
 class TrimCommand extends ArceusCommand {
   @override
-  String get description =>
-      "Trims the branch at the current star. Will confirm before proceeding, unless --force is provided.";
+  String get summary => "Trims a star and its parents off of the starmap. ";
+
+  @override
+  String get description => """
+Trims the current star and its descendants off of the starmap.
+
+Trimming will discard all changes to tracked files, but will not destroy previous changes.
+Will confirm before proceeding, unless --force is provided.
+""";
   @override
   String get name => "trim";
 
@@ -248,7 +295,7 @@ class TrimCommand extends ArceusCommand {
     if (!argResults!["force"]) {
       final confirm = Confirm(
               prompt:
-                  "Are you sure you want to trim off the current star? (Will delete the current star and its children.)",
+                  "Are you sure you want to trim off the current star? (Will discard all changes to tracked files.)",
               defaultValue: false)
           .interact();
       if (!confirm) {
@@ -513,11 +560,11 @@ class ArceusConstellationsCommand extends ArceusCommand {
   }
 }
 
-class OpenFileCommand extends ArceusCommand {
+class OpenFileInHexCommand extends ArceusCommand {
   @override
   String get description => "Opens a file in the Héx Editor.";
   @override
-  String get name => "open";
+  String get name => "hex";
 
   @override
   Future<void> run() async {

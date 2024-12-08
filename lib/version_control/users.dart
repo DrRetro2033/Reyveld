@@ -93,7 +93,6 @@ class UserIndex {
 
 class User {
   static const int _lengthOfHash = 8;
-  static int get _lengthOfHashInFile => _lengthOfHash ~/ 2;
   UserIndex userIndex;
   String? _name;
   String get name => _name!;
