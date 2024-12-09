@@ -8,14 +8,13 @@ import '../uuid.dart';
 /// The user index is a file that contains all the users in Arceus.
 /// Right now, the index is unique to each constellation, however in the future, it will be shared across all constellations.
 class UserIndex {
-  static const String filenameOfUserIndex = "userindex";
   static const AnsiGridTheme gridTheme = AnsiGridTheme(
       headerTextTheme: AnsiTextTheme(
           backgroundColor: AnsiColor.blueViolet,
           alignment: AnsiTextAlignment.center));
-  String? filepath;
-  UserIndex(String path) {
-    filepath = "$path/$filenameOfUserIndex";
+  final String filepath;
+  File get file => File(filepath);
+  UserIndex(this.filepath) {
     users = _load();
   }
 
@@ -32,7 +31,7 @@ class UserIndex {
 
   List<User> _load() {
     List<User> users = [];
-    final file = File(filepath!);
+    final file = File(filepath);
     if (file.existsSync()) {
       for (String line in file.readAsLinesSync()) {
         users.add(User.fromString(this, line));
@@ -42,7 +41,6 @@ class UserIndex {
   }
 
   void _save() {
-    final file = File(filepath!);
     file.createSync(recursive: true);
     file.writeAsStringSync("", mode: FileMode.writeOnly); // clear file
     for (User user in users) {
@@ -51,10 +49,17 @@ class UserIndex {
   }
 
   User getUser(String hash) {
-    return users.firstWhere((element) => element.hash == hash);
+    if (users.isEmpty) {
+      throw Exception("No users found!");
+    }
+    return users.firstWhere((element) => element.hash == hash,
+        orElse: getHostUser);
   }
 
   User getHostUser() {
+    if (users.isEmpty) {
+      createUser("host");
+    }
     return users.first;
   }
 
@@ -82,7 +87,6 @@ class UserIndex {
     User user = User(this, name, hash);
     users.add(user);
     _save();
-    // print("Created user: ${user.name} with hash: ${user.hash}");
   }
 
   void displayUsers() {

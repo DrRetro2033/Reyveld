@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:arceus/version_control/users.dart';
+
 import 'extensions.dart';
 import 'version_control/constellation.dart';
 
@@ -21,6 +23,8 @@ class Arceus {
   /// # `static` `File` _constellationIndex
   /// ## The file that contains the list of constellations.
   static File get _constellationIndex => File("$appDataPath/config");
+
+  static UserIndex userIndex = UserIndex("$appDataPath/userindex");
 
   /// # `static` `String` _getAppDataPath
   /// ## Returns the path to the application data directory.
@@ -88,24 +92,33 @@ class Arceus {
       throw Exception("Constellation already exists");
     }
     final index = _getConstellations();
-    index[name] = path;
-    _save(index);
+    index[name] = path.fixPath();
+    _saveConstellation(index);
   }
 
   /// # `static` `void` removeConstellation(`String` name)
   /// ## Removes a constellation from the list of constellations.
-  static void removeConstellation(String name) {
-    if (!doesConstellationExist(name: name)) {
+  static void removeConstellation({String? name, String? path}) {
+    if (name != null && doesConstellationExist(name: name)) {
+      final index = _getConstellations();
+      index.remove(name);
+      _saveConstellation(index);
+    } else if (path != null && doesConstellationExist(path: path)) {
+      path = path.fixPath();
+      final index = _getConstellations();
+      index.removeWhere((key, value) => value == path);
+      // print(index);
+      _saveConstellation(index);
+    } else {
       throw Exception("Constellation does not exist");
     }
-    final index = _getConstellations();
-    index.remove(name);
-    _save(index);
   }
+
+  static void saveUsers() {}
 
   /// # `static` `void` _save(`Map<String, dynamic>` newIndex)
   /// ## Saves the list of constellations to the file.
-  static void _save(Map<String, dynamic> newIndex) {
+  static void _saveConstellation(Map<String, dynamic> newIndex) {
     if (!_constellationIndex.existsSync()) {
       _constellationIndex.createSync(recursive: true);
     }

@@ -22,7 +22,7 @@ class Star {
       constellation.starmap?.parentMap[hash]; // The hash of the parent star.
   String? _userHash; // The hash of the user who this star belongs to.
   User? get user => constellation.userIndex
-      ?.getUser(_userHash!); // The user who this star belongs to.
+      .getUser(_userHash!); // The user who this star belongs to.
   Star? get parent {
     if (_parentHash == null) return null;
     return Star(constellation, hash: _parentHash);
@@ -76,8 +76,12 @@ class Star {
     User? user,
   }) {
     constellation.starmap?.initEntry(hash ?? "");
-    if (name != null && user != null) {
-      _userHash = user.hash;
+    if (name != null) {
+      if (user != null) {
+        _userHash = user.hash;
+      } else {
+        _userHash = constellation.loggedInUser?.hash;
+      }
       _create();
     } else if (hash != null) {
       _load();
@@ -117,11 +121,10 @@ class Star {
   /// It returns the hash of the new star.
   String createChild(String name, {bool force = false}) {
     if (!force && !constellation.checkForDifferences()) {
-      throw Exception(
-          "Cannot create a child star when there are no differences. Please make changes and try again.");
+      print(
+          "Cannot create a new child star, as there are no changes to the constellation. If you want to grow anyway, use the --force flag.");
     }
-    Star star = Star(constellation,
-        name: name, user: constellation.userIndex?.getHostUser());
+    Star star = Star(constellation, name: name);
     constellation.starmap?.addRelationship(this, star);
     constellation.starmap?.currentStar = star;
     constellation.save();
@@ -162,11 +165,19 @@ class Star {
     archive.clearSync();
   }
 
+  /// # `void` recover()
+  /// ## Extracts everything from the star, without interacting with the constellation and its starmap.
+  /// Used for recovering data from corrupted constellation.
+  void recover() {
+    _extract();
+  }
+
   /// # `void` makeCurrent()
   /// ## Makes the star the current star in the constellation.
   void makeCurrent() {
     _extract();
-    constellation.starmap?.currentStar = this;
+    constellation.starmap!.currentStar = this;
+    constellation.loggedInUser = user;
     constellation.save();
   }
 

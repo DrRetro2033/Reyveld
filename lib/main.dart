@@ -15,12 +15,10 @@ import 'version_control/dossier.dart';
 import 'extensions.dart';
 import 'server.dart';
 import 'scripting/feature_sets/feature_sets.dart';
-// import 'package:cli_completion/cli_completion.dart';
 
 /// # `void` main(List<String> arguments)
 /// ## Main entry point.
 /// Runs the CLI.
-
 Future<dynamic> main(List<String> arguments) async {
   // AnsiX.ensureSupportsAnsi();
   var runner = CommandRunner('arceus', "The ultimate save manager.");
@@ -61,10 +59,13 @@ Future<dynamic> main(List<String> arguments) async {
     runner.addCommand(ConstellationJumpToCommand());
     runner.addCommand(ConstellationGrowCommand());
     runner.addCommand(ConstellationDeleteCommand());
-    runner.addCommand(UsersCommands());
     runner.addCommand(StartServerCommand());
     runner.addCommand(TrimCommand());
+    runner.addCommand(RecoverCommand());
+    runner.addCommand(ResyncCommand());
+    runner.addCommand(LoginUserCommand());
   }
+  runner.addCommand(UsersCommands());
   runner.addCommand(DoesConstellationExistCommand());
   runner.addCommand(ReadFileCommand());
   runner.addCommand(OpenFileInHexCommand());
@@ -87,6 +88,22 @@ abstract class ArceusCommand extends Command {
   String getRest() {
     return argResults?.rest.join(" ") ?? "";
   }
+}
+
+abstract class ConstellationArceusCommand extends ArceusCommand {
+  Constellation get constellation => Constellation(path: Arceus.currentPath);
+
+  @override
+  dynamic run() {
+    if (constellation.starmap == null) {
+      print(
+          "No starmap found! The constellation might be corrupted. Try running 'recover' to fix the problem.");
+    } else {
+      return _run();
+    }
+  }
+
+  dynamic _run();
 }
 
 class CreateConstellationCommand extends ArceusCommand {
@@ -113,7 +130,7 @@ class CreateConstellationCommand extends ArceusCommand {
       if (users?.isEmpty ?? true) {
         Constellation(path: Arceus.currentPath, name: getRest());
       } else {
-        Constellation(path: Arceus.currentPath, name: getRest(), users: users!);
+        Constellation(path: Arceus.currentPath, name: getRest());
       }
     } catch (e) {
       spinner.fail("Unable to create constellation.");
@@ -123,7 +140,7 @@ class CreateConstellationCommand extends ArceusCommand {
   }
 }
 
-class ShowMapConstellationCommand extends ArceusCommand {
+class ShowMapConstellationCommand extends ConstellationArceusCommand {
   @override
   String get summary => "Shows the map of the constellation.";
 
@@ -140,17 +157,17 @@ The current star is marked with ✨
   ShowMapConstellationCommand();
 
   @override
-  dynamic run() {
-    Constellation constellation = Constellation(path: Arceus.currentPath);
+  dynamic _run() {
+    print(
+        "Currently signed in as ${constellation.loggedInUser?.name.italic()}.");
     constellation.starmap?.printMap();
     return jsonEncode(constellation.starmap?.toJson());
   }
 }
 
-class CheckForDifferencesCommand extends ArceusCommand {
+class CheckForDifferencesCommand extends ConstellationArceusCommand {
   @override
-  String get description =>
-      "Checks for differences between the current star and what is currently in the directory.";
+  String get description => "Checks for new changes.";
 
   @override
   String get name => "check";
@@ -158,13 +175,12 @@ class CheckForDifferencesCommand extends ArceusCommand {
   CheckForDifferencesCommand();
 
   @override
-  Future<bool> run() async {
-    Constellation constellation = Constellation(path: Arceus.currentPath);
+  Future<bool> _run() async {
     final spinner = CliSpin(
             text:
                 " Checking for differences between current directory and provided star...")
         .start();
-    bool result = constellation.checkForDifferences(true);
+    bool result = constellation.checkForDifferences(false);
     if (!result) {
       spinner.success(" No differences found.");
     } else {
@@ -174,7 +190,87 @@ class CheckForDifferencesCommand extends ArceusCommand {
   }
 }
 
-class ConstellationJumpToCommand extends ArceusCommand {
+class ResyncCommand extends ConstellationArceusCommand {
+  @override
+  String get description =>
+      "Resyncs files to the current star. WILL DISCARD ANY CHANGES!";
+
+  @override
+  String get name => "resync";
+
+  ResyncCommand();
+
+  @override
+  void _run() {
+    final confirm = Confirm(
+            prompt:
+                " Are you sure you want to resync? This will discard any changes to tracked files.",
+            defaultValue: false)
+        .interact();
+    if (!confirm) {
+      return;
+    }
+    constellation.resyncToCurrentStar();
+    print("Resync complete ✔️");
+  }
+}
+
+class RecoverCommand extends ArceusCommand {
+  @override
+  String get description => """
+Recover from a star, without interacting with starmap.
+
+Files will be out of sync with the starmap, so only use this when the constellation has been corrupted.
+If you decide to resync back to the current star, call 'resync'.
+""";
+
+  @override
+  String get summary =>
+      "Recover from a star, without interacting with starmap.";
+
+  @override
+  String get name => "recover";
+
+  RecoverCommand();
+
+  @override
+  void run() {
+    Constellation constellation = Constellation(path: Arceus.currentPath);
+    final files = constellation.listStarFiles();
+    final stars =
+        files.map((e) => Star(constellation, hash: e.split(".")[0])).toList();
+    final options =
+        stars.map((e) => "${e.name} - ${e.createdAt.toString()}").toList();
+    final selected = Select(
+      prompt: " Select a star to recover.",
+      options: [...options, "Cancel"],
+    ).interact();
+    if (selected == options.length) {
+      return;
+    }
+    (stars[selected]).recover();
+    final confirm = Confirm(
+      prompt:
+          " Do you also want to recreate the constellation? All other stars will be lost.",
+      defaultValue: true,
+    ).interact();
+    if (confirm) {
+      String name = constellation.name;
+      stars.clear();
+      constellation.delete();
+      if (name.isEmpty) {
+        name = Input(
+            prompt:
+                " Unable to determine constellation name. Please enter a new name.",
+            validator: (p0) => p0.isNotEmpty).interact();
+      }
+      constellation = Constellation(path: Arceus.currentPath, name: name);
+    }
+    print("Recovery complete ✔️");
+  }
+}
+
+class ConstellationJumpToCommand extends ConstellationArceusCommand {
   @override
   String get description => """
 Jumps to a different star in the constellation.
@@ -207,12 +303,11 @@ You can also chain multiple commands together by adding a comma between each.
   ConstellationJumpToCommand() {
     argParser.addFlag("print",
         abbr: "p", defaultsTo: false, help: "Print the tree after jumping.");
-    argParser.addFlag("force", abbr: "f", defaultsTo: false, hide: true);
+    argParser.addFlag("force", abbr: "f", defaultsTo: false);
   }
 
   @override
-  void run() {
-    Constellation constellation = Constellation(path: Arceus.currentPath);
+  void _run() {
     if (!argResults!["force"] && constellation.checkForDifferences()) {
       final confirm = Confirm(
               prompt:
@@ -225,7 +320,7 @@ You can also chain multiple commands together by adding a comma between each.
     }
     CliSpin? spinner = CliSpin().start(" Jumping to star...");
     if (argResults!.rest.isEmpty) {
-      spinner.fail(" Please provide a star hash to jump to.");
+      spinner.fail(" Please provide a star hash or command to jump.");
       return;
     }
     String hash = getRest();
@@ -233,7 +328,7 @@ You can also chain multiple commands together by adding a comma between each.
     try {
       final star = constellation.starmap?[hash] as Star;
       star.makeCurrent();
-      spinner.success(" Jumped to star \"${star.name}\".");
+      spinner.success(" Jumped to \"${star.name}\".");
       if (argResults!["print"]) {
         constellation.starmap?.printMap();
       }
@@ -244,7 +339,7 @@ You can also chain multiple commands together by adding a comma between each.
   }
 }
 
-class ConstellationGrowCommand extends ArceusCommand {
+class ConstellationGrowCommand extends ConstellationArceusCommand {
   @override
   String get summary =>
       "Grow from the current star to a new star with a given name.";
@@ -263,16 +358,15 @@ This will fail if there no changes to commit, unless '--force' is provided.""";
   }
 
   @override
-  void run() {
+  void _run() {
     if (getRest().isEmpty) {
       throw Exception("Please provide a name for the new star.");
     }
-    Constellation(path: Arceus.currentPath)
-        .grow(getRest(), force: argResults!["force"]);
+    constellation.grow(getRest(), force: argResults!["force"]);
   }
 }
 
-class TrimCommand extends ArceusCommand {
+class TrimCommand extends ConstellationArceusCommand {
   @override
   String get summary => "Trims a star and its parents off of the starmap. ";
 
@@ -291,18 +385,18 @@ Will confirm before proceeding, unless --force is provided.
   }
 
   @override
-  void run() {
+  void _run() {
     if (!argResults!["force"]) {
       final confirm = Confirm(
               prompt:
-                  "Are you sure you want to trim off the current star? (Will discard all changes to tracked files.)",
+                  " Are you sure you want to trim off the current star? (Will discard current star and all of its descendants.)",
               defaultValue: false)
           .interact();
       if (!confirm) {
         return;
       }
     }
-    Constellation(path: Arceus.currentPath).trim();
+    constellation.trim();
   }
 }
 
@@ -315,6 +409,7 @@ class UsersCommands extends ArceusCommand {
   UsersCommands() {
     addSubcommand(UsersListCommand());
     addSubcommand(UsersRenameCommand());
+    addSubcommand(NewUserCommand());
   }
 }
 
@@ -326,27 +421,103 @@ class UsersListCommand extends ArceusCommand {
 
   @override
   void run() {
-    Constellation(path: Arceus.currentPath).userIndex?.displayUsers();
+    Arceus.userIndex.displayUsers();
   }
 }
 
-class UsersRenameCommand extends Command {
+class UsersRenameCommand extends ArceusCommand {
   @override
   String get description => "Renames a user in the constellation.";
   @override
   String get name => "rename";
 
   UsersRenameCommand() {
-    argParser.addOption("user-hash", abbr: "u", mandatory: true);
-    argParser.addOption("new-name", abbr: "n", mandatory: true);
+    argParser.addOption("user-hash", abbr: "u", hide: true);
+    argParser.addOption("new-name", abbr: "n", hide: true);
   }
 
   @override
   void run() {
-    Constellation(path: Arceus.currentPath)
-        .userIndex
-        ?.getUser(argResults?["user-hash"])
-        .name = argResults?["new-name"];
+    String? name = argResults?["new-name"];
+    String? hash = argResults?["user-hash"];
+    if (argResults?["user-hash"] == null) {
+      final users = Arceus.userIndex.users;
+      final names = users.map((e) => e.name).toList();
+      final selected = Select(
+          prompt: " Select a user to rename.",
+          options: [...names, "Cancel"]).interact();
+      if (selected == names.length) {
+        return;
+      }
+      hash = users[selected].hash;
+    }
+
+    if (argResults?["new-name"] == null) {
+      name = Input(
+        prompt: " What would you like to name the user?",
+        validator: (p0) => p0.isNotEmpty,
+      ).interact();
+    }
+
+    Arceus.userIndex.getUser(hash!).name = name!;
+  }
+}
+
+class NewUserCommand extends ArceusCommand {
+  @override
+  String get description => "Create a new user in Arceus.";
+
+  @override
+  String get name => "new";
+
+  @override
+  void run() {
+    String name = getRest();
+    if (name.isEmpty) {
+      print("Please provide a name for the new user.");
+    } else {
+      Arceus.userIndex.createUser(name);
+    }
+  }
+}
+
+class LoginUserCommand extends ConstellationArceusCommand {
+  @override
+  String get description => "Login as a user in a constellation.";
+
+  @override
+  String get name => "login";
+
+  LoginUserCommand() {
+    argParser.addOption("user-hash", abbr: "u", hide: true);
+    argParser.addOption("grow",
+        abbr: "g", help: "Grow a new star after login.");
+    argParser.addFlag("force", abbr: "f", defaultsTo: false);
+  }
+
+  @override
+  void _run() {
+    String? hash = argResults?["user-hash"];
+    if (hash != null) {
+      constellation.loginAs(Arceus.userIndex.getUser(hash));
+    } else {
+      final users = Arceus.userIndex.users;
+      final names = users.map((e) => e.name).toList();
+      final selected = Select(
+          prompt: " Select a user to login as:",
+          options: [...names, "Cancel"]).interact();
+      if (selected == names.length) {
+        // Means the user cancelled the operation.
+        return;
+      }
+      constellation.loginAs(users[selected]);
+    }
+    print("Logged in as ${constellation.loggedInUser!.name}.");
+    if (argResults!["grow"] != null &&
+        (argResults!["grow"] as String).isNotEmpty) {
+      constellation.grow(argResults!["grow"], force: argResults!["force"]);
+      print("Star ${argResults!["grow"]} created.");
+    }
   }
 }
 

@@ -1,4 +1,3 @@
-import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -25,7 +24,7 @@ class Dossier {
 
   /// # `bool` checkForDifferences()
   /// ## Checks to see if the star's contents is different from the current directory.
-  bool checkForDifferences([bool showResults = false]) {
+  bool checkForDifferences([bool silent = true]) {
     bool check =
         false; // The main check. If any of the preceding checks fail, this will be true, which means that there is a difference.
 
@@ -36,21 +35,21 @@ class Dossier {
     // 4. Check for changed files.
     CliSpin? spinner;
     // Check for new files.
-    if (showResults) {
+    if (!silent) {
       spinner = CliSpin(text: " Checking for new files...").start();
     }
 
     List<String> newFiles = listAddedFiles();
-    if (showResults) spinner!.stop();
+    if (!silent) spinner!.stop();
     // Check for removed files.
-    if (showResults) {
+    if (!silent) {
       spinner = CliSpin(text: " Checking for removed files...").start();
     }
     List<String> removedFiles = listRemovedFiles();
-    if (showResults) spinner!.stop();
+    if (!silent) spinner!.stop();
 
     // Check for moved files. Done after new and removed files, as they can be used here to make a cross reference.
-    if (showResults) {
+    if (!silent) {
       spinner = CliSpin(text: " Checking for moved files...").start();
     }
     Map<String, String> movedFiles = listMovedFiles(newFiles, removedFiles);
@@ -93,7 +92,7 @@ class Dossier {
     }
 
     // Check for changed files.
-    if (showResults) {
+    if (!silent) {
       spinner = CliSpin(text: " Checking for changed files...").start();
     }
     List<String> changedFiles = listChangedFiles(removedFiles);

@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 
 import 'package:ansix/ansix.dart';
 
@@ -16,7 +15,7 @@ import 'users.dart';
 /// ## Represents a constellation.
 class Constellation {
   /// The name of the constellation.
-  late String name;
+  String name = "";
 
   /// The path to the folder this constellation is in.
   late String path;
@@ -24,10 +23,9 @@ class Constellation {
   /// The starmap of the constellation.
   Starmap? starmap;
 
-  /// The user index of the constellation.
-  UserIndex? userIndex;
+  UserIndex get userIndex => Arceus.userIndex;
 
-  // Fetches a directory object from the path this constellation is in.
+  // Fetches a directory object for the path this constellation is in.
   Directory get directory => Directory(path);
 
   /// # `bool` doesStarExist(`String` hash)
@@ -47,8 +45,9 @@ class Constellation {
   /// Fetches a directory object that represents the `addonFolderPath` folder.
   Directory get addonDirectory => Directory(addonFolderPath);
 
-  Constellation(
-      {String? path, String? name, Iterable<String> users = const ["host"]}) {
+  User? loggedInUser;
+
+  Constellation({String? path, String? name}) {
     if (path == null && name == null) {
       throw Exception("Must provide either a path or a name.");
     } else if (path == null &&
@@ -57,10 +56,12 @@ class Constellation {
       path = Arceus.getConstellationPath(name)!;
     }
     this.path = path!.fixPath();
-    userIndex = UserIndex(constellationPath);
     if (constellationDirectory.existsSync()) {
       // If the constellation already exists, then load
-      load();
+      _load();
+      if (name == null) {
+        return;
+      }
       if (starmap?.currentStarHash == null) {
         starmap?.currentStarHash = starmap?.rootHash;
         save();
@@ -68,20 +69,18 @@ class Constellation {
       if (!Arceus.doesConstellationExist(name: this.name)) {
         Arceus.addConstellation(this.name, path);
       }
-      return;
     } else if (name != null) {
       // If the constellation does not exist, then create it with the provided name
       this.name = name;
       _createConstellationDirectory();
-      userIndex?.createUsers(users);
       starmap = Starmap(this);
       _createRootStar();
       save();
       Arceus.addConstellation(this.name, path);
-      return;
+    } else {
+      throw Exception(
+          "Constellation not found: $constellationPath. If the constellation does not exist, you must provide a name.");
     }
-    throw Exception(
-        "Constellation not found: $constellationPath. If the constellation does not exist, you must provide a name.");
   }
 
   /// # `void` _createConstellationDirectory()
@@ -96,7 +95,7 @@ class Constellation {
 
   void _createRootStar() {
     starmap?.root =
-        Star(this, name: "Initial Star", user: userIndex?.getHostUser());
+        Star(this, name: "Initial Star", user: userIndex.getHostUser());
     starmap?.currentStar = starmap?.root;
     save();
   }
@@ -116,6 +115,23 @@ class Constellation {
   /// ## Returns a path for a star with the given hash.
   String getStarPath(String hash) => "$constellationPath/$hash.star";
 
+  /// # `List<String>` listStarFiles()
+  /// ## Lists all stars in the constellation.
+  /// Returns a list of the hashes of all stars in the constellation folder (NOT the starmap).
+  /// Used for recovering a constellation from corruption.
+  List<String> listStarFiles() {
+    List<String> stars = [];
+    for (String hash in Directory(constellationPath)
+        .listSync()
+        .map((e) => e.path)
+        .toList()) {
+      if (hash.getExtension() == "star") {
+        stars.add(hash.getFilename());
+      }
+    }
+    return stars;
+  }
+
   // ============================================================================
   // These methods are for saving and loading the constellation.
 
@@ -131,7 +147,7 @@ class Constellation {
   /// # `void` load()
   /// ## Loads the constellation from disk.
   /// This includes the root star and the current star hashes.
-  void load() {
+  void _load() {
     File file = File("$constellationPath/starmap");
     if (file.existsSync()) {
       _fromJson(jsonDecode(file.readAsStringSync()));
@@ -144,6 +160,11 @@ class Constellation {
   void _fromJson(Map<String, dynamic> json) {
     name = json["name"];
     starmap = Starmap(this, map: json["map"]);
+    if (json.containsKey("loggedInUser")) {
+      loggedInUser = userIndex.getUser(json["loggedInUser"]);
+    } else {
+      loggedInUser = starmap?.currentStar?.user;
+    }
   }
 
   // ============================================================================
@@ -151,7 +172,11 @@ class Constellation {
   /// # `Map<String, dynamic>` toJson()
   /// ## Converts the constellation into a JSON map.
   /// This is used when saving the constellation to disk, and is internal, so do not call it directly.
-  Map<String, dynamic> toJson() => {"name": name, "map": starmap?.toJson()};
+  Map<String, dynamic> toJson() => {
+        "name": name,
+        "loggedInUser": loggedInUser?.hash,
+        "map": starmap?.toJson()
+      };
 
   /// # `String?` grow(`String` name)
   /// ## Creates a new star with the given name and returns the hash of the new star at the current star.
@@ -163,7 +188,7 @@ class Constellation {
   /// ## Deletes the constellation from disk.
   /// This will also delete all of the stars in the constellation.
   void delete() {
-    Arceus.removeConstellation(name);
+    Arceus.removeConstellation(path: path);
     constellationDirectory.deleteSync(recursive: true);
     starmap = null;
   }
@@ -177,13 +202,12 @@ class Constellation {
   /// # `void` resetToCurrentStar()
   /// ## Restores the files from current star.
   /// This WILL discard any changes in files, so make sure you grown the constellation before calling this.
-
-  void resetToCurrentStar() {
-    starmap?.currentStar?.makeCurrent();
+  void resyncToCurrentStar() {
+    starmap?.currentStar?.recover();
   }
 
   /// # `void` clear()
-  /// ## Clears all files in the associated path, expect for the `.constellation` folder.
+  /// ## Clears all files in the associated path, expect for the `.constellation` folder and its contents.
   void clear() {
     directory.listSync(recursive: true).forEach((entity) {
       if (entity is File &&
@@ -193,12 +217,20 @@ class Constellation {
     });
   }
 
+  /// # `void` loginAs(`User` user)
+  /// ## Sets the logged in user to the given user.
+  /// This will also save the constellation with the new logged in user.
+  void loginAs(User user) {
+    loggedInUser = user;
+    save();
+  }
+
   /// # `bool` checkForDifferences()
   /// ## Checks if the constellation has differences between the current star and the root star.
   /// Returns `true` if there are differences, `false` otherwise.
-  bool checkForDifferences([bool showResults = false]) {
+  bool checkForDifferences([bool silent = true]) {
     Star star = Star(this, hash: starmap?.currentStarHash);
-    return Dossier(star).checkForDifferences(showResults);
+    return Dossier(star).checkForDifferences(silent);
   }
 
   /// # `bool` checkForConstellation(`String` path)
@@ -220,15 +252,6 @@ class Starmap {
   Map<String, List<dynamic>> childMap = {}; // Format: {parent: [children]}
   Map<String, dynamic> parentMap = {}; // Format: {child: parent}
 
-  Starmap(this.constellation, {Map<dynamic, dynamic>? map}) {
-    if (map == null) {
-      childMap = {};
-      parentMap = {};
-    } else {
-      fromJson(map);
-    }
-  }
-
   String? rootHash; // The hash of the root star.
   Star? get root => Star(constellation,
       hash: rootHash!); // Fetches the root star as a Star object.
@@ -240,6 +263,15 @@ class Starmap {
   set currentStar(Star? value) => currentStarHash =
       value?.hash; // Sets the current star hash with the given Star object.
 
+  Starmap(this.constellation, {Map<dynamic, dynamic>? map}) {
+    if (map == null) {
+      childMap = {};
+      parentMap = {};
+    } else {
+      fromJson(map);
+    }
+  }
+
   /// # `void` initEntry(`String` hash)
   /// ## Initializes the entry for the given hash.
   /// Called by `Star` when a new star is created.
@@ -248,14 +280,6 @@ class Starmap {
       return;
     }
     childMap[hash] = [];
-  }
-
-  /// # `void` jumpTo(`String?` hash)
-  /// ## Changes the current star to the star with the given hash.
-  void jumpTo(String? hash) {
-    if (constellation.doesStarExist(hash ?? rootHash!)) {
-      currentStar = Star(constellation, hash: hash ?? rootHash!);
-    }
   }
 
   /// # `Star` getMostRecentStar()

@@ -2,8 +2,8 @@ import 'dart:ffi';
 
 import 'package:test/test.dart';
 
-import '../lib/scripting/squirrel.dart';
-import '../lib/scripting/squirrel_bindings_generated.dart';
+import 'package:arceus/scripting/squirrel.dart';
+import 'package:arceus/scripting/squirrel_bindings_generated.dart';
 
 void main() {
   test("Squirrel Test", () {

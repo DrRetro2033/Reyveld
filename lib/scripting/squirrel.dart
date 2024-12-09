@@ -68,6 +68,8 @@ class Squirrel {
     return vm;
   }
 
+  /// # `static` void dispose(Pointer<SQVM> vm)
+  /// ## Closes the Squirrel instance.
   static void dispose(Pointer<SQVM> vm) {
     bindings.sq_close(vm);
   }
@@ -284,10 +286,15 @@ class SquirrelFunction {
     return params;
   }
 
+  /// # `void` _returnValue(Pointer<SQVM> vm, dynamic value)
+  /// ## Pushes the return value to the stack.
+  /// It will also print the stack of the Squirrel instance.
   void _returnValue(Pointer<SQVM> vm, dynamic value) {
     Squirrel.pushToStack(vm, value);
   }
 
+  /// # `int` call(Pointer<SQVM> vm)
+  /// ## Calls the function given Dart function and return its result to Squirrel.
   int call(Pointer<SQVM> vm) {
     try {
       final result = _call(vm, _getParams(vm));
