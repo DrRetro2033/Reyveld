@@ -123,6 +123,7 @@ class Star {
     if (!force && !constellation.checkForDifferences()) {
       print(
           "Cannot create a new child star, as there are no changes to the constellation. If you want to grow anyway, use the --force flag.");
+      return "";
     }
     Star star = Star(constellation, name: name);
     constellation.starmap?.addRelationship(this, star);
