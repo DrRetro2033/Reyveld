@@ -11,64 +11,80 @@ import 'dossier.dart';
 /// They are saved as a `.star` file in the constellation's directory.
 /// A `.star` file literally is just a ZIP file, so you can open them in 7Zip or WinRAR.
 class Star {
-  Constellation constellation; // The constellation the star belongs to.
-  Starmap get starmap =>
-      constellation.starmap!; // The starmap of the constellation.
+  /// # [Constellation] constellation
+  /// ## The constellation this star belongs to.
+  Constellation constellation;
 
-  String? name; // The name of the star.
-  String? hash; // The hash of the star.
-  DateTime? createdAt; // The time the star was created.
-  String? get _parentHash =>
-      constellation.starmap?.parentMap[hash]; // The hash of the parent star.
-  String? _userHash; // The hash of the user who this star belongs to.
-  User? get user => constellation.userIndex
-      .getUser(_userHash!); // The user who this star belongs to.
-  Star? get parent {
-    if (_parentHash == null) return null;
-    return Star(constellation, hash: _parentHash);
-  } // Gets the parent star.
+  /// # [Starmap] get starmap
+  /// ## Returns the starmap of the constellation.
+  Starmap get starmap => constellation.starmap!;
 
-  /// # `List<Star>` children
+  /// # String? name
+  /// ## The name of the star.
+  String? name;
+
+  /// # String? hash
+  /// ## The hash of the star.
+  String? hash;
+
+  /// # DateTime? createdAt
+  /// ## The time the star was created.
+  DateTime? createdAt;
+
+  /// # String? _userHash
+  /// ## The hash of the user who this star belongs to.
+  String? _userHash;
+
+  /// # [User]? get user
+  /// ## Returns the user who this star belongs to.
+  User? get user => constellation.userIndex.getUser(_userHash!);
+
+  /// # [Star]? get parent
+  /// ## Returns the parent of this star from the starmap contained in the constellation.
+  /// Will return null if this star is the root star.
+  Star? get parent => starmap.getParent(this);
+
+  /// # List<[Star]> children
   /// ## Returns a list of all children of this star from the starmap contained in the constellation.
   List<Star> get children => starmap.getChildren(this);
 
-  /// # `int` childIndex
+  /// # int childIndex
   /// ## Returns the index of this star in its parent's children list.
   int get childIndex =>
       parent != null ? parent!.children.indexWhere((e) => e.hash == hash) : 0;
 
-  /// # `int` siblingCount
+  /// # int siblingCount
   /// ## Returns the number of siblings of this star.
   int get siblingCount => parent != null ? parent!.children.length - 1 : 0;
 
-  /// # `bool` singleChild
+  /// # bool singleChild
   /// ## Does this star only have a single child?
   bool get singleChild => children.length == 1;
 
-  /// # `bool` hasNoChildren
+  /// # bool hasNoChildren
   /// ## Does this star have no children?
   bool get hasNoChildren => children.isEmpty;
 
-  /// # `bool` hasChildren
+  /// # bool hasChildren
   /// ## Does this star have children?
   bool get hasChildren => children.isNotEmpty;
 
-  /// # `bool` isCurrent
+  /// # bool isCurrent
   /// ## Is this star the current star?
-  bool get isCurrent => hash == constellation.starmap?.currentStarHash;
+  bool get isCurrent => hash == constellation.starmap?.currentStar?.hash;
 
-  /// # `bool` isRoot
+  /// # bool isRoot
   /// ## Is this star the root star?
-  bool get isRoot => hash == constellation.starmap?.rootHash;
+  bool get isRoot => hash == constellation.starmap?.root?.hash;
 
-  /// # `bool` isSingleChild
+  /// # bool isSingleChild
   /// ## Is this star a single child?
   bool get isSingleChild => parent != null ? parent!.singleChild : false;
 
-  /// # `Star`(`Constellation` constellation, {`String?` name, `String?` hash, `User?` user})
+  /// # Star([Constellation] constellation, {String? name, String? hash, [User]? user})
   /// ## Creates a new star.
-  /// When creating a new star, call this constructor with the arguments `name` and `user`.
-  /// When loading a already existing star, call this constructor with the argument `hash`.
+  /// When creating a new star, call this constructor with the arguments name and user.
+  /// When loading a already existing star, call this constructor with the argument hash.
   Star(
     this.constellation, {
     this.name,
@@ -90,7 +106,7 @@ class Star {
     }
   }
 
-  /// # `void` _create()
+  /// # void _create()
   /// ## Creates the star and saves it to the constellation.
   /// It also adds the star to the constellation's starmap.
   void _create() {
@@ -116,7 +132,7 @@ class Star {
     archive.closeSync();
   }
 
-  /// # `String` createChild(`String` name)
+  /// # String createChild(String name)
   /// ## Creates a new star with the given name.
   /// It returns the hash of the new star.
   String createChild(String name, {bool force = false}) {
@@ -132,14 +148,7 @@ class Star {
     return star.hash!;
   }
 
-  /// # `Star` getParentStar()
-  /// ## Returns the parent star.
-  Star? getParentStar() {
-    if (_parentHash == null) return null;
-    return Star(constellation, hash: _parentHash);
-  }
-
-  /// # `void` _load()
+  /// # void _load()
   /// ## Loads the star from disk.
   void _load() {
     Archive archive = getArchive();
@@ -148,7 +157,7 @@ class Star {
     archive.clearSync();
   }
 
-  /// # `void` _extract()
+  /// # void _extract()
   /// ## Extracts the star from the archive.
   /// This is used when jumping to an existing star.
   void _extract() {
@@ -166,15 +175,16 @@ class Star {
     archive.clearSync();
   }
 
-  /// # `void` recover()
+  /// # void recover()
   /// ## Extracts everything from the star, without interacting with the constellation and its starmap.
   /// Used for recovering data from corrupted constellation.
   void recover() {
     _extract();
   }
 
-  /// # `void` makeCurrent()
+  /// # void makeCurrent()
   /// ## Makes the star the current star in the constellation.
+  /// It also saves the constellation.
   void makeCurrent() {
     _extract();
     constellation.starmap!.currentStar = this;
@@ -182,9 +192,9 @@ class Star {
     constellation.save();
   }
 
-  /// # `Archive` getArchive()
+  /// # Archive getArchive()
   /// ## Returns the archive of the star.
-  /// ALWAYS, ALWAYS, ALWAYS call `clearSync()` on the archive after using it.
+  /// ALWAYS, ALWAYS, ALWAYS call [clearSync] on the archive after using it.
   /// If you don't, then trimming the star will not work, and will throw an access error.
   Archive getArchive() {
     final inputStream = InputFileStream(constellation.getStarPath(hash!));
@@ -257,22 +267,30 @@ class Star {
     return ancestors;
   }
 
+  /// # bool isChildOf([Star] star)
+  /// ## Is the star a child of the given star?
   bool isChildOf(Star star) =>
       star.children.any((element) => element.hash == hash);
 
+  /// # bool isParentOf([Star] star)
+  /// ## Is the star a parent of the given star?
   bool isParentOf(Star star) =>
       children.any((element) => element.hash == star.hash);
 
+  /// # bool isDescendantOf([Star] star)
+  /// ## Is the star a descendant of the given star?
   bool isDescendantOf(Star star) {
     return getAncestors().contains(star);
   }
 
+  /// # bool isAncestorOf([Star] star)
+  /// ## Is the star an ancestor of the given star?
   bool isAncestorOf(Star star) {
     return getDescendants().contains(star);
   }
 
-  /// # `void` trim()
-  /// ## Trims the star and all of its children.
+  /// # void trim()
+  /// ## Trims the star and all of its children safely and deletes the star from disk.
   void trim() {
     for (Star child in children) {
       child.trim();
@@ -281,31 +299,33 @@ class Star {
     _delete();
   }
 
-  /// # `void` _delete()
+  /// # void _delete()
   /// ## Deletes the star from disk.
   /// DO NOT USE THIS DIRECTLY, AS IT WILL CORRUPT THE CONSTELLATION IF NOT TRIMED PROPERLY.
-  /// Use the `trim()` method instead.
+  /// Use the [trim] method instead.
   void _delete() {
     File(constellation.getStarPath(hash!)).deleteSync();
   }
 
-  /// # `void` fromJson(`Map<String, dynamic>` json)
-  /// ## Converts the JSON data into a `Star` object.
+  /// # void fromJson(Map<String, dynamic> json)
+  /// ## Converts the JSON data into a [Star] object.
   void fromJson(Map<String, dynamic> json) {
     name = json["name"];
     createdAt = DateTime.tryParse(json["createdAt"]);
     _userHash = json["user"];
   }
 
-  /// # `Map<String, dynamic>` toJson()
-  /// ## Converts the `Star` object into a JSON object.
+  /// # Map<String, dynamic> toJson()
+  /// ## Converts the [Star] object into a JSON object.
   Map<String, dynamic> toJson() =>
       {"name": name, "createdAt": createdAt.toString(), "user": _userHash};
 
+  /// # `String` toString()
+  /// ## Returns the hash of the star.
   @override
   String toString() => hash!;
 
-  /// # `String` getDisplayName()
+  /// # String getDisplayName()
   /// ## Returns the name of the star, with a ✨ if it is the current star.
   /// This is used when printing the star to the terminal.
   String getDisplayName() {
@@ -316,13 +336,8 @@ class Star {
     }
   }
 
-  void removeChild(Star star) {
-    constellation.starmap?.childMap[hash!]!.remove(star.hash!);
-  }
-
-  /// # `Star` getChild(`int` index)
+  /// # [Star] getChild(int index)
   /// ## Returns the child star at the given index.
-  ///
   Star getChild(int index) {
     if (hasNoChildren) {
       return this; // A failsafe in the case a star does not have any children.
@@ -331,16 +346,16 @@ class Star {
     if (index < 0) index = 0;
     if (index >= children.length) index = children.length - 1;
 
-    return Star(constellation, hash: starmap.childMap[hash!]![index]);
+    return children[index];
   }
 
-  /// # `int` getDepth()
+  /// # int getDepth()
   /// ## Returns the depth of the star in the starmap.
   int getDepth() {
     return getAncestors().length;
   }
 
-  /// # `int` getIndex()
+  /// # int getIndex()
   /// ## Returns the index of the star in the starmap.
   int getIndex() {
     return starmap
@@ -348,7 +363,7 @@ class Star {
         .indexWhere((star) => star.hash == hash);
   }
 
-  /// # `List<Star>` getDeepSiblings()
+  /// # List<[Star]> getDeepSiblings()
   /// ## Returns a list of all of the siblings at the same depth as this star, including this star.
   List<Star> getDeepSiblings() {
     int depth = getDepth(); // Get the depth of this star.
