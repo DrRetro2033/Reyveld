@@ -203,10 +203,9 @@ class ResyncCommand extends ConstellationArceusCommand {
   @override
   void _run() {
     final confirm = Confirm(
-            prompt:
-                " Are you sure you want to resync? This will discard any changes to tracked files.",
-            defaultValue: false)
-        .interact();
+      prompt:
+          " Are you sure you want to resync? This will discard any changes to tracked files.",
+    ).interact();
     if (!confirm) {
       return;
     }
@@ -252,7 +251,6 @@ If you decide to resync back to the current star, call 'resync'.
     final confirm = Confirm(
       prompt:
           " Do you also want to recreate the constellation? All other stars will be lost.",
-      defaultValue: true,
     ).interact();
     if (confirm) {
       String name = constellation.name;
@@ -310,10 +308,9 @@ You can also chain multiple commands together by adding a comma between each.
   void _run() {
     if (!argResults!["force"] && constellation.checkForDifferences()) {
       final confirm = Confirm(
-              prompt:
-                  "There are uncommitted changes in the current directory!\nIf you jump now before growing, all progress will be lost! Are you sure you want to continue?",
-              defaultValue: false)
-          .interact();
+        prompt:
+            "There are uncommitted changes in the current directory!\nIf you jump now before growing, all progress will be lost! Are you sure you want to continue?",
+      ).interact();
       if (!confirm) {
         return;
       }
@@ -388,10 +385,9 @@ Will confirm before proceeding, unless --force is provided.
   void _run() {
     if (!argResults!["force"]) {
       final confirm = Confirm(
-              prompt:
-                  " Are you sure you want to trim off the current star? (Will discard current star and all of its descendants.)",
-              defaultValue: false)
-          .interact();
+        prompt:
+            " Are you sure you want to trim off the current star? (Will discard current star and all of its descendants.)",
+      ).interact();
       if (!confirm) {
         return;
       }
@@ -537,8 +533,7 @@ class ConstellationDeleteCommand extends ArceusCommand {
     if (!argResults!["force"]) {
       final confirm = Confirm(
               prompt:
-                  "Are you sure you want to delete the constellation? (Will delete EVERYTHING in the constellation.)",
-              defaultValue: false)
+                  "Are you sure you want to delete the constellation? (Will delete EVERYTHING in the constellation.)")
           .interact();
       if (!confirm) {
         return;

@@ -13,7 +13,10 @@ import 'constellation.dart';
 /// # `class` `Dossier`
 /// ## A class that checks for differences between the star and the current directory.
 class Dossier {
-  Star star; // The star used for the internal file system.
+  /// # `Star` star
+  /// ## The star that is being checked against the current directory.
+  Star star;
+
   // The following are used for the CLI:
   String addSymbol = "A".bold().green();
   String removeSymbol = "D".bold().red();
@@ -337,6 +340,8 @@ class Plasma {
 
 enum ChangeOrigin { from, to }
 
+/// # `class` `DifferenceMap`
+/// ## Used to originize the differences between two plasmas into maps.
 class DifferenceMap {
   Map<int, Map<ChangeOrigin, int>> modifications = {};
   Map<int, int> additions = {};

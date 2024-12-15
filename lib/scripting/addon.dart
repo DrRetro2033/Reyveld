@@ -48,7 +48,7 @@ class Addon {
   /// # `String` get code
   /// ## Returns the code of the addon.
   /// Used by context.
-  String get code => _getCode();
+  String get code => getCode();
 
   String get decodedString {
     Uint8List data = addonFile.readAsBytesSync();
@@ -91,6 +91,12 @@ class Addon {
         body.replaceRange(match.start, match.end, "");
         body += File("$projectPath/${match.group(1)!}").readAsStringSync();
         body += "\n";
+      }
+      final ctx = NoneAdddonContext();
+      if (!ctx.hasRequiredFunctions(body)) {
+        throw Exception(
+          "Required functions are missing! Please check your addon.yaml file. Required functions: ${ctx.requiredFunctions.join(", ")}",
+        );
       }
 
       Uint8List bytes = utf8.encode(body);
@@ -278,7 +284,7 @@ class Addon {
   /// # `String` _getCode()
   /// ## Returns the code of the addon.
   /// It is separated by `---END-OF-DETAILS---`.
-  String _getCode() {
+  String getCode() {
     return decodedString.split("---END-OF-DETAILS---")[1];
   }
 }
@@ -287,21 +293,37 @@ class Addon {
 /// ## An abstract class that represents the context of an addon.
 /// Acts as the bridge between the addon and the Squirrel VM.
 /// Before, Addon was abstract with subclasses acting as different feature sets.
-/// However, this is not the case anymore, as the Squirrel VM is now the same for all feature sets.
+/// However, this is not the case anymore. Addons will create a [AddonContext] that the `addon.yaml` asks for,
+/// and then use it to run the addon.
 abstract class AddonContext {
+  static final RegExp functionNameRegex =
+      RegExp(r"function\s([A-Za-z\d]*)\([A-Za-z,\s]*\)");
+
+  List<String> get requiredFunctions => [];
+
   List<SquirrelFunction> get functions;
 
-  final Addon addon;
+  Addon? addon;
 
-  AddonContext(this.addon) {
+  AddonContext([this.addon]) {
     Squirrel.init("C:/Repos/arceus");
+  }
+
+  bool hasRequiredFunctions(String code) {
+    final matches = functionNameRegex.allMatches(code);
+    for (String requiredFunction in requiredFunctions) {
+      if (!matches.any((match) => match.group(1) == requiredFunction)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /// # `Pointer<SQVM>` startVM()
   /// ## Starts the Squirrel VM and returns the VM pointer.
   /// It also creates the API for the Squirrel VM, so be sure all the functions have been added to [functions].
   Pointer<SQVM> startVM() {
-    final vm = Squirrel.run(addon.code);
+    final vm = Squirrel.run(addon!.code);
     Squirrel.createAPI(vm, functions);
     return vm;
   }
@@ -311,5 +333,5 @@ class NoneAdddonContext extends AddonContext {
   @override
   List<SquirrelFunction> get functions => [];
 
-  NoneAdddonContext(super.addon) : super();
+  NoneAdddonContext([super.addon]) : super();
 }

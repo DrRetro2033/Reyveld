@@ -1,3 +1,6 @@
+import 'package:arceus/arceus.dart';
+import 'package:arceus/extensions.dart';
+import 'package:arceus/scripting/addon.dart';
 import 'package:archive/archive_io.dart';
 import 'dart:convert';
 import 'constellation.dart';
@@ -394,6 +397,6 @@ class Star {
         -below!; // If above is null, then below is not null. above will add to the index, while below will subtract.
     return siblings[(getIndex() + offset) %
         siblings
-            .length]; // I ❤️ modulo. It's almost magic how easily it can wrap a index around to a vaild range.
+            .length]; // I ❤️ modulo. It's almost magic how easily it can wrap a index around to a vaild range! I just wish I could use it more often.
   }
 }

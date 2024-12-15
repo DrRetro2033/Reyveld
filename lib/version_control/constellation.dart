@@ -14,7 +14,8 @@ import 'users.dart';
 /// # `class` Constellation
 /// ## Represents a constellation.
 class Constellation {
-  /// The name of the constellation.
+  /// # String name
+  /// ## The name of the constellation.
   String name = "";
 
   /// # late String path
@@ -36,7 +37,7 @@ class Constellation {
   /// ## Fetches a directory object that represents the `addonFolderPath` folder
   Directory get directory => Directory(path);
 
-  /// # `bool` doesStarExist(`String` hash)
+  /// # bool doesStarExist(String hash)
   /// ## Checks if a star exists in the constellation.
   /// Returns `true` if the star exists, `false` otherwise.
   bool doesStarExist(String hash) => File(getStarPath(hash)).existsSync();
@@ -101,7 +102,7 @@ class Constellation {
     }
   }
 
-  /// # `void` _createConstellationDirectory()
+  /// # void _createConstellationDirectory()
   /// ## Creates the directory the constellation stores its data in.
   /// On Linux and MacOS, no extra action is needed to hide the folder.
   /// On Windows however, an attribute needs to be set to hide the folder.
@@ -113,9 +114,9 @@ class Constellation {
     }
   }
 
-  /// # `void` _createRootStar()
+  /// # void _createRootStar()
   /// ## Creates the root star of the constellation.
-  /// Called when the constellation is created.
+  /// Called when the constellation is created.a
   /// Does not need to be called manually.
   void _createRootStar() {
     starmap?.root =
@@ -124,7 +125,7 @@ class Constellation {
     save();
   }
 
-  /// # `String` generateUniqueStarHash()
+  /// # String generateUniqueStarHash()
   /// ## Generates a unique star hash.
   String generateUniqueStarHash() {
     for (int i = 0; i < 100; i++) {
@@ -137,11 +138,11 @@ class Constellation {
         "Unable to generate a unique star hash. Either you are extremely unlucky or there are no more unique hashes left to use!");
   }
 
-  /// # `String` getStarPath(`String` hash)
+  /// # String getStarPath(String hash)
   /// ## Returns a path for a star with the given hash.
   String getStarPath(String hash) => "$constellationPath/$hash.star";
 
-  /// # `List<String>` listStarFiles()
+  /// # List<String> listStarFiles()
   /// ## Lists all stars in the constellation.
   /// Returns a list of the hashes of all stars in the constellation folder (NOT the starmap).
   /// Used for recovering a constellation from corruption.
@@ -161,7 +162,7 @@ class Constellation {
   // ============================================================================
   // These methods are for saving and loading the constellation.
 
-  /// # `void` save()
+  /// # void save()
   /// ## Saves the constellation to disk.
   /// This includes the root star and the current star hashes.
   void save() {
@@ -170,7 +171,7 @@ class Constellation {
     file.writeAsStringSync(jsonEncode(toJson()));
   }
 
-  /// # `void` load()
+  /// # void load()
   /// ## Loads the constellation from disk.
   /// This includes the root star and the current star hashes.
   void _load() {
@@ -180,7 +181,7 @@ class Constellation {
     }
   }
 
-  /// # `void` fromJson(`Map<String, dynamic>` json)
+  /// # void fromJson(Map<String, dynamic> json)
   /// ## Converts the JSON data into the data for the constellation.
   /// This is used when loading the constellation from disk, and is internal, so do not call it directly.
   void _fromJson(Map<String, dynamic> json) {
@@ -193,7 +194,7 @@ class Constellation {
     }
   }
 
-  /// # `Map<String, dynamic>` toJson()
+  /// # Map<String, dynamic> toJson()
   /// ## Converts the constellation into a JSON map.
   /// This is used when saving the constellation to disk, and is internal, so do not call it directly.
   Map<String, dynamic> toJson() => {
@@ -204,13 +205,13 @@ class Constellation {
 
   // ============================================================================
 
-  /// # `String?` grow(`String` name)
+  /// # String? grow(String name)
   /// ## Creates a new star with the given name and returns the hash of the new star at the current star.
   String? grow(String name, {bool force = false}) {
     return starmap?.currentStar?.createChild(name, force: force);
   }
 
-  /// # `void` delete()
+  /// # void delete()
   /// ## Deletes the constellation from disk.
   /// This will also delete all of the stars in the constellation.
   void delete() {
@@ -225,7 +226,7 @@ class Constellation {
     starmap?.trim(star);
   }
 
-  /// # `void` resetToCurrentStar()
+  /// # void resyncToCurrentStar()
   /// ## Restores the files from current star.
   /// This WILL discard any changes in files, so make sure you grown the constellation before calling this.
   void resyncToCurrentStar() {
@@ -254,6 +255,8 @@ class Constellation {
   /// # bool checkForDifferences()
   /// ## Checks if the constellation has differences between the current star and the root star.
   /// Returns `true` if there are differences, `false` otherwise.
+  /// If silent is true (default), will not print any output.
+  /// If silent is false, will print the differences to the console.
   bool checkForDifferences([bool silent = true]) {
     Star star = Star(this, hash: starmap?._currentStarHash);
     return Dossier(star).checkForDifferences(silent);
@@ -495,6 +498,10 @@ class Starmap {
   /// This will not discard any changes in files, BUT will destroy previous changes in files.
   void trim([Star? star]) {
     star ??= currentStar!; // If no star is given, use the current star.
+    if (star.isRoot) {
+      print("Cannot trim the root star!");
+      return;
+    }
     star.parent!.makeCurrent();
     star.trim(); // Calls the trim function on the star.
     constellation.save();

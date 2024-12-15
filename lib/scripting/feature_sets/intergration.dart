@@ -23,7 +23,7 @@ class IntergrationAddonContext extends AddonContext {
     if ((params['url'] as String).startsWith("http://") ||
         (params['url'] as String).startsWith("https://")) {
       throw Exception(
-          "Addon (${addon.name}) tried to open a HTTP Url. For security reasons, HTTP addresses are not allowed to be opened. If you made this Addon, please use a different protocol (like 'steam://'). If you downloaded this Addon, please uninstall the addon and contact the author.");
+          "Addon (${addon!.name}) tried to open a HTTP Url. For security reasons, HTTP addresses are not allowed to be opened. If you made this Addon, please use a different protocol (like 'steam://'). If you downloaded this Addon, please uninstall the addon and contact the author.");
     }
     openUrl(params['url'] as String);
   }

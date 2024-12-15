@@ -56,6 +56,11 @@ Click the badge below to download the latest artifact.
 
 ![How to download artifacts.](images/download_archive.GIF)
 
+> [!WARNING]
+> Please keep in mind that Arceus is still in alpha, and it is not 
+> opimtized for files larger than a few megabytes.
+
+
 # Planned Features for the Future
 
 ## Frontend GUI 🖱️
