@@ -73,17 +73,8 @@ class UserIndex {
     if (users.any((element) => element.name == name)) {
       print("Not recommended to have two users with the same name.");
     }
-    String? hash;
-    for (int i = 0; i < 100; i++) {
-      hash = User.generateUniqueUserHash();
-      if (!users.any((element) => element.hash == hash)) {
-        break;
-      }
-      hash = null;
-    }
-    if (hash == null) {
-      throw Exception("Unable to generate a unique user hash.");
-    }
+    String hash = generateUniqueHash(users.map((e) => e.hash).toSet(),
+        length: User.lengthOfHash);
     User user = User(this, name, hash);
     users.add(user);
     _save();
@@ -96,7 +87,7 @@ class UserIndex {
 }
 
 class User {
-  static const int _lengthOfHash = 8;
+  static const int lengthOfHash = 8;
   UserIndex userIndex;
   String? _name;
   String get name => _name!;
@@ -113,14 +104,9 @@ class User {
     return "$hash$_name";
   }
 
-  static String generateUniqueUserHash() {
-    String hash = generateUUID();
-    return hash.substring(0, _lengthOfHash);
-  }
-
   factory User.fromString(UserIndex userIndex, String string) {
-    String hash = string.substring(0, _lengthOfHash);
-    String name = string.substring(_lengthOfHash);
+    String hash = string.substring(0, lengthOfHash);
+    String name = string.substring(lengthOfHash);
     return User(userIndex, name, hash);
   }
 }

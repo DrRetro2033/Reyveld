@@ -32,7 +32,7 @@ Future<dynamic> main(List<String> arguments) async {
       help:
           "Use a constellation name instead of an path. Only works after using --path to create the constellation.");
   runner.argParser.addFlag("internal", defaultsTo: false, hide: true);
-  Arceus.currentPath = Directory.current.path;
+  Arceus.currentPath = Directory.current.path.fixPath();
   if (arguments.contains("--path") || arguments.contains("-p")) {
     Arceus.currentPath =
         arguments[arguments.indexWhere((e) => e == "--path" || e == "-p") + 1];
@@ -161,6 +161,7 @@ The current star is marked with ✨
     print(
         "Currently signed in as ${constellation.loggedInUser?.name.italic()}.");
     constellation.starmap?.printMap();
+    constellation.printSumOfCurStar();
     return jsonEncode(constellation.starmap?.toJson());
   }
 }
@@ -236,8 +237,7 @@ If you decide to resync back to the current star, call 'resync'.
   void run() {
     Constellation constellation = Constellation(path: Arceus.currentPath);
     final files = constellation.listStarFiles();
-    final stars =
-        files.map((e) => Star(constellation, hash: e.split(".")[0])).toList();
+    final stars = files.map((e) => Star(constellation, hash: e)).toList();
     final options =
         stars.map((e) => "${e.name} - ${e.createdAt.toString()}").toList();
     final selected = Select(

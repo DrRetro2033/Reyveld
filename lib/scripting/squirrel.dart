@@ -105,8 +105,8 @@ class Squirrel {
     }
   }
 
-  /// # `static` void printStack(Pointer<SQVM> vm)
-  /// ## Prints the stack of the Squirrel instance.
+  /// # `static` void getStack(Pointer<SQVM> vm)
+  /// ## Gets the stack of the Squirrel instance.
   static List<String> getStack(Pointer<SQVM> vm) {
     List<String> stack = [];
     int i = bindings.sq_gettop(vm);
@@ -146,8 +146,11 @@ class Squirrel {
         bindings.sq_pushnull(vm);
       }
     }
-    successful(vm, bindings.sq_call(vm, args.length + 1, SQTrue, SQTrue));
-    final returnValue = getValueFromStack(vm);
+    successful(
+        vm,
+        bindings.sq_call(vm, args.length + 1, SQTrue,
+            SQTrue)); // Calls and checks if the call was successful.
+    final returnValue = getValueFromStack(vm); // Returns the return value.
     bindings.sq_pop(vm, 2); // Pops the function and the root table.
     return returnValue;
   }

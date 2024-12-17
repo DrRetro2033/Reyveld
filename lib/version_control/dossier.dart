@@ -1,7 +1,11 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:arceus/cli.dart';
+import 'package:arceus/scripting/addon.dart';
+import 'package:arceus/scripting/feature_sets/feature_sets.dart';
 import 'package:archive/archive_io.dart';
+import 'package:yaml/yaml.dart';
 
 import 'star.dart';
 import 'package:ansix/ansix.dart';
@@ -263,6 +267,24 @@ class Plasma {
     } else {
       return file!.path.getFilename();
     }
+  }
+
+  String getExtension() {
+    if (origin == Origin.internal) {
+      return pathInStar!.getExtension();
+    } else {
+      return file!.path.getExtension();
+    }
+  }
+
+  void printSummary() {
+    Addon addon = Addon.getInstalledAddonsByFeatureSet(FeatureSets.pattern)
+        .firstWhere((e) => (e.getMetadata()["associated-files"] as YamlList)
+            .contains(getExtension()));
+    AnsiTreeView tree = AnsiTreeView(
+        (addon.context as PatternAdddonContext).read(this),
+        theme: Cli.treeTheme);
+    print(tree.toString());
   }
 
   /// # `bool` isTracked()

@@ -62,6 +62,8 @@ class Constellation {
   /// Should be the host user, however, it can be null. Automatically loaded.
   User? loggedInUser;
 
+  String? summaryFile;
+
   /// # Constellation({String? path, String? name})
   /// ## Creates a new constellation.
   /// If a path or name is provided, then the constellation will be loaded from that path, if it exists.
@@ -128,14 +130,7 @@ class Constellation {
   /// # String generateUniqueStarHash()
   /// ## Generates a unique star hash.
   String generateUniqueStarHash() {
-    for (int i = 0; i < 100; i++) {
-      String hash = generateUUID();
-      if (!(doesStarExist(hash))) {
-        return hash;
-      }
-    }
-    throw Exception(
-        "Unable to generate a unique star hash. Either you are extremely unlucky or there are no more unique hashes left to use!");
+    return generateUniqueHash(listStarFiles());
   }
 
   /// # String getStarPath(String hash)
@@ -146,14 +141,14 @@ class Constellation {
   /// ## Lists all stars in the constellation.
   /// Returns a list of the hashes of all stars in the constellation folder (NOT the starmap).
   /// Used for recovering a constellation from corruption.
-  List<String> listStarFiles() {
-    List<String> stars = [];
+  Set<String> listStarFiles() {
+    Set<String> stars = {};
     for (String hash in Directory(constellationPath)
         .listSync()
         .map((e) => e.path)
         .toList()) {
       if (hash.getExtension() == "star") {
-        stars.add(hash.getFilename());
+        stars.add(hash.getFilename(withExtension: false));
       }
     }
     return stars;
@@ -267,6 +262,14 @@ class Constellation {
   /// Returns `true` if the constellation exists, `false` otherwise.
   static bool checkForConstellation(String path) {
     return Directory("$path/.constellation").existsSync();
+  }
+
+  void printSumOfCurStar() {
+    if (summaryFile == null) {
+      return;
+    }
+    Plasma plasma = starmap!.currentStar!.getPlasma(summaryFile!);
+    plasma.printSummary();
   }
 }
 

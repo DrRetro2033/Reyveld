@@ -54,9 +54,13 @@ extension Compression on String {
   /// # `String` getFilename()
   /// ## Returns the filename of the string.
   /// The filename will be the same for both internal and external paths.
-  String getFilename() {
+  String getFilename({bool withExtension = true}) {
     String path = fixPath();
-    return path.split("/").last;
+    if (withExtension) {
+      return path.split("/").last;
+    } else {
+      return path.split("/").last.split(".").first;
+    }
   }
 
   /// # `String` getExtension()
