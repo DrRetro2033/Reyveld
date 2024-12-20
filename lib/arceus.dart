@@ -9,7 +9,9 @@ import 'version_control/constellation.dart';
 /// ## A class that represents the Arceus application.
 /// Contain global functions for Arceus, for example, settings, paths, etc.
 class Arceus {
-  static late String currentPath;
+  static late String _currentPath;
+  static String get currentPath => _currentPath;
+  static set currentPath(String path) => _currentPath = path.fixPath();
   static late bool isInternal;
 
   /// # `static` `String` _appDataPath
@@ -35,14 +37,6 @@ class Arceus {
       return "${Platform.environment["APPDATA"]!.fixPath()}/arceus";
     }
   }
-
-  // static String _getProgramFilesPath() {
-  //   if (!Platform.environment.containsKey("PROGRAMFILES(X86)")) {
-  //     return Directory.current.path;
-  //   } else {
-  //     return "${Platform.environment["PROGRAMFILES(X86)"]!.fixPath()}/Arceus";
-  //   }
-  // }
 
   /// # `static` `Map<String, dynamic>` _getConstellations
   /// ## Returns the list of constellations.
@@ -113,8 +107,6 @@ class Arceus {
       throw Exception("Constellation does not exist");
     }
   }
-
-  static void saveUsers() {}
 
   /// # `static` `void` _save(`Map<String, dynamic>` newIndex)
   /// ## Saves the list of constellations to the file.

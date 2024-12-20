@@ -12,7 +12,7 @@ class ArceusServer {
   /// ## The keyboard input handler.
   static final keyboard = KeyboardInput();
 
-  /// # `void` `start`\
+  /// # `void` `start`
   /// ## Starts the server
   static Future<void> start() async {
     /// 1. Link to Pilot
