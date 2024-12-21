@@ -388,13 +388,11 @@ class Star {
     if (above == null && below == null) {
       return this;
     }
-    above = above == 0 ? 1 : above;
-    below = below == 0 ? 1 : below;
     List<Star> siblings = getDeepSiblings();
-    int offset = above ??
-        -below!; // If above is null, then below is not null. above will add to the index, while below will subtract.
+    int offset = below ??
+        -above!; // If above is null, then below is not null. above will add to the index, while below will subtract.
     return siblings[(getIndex() + offset) %
         siblings
-            .length]; // I ❤️ modulo. It's almost magic how easily it can wrap a index around to a vaild range! I just wish I could use it more often.
+            .length]; // I ❤️ modulo. It's almost magic how easily it can wrap a index around to a valid range! I just wish I could use it more often.
   }
 }
