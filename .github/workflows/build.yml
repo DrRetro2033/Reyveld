@@ -22,7 +22,8 @@ jobs:
       - name: Fetch Dependencies
         run: dart pub get .
       - name: Make Build Directories
-        run: "mkdir -p build/releases/${{ matrix.platform }}"
+        run: "mkdir -p build/releases/${{ matrix.platform }} &&
+          mkdir ./scripts/installers/${{ matrix.platform }}/lib"
       - name: Build Executable
         run: dart compile exe --define=DEBUG=false ./lib/main.dart --target-os ${{ matrix.platform }} -o build/releases/${{ matrix.platform }}/${{ matrix.output}}
       - name: Build Squirrel

@@ -22,10 +22,10 @@ class Dossier {
   Star star;
 
   // The following are used for the CLI:
-  String addSymbol = "A".bold().green();
-  String removeSymbol = "D".bold().red();
-  String moveSymbol = "→".bold().aqua();
-  String modifiedSymbol = "M".bold().yellow();
+  final String _addSymbol = "A".bold().green();
+  final String _removeSymbol = "D".bold().red();
+  final String _moveSymbol = "→".bold().aqua();
+  final String _modifiedSymbol = "M".bold().yellow();
 
   Dossier(this.star);
 
@@ -46,25 +46,25 @@ class Dossier {
       spinner = CliSpin(text: " Checking for new files...").start();
     }
 
-    List<String> newFiles = listAddedFiles();
+    List<String> newFiles = _listAddedFiles();
     if (!silent) spinner!.stop();
     // Check for removed files.
     if (!silent) {
       spinner = CliSpin(text: " Checking for removed files...").start();
     }
-    List<String> removedFiles = listRemovedFiles();
+    List<String> removedFiles = _listRemovedFiles();
     if (!silent) spinner!.stop();
 
     // Check for moved files. Done after new and removed files, as they can be used here to make a cross reference.
     if (!silent) {
       spinner = CliSpin(text: " Checking for moved files...").start();
     }
-    Map<String, String> movedFiles = listMovedFiles(newFiles, removedFiles);
+    Map<String, String> movedFiles = _listMovedFiles(newFiles, removedFiles);
     if (movedFiles.isNotEmpty) {
       check = true;
       spinner!.stop();
       for (String file in movedFiles.keys) {
-        print("  $file $moveSymbol ${movedFiles[file]}");
+        print("  $file $_moveSymbol ${movedFiles[file]}");
       }
     } else {
       spinner?.success(" There are no moved files.");
@@ -78,7 +78,7 @@ class Dossier {
         if (movedFiles.containsValue(file)) {
           continue;
         }
-        print("  $addSymbol $file");
+        print("  $_addSymbol $file");
       }
     } else {
       spinner?.success(" There are no new files.");
@@ -92,7 +92,7 @@ class Dossier {
         if (movedFiles.containsKey(file)) {
           continue;
         }
-        print("  $removeSymbol $file");
+        print("  $_removeSymbol $file");
       }
     } else {
       spinner?.success(" There are no removed files.");
@@ -102,12 +102,12 @@ class Dossier {
     if (!silent) {
       spinner = CliSpin(text: " Checking for changed files...").start();
     }
-    List<String> changedFiles = listChangedFiles(removedFiles);
+    List<String> changedFiles = _listChangedFiles(removedFiles);
     if (changedFiles.isNotEmpty) {
       spinner?.fail(" Changed files found:");
       check = true;
       for (String file in changedFiles) {
-        print("  $modifiedSymbol $file");
+        print("  $_modifiedSymbol $file");
       }
     } else {
       spinner?.success(" There are no changed files.");
@@ -117,7 +117,7 @@ class Dossier {
 
   /// # `List<String>` listAddedFiles()
   /// ## Lists all files in the current directory that have been recently added.
-  List<String> listAddedFiles() {
+  List<String> _listAddedFiles() {
     Archive archive = star.getArchive();
     List<String> newFiles = [];
     for (FileSystemEntity entity
@@ -139,7 +139,7 @@ class Dossier {
 
   /// # `List<String>` listRemovedFiles()
   /// ## Lists all files in the current directory that have been recently removed.
-  List<String> listRemovedFiles() {
+  List<String> _listRemovedFiles() {
     Archive archive = star.getArchive();
     List<String> removedFiles = [];
     for (ArchiveFile file in archive.files) {
@@ -155,7 +155,7 @@ class Dossier {
 
   /// # `Map<String, String>` listMovedFiles(`List<String>` newFiles, `List<String>` removedFiles)
   /// ## Lists all files in the current directory that have been recently moved.
-  Map<String, String> listMovedFiles(
+  Map<String, String> _listMovedFiles(
       List<String> newFiles, List<String> removedFiles) {
     Map<String, String> movedFiles = {};
     for (String file in removedFiles) {
@@ -174,7 +174,7 @@ class Dossier {
 
   /// # `List<String>` listChangedFiles(`List<String>` removedFiles)
   /// ## Lists all files in the current directory that have been recently changed.
-  List<String> listChangedFiles(List<String> removedFiles) {
+  List<String> _listChangedFiles(List<String> removedFiles) {
     Archive archive = star.getArchive();
     List<String> changedFiles = [];
     for (ArchiveFile file in archive.files) {
@@ -282,7 +282,7 @@ class Plasma {
         .firstWhere((e) => (e.getMetadata()["associated-files"] as YamlList)
             .contains(getExtension()));
     AnsiTreeView tree = AnsiTreeView(
-        (addon.context as PatternAdddonContext).read(this),
+        (addon.context as PatternAddonContext).read(this),
         theme: Cli.treeTheme);
     print(tree.toString());
   }
@@ -312,18 +312,17 @@ class Plasma {
     return changes;
   }
 
-  /// # `Map<int, int>` getDifferences(Plasma other)
+  /// # `DifferenceMap` getDifferences(Plasma other)
   /// ## Compares the current plasma to another plasma.
   /// Returns a map of the differences between the two plasmas.
   /// The keys are the addresses of the differences, and the values are the values at those addresses in the current plasma.
   DifferenceMap getDifferences(Plasma other) {
-    DifferenceMap differences = DifferenceMap();
-    for (int i = 0;
-        i <
-            (other.data.lengthInBytes >= data.lengthInBytes
-                ? other.data.lengthInBytes
-                : data.lengthInBytes); // Get the largest length
-        ++i) {
+    final differences = DifferenceMap();
+    final maxLength = other.data.lengthInBytes >= data.lengthInBytes
+        ? other.data.lengthInBytes
+        : data.lengthInBytes;
+
+    for (int i = 0; i < maxLength; ++i) {
       if (i >= data.lengthInBytes) {
         differences.addAddition(i, other.data.getUint8(i));
       } else if (i >= other.data.lengthInBytes) {
@@ -363,7 +362,7 @@ class Plasma {
 enum ChangeOrigin { from, to }
 
 /// # `class` `DifferenceMap`
-/// ## Used to originize the differences between two plasmas into maps.
+/// ## Used to organize the differences between two plasmas into maps.
 class DifferenceMap {
   Map<int, Map<ChangeOrigin, int>> modifications = {};
   Map<int, int> additions = {};

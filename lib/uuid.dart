@@ -11,14 +11,13 @@ String generateUUID() {
 }
 
 String generateUniqueHash(Set<String> existingHashes, {int length = 32}) {
+  if (existingHashes.length >= (1 << (length * 4))) {
+    throw Exception("Unable to generate a unique hash! No available hashes.");
+  }
+
   String hash = generateUUID();
-  int retries = 8192;
   while (existingHashes.contains(hash.substring(0, length))) {
-    if (retries <= 0) {
-      throw Exception("Unable to generate a unique hash! Retries exceeded.");
-    }
     hash = generateUUID();
-    retries--;
   }
   return hash.substring(0, length);
 }

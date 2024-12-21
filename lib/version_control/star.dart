@@ -195,7 +195,7 @@ class Star {
 
   /// # Archive getArchive()
   /// ## Returns the archive of the star.
-  /// ALWAYS, ALWAYS, ALWAYS call [clearSync] on the archive after using it.
+  /// ALWAYS, ALWAYS, ALWAYS call [clearSync] on the archive object after using it.
   /// If you don't, then trimming the star will not work, and will throw an access error.
   Archive getArchive() {
     final inputStream = InputFileStream(constellation.getStarPath(hash!));

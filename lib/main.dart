@@ -157,12 +157,11 @@ The current star is marked with ✨
   ShowMapConstellationCommand();
 
   @override
-  dynamic _run() {
+  void _run() {
     print(
         "Currently signed in as ${constellation.loggedInUser?.name.italic()}.");
     constellation.starmap?.printMap();
     constellation.printSumOfCurStar();
-    return jsonEncode(constellation.starmap?.toJson());
   }
 }
 
@@ -700,7 +699,7 @@ class ReadFileCommand extends ArceusCommand {
       return null;
     }
     Plasma plasma = Plasma.fromFile(file);
-    final result = (addons.first.context as PatternAdddonContext).read(plasma);
+    final result = (addons.first.context as PatternAddonContext).read(plasma);
     if (!Arceus.isInternal) {
       print(AnsiTreeView(result, theme: Cli.treeTheme));
     }

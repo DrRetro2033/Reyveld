@@ -195,7 +195,7 @@ class Constellation {
   Map<String, dynamic> toJson() => {
         "name": name,
         "loggedInUser": loggedInUser?.hash,
-        "map": starmap?.toJson()
+        "map": starmap?._toJson()
       };
 
   // ============================================================================
@@ -303,7 +303,7 @@ class Starmap {
       _childMap = {};
       parentMap = {};
     } else {
-      fromJson(map);
+      _fromJson(map);
     }
   }
 
@@ -407,7 +407,7 @@ class Starmap {
   /// # `Map<dynamic, dynamic>` toJson()
   /// ## Returns a JSON map of the starmap.
   /// This is used when saving the starmap to disk.
-  Map<dynamic, dynamic> toJson() {
+  Map<dynamic, dynamic> _toJson() {
     _childMap.removeWhere((key, value) => value.isEmpty);
     return {
       "root": _rootHash,
@@ -420,7 +420,7 @@ class Starmap {
   /// # `void` fromJson(`Map<dynamic, dynamic>` json)
   /// ## Uses a JSON map to initialize the starmap.
   /// This is used when loading the starmap from disk.
-  void fromJson(Map<dynamic, dynamic> json) {
+  void _fromJson(Map<dynamic, dynamic> json) {
     _rootHash = json["root"];
     _currentStarHash = json["current"];
     for (String hash in json["children"].keys) {
@@ -440,7 +440,7 @@ class Starmap {
   /// The list will be empty if the parent has no children.
   List<Star> getChildren(Star parent) {
     List<Star> children = [];
-    for (String hash in getChildrenHashes(parent.hash!)) {
+    for (String hash in _getChildrenHashes(parent.hash!)) {
       children.add(Star(constellation, hash: hash));
     }
     return children;
@@ -449,7 +449,7 @@ class Starmap {
   /// # `List<String>` getChildrenHashes(`String` parent)
   /// ## Returns a list of all children hashes of the given parent.
   /// The list will be empty if the parent has no children.
-  List getChildrenHashes(String parent) {
+  List _getChildrenHashes(String parent) {
     return _childMap[parent] ?? <String>[];
   }
 
@@ -570,7 +570,7 @@ class Starmap {
   /// # `bool` existAtCoordinates(`int` depth, `int` index)
   /// ## Returns true if a star exists at the given depth and index.
   /// Returns false otherwise.
-  bool existAtCoordinates(int depth, int index) {
+  bool _existAtCoordinates(int depth, int index) {
     List<Star> stars = getStarsAtDepth(depth);
     if (index >= 0 && index < stars.length) {
       return true;
@@ -582,8 +582,8 @@ class Starmap {
   /// ## Returns true if there is a star next to the given coordinates.
   /// Returns false otherwise.
   bool existBesideCoordinates(int depth, int index) {
-    if (existAtCoordinates(depth, index - 1) ||
-        existAtCoordinates(depth, index + 1)) {
+    if (_existAtCoordinates(depth, index - 1) ||
+        _existAtCoordinates(depth, index + 1)) {
       return true;
     }
     return false;

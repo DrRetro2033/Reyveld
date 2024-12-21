@@ -38,6 +38,7 @@ class Cli {
       // ANSI escape code to clear the terminal for Unix-based systems
       Process.runSync("clear", [], runInShell: true);
     }
+    moveCursorToTopLeft();
   }
 
   /// # static `void` moveCursorToTopLeft()

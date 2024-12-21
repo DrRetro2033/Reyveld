@@ -19,8 +19,22 @@ enum FeatureSets {
 class Addon {
   final File addonFile;
 
+  Addon(this.addonFile) {
+    if (!addonFile.existsSync()) {
+      throw Exception("Addon file does not exist.");
+    }
+    switch (featureSet) {
+      case FeatureSets.pattern:
+        _context = PatternAddonContext(this);
+        break;
+      case FeatureSets.none:
+        _context = NoneAdddonContext(this);
+        break;
+    }
+  }
+
   String get path => addonFile.path;
-  String get name => getMetadata()["name"];
+  String get name => getMetadata()["name"] ?? "Unknown";
 
   bool get isGlobal {
     if (isUninstalled()) {
@@ -45,15 +59,16 @@ class Addon {
     return _context;
   }
 
-  /// # `String` get code
-  /// ## Returns the code of the addon.
-  /// Used by context.
   String get code => getCode();
 
   String get decodedString {
-    Uint8List data = addonFile.readAsBytesSync();
-    List<int> decoded = gzip.decoder.convert(data.toList());
-    return utf8.decode(decoded);
+    try {
+      Uint8List data = addonFile.readAsBytesSync();
+      List<int> decoded = gzip.decoder.convert(data.toList());
+      return utf8.decode(decoded);
+    } catch (e) {
+      throw Exception("Failed to decode addon file: $e");
+    }
   }
 
   FeatureSets get featureSet {
@@ -62,17 +77,6 @@ class Addon {
         return FeatureSets.pattern;
       default:
         return FeatureSets.none;
-    }
-  }
-
-  Addon(this.addonFile) {
-    switch (featureSet) {
-      case FeatureSets.pattern:
-        _context = PatternAdddonContext(this);
-        break;
-      case FeatureSets.none:
-        _context = NoneAdddonContext(this);
-        break;
     }
   }
 
@@ -88,7 +92,7 @@ class Addon {
       while (body.contains(RegExp(r"#\s*include\(([a-zA-Z\/\s]*.nut)\s*\)"))) {
         final match =
             RegExp(r"#\s*include\(([a-zA-Z\/\s]*.nut)\s*\)").firstMatch(body)!;
-        body.replaceRange(match.start, match.end, "");
+        body = body.replaceRange(match.start, match.end, "");
         body += File("$projectPath/${match.group(1)!}").readAsStringSync();
         body += "\n";
       }
@@ -110,16 +114,20 @@ class Addon {
     throw Exception("Invalid addon! Please check your addon.yaml file.");
   }
 
-  /// # `YamlMap` _getAddonYaml(`String` projectPath)
-  /// ## Returns the contents of addon.yaml as a YamlMap.
-  ///
-  /// The `projectPath` argument is the path to the project directory.
   static YamlMap _getAddonYaml(String projectPath) {
-    return loadYaml(File("$projectPath/addon.yaml").readAsStringSync());
+    try {
+      return loadYaml(File("$projectPath/addon.yaml").readAsStringSync());
+    } catch (e) {
+      throw Exception("Failed to load addon.yaml: $e");
+    }
   }
 
   static String _getAddonYamlAsString(String projectPath) {
-    return File("$projectPath/addon.yaml").readAsStringSync();
+    try {
+      return File("$projectPath/addon.yaml").readAsStringSync();
+    } catch (e) {
+      throw Exception("Failed to read addon.yaml: $e");
+    }
   }
 
   static bool _validate(String projectPath) {
@@ -129,20 +137,22 @@ class Addon {
       isValid = false;
     }
 
-    YamlMap addonYaml =
-        loadYaml(File("$projectPath/addon.yaml").readAsStringSync());
+    YamlMap addonYaml;
+    try {
+      addonYaml = loadYaml(File("$projectPath/addon.yaml").readAsStringSync());
+    } catch (e) {
+      return false;
+    }
 
     if (!_validateMetadata(addonYaml)) {
-      // do check on metadata to make sure it is valid.
       isValid = false;
     }
     return isValid;
   }
 
   static bool _validateMetadata(YamlMap metadata) {
-    bool isVaild = true;
+    bool isValid = true;
 
-    // check for required keys
     List<String> requiredKeys = [
       "name",
       "description",
@@ -154,32 +164,24 @@ class Addon {
 
     for (String key in requiredKeys) {
       if (!metadata.containsKey(key)) {
-        isVaild = false;
+        isValid = false;
       }
     }
 
-    if (isVaild) {
-      // check typing of values
-      if (metadata["name"] is! String) {
-        isVaild = false;
-      } else if (metadata["description"] is! String) {
-        isVaild = false;
-      } else if (metadata["version"] is! String) {
-        isVaild = false;
-      } else if (metadata["authors"] is! YamlList) {
-        isVaild = false;
-      } else if (metadata["feature-set"] is! String) {
-        isVaild = false;
-      } else if (metadata["entrypoint"] is! YamlList) {
-        isVaild = false;
+    if (isValid) {
+      if (metadata["name"] is! String ||
+          metadata["description"] is! String ||
+          metadata["version"] is! String ||
+          metadata["authors"] is! YamlList ||
+          metadata["feature-set"] is! String ||
+          metadata["entrypoint"] is! String) {
+        isValid = false;
       }
     }
 
-    return isVaild;
+    return isValid;
   }
 
-  /// # `factory` Addon.installGlobally()
-  /// ## Installs an addon globally.
   factory Addon.installGlobally(String pathToAddonFile,
       {bool deleteOld = true}) {
     if (!File(pathToAddonFile).existsSync()) {
@@ -205,8 +207,6 @@ class Addon {
         File("${Arceus.globalAddonPath}/${pathToAddonFile.getFilename()}"));
   }
 
-  /// # `factory` Addon.installLocally()
-  /// ## Installs an addon locally to the current constellation.
   factory Addon.installLocally(String pathToAddonFile,
       {bool deleteOld = true}) {
     if (!File(pathToAddonFile).existsSync()) {
@@ -215,7 +215,11 @@ class Addon {
     File file = File(pathToAddonFile);
     Uint8List data = file.readAsBytesSync();
     if (deleteOld) {
-      file.deleteSync();
+      try {
+        file.deleteSync();
+      } catch (e) {
+        throw Exception("Failed to delete old addon file: $e");
+      }
     }
     file = File(
         "${Constellation(path: Arceus.currentPath).addonFolderPath}/${pathToAddonFile.getFilename()}");
@@ -236,12 +240,14 @@ class Addon {
   }
 
   void uninstall() {
-    File file = File(path);
-    file.deleteSync();
+    try {
+      File file = File(path);
+      file.deleteSync();
+    } catch (e) {
+      throw Exception("Failed to uninstall addon: $e");
+    }
   }
 
-  /// # `static` getInstalledAddons()
-  /// ## Returns a list of all installed addons.
   static List<Addon> getInstalledAddons() {
     List<Addon> addons = <Addon>[];
     if (Constellation.checkForConstellation(Arceus.currentPath)) {
@@ -274,27 +280,23 @@ class Addon {
     return addons;
   }
 
-  /// # `AddonDetails` _getDetails()
-  /// ## Returns the details of the addon.
-  /// It is separated by `---END-OF-DETAILS---`.
   YamlMap getMetadata() {
-    return loadYaml(decodedString.split("---END-OF-DETAILS---")[0]);
+    try {
+      return loadYaml(decodedString.split("---END-OF-DETAILS---")[0]);
+    } catch (e) {
+      throw Exception("Failed to get metadata: $e");
+    }
   }
 
-  /// # `String` _getCode()
-  /// ## Returns the code of the addon.
-  /// It is separated by `---END-OF-DETAILS---`.
   String getCode() {
-    return decodedString.split("---END-OF-DETAILS---")[1];
+    try {
+      return decodedString.split("---END-OF-DETAILS---")[1];
+    } catch (e) {
+      throw Exception("Failed to get code: $e");
+    }
   }
 }
 
-/// # `AddonContext`
-/// ## An abstract class that represents the context of an addon.
-/// Acts as the bridge between the addon and the Squirrel VM.
-/// Before, Addon was abstract with subclasses acting as different feature sets.
-/// However, this is not the case anymore. Addons will create a [AddonContext] that the `addon.yaml` asks for,
-/// and then use it to run the addon.
 abstract class AddonContext {
   static final RegExp functionNameRegex =
       RegExp(r"function\s([A-Za-z\d]*)\([A-Za-z,\s]*\)");
@@ -319,10 +321,10 @@ abstract class AddonContext {
     return true;
   }
 
-  /// # `Pointer<SQVM>` startVM()
-  /// ## Starts the Squirrel VM and returns the VM pointer.
-  /// It also creates the API for the Squirrel VM, so be sure all the functions have been added to [functions].
   Pointer<SQVM> startVM() {
+    if (addon == null) {
+      throw Exception("Addon is not set.");
+    }
     final vm = Squirrel.run(addon!.code);
     Squirrel.createAPI(vm, functions);
     return vm;

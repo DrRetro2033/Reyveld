@@ -6,84 +6,32 @@ import 'package:chalkdart/chalkstrings.dart';
 import 'package:dart_console/dart_console.dart';
 import '../cli.dart';
 import '../version_control/dossier.dart';
+import 'widget_system.dart';
 
 enum Views {
-  jumpToAddress, // For jumping to an address.
-  byteViewer, // For moving through the file byte by byte.
-  dataFooter, // For editing data visible in the footer.
-  changeLog, // For looking at the change log. TODO: Needs to be implemented.
+  jumpToAddress,
+  byteViewer,
+  dataFooter,
+  changeLog,
 }
 
-enum Formats {
-  u8,
-  u16,
-  u32,
-  u64
-} // The data formats bytes can be displayed and edited in.
+enum Formats { u8, u16, u32, u64 }
 
 class HexEditor {
-  /// # final `Plasma` _primaryFile
-  /// ## The file being edited.
   final Plasma _primaryFile;
-
-  /// # final `Plasma?` _secondaryFile
-  /// ## The older version of the file being used for comparison.
   Plasma? _secondaryFile;
-
-  /// # final `Map<int, int>` differences
-  /// ## The differences between the primary file and the secondary file.
   DifferenceMap differences = DifferenceMap();
-
-  /// # final `KeyboardInput` keyboard
-  /// ## The keyboard input handler.
   final keyboard = KeyboardInput();
-
-  /// # `Views` currentView
-  /// ## The current view of the editor.
-  /// Defaults to `Views.byteViewer`.
   Views currentView = Views.byteViewer;
-
-  /// # `ByteData` data
-  /// ## The data being edited.
-  /// Returns the primary file's data.
   ByteData get data => _primaryFile.data;
-
-  /// # `Endian` dataEndian
-  /// ## The endianness of the data.
-  /// Defaults to `Endian.little`.
   Endian dataEndian = Endian.little;
-
-  /// # `int` address
-  /// ## The current address being viewed/edited.
   int address = 0;
-
-  /// # `Formats` currentFormat
-  /// ## The current format of the data being edited.
   Formats currentFormat = Formats.u8;
-
-  /// # `String?` _currentValue
-  /// ## The current value being inputed.
-  /// Used for the `dataFooter` and `jumpToAddress` views.
   String? _currentValue;
-
-  /// # `bool` error
-  /// ## Whether or not an error has occurred.
   bool error = false;
-
-  /// # `List<int>` byteColor
-  /// ## The color label for a byte.
   final List<int> byteColor = [255, 255, 255];
-
-  /// # `List<int>` byte16Color
-  /// ## The color label for a 16-bit range.
   final List<int> byte16Color = [140, 140, 140];
-
-  /// # `List<int>` byte32Color
-  /// ## The color label for a 32-bit range.
   final List<int> byte32Color = [100, 100, 100];
-
-  /// # `List<int>` byte64Color
-  /// ## The color label for a 64-bit range.
   final List<int> byte64Color = [60, 60, 60];
 
   HexEditor(this._primaryFile) {
@@ -93,39 +41,28 @@ class HexEditor {
     }
   }
 
-  /// # `String` getByteAt(int address)
-  /// ## Get the byte at the given address as a hex string.
   String getByteAt(int address) {
     return data.getUint8(address).toRadixString(16).padLeft(2, "0");
   }
 
-  /// # `bool` isValidAddress(int address)
-  /// ## Check if an address is valid.
   bool isValidAddress(int address) {
     return address >= 0 && address < data.lengthInBytes;
   }
 
-  /// # `void` render()
-  /// ## Render the current state of the editor to the console.
   void render() {
-    Cli.moveCursorToTopLeft();
-    Cli.clearTerminal();
-    Cli.moveCursorToTopLeft();
-    final header = getHeader();
+    final header = Header(getHeader());
+    final footer = Footer(getFooter());
+    final body = TextWidget(getBody());
 
-    final footer = getFooter();
-    int linesUsedByHeader = header.split('\n').length;
-    int linesUsedByFooter = footer.split('\n').length;
-    stdout.write(header);
-    stdout.write("\n");
-    stdout.write(getBody(
-        (Cli.windowHeight - linesUsedByFooter) - linesUsedByHeader + 5));
-    Cli.moveCursorToBottomLeft(linesUsedByFooter - 1);
-    stdout.write(footer);
+    final rootWidget = Column([
+      header,
+      body,
+      footer,
+    ]);
+
+    WidgetSystem(rootWidget).render();
   }
 
-  /// # `String` getHeader()
-  /// ## Get the header of the editor.
   String getHeader() {
     String header = "";
     header += _primaryFile.getFilename().italic;
@@ -138,11 +75,8 @@ class HexEditor {
     return header;
   }
 
-  /// # `String` getFooter()
-  /// ## Get the footer of the editor.
   String getFooter() {
     String footer = "";
-    // Write address at bottom left.
     footer += "A".underline.bold;
     footer += "ddress: ";
     if (currentView == Views.jumpToAddress) {
@@ -179,12 +113,10 @@ class HexEditor {
     return (((data.lengthInBytes) >> 1 << 1) / 16).ceil();
   }
 
-  /// # `String` renderBody()
-  /// ## Render the bytes as the body of the editor.
-  String getBody(int usableRows) {
+  String getBody() {
     final full = StringBuffer();
     final body = StringBuffer();
-    usableRows -= 8;
+    int usableRows = Cli.windowHeight - 8;
     int startLine = 0;
     int endLine = (getFileSizeInLines());
     if (usableRows < getFileSizeInLines()) {
@@ -192,7 +124,6 @@ class HexEditor {
       startLine = getLineAddress() - linesAboveBelow;
       endLine = getLineAddress() + linesAboveBelow;
 
-      // Adjust start and end to ensure full screen is used
       if (startLine < 0) {
         endLine += startLine.abs();
         startLine = 0;
@@ -204,18 +135,16 @@ class HexEditor {
     }
 
     full.write("\t\t00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n"
-        .padLeft(8, " ")); // Address Headers
+        .padLeft(8, " "));
     for (int x = startLine * 16;
         x < data.lengthInBytes && x < endLine * 16;
         x += 16) {
       if (usableRows <= 0) {
         break;
       }
-      // 16 bytes per line, with a gap between every eight bytes.
-      final line = StringBuffer(""); // The line to be printed
-      line.write("${x.toRadixString(16).padLeft(8, "0")}\t"); // Address Labels
+      final line = StringBuffer("");
+      line.write("${x.toRadixString(16).padLeft(8, "0")}\t");
       for (int leftHalf = 0; leftHalf < 8; leftHalf++) {
-        // Left Half of 16 bytes
         int byteAddress = x + leftHalf;
         if (!isValidAddress(byteAddress)) {
           line.write("  ");
@@ -229,9 +158,7 @@ class HexEditor {
         }
       }
       line.write(" ");
-      // Checks to see if there is a second half of 8 bytes
       for (int rightHalf = 8; rightHalf < 16; rightHalf++) {
-        // Right Half of 16 bytes
         int byteAddress = x + rightHalf;
         if (!isValidAddress(byteAddress)) {
           line.write("  ");
@@ -259,7 +186,6 @@ class HexEditor {
       usableRows--;
     }
     if (startLine > 0) {
-      //Notifies user that there is more data above
       full.write("\t".padLeft(16, " "));
       full.write("───────────────────────^───────────────────────\n");
     } else {
@@ -267,7 +193,6 @@ class HexEditor {
     }
     full.write(body.toString());
     if (endLine < getFileSizeInLines()) {
-      //Notifies user that there is more data below
       full.write("\t".padLeft(16, " "));
       full.write("───────────────────────v───────────────────────\n");
     } else {
@@ -276,17 +201,9 @@ class HexEditor {
     return full.toString();
   }
 
-  /// # `String` getValues(int byteAddress)
-  /// ## Get the values of the different formats at the given address.
-  /// The values are formatted as a string with the header in the corresponding
-  /// color and the value in the same color.
-  /// If the current view is the data footer, the current format is highlighted.
-  /// If the current view is not the data footer, it adds a note to press E to
-  /// edit any of these values.
   String getValues(int byteAddress) {
     StringBuffer values = StringBuffer();
     for (Formats format in Formats.values) {
-      // Add all the formats to the values buffer.
       error = false;
       String? value;
       String? header;
@@ -371,7 +288,6 @@ class HexEditor {
           break;
       }
       if (value == null || header == null) {
-        //If there is no value or header, that means it is not availabe during this frame.
         continue;
       }
       if (currentView == Views.dataFooter && currentFormat == format) {
@@ -394,9 +310,6 @@ class HexEditor {
     return values.toString();
   }
 
-  /// # `String` getFormatted(int byteAddress, String value)
-  /// ## Get the values of the different formats at the given address.
-  /// The values are formatted as a string with the header in the corresponding color.
   String getFormatted(int byteAddress, String value) {
     if (byteAddress == address) {
       value = value.bgRgb(byteColor[0], byteColor[1], byteColor[2]).black;
@@ -415,15 +328,10 @@ class HexEditor {
     return value;
   }
 
-  /// # `bool` _isPrintable(int charCode)
-  /// ## Check if the given character code is printable.
-  /// Used to make sure that no control characters are entered, which would break the editor.
   bool _isPrintable(int charCode) {
     return charCode >= 32 && charCode <= 126;
   }
 
-  /// # `bool` _hexView(Key key)
-  /// ## Handle key presses in the hex view.
   bool _hexView(Key key) {
     bool quit = false;
     if (!key.isControl) {
@@ -489,8 +397,6 @@ class HexEditor {
     return quit;
   }
 
-  /// # `void` _dataFooterView(Key key)
-  /// ## Handle key presses in the data footer view.
   void _dataFooterView(Key key) {
     if (!key.isControl) {
       _currentValue ??= "";
@@ -559,8 +465,6 @@ class HexEditor {
     }
   }
 
-  /// # `void` _jumpToAddressView(Key key)
-  /// ## Handle key presses in the jump to address view.
   void _jumpToAddressView(Key key) {
     if (!key.isControl) {
       _currentValue ??= "";
@@ -597,8 +501,6 @@ class HexEditor {
     }
   }
 
-  /// # `void` _backspaceCurrentValue()
-  /// ## Backspace the `_currentValue`.
   void _backspaceCurrentValue() {
     if (_currentValue != null && _currentValue!.isNotEmpty) {
       _currentValue = _currentValue!.substring(0, _currentValue!.length - 1);
@@ -606,8 +508,6 @@ class HexEditor {
     }
   }
 
-  /// # `Future<ByteData>` interact()
-  /// ## Call this to start the editor for interaction.
   Future<ByteData> interact() async {
     int lastHeight = 1;
     int lastWidth = 1;
