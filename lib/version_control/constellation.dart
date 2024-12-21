@@ -432,7 +432,11 @@ class Starmap {
   }
 
   Star? getParent(Star star) {
-    return Star(constellation, hash: parentMap[star.hash]);
+    try {
+      return Star(constellation, hash: parentMap[star.hash]);
+    } catch (e) {
+      return null;
+    }
   }
 
   /// # List<[Star]> getChildren([Star] parent)
