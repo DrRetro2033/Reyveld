@@ -171,6 +171,7 @@ class Constellation {
   /// This includes the root star and the current star hashes.
   void _load() {
     File file = File("$constellationPath/starmap");
+
     if (file.existsSync()) {
       _fromJson(jsonDecode(file.readAsStringSync()));
     }
@@ -202,8 +203,15 @@ class Constellation {
 
   /// # String? grow(String name)
   /// ## Creates a new star with the given name and returns the hash of the new star at the current star.
-  String? grow(String name, {bool force = false}) {
-    return starmap?.currentStar?.createChild(name, force: force);
+  String? grow(String name, {bool force = false, bool signIn = true}) {
+    User? user = loggedInUser;
+    if (signIn) {
+      user = Arceus.userSelect(prompt: "Assign Star to...");
+      if (user == null) {
+        return null;
+      }
+    }
+    return starmap?.currentStar?.createChild(name, force: force, user: user);
   }
 
   /// # void delete()
@@ -325,7 +333,13 @@ class Starmap {
     if (endings.isEmpty) {
       throw Exception("WHAT? How are there no ending stars?");
     }
+    final userEndings = endings.where(
+        (element) => element.user?.hash == constellation.loggedInUser?.hash);
+    if (userEndings.isNotEmpty) {
+      endings = userEndings.toList();
+    }
     Star mostRecentStar = endings.first;
+
     for (int i = 1; i < endings.length; i++) {
       Star star = endings[i];
       if (mostRecentStar.createdAt!.compareTo(star.createdAt!) < 0) {
@@ -348,18 +362,22 @@ class Starmap {
   /// - `above`: The sibling above the current star. If the sibling doesn't exist, it will try and find a sibling of one of its parents. If that doesn't exist, it will return the root star.
   /// - `above X`: The Xth sibling above the current star. If the sibling doesn't exist, it will try and find a sibling of one of its parents. If that doesn't exist, it will return the root star.
   /// - `below`: The sibling below the current star. If the sibling doesn't exist, it will try and find a sibling of one of its parents. If that doesn't exist, it will return the root star.
-  /// - `below X`: The Xth sibling below the current star. If the sibling doesn't exist, it will try and find a sibling of one of its parents. If that doesn't exist, it will return the root star.
-  /// - `next X`: Will return the Xth child of the current star. Will be wrapped to a vaild index of the current star's children.
+  /// - `below X`: The Xth sibling below the current star. If the sibling doesn't exist, it will try and find the next available sibling of one of its parents. If that doesn't exist, it will return the root star. Will be wrapped if there is a sibling.
+  /// - `next X`: Will return the Xth child of the current star. Will be wrapped to a valid index of the current star's children.
   operator [](Object hash) {
     if (hash is String) {
       List<String> commands = hash.split(",");
       Star current = currentStar!;
       for (String command in commands) {
+        command = command.trim(); // Remove any whitespace.
         if (command == "recent") {
+          // Jump to most recent star.
           current = getMostRecentStar();
         } else if (command == "root") {
+          // Jump to root star.
           current = root!;
         } else if (command.startsWith("forward")) {
+          // Jump forward by X stars.
           final x = command.replaceFirst("forward", "");
           int? i = int.tryParse(x) ?? 1;
           Star? star = current;
@@ -372,6 +390,7 @@ class Starmap {
           }
           current = star!;
         } else if (command.startsWith("back")) {
+          // Jump back by X stars.
           final x = command.replaceFirst("back", "");
           int? i = int.tryParse(x) ?? 1;
           Star? star = current;
@@ -384,14 +403,17 @@ class Starmap {
           }
           current = star!;
         } else if (command.startsWith("above")) {
+          // Jump above
           final x = command.replaceFirst("above", "");
           int i = int.tryParse(x) ?? 1;
           current = current.getSibling(above: i);
         } else if (command.startsWith("below")) {
+          // Jump below
           final x = command.replaceFirst("below", "");
           int i = int.tryParse(x) ?? 1;
           current = current.getSibling(below: i);
         } else if (command.startsWith("next")) {
+          // Jump to next child
           final x = command.replaceFirst("next", "");
           int? i = int.tryParse(x);
           if (i == null) throw Exception("Please provide an index.");
@@ -482,7 +504,7 @@ class Starmap {
 
   /// # `Map<String, dynamic>` _getTree([Star] star, `Map<String, dynamic>` tree, {`bool` branch = false})
   /// ## Returns the tree of the star and its children, for printing.
-  /// This is called recursively, to give a resonable formatting to the tree, by making single children branches be in one column, instead of infinitely nested.
+  /// This is called recursively, to give a reasonable formatting to the tree, by making single children branches be in one column, instead of infinitely nested.
   Map<String, dynamic> _getTree(Star star, Map<String, dynamic> tree,
       {bool branch = false}) {
     tree[star.getDisplayName()] = {};
@@ -509,7 +531,7 @@ class Starmap {
       print("Cannot trim the root star!");
       return;
     }
-    star.parent!.makeCurrent();
+    star.parent!.makeCurrent(save: false);
     star.trim(); // Calls the trim function on the star.
     constellation.save();
   }
@@ -585,11 +607,8 @@ class Starmap {
   /// # [bool] existBesideCoordinates([int] depth, [int] index)
   /// ## Returns true if there is a star next to the given coordinates.
   /// Returns false otherwise.
-  bool existBesideCoordinates(int depth, int index) {
-    if (_existAtCoordinates(depth, index - 1) ||
-        _existAtCoordinates(depth, index + 1)) {
-      return true;
-    }
-    return false;
+  bool moreExistAtDepth(int depth, Star star) {
+    getStarsAtDepth(depth).removeWhere((element) => element.hash == star.hash);
+    return getStarsAtDepth(depth).isNotEmpty;
   }
 }

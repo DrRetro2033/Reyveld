@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:arceus/version_control/users.dart';
+import 'package:interact/interact.dart';
 
 import 'extensions.dart';
 import 'version_control/constellation.dart';
@@ -156,6 +157,18 @@ class Arceus {
 
   static String getLibraryPath() {
     return "${_getAppDataPath()}/lib";
+  }
+
+  static User? userSelect({String prompt = "Select User"}) {
+    final users = Arceus.userIndex.users;
+    final names = users.map((e) => e.name).toList();
+    final selected =
+        Select(prompt: prompt, options: [...names, "Cancel"]).interact();
+    if (selected == names.length) {
+      // Means the user cancelled the operation.
+      return null;
+    }
+    return users[selected];
   }
 }
 

@@ -11,21 +11,25 @@
 
 Arceus designed from the ground up to be the ultimate save manager and editor for every game under the sun! Not just Pokémon!
 
-## Branch Off Into Different Timelines 🌌
+# Why does it exist?
 
-With Arceus, you can create branches of your saves, so multiple versions of one save can exist simultaneously.
+Arceus was created to be an easier and feature rich save manager that combines elements of both save management and editing into one program. It started as Pokémon Manager and evolved into MudkiPC, which led into the creation of this project.
+
+## Branch Off Into Different Timelines 🌌
+![Branch Demo](images/render1734887464583.gif)
+With Arceus, you can create branches of your save, so multiple versions of one save can exist simultaneously.
 
 ## Rollback to Older Saves 🕔
 
-Arceus allows you to roll back saves to earlier versions, preserving your original save file in case you make a mistake.
+Arceus allows you to roll back saves to earlier versions, preserving your previous save-data in case you make a mistake.
 
 ## Keep track of YOUR saves 👥
 
-Multiple people can play the same game, even if it’s not designed for switching between different players. Just create a user profile!
+Multiple people can play the same game, even if it’s not designed for switching between different players. Just create an user profile!
 
 ## Go Beyond with Add-Ons 📦
 
-Arceus intergrates Squirrel, enabling anyone to add new functionality to Arceus. Add-ons make it easy to read and write to files, intergrate game launchers like Steam, and so much more!
+Arceus integrates Squirrel, enabling anyone to add new functionality to Arceus. Add-ons make it easy to read and write to files, integrate game launchers like Steam, and so much more!
 > [!NOTE]
 > In the future, I plan to add built-in functionality for easier transfer tool creation, similar to Pokémon Bank. For now, you’ll need to build your own transfer tools.
 
@@ -37,7 +41,7 @@ Arceus includes a CLI hex editor you can use to edit saves, view changes, and te
 
 ## Tiny Size 📁
 
-Arceus requires no extra downloads to work, and fits into less than three megabytes!
+Arceus requires no extra downloads to work, and fits into less than five megabytes!
 
 ## Cross Platform 🖥️📱
 
@@ -60,6 +64,17 @@ Click the badge below to download the latest artifact.
 > Please keep in mind that Arceus is still in alpha, and it is not 
 > opimtized for files larger than a few megabytes.
 
+## Comparison with Other Save Managers:
+| Feature | Arceus | [GameSave Manager](https://www.gamesave-manager.com/) | [Ludusavi](https://github.com/mtkennerly/ludusavi) |
+| --- | --- | --- | --- |
+| Tree Structuring | ✅ | ❌ | ❌ |
+| Multi-User Support | ✅ | ❌ | ❌ |
+| Save Editing | ✅ | ❌ | ❌ |
+| Addon Support | ✅ | ❌ | ❌ |
+| Cloud-Sync | ❌ | ✅ | ✅ |
+| Open-Source | ✅ | ❌ | ✅ | 
+| Integration w/ Steam | ❌ | ✅ | ✅ |
+| 
 
 # Planned Features for the Future
 

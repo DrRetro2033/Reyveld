@@ -279,14 +279,14 @@ Give it either a star hash, or use the commands below. Replace X with a number:
 - back: Jumps to the parent of the current star. Will be clamped to the root star.
 - back X:  Will jump to the parent of every star preceeding the current star by X. Will be clamped to the the root star.
 - forward`: Will jump to the first child of the current star. Will be clamped to any ending stars.
-- forward X: Will jump to the Xth child of the current star. Will be clamped to a vaild index of the current star's children.
+- forward X: Will jump to the Xth child of the current star. Will be clamped to a valid index of the current star's children.
 
 - above: Jumps to the sibling above the current star. Will wrap around to lowest star.
 - above X: Will jump to the Xth sibling above the current star. Will wrap around to lowest star.
 - below: Jumps to the sibling below the current star. Will wrap around to highest star.
 - below X: Will jump to the Xth sibling above the current star. Will wrap around to lowest star.
 
-- `next X`: Will jump to the Xth child of the current star. Will be wrapped to a vaild index of the current star's children.
+- `next X`: Will jump to the Xth child of the current star. Will be wrapped to a valid index of the current star's children.
 
 You can also chain multiple commands together by adding a comma between each.
 """;
@@ -308,7 +308,7 @@ You can also chain multiple commands together by adding a comma between each.
     if (!argResults!["force"] && constellation.checkForDifferences()) {
       final confirm = Confirm(
         prompt:
-            "There are uncommitted changes in the current directory!\nIf you jump now before growing, all progress will be lost! Are you sure you want to continue?",
+            "If you jump now before growing, all changes will be lost! Are you sure you want to continue?",
       ).interact();
       if (!confirm) {
         return;
@@ -351,6 +351,7 @@ This will fail if there no changes to commit, unless '--force' is provided.""";
 
   ConstellationGrowCommand() {
     argParser.addFlag("force", abbr: "f", defaultsTo: false);
+    argParser.addFlag("sign-in", abbr: "s", defaultsTo: false);
   }
 
   @override
@@ -358,7 +359,8 @@ This will fail if there no changes to commit, unless '--force' is provided.""";
     if (getRest().isEmpty) {
       throw Exception("Please provide a name for the new star.");
     }
-    constellation.grow(getRest(), force: argResults!["force"]);
+    constellation.grow(getRest(),
+        force: argResults!["force"], signIn: argResults!["sign-in"]);
   }
 }
 
@@ -485,9 +487,10 @@ class LoginUserCommand extends ConstellationArceusCommand {
 
   LoginUserCommand() {
     argParser.addOption("user-hash", abbr: "u", hide: true);
-    argParser.addOption("grow",
-        abbr: "g", help: "Grow a new star after login.");
-    argParser.addFlag("force", abbr: "f", defaultsTo: false);
+    argParser.addFlag("stay",
+        abbr: "s",
+        defaultsTo: false,
+        help: "Stay at current star instead of jumping to the most recent.");
   }
 
   @override
@@ -496,22 +499,15 @@ class LoginUserCommand extends ConstellationArceusCommand {
     if (hash != null) {
       constellation.loginAs(Arceus.userIndex.getUser(hash));
     } else {
-      final users = Arceus.userIndex.users;
-      final names = users.map((e) => e.name).toList();
-      final selected = Select(
-          prompt: " Select a user to login as:",
-          options: [...names, "Cancel"]).interact();
-      if (selected == names.length) {
-        // Means the user cancelled the operation.
+      final user = Arceus.userSelect(prompt: "Login as:");
+      if (user == null) {
         return;
       }
-      constellation.loginAs(users[selected]);
+      constellation.loginAs(user);
     }
     print("Logged in as ${constellation.loggedInUser!.name}.");
-    if (argResults!["grow"] != null &&
-        (argResults!["grow"] as String).isNotEmpty) {
-      constellation.grow(argResults!["grow"], force: argResults!["force"]);
-      print("Star ${argResults!["grow"]} created.");
+    if (!argResults!["stay"]) {
+      constellation.starmap?.getMostRecentStar().makeCurrent();
     }
   }
 }
@@ -595,7 +591,7 @@ class InstallPackagedAddonCommand extends ArceusCommand {
   void run() {
     if (getRest().isEmpty) {
       throw Exception(
-          "Please provide the path to the addon. Addon files must end in *.arcaddon.");
+          "Please provide the path to the addon. Addon files must end in .arcaddon.");
     }
     String addonFile = getRest();
     CliSpin? spinner;

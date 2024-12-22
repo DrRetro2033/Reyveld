@@ -1,3 +1,4 @@
+import 'package:arceus/arceus.dart';
 import 'package:archive/archive_io.dart';
 import 'dart:convert';
 import 'constellation.dart';
@@ -96,7 +97,8 @@ class Star {
       if (user != null) {
         _userHash = user.hash;
       } else {
-        _userHash = constellation.loggedInUser?.hash;
+        _userHash = constellation.loggedInUser?.hash ??
+            Arceus.userIndex.getHostUser().hash;
       }
       _create();
     } else if (hash != null) {
@@ -135,15 +137,15 @@ class Star {
   /// # String createChild(String name)
   /// ## Creates a new star with the given name.
   /// It returns the hash of the new star.
-  String createChild(String name, {bool force = false}) {
+  String createChild(String name, {bool force = false, User? user}) {
     if (!force && !constellation.checkForDifferences()) {
       print(
           "Cannot create a new child star, as there are no changes to the constellation. If you want to grow anyway, use the '--force' flag.");
       return "";
     }
-    Star star = Star(constellation, name: name);
+    Star star = Star(constellation, name: name, user: user ?? this.user);
     constellation.starmap?.addRelationship(this, star);
-    constellation.starmap?.currentStar = star;
+    star.makeCurrent(save: false);
     constellation.save();
     print("Created child star: ${star.name}");
     return star.hash!;
@@ -186,11 +188,13 @@ class Star {
   /// # void makeCurrent()
   /// ## Makes the star the current star in the constellation.
   /// It also saves the constellation.
-  void makeCurrent() {
+  void makeCurrent({bool save = true}) {
     _extract();
     constellation.starmap!.currentStar = this;
     constellation.loggedInUser = user;
-    constellation.save();
+    if (save) {
+      constellation.save();
+    }
   }
 
   /// # Archive getArchive()
@@ -372,8 +376,8 @@ class Star {
         getIndex(); // Get the index of this star (i.e. where is it relative to its siblings?)
     while (depth > 0) {
       // While the depth is greater than 0 (i.e. not the root star)
-      if (starmap.existBesideCoordinates(depth, index)) {
-        // Are there siblings right next to this star at this depth? If so, then we are done.
+      if (starmap.moreExistAtDepth(depth, this)) {
+        // Are there siblings at this depth?
         break;
       }
       depth--;
