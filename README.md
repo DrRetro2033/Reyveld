@@ -74,7 +74,6 @@ Click the badge below to download the latest artifact.
 | Cloud-Sync | ❌ | ✅ | ✅ |
 | Open-Source | ✅ | ❌ | ✅ | 
 | Integration w/ Steam | ❌ | ✅ | ✅ |
-| 
 
 # Planned Features for the Future
 
