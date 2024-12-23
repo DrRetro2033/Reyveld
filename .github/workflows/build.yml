@@ -47,7 +47,7 @@ jobs:
           - os: ubuntu-latest
             platform: linux
             output: arceus.elf
-            add-command: "cp --force ./src/squirrel3/bin/Debug/lib/squirrel.so ./scripts/installers/linux/lib/squirrel.so && cp -r ./scripts/installers/linux/ ./build/releases/"
+            add-command: "cp --force ./src/squirrel3/lib/squirrel.so ./scripts/installers/linux/lib/squirrel.so && cp -r ./scripts/installers/linux/ ./build/releases/"
           - os: windows-latest
             platform: windows
             output: arceus.exe
