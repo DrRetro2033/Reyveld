@@ -16,7 +16,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-
+      - name: Setup Submodules
+        run: git submodule init && git submodule update
       - name: Setup Dart SDK
         uses: dart-lang/setup-dart@v1.6.5
       - name: Fetch Dependencies
