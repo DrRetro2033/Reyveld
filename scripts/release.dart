@@ -14,7 +14,12 @@ Future<void> main(List<String> args) async {
     print('Usage: dart release.dart <path-to-project>');
     exit(1);
   }
-  final pathOfProject = args.first;
+  bool draft = false;
+  final pathOfProject =
+      args.firstWhere((element) => !element.startsWith('--'), orElse: () => '');
+  if (args.contains('--draft')) {
+    draft = true;
+  }
   if (!Directory(pathOfProject).existsSync()) {
     print('Error: Directory not found: $pathOfProject');
     exit(1);
@@ -94,8 +99,11 @@ Future<void> main(List<String> args) async {
         'name':
             'v${loadYaml(File("$pathOfProject/pubspec.yaml").readAsStringSync())['version']}',
         'body': File('$pathOfProject/CHANGELOG.md').readAsStringSync(),
-        'draft': true,
-        'prerelease': true,
+        'draft': draft,
+        'prerelease':
+            (loadYaml(File("$pathOfProject/pubspec.yaml").readAsStringSync())[
+                    'version'] as String)
+                .contains("alpha"),
       }),
     );
 
