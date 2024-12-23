@@ -8,7 +8,7 @@ import '../extensions.dart';
 import 'squirrel_bindings_generated.dart';
 
 DynamicLibrary _getDylib() {
-  if (const bool.fromEnvironment('DEBUG', defaultValue: true)) {
+  if (Arceus.isDev) {
     return DynamicLibrary.open(
         "${const String.fromEnvironment('LIBRARY_PATH', defaultValue: 'C://Repos/arceus/')}/squirrel.dll");
   }

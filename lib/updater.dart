@@ -4,11 +4,14 @@ import 'package:http/http.dart' as http;
 import 'arceus.dart';
 
 class Updater {
-  String get currentVersion => Platform.version;
+  static String get currentVersion => "0.0.1-alpha";
   static const String repoOwner = 'DrRetro2033';
   static const String repoName = 'Arceus';
 
   Future<bool> checkForUpdate({bool skip = true}) async {
+    if (Arceus.isDev) {
+      return false;
+    }
     final latestVersion = await getLatestVersion();
     if (latestVersion == null) {
       return false;
@@ -24,13 +27,16 @@ class Updater {
       final response = await http.get(
           Uri.parse('https://api.github.com/repos/$repoOwner/$repoName/tags'));
       if (response.statusCode == 200) {
-        return jsonDecode(response.body).first['name'];
+        final latestVersionTags = jsonDecode(response.body);
+        if (latestVersionTags.isEmpty) {
+          return null;
+        }
+        return latestVersionTags.first['name'];
       } else {
-        throw Exception(
-            'Failed to fetch latest version: ${response.statusCode}');
+        return null;
       }
     } catch (e) {
-      rethrow;
+      return null;
     }
   }
 

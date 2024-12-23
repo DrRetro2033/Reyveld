@@ -1,6 +1,5 @@
 name: arceus
 description: A sample command-line application with basic argument parsing.
-version: 0.1.0-alpha
 # repository: https://github.com/my_org/my_repo
 
 environment:
@@ -55,8 +54,3 @@ ffigen:
   structs:
     rename:
       "_(.*)": "$1" # Removes prefix underscores from all structures.
-
-cider:
-  link_template:
-    tag: https://github.com/DrRetro2033/Arceus/releases/tag/%tag% # initial release link template
-    diff: https://github.com/DrRetro2033/Arceus/compare/%from%...%to% # subsequent releases link template

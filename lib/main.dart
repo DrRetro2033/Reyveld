@@ -20,12 +20,13 @@ import 'scripting/feature_sets/feature_sets.dart';
 /// # `void` main(List<String> arguments)
 /// ## Main entry point.
 /// Runs the CLI.
+
 Future<dynamic> main(List<String> arguments) async {
   // AnsiX.ensureSupportsAnsi();
   final newUpdate = await Updater().checkForUpdate();
   if (newUpdate) {
     final confirm = Confirm(
-      prompt: "A new update is available! Would you like to update?",
+      prompt: " A new update is available! Would you like to update?",
     ).interact();
     if (confirm) {
       final spinner = CliSpin().start("Updating...");
@@ -38,7 +39,8 @@ Future<dynamic> main(List<String> arguments) async {
       Arceus.skipUpdate(await Updater.getLatestVersion() ?? "");
     }
   }
-  var runner = CommandRunner('arceus', "The ultimate save manager.");
+  var runner = CommandRunner('arceus', """The ultimate save manager + editor.
+  v${Updater.currentVersion}""");
   runner.argParser.addOption(
     "path",
     abbr: "p",

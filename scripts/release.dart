@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:yaml/yaml.dart';
+import 'package:arceus/updater.dart';
 
 Future<void> main(List<String> args) async {
   // Configuration
@@ -91,6 +91,7 @@ Future<void> main(List<String> args) async {
 
     // Step 3: Create a release
     print('Creating release...');
+    String version = Updater.currentVersion;
     final createReleaseResponse = await http.post(
       Uri.parse('$apiBase/releases'),
       headers: {
@@ -98,16 +99,11 @@ Future<void> main(List<String> args) async {
         'Content-Type': 'application/json',
       },
       body: jsonEncode({
-        'tag_name':
-            'v${loadYaml(File("$pathOfProject/pubspec.yaml").readAsStringSync())['version']}',
-        'name':
-            'v${loadYaml(File("$pathOfProject/pubspec.yaml").readAsStringSync())['version']}',
+        'tag_name': 'v$version',
+        'name': 'v$version',
         'body': File('$pathOfProject/CHANGELOG.md').readAsStringSync(),
         'draft': draft,
-        'prerelease':
-            (loadYaml(File("$pathOfProject/pubspec.yaml").readAsStringSync())[
-                    'version'] as String)
-                .contains("alpha"),
+        'prerelease': version.contains("alpha"),
       }),
     );
 

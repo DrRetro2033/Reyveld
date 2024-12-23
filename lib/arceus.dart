@@ -14,6 +14,8 @@ class Arceus {
   static String get currentPath => _currentPath;
   static set currentPath(String path) => _currentPath = path.fixPath();
   static late bool isInternal;
+  static bool get isDev =>
+      const bool.fromEnvironment('DEBUG', defaultValue: true);
 
   /// # `static` `String` _appDataPath
   /// ## The path to the application data directory.
