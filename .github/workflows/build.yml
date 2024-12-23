@@ -47,12 +47,12 @@ jobs:
           - os: ubuntu-latest
             platform: linux
             output: arceus.elf
-            add-command: "cp --force ./src/squirrel3/squirrel/libsquirrel.so ./scripts/installers/linux/lib/squirrel.so && cp -r ./scripts/installers/linux/ ./build/releases/"
+            add-command: "cp --force ./src/squirrel3/bin/Debug/libsquirrel.so ./scripts/installers/linux/lib/squirrel.so && cp -r ./scripts/installers/linux/ ./build/releases/"
           - os: windows-latest
             platform: windows
             output: arceus.exe
             add-command:
-              "Copy-Item -Path ./src/squirrel3/squirrel/Debug/squirrel.dll -Destination ./scripts/installers/windows/lib/squirrel.dll -Force &&
+              "Copy-Item -Path ./src/squirrel3/bin/Debug/squirrel.dll -Destination ./scripts/installers/windows/lib/squirrel.dll -Force &&
               Copy-Item -Recurse -Path ./scripts/installers/windows/ -Destination ./build/releases/ -Force"
           # - os: macos-latest
           #   platform: macos
