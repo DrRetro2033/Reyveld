@@ -21,19 +21,16 @@ class Updater {
 
   static Future<String?>? getLatestVersion() async {
     try {
-      return await http
-          .get(Uri.parse(
-              'https://api.github.com/repos/$repoOwner/$repoName/releases/latest'))
-          .then((response) {
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          return (data['tag_name'] as String).substring(1);
-        } else {
-          return null;
-        }
-      });
+      final response = await http.get(
+          Uri.parse('https://api.github.com/repos/$repoOwner/$repoName/tags'));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body).first['name'];
+      } else {
+        throw Exception(
+            'Failed to fetch latest version: ${response.statusCode}');
+      }
     } catch (e) {
-      return null;
+      rethrow;
     }
   }
 

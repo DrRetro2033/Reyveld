@@ -136,7 +136,7 @@ class UpdateCommand extends ArceusCommand {
 
   @override
   void run() async {
-    final newUpdate = await Updater().checkForUpdate();
+    final newUpdate = await Updater().checkForUpdate(skip: false);
     if (newUpdate || argResults!["force"]) {
       final spinner = CliSpin().start(" Updating...");
       await Updater.update();
