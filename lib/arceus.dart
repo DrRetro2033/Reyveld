@@ -170,6 +170,20 @@ class Arceus {
     }
     return users[selected];
   }
+
+  static void skipUpdate(String version) {
+    final file = File("$appDataPath/skipupdate");
+    file.createSync();
+    file.writeAsStringSync(version);
+  }
+
+  static String getSkippedVersion() {
+    final file = File("$appDataPath/skipupdate");
+    if (!file.existsSync()) {
+      return "";
+    }
+    return file.readAsStringSync();
+  }
 }
 
 /// # `class` ConstellationEntry

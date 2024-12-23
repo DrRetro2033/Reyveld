@@ -14,6 +14,7 @@ import 'hex_editor/editor.dart';
 import 'version_control/dossier.dart';
 import 'extensions.dart';
 import 'server.dart';
+import 'updater.dart';
 import 'scripting/feature_sets/feature_sets.dart';
 
 /// # `void` main(List<String> arguments)
@@ -21,6 +22,22 @@ import 'scripting/feature_sets/feature_sets.dart';
 /// Runs the CLI.
 Future<dynamic> main(List<String> arguments) async {
   // AnsiX.ensureSupportsAnsi();
+  final newUpdate = await Updater().checkForUpdate();
+  if (newUpdate) {
+    final confirm = Confirm(
+      prompt: "A new update is available! Would you like to update?",
+    ).interact();
+    if (confirm) {
+      final spinner = CliSpin().start("Updating...");
+      await Updater.update();
+      spinner.success("Update complete!");
+      exit(0);
+    } else {
+      print(
+          "If you change your mind, you can update at any time by running 'arceus update'.");
+      Arceus.skipUpdate(await Updater.getLatestVersion() ?? "");
+    }
+  }
   var runner = CommandRunner('arceus', "The ultimate save manager.");
   runner.argParser.addOption(
     "path",
@@ -71,6 +88,7 @@ Future<dynamic> main(List<String> arguments) async {
   runner.addCommand(OpenFileInHexCommand());
   runner.addCommand(ArceusConstellationsCommand());
   runner.addCommand(AddonsCommand());
+  runner.addCommand(UpdateCommand());
 
   if (arguments.isNotEmpty) {
     dynamic result = await runner.run(arguments);
@@ -104,6 +122,30 @@ abstract class ConstellationArceusCommand extends ArceusCommand {
   }
 
   dynamic _run();
+}
+
+class UpdateCommand extends ArceusCommand {
+  @override
+  String get description => "Checks for updates.";
+  @override
+  String get name => "update";
+
+  UpdateCommand() {
+    argParser.addFlag("force", abbr: "f", defaultsTo: false);
+  }
+
+  @override
+  void run() async {
+    final newUpdate = await Updater().checkForUpdate();
+    if (newUpdate || argResults!["force"]) {
+      final spinner = CliSpin().start(" Updating...");
+      await Updater.update();
+      spinner.success(" Update complete!");
+      exit(0);
+    } else {
+      print("You are up to date!");
+    }
+  }
 }
 
 class CreateConstellationCommand extends ArceusCommand {

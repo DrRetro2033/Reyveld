@@ -39,7 +39,10 @@ Future<void> main(List<String> args) async {
     }
 
     final workflowsData = jsonDecode(workflowsResponse.body);
-    final latestRun = workflowsData['workflow_runs']?.first;
+    final latestRun = workflowsData['workflow_runs']?.firstWhere(
+      (run) => run['conclusion'] == 'success' && run['name'] == 'Build',
+      orElse: () => null,
+    );
     if (latestRun == null) {
       throw Exception('No workflow runs found.');
     }
@@ -60,7 +63,8 @@ Future<void> main(List<String> args) async {
 
     final artifactsData = jsonDecode(artifactsResponse.body)['artifacts'];
     if (artifactsData.isEmpty) {
-      throw Exception('No artifacts found for the latest workflow run.');
+      throw Exception(
+          'No artifacts found for the latest workflow run. ${artifactsResponse.body}');
     }
 
     // Download artifacts
