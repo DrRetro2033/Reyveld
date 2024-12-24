@@ -5,7 +5,6 @@
 .arceus/
 build/
 patterns/
-duktape.dll
 squirrel.dll
 test_builds/
 CMakeLists.txt.user
@@ -20,3 +19,4 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 CMakeUserPresets.json
+command_for_release

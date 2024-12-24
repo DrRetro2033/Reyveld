@@ -13,7 +13,7 @@ Arceus designed from the ground up to be the ultimate save manager and editor fo
 
 # Why does it exist?
 
-Arceus was created to be an easier and feature rich save manager that combines elements of both save management and editing into one program. It started as Pokémon Manager and evolved into MudkiPC, which led into the creation of this project.
+Arceus was created to be an easier and feature rich save manager that combines elements of both save management and editing into one program, with a sprinkle of version control as well.
 
 ## Branch Off Into Different Timelines 🌌
 ![Branch Demo](images/render1734887464583.gif)
@@ -21,7 +21,7 @@ With Arceus, you can create branches of your save, so multiple versions of one s
 
 ## Rollback to Older Saves 🕔
 
-Arceus allows you to roll back saves to earlier versions, preserving your previous save-data in case you make a mistake.
+Arceus allows you to rollback saves to earlier versions, preserving your previous save-data in case you make a mistake.
 
 ## Keep track of YOUR saves 👥
 
@@ -62,7 +62,7 @@ Click the badge below to download the latest artifact.
 
 > [!WARNING]
 > Please keep in mind that Arceus is still in alpha, and it is not 
-> opimtized for files larger than a few megabytes.
+> optimized for files larger than a few megabytes.
 
 ## Comparison with Other Save Managers:
 | Feature | Arceus | [GameSave Manager](https://www.gamesave-manager.com/) | [Ludusavi](https://github.com/mtkennerly/ludusavi) |
@@ -74,6 +74,10 @@ Click the badge below to download the latest artifact.
 | Cloud-Sync | ❌ | ✅ | ✅ |
 | Open-Source | ✅ | ❌ | ✅ | 
 | Integration w/ Steam | ❌ | ✅ | ✅ |
+| Integration w/ GOG | ❌ | ✅ | ✅ |
+| Integration w/ Epic | ❌ | ✅ | ✅ |
+| Integration w/ Origin/EA | ❌ | ✅ | ✅ |
+
 
 # Planned Features for the Future
 

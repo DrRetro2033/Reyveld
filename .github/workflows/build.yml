@@ -27,13 +27,27 @@ jobs:
           mkdir ./scripts/installers/${{ matrix.platform }}/lib"
       - name: Build Executable
         run: dart compile exe --define=DEBUG=false ./lib/main.dart --target-os ${{ matrix.platform }} -o build/releases/${{ matrix.platform }}/${{ matrix.output}}
+      - name: Restore Libraries
+        id: libraries-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: build/releases/${{ matrix.platform }}/lib
+          key: ${{ runner.os}}-libs-${{ hashFiles('./src/') }}
       - name: Build Squirrel
+        if: steps.libraries-restore.outputs.cache-hit != 'true'
         uses: threeal/cmake-action@v2.1.0
         with:
           source-dir: ./src/squirrel3/
           build-dir: ./src/squirrel3/
-      - name: Adding files to Artifact
+      - name: Moving files to build directory
         run: ${{ matrix.add-command}}
+      - name: Cache Libraries
+        id: cache-libs
+        if: steps.libraries-restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: build/releases/${{ matrix.platform }}/lib
+          key: ${{ runner.os}}-libs-${{ hashFiles('./src/') }}
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:

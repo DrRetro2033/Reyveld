@@ -4,12 +4,13 @@ import 'package:http/http.dart' as http;
 import 'arceus.dart';
 
 class Updater {
-  static String get currentVersion => "0.0.1-alpha";
+  static const String currentVersion = "0.0.1-alpha";
   static const String repoOwner = 'DrRetro2033';
   static const String repoName = 'Arceus';
 
   Future<bool> checkForUpdate({bool skip = true}) async {
     if (Arceus.isDev) {
+      // Do not check for updates in development.
       return false;
     }
     final latestVersion = await getLatestVersion();
