@@ -39,8 +39,9 @@ jobs:
         with:
           source-dir: ./src/squirrel3/
           build-dir: ./src/squirrel3/
-      - name: Moving files to build directory
-        run: ${{ matrix.add-command}}
+      - name: Moving Libraries
+        if: steps.libraries-restore.outputs.cache-hit != 'true'
+        run: ${{ matrix.add-libraries-command }}
       - name: Cache Libraries
         id: cache-libs
         if: steps.libraries-restore.outputs.cache-hit != 'true'
@@ -48,6 +49,8 @@ jobs:
         with:
           path: build/releases/${{ matrix.platform }}/lib
           key: ${{steps.libraries-restore.outputs.cache-primary-key}}
+      - name: Moving Installers
+        run: ${{ matrix.add-install-command }}
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -61,13 +64,13 @@ jobs:
           - os: ubuntu-latest
             platform: linux
             output: arceus.elf
-            add-command: "cp --force ./src/squirrel3/lib/libsquirrel.so ./scripts/installers/linux/lib/squirrel.so && cp -r ./scripts/installers/linux/ ./build/releases/"
+            add-libraries-command: "cp --force ./src/squirrel3/lib/libsquirrel.so ./scripts/installers/linux/lib/squirrel.so"
+            add-install-command: "cp -r ./scripts/installers/linux/ ./build/releases/"
           - os: windows-latest
             platform: windows
             output: arceus.exe
-            add-command:
-              "Copy-Item -Path ./src/squirrel3/bin/Debug/squirrel.dll -Destination ./scripts/installers/windows/lib/squirrel.dll -Force &&
-              Copy-Item -Recurse -Path ./scripts/installers/windows/ -Destination ./build/releases/ -Force"
+            add-libraries-command: "Copy-Item -Path ./src/squirrel3/bin/Debug/squirrel.dll -Destination ./scripts/installers/windows/lib/squirrel.dll -Force"
+            add-install-command: "Copy-Item -Recurse -Path ./scripts/installers/windows/ -Destination ./build/releases/ -Force"
           # - os: macos-latest
           #   platform: macos
           #   output: arceus.app
