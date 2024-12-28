@@ -1,12 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:ansix/ansix.dart';
+import 'package:arceus/widget_system.dart';
 
 import '../uuid.dart';
 import '../arceus.dart';
 import '../extensions.dart';
-import '../cli.dart';
 import 'star.dart';
 import 'dossier.dart';
 import 'users.dart';
@@ -135,7 +134,8 @@ class Constellation {
 
   /// # String getStarPath(String hash)
   /// ## Returns a path for a star with the given hash.
-  String getStarPath(String hash) => "$constellationPath/$hash.star";
+  String getStarPath(String hash, {bool temp = false}) =>
+      "$constellationPath/${temp ? "temp_" : ""}$hash.star";
 
   /// # List<String> listStarFiles()
   /// ## Lists all stars in the constellation.
@@ -499,7 +499,7 @@ class Starmap {
   /// ## Prints the constellation's stars.
   /// This is a tree view of the constellation's stars and their children.
   void printMap() {
-    print(AnsiTreeView(_getTree(root!, {}), theme: Cli.treeTheme));
+    print(TreeWidget(_getTree(root!, {})));
   }
 
   /// # `Map<String, dynamic>` _getTree([Star] star, `Map<String, dynamic>` tree, {`bool` branch = false})
@@ -507,7 +507,7 @@ class Starmap {
   /// This is called recursively, to give a reasonable formatting to the tree, by making single children branches be in one column, instead of infinitely nested.
   Map<String, dynamic> _getTree(Star star, Map<String, dynamic> tree,
       {bool branch = false}) {
-    tree[star.getDisplayName()] = {};
+    tree[star.getDisplayName()] = <String, dynamic>{};
     if (star.singleChild) {
       if (branch) {
         tree[star.getDisplayName()].addAll(_getTree(star.children.first, {}));
@@ -591,17 +591,6 @@ class Starmap {
       stars = newStars;
     }
     return endings;
-  }
-
-  /// # `bool` existAtCoordinates(`int` depth, `int` index)
-  /// ## Returns true if a star exists at the given depth and index.
-  /// Returns false otherwise.
-  bool _existAtCoordinates(int depth, int index) {
-    List<Star> stars = getStarsAtDepth(depth);
-    if (index >= 0 && index < stars.length) {
-      return true;
-    }
-    return false;
   }
 
   /// # [bool] existBesideCoordinates([int] depth, [int] index)

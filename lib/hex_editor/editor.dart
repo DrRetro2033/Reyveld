@@ -5,7 +5,7 @@ import 'package:chalkdart/chalkstrings.dart';
 import 'package:dart_console/dart_console.dart';
 import '../cli.dart';
 import '../version_control/dossier.dart';
-import 'widget_system.dart';
+import '../widget_system.dart';
 
 enum Views {
   jumpToAddress,
@@ -70,6 +70,9 @@ class HexEditor {
     }
     if (currentView == Views.byteViewer) {
       header += " - Ctrl+Q to quit. Ctrl+S to save.";
+    } else if (currentView == Views.dataFooter) {
+      header +=
+          " - Ctrl+Q to return without applying changes. Press Enter to apply.";
     }
     return header;
   }
@@ -110,94 +113,6 @@ class HexEditor {
 
   int getFileSizeInLines() {
     return (((data.lengthInBytes) >> 1 << 1) / 16).ceil();
-  }
-
-  String getBody() {
-    final full = StringBuffer();
-    final body = StringBuffer();
-    int usableRows = Cli.windowHeight - 8;
-    int startLine = 0;
-    int endLine = (getFileSizeInLines());
-    if (usableRows < getFileSizeInLines()) {
-      int linesAboveBelow = usableRows ~/ 2;
-      startLine = getLineAddress() - linesAboveBelow;
-      endLine = getLineAddress() + linesAboveBelow;
-
-      if (startLine < 0) {
-        endLine += startLine.abs();
-        startLine = 0;
-      }
-      if (endLine > getFileSizeInLines()) {
-        startLine -= endLine - getFileSizeInLines();
-        endLine = getFileSizeInLines();
-      }
-    }
-
-    full.write("\t\t00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n"
-        .padLeft(8, " "));
-    for (int x = startLine * 16;
-        x < data.lengthInBytes && x < endLine * 16;
-        x += 16) {
-      if (usableRows <= 0) {
-        break;
-      }
-      final line = StringBuffer("");
-      line.write("${x.toRadixString(16).padLeft(8, "0")}\t");
-      for (int leftHalf = 0; leftHalf < 8; leftHalf++) {
-        int byteAddress = x + leftHalf;
-        if (!isValidAddress(byteAddress)) {
-          line.write("  ");
-        } else {
-          String byte = getByteAt(byteAddress);
-          String value = getFormatted(byteAddress, byte);
-          line.write(value);
-        }
-        if (leftHalf != 7) {
-          line.write(isValidAddress(byteAddress) ? "│" : " ");
-        }
-      }
-      line.write(" ");
-      for (int rightHalf = 8; rightHalf < 16; rightHalf++) {
-        int byteAddress = x + rightHalf;
-        if (!isValidAddress(byteAddress)) {
-          line.write("  ");
-        } else {
-          String byte = getByteAt(byteAddress);
-          String value = getFormatted(byteAddress, byte);
-          line.write(value);
-        }
-        if (rightHalf != 15) {
-          line.write(isValidAddress(byteAddress) ? "│" : " ");
-        }
-      }
-      line.write("\t│");
-      for (int j = 0; j < 16; j++) {
-        if (isValidAddress(x + j)) {
-          final char = data.getUint8(x + j);
-          final charString =
-              _isPrintable(char) ? String.fromCharCode(char) : '.';
-          line.write(getFormatted(x + j, charString));
-        } else {
-          line.write(' ');
-        }
-      }
-      body.write("${line.toString()}\n");
-      usableRows--;
-    }
-    if (startLine > 0) {
-      full.write("\t".padLeft(16, " "));
-      full.write("───────────────────────^───────────────────────\n");
-    } else {
-      full.write("\n");
-    }
-    full.write(body.toString());
-    if (endLine < getFileSizeInLines()) {
-      full.write("\t".padLeft(16, " "));
-      full.write("───────────────────────v───────────────────────\n");
-    } else {
-      full.write("\n");
-    }
-    return full.toString();
   }
 
   String getValues(int byteAddress) {
@@ -305,8 +220,95 @@ class HexEditor {
       values.write("E".underline.bold);
       values.write("ndian: ${dataEndian == Endian.little ? "Little" : "Big"}");
     }
-
     return values.toString();
+  }
+
+  String getBody() {
+    final full = StringBuffer();
+    final body = StringBuffer();
+    int usableRows = Cli.windowHeight - 8;
+    int startLine = 0;
+    int endLine = (getFileSizeInLines());
+    if (usableRows < getFileSizeInLines()) {
+      int linesAboveBelow = usableRows ~/ 2;
+      startLine = getLineAddress() - linesAboveBelow;
+      endLine = getLineAddress() + linesAboveBelow;
+
+      if (startLine < 0) {
+        endLine += startLine.abs();
+        startLine = 0;
+      }
+      if (endLine > getFileSizeInLines()) {
+        startLine -= endLine - getFileSizeInLines();
+        endLine = getFileSizeInLines();
+      }
+    }
+
+    full.write("\t\t00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n"
+        .padLeft(8, " "));
+    for (int x = startLine * 16;
+        x < data.lengthInBytes && x < endLine * 16;
+        x += 16) {
+      if (usableRows <= 0) {
+        break;
+      }
+      final line = StringBuffer("");
+      line.write("${x.toRadixString(16).padLeft(8, "0")}\t");
+      for (int leftHalf = 0; leftHalf < 8; leftHalf++) {
+        int byteAddress = x + leftHalf;
+        if (!isValidAddress(byteAddress)) {
+          line.write("  ");
+        } else {
+          String byte = getByteAt(byteAddress);
+          String value = getFormatted(byteAddress, byte);
+          line.write(value);
+        }
+        if (leftHalf != 7) {
+          line.write(isValidAddress(byteAddress) ? "│" : " ");
+        }
+      }
+      line.write(" ");
+      for (int rightHalf = 8; rightHalf < 16; rightHalf++) {
+        int byteAddress = x + rightHalf;
+        if (!isValidAddress(byteAddress)) {
+          line.write("  ");
+        } else {
+          String byte = getByteAt(byteAddress);
+          String value = getFormatted(byteAddress, byte);
+          line.write(value);
+        }
+        if (rightHalf != 15) {
+          line.write(isValidAddress(byteAddress) ? "│" : " ");
+        }
+      }
+      line.write("\t│");
+      for (int j = 0; j < 16; j++) {
+        if (isValidAddress(x + j)) {
+          final char = data.getUint8(x + j);
+          final charString =
+              _isPrintable(char) ? String.fromCharCode(char) : '.';
+          line.write(getFormatted(x + j, charString));
+        } else {
+          line.write(' ');
+        }
+      }
+      body.write("${line.toString()}\n");
+      usableRows--;
+    }
+    if (startLine > 0) {
+      full.write("\t".padLeft(16, " "));
+      full.write("───────────────────────^───────────────────────\n");
+    } else {
+      full.write("\n");
+    }
+    full.write(body.toString());
+    if (endLine < getFileSizeInLines()) {
+      full.write("\t".padLeft(16, " "));
+      full.write("───────────────────────v───────────────────────\n");
+    } else {
+      full.write("\n");
+    }
+    return full.toString();
   }
 
   String getFormatted(int byteAddress, String value) {
@@ -351,6 +353,12 @@ class HexEditor {
     switch (key.controlChar) {
       case ControlCharacter.ctrlE:
         dataEndian = dataEndian == Endian.little ? Endian.big : Endian.little;
+        render();
+      case ControlCharacter.pageUp:
+        address = 0;
+        render();
+      case ControlCharacter.pageDown:
+        address = data.lengthInBytes - 1;
         render();
       case ControlCharacter.arrowUp:
         if (!(address - 0x10 < 0)) {

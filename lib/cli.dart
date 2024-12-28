@@ -20,10 +20,12 @@ class Cli {
   /// ## Returns the theme for the tree view.
   /// Used when printing a tree view.
   static AnsiTreeViewTheme get treeTheme => AnsiTreeViewTheme(
-      compact: true,
+      // compact: true,
       headerTheme: AnsiTreeHeaderTheme(hideHeader: true),
-      keyTheme: AnsiTreeNodeKeyTheme(textStyle: AnsiTextStyle(bold: true)),
-      valueTheme: AnsiTreeNodeValueTheme(hideIfEmpty: true),
+      // keyTheme: AnsiTreeNodeKeyTheme(textStyle: AnsiTextStyle(bold: true)),
+      valueTheme: AnsiTreeNodeValueTheme(
+        hideIfEmpty: true,
+      ),
       anchorTheme: AnsiTreeAnchorTheme(
           style: AnsiBorderStyle.rounded, color: AnsiColor.magenta));
 
@@ -97,7 +99,7 @@ class KeyboardInput {
   static final Console _console = Console();
   Isolate? _isolate;
   Capability? _cap;
-  final StreamController<Key> _controller = StreamController<Key>();
+  final StreamController<Key> _controller = StreamController<Key>.broadcast();
 
   KeyboardInput() {
     _initialize();
@@ -112,46 +114,57 @@ class KeyboardInput {
   /// ## Initializes the keyboard input handler.
   /// Does not need to be called manually.
   void _initialize() async {
-    // if (stdin.hasTerminal) {
-    //   stdin.echoMode = false;
-    //   stdin.lineMode = false;
-    // }
+    if (_isolate != null) {
+      throw StateError('KeyboardInput is already initialized.');
+    }
 
     final receivePort = ReceivePort();
     _isolate = await Isolate.spawn(_listenForInput, receivePort.sendPort);
     receivePort.listen((key) {
-      _controller.add(key);
+      if (!_controller.isClosed) {
+        _controller.add(key);
+      }
     });
   }
 
   /// # `void` _listenForInput(SendPort sendPort)
   /// ## Listens for key presses and sends them to the given send port.
   static void _listenForInput(SendPort sendPort) {
-    while (true) {
-      final key = _console.readKey();
-      sendPort.send(key);
+    try {
+      while (true) {
+        final key = _console.readKey();
+        sendPort.send(key);
+      }
+    } catch (e) {
+      // Handle error silently or log
     }
   }
 
   /// # `void` dispose()
   /// ## Disposes of the keyboard input handler.
   void dispose() {
-    _controller.close();
-    _isolate?.kill();
+    if (!_controller.isClosed) {
+      _controller.close();
+    }
+    _isolate?.kill(priority: Isolate.immediate);
     _isolate = null;
     _cap = null;
-    _controller.close();
   }
 
   /// # `void` pause()
   /// ## Pauses the keyboard input handler.
   void pause() {
-    _cap = _isolate?.pause();
+    if (_isolate != null && _cap == null) {
+      _cap = _isolate?.pause();
+    }
   }
 
   /// # `void` resume()
   /// ## Resumes the keyboard input handler.
   void resume() {
-    _isolate?.resume(_cap!);
+    if (_isolate != null && _cap != null) {
+      _isolate?.resume(_cap!);
+      _cap = null;
+    }
   }
 }

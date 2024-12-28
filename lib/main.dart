@@ -16,6 +16,7 @@ import 'extensions.dart';
 import 'server.dart';
 import 'updater.dart';
 import 'scripting/feature_sets/feature_sets.dart';
+import 'package:arceus/widget_system.dart';
 
 /// # `void` main(List<String> arguments)
 /// ## Main entry point.
@@ -29,7 +30,8 @@ Future<dynamic> main(List<String> arguments) async {
       prompt: " A new update is available! Would you like to update?",
     ).interact();
     if (confirm) {
-      final spinner = CliSpin().start("Updating...");
+      final spinner =
+          CliSpin(text: "Updating...", spinner: CliSpinners.moon).start();
       await Updater.update();
       spinner.success("Update complete!");
       exit(0);
@@ -83,6 +85,7 @@ Future<dynamic> main(List<String> arguments) async {
     runner.addCommand(RecoverCommand());
     runner.addCommand(ResyncCommand());
     runner.addCommand(LoginUserCommand());
+    runner.addCommand(TagCommands());
   }
   runner.addCommand(UsersCommands());
   runner.addCommand(DoesConstellationExistCommand());
@@ -140,9 +143,10 @@ class UpdateCommand extends ArceusCommand {
   void run() async {
     final newUpdate = await Updater().checkForUpdate(skip: false);
     if (newUpdate || argResults!["force"]) {
-      final spinner = CliSpin().start(" Updating...");
+      final spinner =
+          CliSpin(text: "Updating...", spinner: CliSpinners.moon).start();
       await Updater.update();
-      spinner.success(" Update complete!");
+      spinner.success("Update complete!");
       exit(0);
     } else {
       print("You are up to date!");
@@ -168,7 +172,9 @@ class CreateConstellationCommand extends ArceusCommand {
       print("Please provide a name for the constellation!");
       return;
     }
-    final spinner = CliSpin().start("Creating constellation...");
+    final spinner =
+        CliSpin(text: "Creating constellation...", spinner: CliSpinners.moon)
+            .start();
     try {
       List<String>? users = argResults?["user"];
       if (users?.isEmpty ?? true) {
@@ -222,13 +228,14 @@ class CheckForDifferencesCommand extends ConstellationArceusCommand {
   Future<bool> _run() async {
     final spinner = CliSpin(
             text:
-                " Checking for differences between current directory and provided star...")
+                "Checking for differences between current directory and provided star...",
+            spinner: CliSpinners.moon)
         .start();
     bool result = constellation.checkForDifferences(false);
     if (!result) {
-      spinner.success(" No differences found.");
+      spinner.success("No differences found.");
     } else {
-      spinner.fail(" Differences found.");
+      spinner.fail("Differences found.");
     }
     return result;
   }
@@ -358,9 +365,10 @@ You can also chain multiple commands together by adding a comma between each.
         return;
       }
     }
-    CliSpin? spinner = CliSpin().start(" Jumping to star...");
+    CliSpin? spinner =
+        CliSpin(text: "Jumping to star...", spinner: CliSpinners.moon).start();
     if (argResults!.rest.isEmpty) {
-      spinner.fail(" Please provide a star hash or command to jump.");
+      spinner.fail("Please provide a star hash or command to jump.");
       return;
     }
     String hash = getRest();
@@ -368,12 +376,12 @@ You can also chain multiple commands together by adding a comma between each.
     try {
       final star = constellation.starmap?[hash] as Star;
       star.makeCurrent();
-      spinner.success(" Jumped to \"${star.name}\".");
+      spinner.success("Jumped to \"${star.name}\".");
       if (argResults!["print"]) {
         constellation.starmap?.printMap();
       }
     } catch (e) {
-      spinner.fail(" Star with the hash of \"$hash\" not found.");
+      spinner.fail("Star with the hash of \"$hash\" not found.");
       rethrow;
     }
   }
@@ -606,14 +614,19 @@ class AddonCompileCommand extends ArceusCommand {
     if (argResults!["output"] != null) {
       outputPath = argResults!["output"]!;
     }
-    CliSpin spinner = CliSpin().start(" Packaging addon... 🍱");
+    CliSpin spinner =
+        CliSpin(text: "Packaging addon... 🍱", spinner: CliSpinners.moon)
+            .start();
     final addon = Addon.package(projectPath, outputPath);
-    spinner.success(" Addon packaged successfully at ${addon.path}! 🎉");
+    spinner.success("Addon packaged successfully at ${addon.path}! 🎉");
 
     if (argResults!["install-global"]) {
-      spinner = CliSpin().start(" Installing addon globally... 🍱");
+      spinner = CliSpin(
+              text: "Installing addon globally... 🍱",
+              spinner: CliSpinners.moon)
+          .start();
       Addon.installGlobally(addon.path);
-      spinner.success(" Addon installed globally successfully! 🎉");
+      spinner.success("Addon installed globally successfully! 🎉");
     }
   }
 }
@@ -634,24 +647,26 @@ class InstallPackagedAddonCommand extends ArceusCommand {
   @override
   void run() {
     if (getRest().isEmpty) {
-      throw Exception(
+      print(
           "Please provide the path to the addon. Addon files must end in .arcaddon.");
     }
     String addonFile = getRest();
     CliSpin? spinner;
     if (!Arceus.isInternal) {
-      spinner = CliSpin().start(" Installing addon... 🍱");
+      spinner =
+          CliSpin(text: "Installing addon... 🍱", spinner: CliSpinners.moon)
+              .start();
     }
     if (argResults!["global"]) {
       Addon.installGlobally(addonFile);
     } else if (Constellation.checkForConstellation(Arceus.currentPath)) {
       Addon.installLocally(addonFile);
     } else {
-      throw Exception(
+      print(
           "Please either install as a global addon or give a valid constellation first.");
     }
     if (!Arceus.isInternal) {
-      spinner!.success(" Addon installed successfully! 🎉");
+      spinner!.success("Addon installed successfully! 🎉");
     }
   }
 }
@@ -670,15 +685,17 @@ class UninstallAddonCommand extends ArceusCommand {
     String addonName = getRest();
     CliSpin? spinner;
     if (!Arceus.isInternal) {
-      spinner = CliSpin().start(" Uninstalling addon... 🗑️");
+      spinner =
+          CliSpin(text: "Uninstalling addon... 🗑️", spinner: CliSpinners.moon)
+              .start();
     }
 
     final found = Addon.uninstallByName(addonName);
 
     if (!Arceus.isInternal && found) {
-      spinner!.success(" Addon uninstalled successfully! 🎉");
+      spinner!.success("Addon uninstalled successfully! 🎉");
     } else if (!Arceus.isInternal) {
-      spinner!.fail(" Addon not found! 🚫");
+      spinner!.fail("Addon not found! 🚫");
     }
   }
 }
@@ -794,10 +811,21 @@ class DoesConstellationExistCommand extends ArceusCommand {
 
   @override
   dynamic run() {
+    final spinner = CliSpin(
+            text: "Checking for constellation...", spinner: CliSpinners.moon)
+        .start();
     if (getRest().isEmpty) {
-      return Arceus.doesConstellationExist(path: Arceus.currentPath);
+      if (Arceus.doesConstellationExist(path: Arceus.currentPath)) {
+        spinner.success("Constellation exists.");
+      } else {
+        spinner.fail("Constellation does not exist.");
+      }
     } else {
-      return Arceus.doesConstellationExist(path: getRest());
+      if (Arceus.doesConstellationExist(path: getRest())) {
+        spinner.success("Constellation exists.");
+      } else {
+        spinner.fail("Constellation does not exist.");
+      }
     }
   }
 }
@@ -814,4 +842,91 @@ class StartServerCommand extends ArceusCommand {
 
   @override
   Future<void> run() async => await ArceusServer.start();
+}
+
+class TagCommands extends ArceusCommand {
+  @override
+  String get description => "Commands for working with tags for stars.";
+
+  @override
+  String get name => "tags";
+
+  TagCommands() {
+    addSubcommand(TagAddCommand());
+    addSubcommand(TagRemoveCommand());
+    addSubcommand(TagListCommand());
+  }
+}
+
+class TagAddCommand extends ConstellationArceusCommand {
+  @override
+  String get description => "Adds a tag to the current star.";
+
+  @override
+  String get name => "add";
+
+  @override
+  void _run() {
+    if (getRest().isEmpty) {
+      print("Please provide a tag to add.");
+    }
+    final spinner =
+        CliSpin(text: "Adding tag...", spinner: CliSpinners.moon).start();
+    final success = constellation.starmap!.currentStar!.addTag(getRest());
+    if (success) {
+      spinner.success("Tag added successfully.");
+    } else {
+      spinner.fail("Tag already exists.");
+    }
+  }
+}
+
+class TagRemoveCommand extends ConstellationArceusCommand {
+  @override
+  String get description => "Removes a tag from the current star.";
+
+  @override
+  String get name => "remove";
+
+  @override
+  void _run() {
+    String tag = getRest();
+    if (tag.isEmpty) {
+      final tags = constellation.starmap!.currentStar!.tags;
+      final selected = Select(
+        prompt: " Select a tag to remove.",
+        options: [...tags, "Cancel"],
+      ).interact();
+      if (selected == tags.length) {
+        return;
+      }
+      tag = tags.elementAt(selected);
+    }
+    final spinner =
+        CliSpin(text: "Removing tag...", spinner: CliSpinners.moon).start();
+    if (constellation.starmap!.currentStar!.removeTag(tag)) {
+      spinner.success("Tag removed successfully.");
+    } else {
+      spinner.fail("Tag not found.");
+    }
+  }
+}
+
+class TagListCommand extends ConstellationArceusCommand {
+  @override
+  String get description => "Lists all tags for the current star.";
+
+  @override
+  String get name => "list";
+
+  @override
+  void _run() {
+    if (constellation.starmap!.currentStar!.tags.isEmpty) {
+      print("No tags found for ${constellation.starmap!.currentStar!.name}.");
+    }
+    print("Tags for ${constellation.starmap!.currentStar!.name}:");
+    for (String tag in constellation.starmap!.currentStar!.tags) {
+      print(Badge(tag));
+    }
+  }
 }

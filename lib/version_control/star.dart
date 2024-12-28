@@ -1,4 +1,5 @@
 import 'package:arceus/arceus.dart';
+import 'package:arceus/widget_system.dart';
 import 'package:archive/archive_io.dart';
 import 'dart:convert';
 import 'constellation.dart';
@@ -22,19 +23,21 @@ class Star {
 
   /// # String? name
   /// ## The name of the star.
-  String? name;
+  late String? name;
 
   /// # String? hash
   /// ## The hash of the star.
-  String? hash;
+  late String? hash;
 
   /// # DateTime? createdAt
   /// ## The time the star was created.
-  DateTime? createdAt;
+  late DateTime? createdAt;
 
   /// # String? _userHash
   /// ## The hash of the user who this star belongs to.
-  String? _userHash;
+  late String? _userHash;
+
+  late Set<String> tags;
 
   /// # [User]? get user
   /// ## Returns the user who this star belongs to.
@@ -114,6 +117,7 @@ class Star {
   void _create() {
     createdAt = DateTime.now();
     hash = constellation.generateUniqueStarHash();
+    tags = {};
     ZipFileEncoder archive = ZipFileEncoder();
     archive.create(constellation.getStarPath(hash!));
     String content = _generateStarFileData();
@@ -156,8 +160,10 @@ class Star {
   void _load() {
     Archive archive = getArchive();
     ArchiveFile? file = archive.findFile("star");
-    _fromStarFileData(utf8.decode(file!.content));
+    String content = utf8.decode(file!.content);
     archive.clearSync();
+    file.closeSync();
+    _fromStarFileData(content);
   }
 
   /// # void _extract()
@@ -217,7 +223,16 @@ class Star {
   /// ## Converts the JSON `data` into usable info about a star.
   /// JSON data is stored in a file named `star` inside a `.star` file.
   void _fromStarFileData(String data) {
-    fromJson(jsonDecode(data));
+    Map<String, dynamic> json = jsonDecode(data);
+    bool resave =
+        false; // Resave the star if any details are missing, with the new details.
+    if (!json.containsKey("tags")) {
+      resave = true;
+    }
+    _fromJson(json);
+    if (resave) {
+      save();
+    }
   }
 
   /// # `String` _generateStarFileData()
@@ -314,16 +329,43 @@ class Star {
 
   /// # void fromJson(Map<String, dynamic> json)
   /// ## Converts the JSON data into a [Star] object.
-  void fromJson(Map<String, dynamic> json) {
+  void _fromJson(Map<String, dynamic> json) {
     name = json["name"];
     createdAt = DateTime.tryParse(json["createdAt"]);
     _userHash = json["user"];
+    tags = Set<String>.from(json["tags"] ?? {});
   }
 
   /// # Map<String, dynamic> toJson()
   /// ## Converts the [Star] object into a JSON object.
-  Map<String, dynamic> toJson() =>
-      {"name": name, "createdAt": createdAt.toString(), "user": _userHash};
+  Map<String, dynamic> toJson() => {
+        "name": name,
+        "createdAt": createdAt.toString(),
+        "user": _userHash,
+        "tags": tags.toList(),
+      };
+
+  void save() {
+    Archive archive = getArchive();
+    ZipFileEncoder archiveEncoder = ZipFileEncoder();
+    archiveEncoder.create(constellation.getStarPath(hash!, temp: true));
+    for (ArchiveFile file in archive.files) {
+      if (file.name == "star") {
+        String content = _generateStarFileData();
+        archiveEncoder
+            .addArchiveFile(ArchiveFile('star', content.length, content));
+      } else {
+        archiveEncoder.addArchiveFile(file);
+      }
+      file.closeSync();
+    }
+    archive.clearSync();
+    archiveEncoder.closeSync();
+
+    File(constellation.getStarPath(hash!)).deleteSync();
+    File(constellation.getStarPath(hash!, temp: true))
+        .renameSync(constellation.getStarPath(hash!));
+  }
 
   /// # `String` toString()
   /// ## Returns the hash of the star.
@@ -331,14 +373,24 @@ class Star {
   String toString() => hash!;
 
   /// # String getDisplayName()
-  /// ## Returns the name of the star, with a ✨ if it is the current star.
+  /// ## Returns the name of the star for displaying.
   /// This is used when printing the star to the terminal.
+  /// The name will end with a ✨ if it's the current star.
+  /// It will also show a user badge, and the first two tags attached to the star.
   String getDisplayName() {
-    if (isCurrent) {
-      return "${name!} ✨";
-    } else {
-      return name!;
+    int tagsToDisplay = 2;
+    List<Badge> badges = [];
+    for (String tag in tags) {
+      if (tagsToDisplay == 0) {
+        break;
+      }
+      badges.add(Badge(tag));
+      tagsToDisplay--;
     }
+    Badge userBadge = user!.badge;
+    final displayName =
+        "$name $userBadge ${badges.isNotEmpty ? badges.join(" ") : ""} ${isCurrent ? "✨" : ""}";
+    return displayName;
   }
 
   /// # [Star] getChild(int index)
@@ -398,5 +450,32 @@ class Star {
     return siblings[(getIndex() + offset) %
         siblings
             .length]; // I ❤️ modulo. It's almost magic how easily it can wrap a index around to a valid range! I just wish I could use it more often.
+  }
+
+  bool addTag(String tag) {
+    if (tags.add(tag)) {
+      save();
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  bool removeTag(String tag) {
+    if (tags.remove(tag)) {
+      save();
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  bool hasTag(String tag) {
+    return tags.contains(tag);
+  }
+
+  void clearTags() {
+    tags.clear();
+    save();
   }
 }

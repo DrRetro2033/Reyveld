@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:ansix/ansix.dart';
 
 import '../uuid.dart';
+import 'package:arceus/widget_system.dart';
 
 /// # `class` UserIndex
 /// ## A class that represents a user index.
@@ -30,14 +31,14 @@ class UserIndex {
   }
 
   List<User> _load() {
-    List<User> users = [];
+    List<User> tempUsers = [];
     final file = File(filepath);
     if (file.existsSync()) {
       for (String line in file.readAsLinesSync()) {
-        users.add(User.fromString(this, line));
+        tempUsers.add(User.fromString(this, line));
       }
     }
-    return users;
+    return tempUsers;
   }
 
   void _save() {
@@ -88,6 +89,35 @@ class UserIndex {
 
 class User {
   static const int lengthOfHash = 8;
+  static const Set<AnsiColor> _userColors = {
+    AnsiColor.maroon,
+    AnsiColor.green,
+    AnsiColor.olive,
+    AnsiColor.navy,
+    AnsiColor.magenta,
+    AnsiColor.teal,
+    AnsiColor.silver,
+    AnsiColor.grey,
+    AnsiColor.red,
+    AnsiColor.lime,
+    AnsiColor.yellow,
+    AnsiColor.blue,
+    AnsiColor.fuchsia,
+    AnsiColor.aqua,
+    AnsiColor.white,
+    AnsiColor.cadetBlue,
+    AnsiColor.orange1,
+    AnsiColor.orange2,
+    AnsiColor.orange3,
+    AnsiColor.orange4,
+    AnsiColor.blueViolet,
+    AnsiColor.cornflowerBlue,
+    AnsiColor.gold1,
+    AnsiColor.gold2,
+    AnsiColor.gold3,
+    AnsiColor.indianRed,
+    AnsiColor.lightCoral,
+  };
   UserIndex userIndex;
   String? _name;
   String get name => _name!;
@@ -96,12 +126,20 @@ class User {
     userIndex._save();
   }
 
+  Badge get badge => Badge("👤$name", badgeColor: color);
+
   late String hash;
   User(this.userIndex, this._name, this.hash);
 
   @override
   String toString() {
     return "$hash$_name";
+  }
+
+  AnsiColor get color {
+    return _userColors.elementAt(
+        hash.runes.reduce((value, element) => value + element) %
+            _userColors.length);
   }
 
   factory User.fromString(UserIndex userIndex, String string) {
