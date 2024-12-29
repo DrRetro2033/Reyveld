@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:cli_spin/cli_spin.dart';
 import 'package:yaml/yaml.dart';
 
 import './squirrel.dart';
@@ -81,29 +82,36 @@ class Addon {
   }
 
   static Addon package(String projectPath, String outputPath) {
-    if (!_validate(projectPath)) {
+    if (_validate(projectPath.fixPath())) {
       YamlMap yaml = _getAddonYaml(projectPath);
 
       String body = _getAddonYamlAsString(projectPath);
       body += "\n---END-OF-DETAILS---\n";
       String entrypoint = yaml["entrypoint"];
-      body += File("$projectPath/$entrypoint").readAsStringSync();
-      body += "\n";
-      while (body.contains(RegExp(r"#\s*include\(([a-zA-Z\/\s]*.nut)\s*\)"))) {
+      String code = File("$projectPath/$entrypoint").readAsStringSync();
+      code += "\n";
+      while (code.contains(RegExp(r"#\s*include\(([a-zA-Z\/\s]*.nut)\s*\)"))) {
         final match =
             RegExp(r"#\s*include\(([a-zA-Z\/\s]*.nut)\s*\)").firstMatch(body)!;
-        body = body.replaceRange(match.start, match.end, "");
-        body += File("$projectPath/${match.group(1)!}").readAsStringSync();
-        body += "\n";
+        code = body.replaceRange(match.start, match.end, "");
+        code += File("$projectPath/${match.group(1)!}").readAsStringSync();
+        code += "\n";
       }
-      final ctx = NoneAdddonContext();
+      AddonContext ctx = NoneAdddonContext();
+      switch (yaml["feature-set"]) {
+        case "pattern":
+          ctx = PatternAddonContext();
+          break;
+        default:
+          break;
+      }
       if (!ctx.hasRequiredFunctions(body)) {
         throw Exception(
           "Required functions are missing! Please check your addon.yaml file. Required functions: ${ctx.requiredFunctions.join(", ")}",
         );
       }
 
-      Uint8List bytes = utf8.encode(body);
+      Uint8List bytes = utf8.encode(body + code);
       List<int> compressed = gzip.encoder.convert(bytes);
       File("$outputPath/${(yaml["name"] as String).toLowerCase().replaceAll(" ", "_")}.arcaddon")
           .writeAsBytesSync(compressed);
@@ -290,6 +298,7 @@ class Addon {
 
   String getCode() {
     try {
+      // print(decodedString.split("---END-OF-DETAILS---")[1]);
       return decodedString.split("---END-OF-DETAILS---")[1];
     } catch (e) {
       throw Exception("Failed to get code: $e");
@@ -313,18 +322,29 @@ abstract class AddonContext {
 
   bool hasRequiredFunctions(String code) {
     final matches = functionNameRegex.allMatches(code);
-    for (String requiredFunction in requiredFunctions) {
-      if (!matches.any((match) => match.group(1) == requiredFunction)) {
-        return false;
-      }
-    }
+    requiredFunctions
+        .any((element) => !matches.any((m) => m.group(1) == element));
     return true;
   }
 
-  Pointer<SQVM> startVM() {
-    if (addon == null) {
-      throw Exception("Addon is not set.");
+  Future<void> memCheck({int retries = 1024}) async {
+    final spinner =
+        CliSpin(text: "Testing memory...", spinner: CliSpinners.moon).start();
+    for (int repeat = 1; repeat <= retries; repeat++) {
+      spinner.text = "Testing memory... ($repeat/$retries)";
+      try {
+        final pointer = startVM();
+        Squirrel.dispose(pointer);
+      } catch (e) {
+        spinner.fail(" Memory test failed ($repeat/$retries)");
+        rethrow;
+      }
+      await Future.delayed(const Duration(milliseconds: 2));
     }
+    spinner.success(" Memory test passed!");
+  }
+
+  Pointer<SQVM> startVM() {
     final vm = Squirrel.run(addon!.code);
     Squirrel.createAPI(vm, functions);
     return vm;

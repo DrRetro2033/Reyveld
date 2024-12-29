@@ -204,6 +204,9 @@ The current star is marked with ✨
   @override
   String get name => "map";
 
+  @override
+  String get category => "Constellation";
+
   ShowMapConstellationCommand();
 
   @override
@@ -222,20 +225,23 @@ class CheckForDifferencesCommand extends ConstellationArceusCommand {
   @override
   String get name => "check";
 
+  @override
+  String get category => "Constellation";
+
   CheckForDifferencesCommand();
 
   @override
   Future<bool> _run() async {
     final spinner = CliSpin(
             text:
-                "Checking for differences between current directory and provided star...",
+                " Checking for differences between current directory and provided star...",
             spinner: CliSpinners.moon)
         .start();
     bool result = constellation.checkForDifferences(false);
     if (!result) {
-      spinner.success("No differences found.");
+      spinner.success(" No differences found.");
     } else {
-      spinner.fail("Differences found.");
+      spinner.fail(" Differences found.");
     }
     return result;
   }
@@ -248,6 +254,9 @@ class ResyncCommand extends ConstellationArceusCommand {
 
   @override
   String get name => "resync";
+
+  @override
+  String get category => "Constellation";
 
   ResyncCommand();
 
@@ -280,6 +289,9 @@ If you decide to resync back to the current star, call 'resync'.
 
   @override
   String get name => "recover";
+
+  @override
+  String get category => "Constellation";
 
   RecoverCommand();
 
@@ -348,6 +360,9 @@ You can also chain multiple commands together by adding a comma between each.
   @override
   String get name => "jump";
 
+  @override
+  String get category => "Constellation";
+
   ConstellationJumpToCommand() {
     argParser.addFlag("print",
         abbr: "p", defaultsTo: false, help: "Print the tree after jumping.");
@@ -401,6 +416,9 @@ This will fail if there no changes to commit, unless '--force' is provided.""";
   @override
   String get name => "grow";
 
+  @override
+  String get category => "Constellation";
+
   ConstellationGrowCommand() {
     argParser.addFlag("force", abbr: "f", defaultsTo: false);
     argParser.addFlag("sign-in", abbr: "s", defaultsTo: false);
@@ -430,6 +448,9 @@ Will confirm before proceeding, unless --force is provided.
   @override
   String get name => "trim";
 
+  @override
+  String get category => "Constellation";
+
   TrimCommand() {
     argParser.addFlag("force", abbr: "f", defaultsTo: false);
   }
@@ -454,6 +475,9 @@ class UsersCommands extends ArceusCommand {
   String get description => "Contains commands for users in the constellation.";
   @override
   String get name => "users";
+
+  @override
+  String get category => "Global";
 
   UsersCommands() {
     addSubcommand(UsersListCommand());
@@ -537,6 +561,9 @@ class LoginUserCommand extends ConstellationArceusCommand {
   @override
   String get name => "login";
 
+  @override
+  String get category => "Constellation";
+
   LoginUserCommand() {
     argParser.addOption("user-hash", abbr: "u", hide: true);
     argParser.addFlag("stay",
@@ -571,6 +598,9 @@ class ConstellationDeleteCommand extends ArceusCommand {
   @override
   String get name => "delete";
 
+  @override
+  String get category => "Constellation";
+
   ConstellationDeleteCommand() {
     argParser.addFlag("force", abbr: "f", defaultsTo: false);
   }
@@ -604,9 +634,9 @@ class AddonCompileCommand extends ArceusCommand {
   }
 
   @override
-  void run() {
+  void run() async {
     if (getRest().isEmpty) {
-      throw Exception("Please provide the project path for the addon.");
+      throw Exception(" Please provide the project path for the addon.");
     }
     String projectPath = getRest();
     String outputPath = projectPath;
@@ -615,18 +645,21 @@ class AddonCompileCommand extends ArceusCommand {
       outputPath = argResults!["output"]!;
     }
     CliSpin spinner =
-        CliSpin(text: "Packaging addon... 🍱", spinner: CliSpinners.moon)
+        CliSpin(text: " Packaging addon... 🍱", spinner: CliSpinners.moon)
             .start();
     final addon = Addon.package(projectPath, outputPath);
-    spinner.success("Addon packaged successfully at ${addon.path}! 🎉");
+    spinner.success(" Addon packaged successfully at ${addon.path}! 🎉");
+
+    await addon.context
+        .memCheck(); // Check memory for any leaks or compile errors
 
     if (argResults!["install-global"]) {
       spinner = CliSpin(
-              text: "Installing addon globally... 🍱",
+              text: " Installing addon globally... 🍱",
               spinner: CliSpinners.moon)
           .start();
       Addon.installGlobally(addon.path);
-      spinner.success("Addon installed globally successfully! 🎉");
+      spinner.success(" Addon installed globally successfully! 🎉");
     }
   }
 }
@@ -725,6 +758,9 @@ class AddonsCommand extends Command {
   @override
   String get name => "addons";
 
+  @override
+  String get category => "Addons";
+
   AddonsCommand() {
     addSubcommand(InstallPackagedAddonCommand());
     addSubcommand(UninstallAddonCommand());
@@ -739,11 +775,15 @@ class ReadFileCommand extends ArceusCommand {
   @override
   String get description =>
       "Reads a file with an addon associated with it, so you can see a simplified view of its data.";
+
   @override
   String get name => "read";
 
   @override
-  dynamic run() {
+  String get category => "Addons";
+
+  @override
+  dynamic run() async {
     if (getRest().isEmpty) {
       throw Exception("Please provide a file to read.");
     }
@@ -756,6 +796,7 @@ class ReadFileCommand extends ArceusCommand {
       return null;
     }
     Plasma plasma = Plasma.fromFile(file);
+
     final result = (addons.first.context as PatternAddonContext).read(plasma);
     if (!Arceus.isInternal) {
       print(AnsiTreeView(result, theme: Cli.treeTheme));
@@ -769,6 +810,9 @@ class ArceusConstellationsCommand extends ArceusCommand {
   String get description => "Lists all constellations.";
   @override
   String get name => "consts";
+
+  @override
+  String get category => "Global";
 
   @override
   void run() {
@@ -787,6 +831,9 @@ class OpenFileInHexCommand extends ArceusCommand {
   String get description => "Opens a file in the Héx Editor.";
   @override
   String get name => "hex";
+
+  @override
+  String get category => "Tools";
 
   @override
   Future<void> run() async {
@@ -808,6 +855,9 @@ class DoesConstellationExistCommand extends ArceusCommand {
       "Checks if a constellation exists at the given path.";
   @override
   String get name => "exists";
+
+  @override
+  String get category => "Tools";
 
   @override
   dynamic run() {
@@ -838,6 +888,9 @@ class StartServerCommand extends ArceusCommand {
   String get name => "server";
 
   @override
+  String get category => "Tools";
+
+  @override
   bool get hidden => true;
 
   @override
@@ -850,6 +903,9 @@ class TagCommands extends ArceusCommand {
 
   @override
   String get name => "tags";
+
+  @override
+  String get category => "Constellation";
 
   TagCommands() {
     addSubcommand(TagAddCommand());

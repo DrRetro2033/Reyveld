@@ -23,9 +23,9 @@ function bar(a,t) {
           "egg", {}, (Pointer<SQVM> vm, Map<String, dynamic> params) => 42)
     ]);
 
-    final result1 = Squirrel.call(vm, "foo", [1, 2, 3]);
+    final result1 = Squirrel.call(vm, "foo", args: [1, 2, 3]);
     print(result1);
-    final result2 = Squirrel.call(vm, "bar", [4, 5]);
+    final result2 = Squirrel.call(vm, "bar", args: [4, 5]);
     print(result2);
   });
 }

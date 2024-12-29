@@ -76,7 +76,6 @@ extension CNativeString on String {
   Pointer<Char> toCharPointer() {
     var nativeUtf8 = toNativeUtf8();
     var pointer = nativeUtf8.cast<Char>();
-    malloc.free(nativeUtf8);
     return pointer;
   }
 }
