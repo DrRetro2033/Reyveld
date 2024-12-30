@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:ansix/ansix.dart';
 
 import '../uuid.dart';
 import 'package:arceus/widget_system.dart';
@@ -9,10 +8,6 @@ import 'package:arceus/widget_system.dart';
 /// The user index is a file that contains all the users in Arceus.
 /// Right now, the index is unique to each constellation, however in the future, it will be shared across all constellations.
 class UserIndex {
-  static const AnsiGridTheme gridTheme = AnsiGridTheme(
-      headerTextTheme: AnsiTextTheme(
-          backgroundColor: AnsiColor.blueViolet,
-          alignment: AnsiTextAlignment.center));
   final String filepath;
   File get file => File(filepath);
   UserIndex(this.filepath) {
@@ -82,41 +77,25 @@ class UserIndex {
   }
 
   void displayUsers() {
-    final AnsiGrid verticalGrid = AnsiGrid.fromRows(rows, theme: gridTheme);
-    print(verticalGrid);
+    for (User user in users) {
+      print(user.badge);
+    }
   }
 }
 
 class User {
   static const int lengthOfHash = 8;
-  static const Set<AnsiColor> _userColors = {
-    AnsiColor.maroon,
-    AnsiColor.green,
-    AnsiColor.olive,
-    AnsiColor.navy,
-    AnsiColor.magenta,
-    AnsiColor.teal,
-    AnsiColor.silver,
-    AnsiColor.grey,
-    AnsiColor.red,
-    AnsiColor.lime,
-    AnsiColor.yellow,
-    AnsiColor.blue,
-    AnsiColor.fuchsia,
-    AnsiColor.aqua,
-    AnsiColor.white,
-    AnsiColor.cadetBlue,
-    AnsiColor.orange1,
-    AnsiColor.orange2,
-    AnsiColor.orange3,
-    AnsiColor.orange4,
-    AnsiColor.blueViolet,
-    AnsiColor.cornflowerBlue,
-    AnsiColor.gold1,
-    AnsiColor.gold2,
-    AnsiColor.gold3,
-    AnsiColor.indianRed,
-    AnsiColor.lightCoral,
+  static const Set<String> _userColors = {
+    "red",
+    "green",
+    "yellow",
+    "darkturquoise",
+    "aqua",
+    "fuchia",
+    "crimson",
+    "coral",
+    "orange",
+    "beige",
   };
   UserIndex userIndex;
   String? _name;
@@ -136,7 +115,7 @@ class User {
     return "$hash$_name";
   }
 
-  AnsiColor get color {
+  String get color {
     return _userColors.elementAt(
         hash.runes.reduce((value, element) => value + element) %
             _userColors.length);

@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:async';
 import 'dart:isolate';
-import 'package:ansix/ansix.dart';
 import 'package:dart_console/dart_console.dart';
 
 class Cli {
@@ -15,19 +14,6 @@ class Cli {
 
   // static int _lastWindowWidth = 0;
   // static int _lastWindowHeight = 0;
-
-  /// # static `AnsiTreeViewTheme` get treeTheme
-  /// ## Returns the theme for the tree view.
-  /// Used when printing a tree view.
-  static AnsiTreeViewTheme get treeTheme => AnsiTreeViewTheme(
-      // compact: true,
-      headerTheme: AnsiTreeHeaderTheme(hideHeader: true),
-      // keyTheme: AnsiTreeNodeKeyTheme(textStyle: AnsiTextStyle(bold: true)),
-      valueTheme: AnsiTreeNodeValueTheme(
-        hideIfEmpty: true,
-      ),
-      anchorTheme: AnsiTreeAnchorTheme(
-          style: AnsiBorderStyle.rounded, color: AnsiColor.magenta));
 
   /// # static `void` clearTerminal()
   /// ## Clears the terminal.

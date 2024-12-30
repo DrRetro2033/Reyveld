@@ -1,15 +1,15 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
-import 'package:ansix/ansix.dart';
 import 'package:args/command_runner.dart';
+import 'package:chalkdart/chalkstrings.dart';
 import 'package:cli_spin/cli_spin.dart';
 import 'version_control/constellation.dart';
 import 'version_control/star.dart';
 import 'arceus.dart';
 import 'scripting/addon.dart';
 import 'package:interact/interact.dart';
-import 'cli.dart';
+
 import 'hex_editor/editor.dart';
 import 'version_control/dossier.dart';
 import 'extensions.dart';
@@ -211,8 +211,7 @@ The current star is marked with ✨
 
   @override
   void _run() {
-    print(
-        "Currently signed in as ${constellation.loggedInUser?.name.italic()}.");
+    print("Currently signed in as ${constellation.loggedInUser?.name.italic}.");
     constellation.starmap?.printMap();
     constellation.printSumOfCurStar();
   }
@@ -799,7 +798,7 @@ class ReadFileCommand extends ArceusCommand {
 
     final result = (addons.first.context as PatternAddonContext).read(plasma);
     if (!Arceus.isInternal) {
-      print(AnsiTreeView(result, theme: Cli.treeTheme));
+      print(TreeWidget(result));
     }
     return jsonEncode(result);
   }

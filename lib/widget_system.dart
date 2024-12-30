@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:ansix/ansix.dart';
 import 'package:arceus/cli.dart';
+import 'package:chalkdart/chalkstrings.dart';
 
 class Size {
   final int width;
@@ -88,28 +88,27 @@ class Footer extends Widget {
 class Badge {
   final String text;
 
-  final AnsiColor badgeColor;
-  final AnsiColor textColor;
-  Badge(this.text,
-      {this.badgeColor = AnsiColor.white, this.textColor = AnsiColor.black});
+  final String badgeColor;
+  final String textColor;
+  Badge(this.text, {this.badgeColor = "white", this.textColor = "black"});
 
   @override
   String toString() {
     String badge = "";
-    badge += ''.colored(foreground: badgeColor);
-    badge += text.colored(background: badgeColor, foreground: textColor);
-    badge += ''.colored(foreground: badgeColor);
+    badge += ''.keyword(badgeColor);
+    badge += text.keyword(textColor).onKeyword(badgeColor);
+    badge += ''.keyword(badgeColor);
     return badge;
   }
 }
 
 class TreeWidget {
-  final Map<String, dynamic> data;
-  final AnsiColor pipeColor;
+  final Map<dynamic, dynamic> data;
+  final String pipeColor;
   final int padding;
   TreeWidget(
     this.data, {
-    this.pipeColor = AnsiColor.magenta,
+    this.pipeColor = "blueviolet",
     this.padding = 2,
   });
 
@@ -119,9 +118,9 @@ class TreeWidget {
   }
 
   String _createTree(
-      Map<String, dynamic> data, int level, Set<int> levelsEnded) {
+      Map<dynamic, dynamic> data, int level, Set<int> levelsEnded) {
     StringBuffer buffer = StringBuffer();
-    List<String> keys = data.keys.toList();
+    List keys = data.keys.toList();
     for (int i = 0; i < keys.length; i++) {
       String key = keys[i];
       bool isLast = i == keys.length - 1;
@@ -145,7 +144,7 @@ class TreeWidget {
             "$pipes${isLast ? '╰── '.padLeft(4 + padding) : '├── '.padLeft(4 + padding)}";
       }
 
-      buffer.writeln('${prefix.colored(foreground: pipeColor)}$key');
+      buffer.writeln('${prefix.keyword(pipeColor)}$key');
       if (data[key] is Map) {
         if (data[key].isNotEmpty) {
           buffer.write(_createTree(data[key], level + 1, levelsEnded));

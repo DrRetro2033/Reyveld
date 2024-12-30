@@ -1,14 +1,14 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:arceus/cli.dart';
 import 'package:arceus/scripting/addon.dart';
 import 'package:arceus/scripting/feature_sets/feature_sets.dart';
+import 'package:arceus/widget_system.dart';
 import 'package:archive/archive_io.dart';
 import 'package:yaml/yaml.dart';
+import 'package:chalkdart/chalkstrings.dart';
 
 import 'star.dart';
-import 'package:ansix/ansix.dart';
 import 'package:cli_spin/cli_spin.dart';
 import '../extensions.dart';
 import '../arceus.dart';
@@ -22,10 +22,10 @@ class Dossier {
   Star star;
 
   // The following are used for the CLI:
-  final String _addSymbol = "A".bold().green();
-  final String _removeSymbol = "D".bold().red();
-  final String _moveSymbol = "→".bold().aqua();
-  final String _modifiedSymbol = "M".bold().yellow();
+  final String _addSymbol = "A".bold.greenBright;
+  final String _removeSymbol = "D".bold.redBright;
+  final String _moveSymbol = "→".bold.cyanBright;
+  final String _modifiedSymbol = "M".bold.yellowBright;
 
   Dossier(this.star);
 
@@ -279,10 +279,7 @@ class Plasma {
     Addon addon = Addon.getInstalledAddonsByFeatureSet(FeatureSets.pattern)
         .firstWhere((e) => (e.getMetadata()["associated-files"] as YamlList)
             .contains(getExtension()));
-    AnsiTreeView tree = AnsiTreeView(
-        (addon.context as PatternAddonContext).read(this),
-        theme: Cli.treeTheme);
-    print(tree.toString());
+    print(TreeWidget((addon.context as PatternAddonContext).read(this)));
   }
 
   /// # `bool` isTracked()
