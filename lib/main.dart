@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:args/command_runner.dart';
 import 'package:chalkdart/chalkstrings.dart';
 import 'package:cli_spin/cli_spin.dart';
+import 'package:yaml/yaml.dart';
 import 'version_control/constellation.dart';
 import 'version_control/star.dart';
 import 'arceus.dart';
@@ -648,6 +649,22 @@ class AddonCompileCommand extends ArceusCommand {
             .start();
     final addon = Addon.package(projectPath, outputPath);
     spinner.success(" Addon packaged successfully at ${addon.path}! 🎉");
+    final testFile = File("$projectPath/test.yaml");
+    if (testFile.existsSync()) {
+      spinner = CliSpin(text: " Testing addon... 🍱", spinner: CliSpinners.moon)
+          .start();
+      try {
+        addon.testRun(testFile);
+      } catch (e) {
+        spinner.fail(" Test run failed! 🚫 Code:\n${addon.code}");
+        rethrow;
+      } finally {
+        spinner.success(" Test run passed! 🎉");
+      }
+    } else {
+      print(
+          "No test file found! It is recommended to have a test.yaml file to test the addon before distribution.");
+    }
 
     await addon.context
         .memCheck(); // Check memory for any leaks or compile errors

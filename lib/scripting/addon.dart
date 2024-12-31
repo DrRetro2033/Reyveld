@@ -81,6 +81,11 @@ class Addon {
     }
   }
 
+  void testRun(File testFile) {
+    final yaml = loadYaml(testFile.readAsStringSync()) as YamlMap;
+    _context.test(yaml);
+  }
+
   static Addon package(String projectPath, String outputPath) {
     if (_validate(projectPath.fixPath())) {
       YamlMap yaml = _getAddonYaml(projectPath);
@@ -89,13 +94,12 @@ class Addon {
       body += "\n---END-OF-DETAILS---\n";
       String entrypoint = yaml["entrypoint"];
       String code = File("$projectPath/$entrypoint").readAsStringSync();
-      code += "\n";
-      while (code.contains(RegExp(r"#\s*include\(([a-zA-Z\/\s]*.nut)\s*\)"))) {
+      while (RegExp(r"#\s*include\(([a-zA-Z\/\s]*.nut)\s*\)").hasMatch(code)) {
+        code += "\n\n";
         final match =
-            RegExp(r"#\s*include\(([a-zA-Z\/\s]*.nut)\s*\)").firstMatch(body)!;
-        code = body.replaceRange(match.start, match.end, "");
+            RegExp(r"#\s*include\(([a-zA-Z\/\s]*.nut)\s*\)").firstMatch(code)!;
+        code = code.replaceRange(match.start, match.end, "");
         code += File("$projectPath/${match.group(1)!}").readAsStringSync();
-        code += "\n";
       }
       AddonContext ctx = NoneAdddonContext();
       switch (yaml["feature-set"]) {
@@ -111,7 +115,7 @@ class Addon {
         );
       }
 
-      Uint8List bytes = utf8.encode(body + code);
+      Uint8List bytes = utf8.encode("$body$code");
       List<int> compressed = gzip.encoder.convert(bytes);
       File("$outputPath/${(yaml["name"] as String).toLowerCase().replaceAll(" ", "_")}.arcaddon")
           .writeAsBytesSync(compressed);
@@ -314,7 +318,11 @@ abstract class AddonContext {
 
   List<SquirrelFunction> get functions;
 
+  Map<String, List<String>> get enums => {};
+
   Addon? addon;
+
+  void test(YamlMap yaml);
 
   AddonContext([this.addon]) {
     Squirrel.init("C:/Repos/arceus");
@@ -329,31 +337,49 @@ abstract class AddonContext {
 
   Future<void> memCheck({int retries = 1024}) async {
     final spinner =
-        CliSpin(text: "Testing memory...", spinner: CliSpinners.moon).start();
+        CliSpin(text: " Testing memory...", spinner: CliSpinners.moon).start();
     for (int repeat = 1; repeat <= retries; repeat++) {
-      spinner.text = "Testing memory... ($repeat/$retries)";
+      spinner.text = " Testing memory... ($repeat/$retries)";
       try {
         final pointer = startVM();
         Squirrel.dispose(pointer);
       } catch (e) {
-        spinner.fail(" Memory test failed ($repeat/$retries)");
+        spinner.fail(" Memory test failed ($repeat/$retries) 🚫");
         rethrow;
       }
-      await Future.delayed(const Duration(milliseconds: 2));
+      await Future.delayed(const Duration(microseconds: 1));
     }
-    spinner.success(" Memory test passed!");
+    spinner.success(" Memory test passed! 🎉");
   }
 
   Pointer<SQVM> startVM() {
-    final vm = Squirrel.run(addon!.code);
+    String additionalCode = _buildEnums();
+    final vm = Squirrel.run(additionalCode + addon!.code);
     Squirrel.createAPI(vm, functions);
     return vm;
+  }
+
+  String _buildEnums() {
+    String result = "";
+    for (String key in enums.keys) {
+      result += """
+enum $key {
+  ${enums[key]!.join(",\n  ")}
+};
+""";
+    }
+    return result;
   }
 }
 
 class NoneAdddonContext extends AddonContext {
   @override
   List<SquirrelFunction> get functions => [];
+
+  @override
+  void test(YamlMap yaml) {
+    return;
+  }
 
   NoneAdddonContext([super.addon]) : super();
 }

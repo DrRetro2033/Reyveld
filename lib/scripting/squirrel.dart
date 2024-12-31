@@ -59,17 +59,43 @@ class Squirrel {
     }
     final vm = bindings.sq_open(1024);
     bindings.sq_setprintfunc(vm, printSquirl, printSquirl);
+    code = _addExports(code);
     final pointer = code.toCharPointer();
     successful(
         vm,
-        bindings.sq_compilebuffer(vm, pointer, code.toNativeUtf8().length,
-            "run.nut".toCharPointer(), SQTrue));
+        bindings.sq_compilebuffer(
+            vm, pointer, code.length, "run.nut".toCharPointer(), SQTrue));
     malloc.free(pointer);
     bindings.sq_pushroottable(vm);
     successful(vm, bindings.sq_call(vm, 1, SQFalse, SQTrue));
     bindings.sq_collectgarbage(vm);
     bindings.sq_pop(vm, 1);
     return vm;
+  }
+
+  static String _addExports(String code) {
+    RegExp regExp = RegExp(
+        r'class\s(\w*)\s?<\/\s?export\s?=\s?\[((?:\s?"(?:\w+)"\s?,?)+)\]\s?\/\s?>\s?(?:[\s\S]*)');
+    String addCode = """
+function __export__(obj) {
+  return obj.export();
+}
+""";
+    regExp.allMatches(code).forEach((m) {
+      String className = m.group(1)!;
+      String exportsStr = m.group(2)!;
+      List<String> exports = exportsStr
+          .split(",")
+          .map((e) => e.trim().replaceAll('"', ''))
+          .toList();
+      addCode += """
+function $className::export() {
+  return {
+    ${exports.map((e) => "$e = this.$e").join(",\n    ")}
+  };
+}""";
+    });
+    return code + addCode;
   }
 
   /// # `static` void dispose(Pointer<SQVM> vm)
@@ -101,12 +127,13 @@ class Squirrel {
   /// # `static` void successful(Pointer<SQVM> vm, int result)
   /// ## Throws an exception if the result is not 0.
   /// It will also print the stack of the Squirrel instance.
-  static void successful(Pointer<SQVM> vm, int result) {
+  static bool successful(Pointer<SQVM> vm, int result) {
     if (result != 0) {
       bindings.sq_getlasterror(vm);
       final error = getValueFromStack(vm);
-      throw Exception("$error \n ${getStack(vm)}");
+      throw Exception("$error \n ${getStack(vm)} \n");
     }
+    return true;
   }
 
   /// # `static` void getStack(Pointer<SQVM> vm)
@@ -166,7 +193,8 @@ class Squirrel {
         return defaultValue;
       }
       throw Exception(
-          "Expected type $expectedType but got $result. Squirrel Stack: \n${getStackForPrint(vm)}");
+          """Expected type $expectedType but got $result. Squirrel Stack: 
+          ${getStackForPrint(vm)}""");
     } else {
       // print("Type: $result");
     }
@@ -207,9 +235,9 @@ class Squirrel {
     } else if (result == tagSQObjectType.OT_ARRAY) {
       bindings.sq_pushnull(vm);
       value = [];
-      while (bindings.sq_next(vm, -2) == 1) {
+      while (bindings.sq_next(vm, -2) == 0) {
         (value as List).add(getValueFromStack(vm, index: -1, noPop: true));
-        bindings.sq_pop(vm, 2);
+        bindings.sq_pop(vm, 1);
       }
     } else if (result == tagSQObjectType.OT_TABLE) {
       bindings.sq_pushnull(vm);
@@ -224,10 +252,20 @@ class Squirrel {
       if (bindings.sq_gettype(vm, -1) != tagSQObjectType.OT_TABLE) {
         bindings.sq_pop(vm, 1);
       }
+    } else if (result == tagSQObjectType.OT_INSTANCE) {
+      bindings.sq_pushroottable(vm);
+      bindings.sq_pushstring(vm, "__export__".toCharPointer(), -1);
+      bindings.sq_get(vm, -2);
+      bindings.sq_pushroottable(vm);
+      bindings.sq_push(vm, -4);
+      bindings.sq_remove(vm, -4);
+      successful(vm, bindings.sq_call(vm, 2, SQTrue, SQTrue));
+      value = getValueFromStack(vm, index: -1, noPop: true);
+      bindings.sq_pop(vm, 2);
     } else if (result == tagSQObjectType.OT_NULL) {
       value = null;
     } else {
-      print("Unknown type: $result");
+      // print("Unknown type: $result");
       value = null;
     }
 
@@ -239,7 +277,7 @@ class Squirrel {
 
   static void pushToStack(HSQUIRRELVM vm, dynamic value) {
     if (value is String) {
-      bindings.sq_pushstring(vm, value.toCharPointer(), value.length);
+      bindings.sq_pushstring(vm, value.toCharPointer(), -1);
     } else if (value is int) {
       bindings.sq_pushinteger(vm, value);
     } else if (value is double) {
@@ -261,9 +299,9 @@ class Squirrel {
   }
 }
 
-/// # `void` DukapeFunction(String name, Map<String, DuktapeType> arguments, dynamic Function(Pointer<duk_hthread> ctx, Map<String, dynamic> params) call)
+/// # `void` SquirrelFunction(String name, Map<String, dynamic> arguments, Function(Pointer<SQVM> ctx, Map<String, dynamic> params) call)
 /// ## A function that can be called from inside a Duktape instance.
-/// It takes a name, a map of arguments, and a function to call.t
+/// It takes a name, a map of arguments, and a function to call.
 class SquirrelFunction {
   final String name;
 

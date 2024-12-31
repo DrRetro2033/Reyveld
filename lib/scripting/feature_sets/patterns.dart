@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'dart:ffi';
+import 'dart:io';
 import 'dart:typed_data';
+
+import 'package:yaml/yaml.dart';
 
 import '../addon.dart';
 import '../squirrel.dart';
@@ -152,6 +155,7 @@ class PatternAddonContext extends AddonContext {
         SquirrelFunction(
             'chfail', {'name': tagSQObjectType.OT_STRING}, failCheck),
       ];
+
   bool doingMemoryTest = false;
   Map<String, bool> checks = {};
 
@@ -170,6 +174,15 @@ class PatternAddonContext extends AddonContext {
     final result = Squirrel.call(vm, "summary");
     Squirrel.dispose(vm);
     return result;
+  }
+
+  @override
+  void test(YamlMap yaml) {
+    if (yaml.containsKey('test-pattern-on') &&
+        yaml['test-pattern-on'] != null) {
+      final plasma = Plasma.fromFile(File(yaml['test-pattern-on'] as String));
+      read(plasma, doingMemoryTest: true);
+    }
   }
 
   int readU8(Pointer<SQVM> ctx, Map<String, dynamic> params) {

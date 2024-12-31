@@ -123,14 +123,21 @@ class TreeWidget {
     List keys = data.keys.toList();
     for (int i = 0; i < keys.length; i++) {
       String key = keys[i];
+      bool isFirst = i == 0;
       bool isLast = i == keys.length - 1;
       if (isLast) {
         levelsEnded.add(level);
       }
       String? prefix;
-      if (level <= 0) {
+      if (level <= 0 && keys.length == 1) {
         prefix = '─── ';
         levelsEnded.add(0);
+      } else if (level <= 0 && isFirst) {
+        prefix = '╭── ';
+      } else if (level <= 0 && !isFirst && !isLast) {
+        prefix = '├── ';
+      } else if (level <= 0 && isLast) {
+        prefix = '╰── ';
       } else {
         String pipes = '';
         for (int j = 0; j < level; j++) {
@@ -143,12 +150,18 @@ class TreeWidget {
         prefix =
             "$pipes${isLast ? '╰── '.padLeft(4 + padding) : '├── '.padLeft(4 + padding)}";
       }
-
-      buffer.writeln('${prefix.keyword(pipeColor)}$key');
       if (data[key] is Map) {
+        buffer.writeln('${prefix.keyword(pipeColor)}$key');
         if (data[key].isNotEmpty) {
           buffer.write(_createTree(data[key], level + 1, levelsEnded));
         }
+      } else if (data[key] is List) {
+        buffer.writeln('${prefix.keyword(pipeColor)}$key');
+        if (data[key].isNotEmpty) {
+          buffer.write(_createTree(data[key], level + 1, levelsEnded));
+        }
+      } else {
+        buffer.writeln('${prefix.keyword(pipeColor)}$key: ${data[key]}');
       }
     }
     return buffer.toString();

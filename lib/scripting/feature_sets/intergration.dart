@@ -1,3 +1,5 @@
+import 'package:yaml/yaml.dart';
+
 import '../addon.dart';
 import '../squirrel.dart';
 
@@ -6,6 +8,11 @@ class IntergrationAddonContext extends AddonContext {
 
   @override
   List<SquirrelFunction> get functions => [];
+
+  @override
+  void test(YamlMap yaml) {
+    return;
+  }
 
   void launch(String endpoint) {
     final vm = startVM();
