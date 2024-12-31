@@ -94,12 +94,21 @@ class Addon {
       body += "\n---END-OF-DETAILS---\n";
       String entrypoint = yaml["entrypoint"];
       String code = File("$projectPath/$entrypoint").readAsStringSync();
+      List<String> includes = [entrypoint];
       while (RegExp(r"#\s*include\(([a-zA-Z\/\s]*.nut)\s*\)").hasMatch(code)) {
         code += "\n\n";
         final match =
             RegExp(r"#\s*include\(([a-zA-Z\/\s]*.nut)\s*\)").firstMatch(code)!;
         code = code.replaceRange(match.start, match.end, "");
-        code += File("$projectPath/${match.group(1)!}").readAsStringSync();
+        if (includes.contains(match.group(1)!)) {
+          continue;
+        }
+        final file = File("$projectPath/${match.group(1)!}");
+        if (!file.existsSync()) {
+          throw Exception("Included file does not exist: ${match.group(1)}");
+        }
+        includes.add(match.group(1)!);
+        code += file.readAsStringSync();
       }
       AddonContext ctx = NoneAdddonContext();
       switch (yaml["feature-set"]) {

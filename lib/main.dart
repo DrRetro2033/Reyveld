@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'package:args/command_runner.dart';
 import 'package:chalkdart/chalkstrings.dart';
 import 'package:cli_spin/cli_spin.dart';
-import 'package:yaml/yaml.dart';
 import 'version_control/constellation.dart';
 import 'version_control/star.dart';
 import 'arceus.dart';
@@ -656,11 +655,10 @@ class AddonCompileCommand extends ArceusCommand {
       try {
         addon.testRun(testFile);
       } catch (e) {
-        spinner.fail(" Test run failed! 🚫 Code:\n${addon.code}");
+        spinner.fail(" Test run failed! 🚫");
         rethrow;
-      } finally {
-        spinner.success(" Test run passed! 🎉");
       }
+      spinner.success(" Test run passed! 🎉");
     } else {
       print(
           "No test file found! It is recommended to have a test.yaml file to test the addon before distribution.");
