@@ -46,14 +46,25 @@ class Squirrel {
 
   /// # `static` void init(String pathToLibraries)
   /// ## Initializes the Squirrel libraries.
-  static init(String pathToLibraries) {
+  static loadSquirrelLibs(String pathToLibraries) {
     bindings = SquirrelBindings(_getDylib());
     isInitialized = true;
   }
 
+  late Pointer<SQVM> _vmpointer;
+
+  final String _code;
+
+  Squirrel(this._code) {
+    if (!isInitialized) {
+      throw Exception("Squirrel is not initialized.");
+    }
+    _vmpointer = _compile(_code);
+  }
+
   /// # `static` Pointer<SQVM> start(String filename, String code)
   /// ## Compiles code and starts the Squirrel instance.
-  static Pointer<SQVM> run(String code) {
+  Pointer<SQVM> _compile(String code) {
     if (!isInitialized) {
       throw Exception("Squirrel is not initialized.");
     }
@@ -61,13 +72,11 @@ class Squirrel {
     bindings.sq_setprintfunc(vm, printSquirl, printSquirl);
     code = _addExports(code);
     final pointer = code.toCharPointer();
-    successful(
-        vm,
-        bindings.sq_compilebuffer(
-            vm, pointer, code.length, "run.nut".toCharPointer(), SQTrue));
+    successful(bindings.sq_compilebuffer(
+        vm, pointer, code.length, "run.nut".toCharPointer(), SQTrue));
     malloc.free(pointer);
     bindings.sq_pushroottable(vm);
-    successful(vm, bindings.sq_call(vm, 1, SQFalse, SQTrue));
+    successful(bindings.sq_call(vm, 1, SQFalse, SQTrue));
     bindings.sq_collectgarbage(vm);
     bindings.sq_pop(vm, 1);
     return vm;
@@ -100,93 +109,91 @@ function $className::export() {
 
   /// # `static` void dispose(Pointer<SQVM> vm)
   /// ## Closes the Squirrel instance.
-  static void dispose(Pointer<SQVM> vm) {
-    bindings.sq_close(vm);
+  void dispose() {
+    bindings.sq_close(_vmpointer);
   }
 
   /// # `void` _createAPI(List<SquirrelFunction> apiFunctions)
   /// ## Creates the API for the Squirrel instance.
   /// It takes a list of [SquirrelFunction] objects and adds them to the global scope of the Squirrel instance.
-  static void createAPI(Pointer<SQVM> vm, List<SquirrelFunction> apiFunctions) {
+  void createAPI(List<SquirrelFunction> apiFunctions) {
     for (SquirrelFunction func in apiFunctions) {
-      bindings.sq_pushroottable(vm);
-      bindings.sq_pushstring(
-          vm, func.name.toCharPointer(), func.name.toNativeUtf8().length);
+      func.setInstance(this);
+      bindings.sq_pushroottable(_vmpointer);
+      bindings.sq_pushstring(_vmpointer, func.name.toCharPointer(),
+          func.name.toNativeUtf8().length);
       bindings.sq_newclosure(
-          vm,
+          _vmpointer,
           NativeCallable<LongLong Function(Pointer<SQVM> ctx)>.isolateLocal(
                   func.call,
                   exceptionalReturn: 0)
               .nativeFunction,
           0);
-      bindings.sq_newslot(vm, -3, SQFalse);
-      bindings.sq_pop(vm, 1);
+      bindings.sq_newslot(_vmpointer, -3, SQFalse);
+      bindings.sq_pop(_vmpointer, 1);
     }
   }
 
   /// # `static` void successful(Pointer<SQVM> vm, int result)
   /// ## Throws an exception if the result is not 0.
   /// It will also print the stack of the Squirrel instance.
-  static bool successful(Pointer<SQVM> vm, int result) {
+  bool successful(int result) {
     if (result != 0) {
-      bindings.sq_getlasterror(vm);
-      final error = getValueFromStack(vm);
-      throw Exception("$error \n ${getStack(vm)} \n");
+      bindings.sq_getlasterror(_vmpointer);
+      final error = getValueFromStack();
+      throw Exception("$error \n ${getStack()} \n");
     }
     return true;
   }
 
   /// # `static` void getStack(Pointer<SQVM> vm)
   /// ## Gets the stack of the Squirrel instance.
-  static List<String> getStack(Pointer<SQVM> vm) {
+  List<String> getStack() {
     List<String> stack = [];
-    int i = bindings.sq_gettop(vm);
+    int i = bindings.sq_gettop(_vmpointer);
     while (i > 0) {
-      bindings.sq_tostring(vm, i);
+      bindings.sq_tostring(_vmpointer, i);
       final p = ffi.calloc<Pointer<Char>>();
-      bindings.sq_getstring(vm, -1, p);
+      bindings.sq_getstring(_vmpointer, -1, p);
       stack.add(p.value.toDartString());
       ffi.calloc.free(p);
-      bindings.sq_pop(vm, 1);
+      bindings.sq_pop(_vmpointer, 1);
       i--;
     }
     return stack;
   }
 
-  static String getStackForPrint(Pointer<SQVM> vm) {
-    final stack = getStack(vm);
+  String getStackForPrint() {
+    final stack = getStack();
     return stack.join("\n");
   }
 
   /// # `static` dynamic call(String functionName, [List<dynamic> args = const []])
   /// ## Calls a function in the Squirrel instance.
   /// Will return the return value of the function, if any.
-  static dynamic call(Pointer<SQVM> vm, String functionName,
-      {List<dynamic> args = const []}) {
-    bindings.sq_pushroottable(vm);
+  dynamic call(String functionName, {List<dynamic> args = const []}) {
+    bindings.sq_pushroottable(_vmpointer);
     bindings.sq_pushstring(
-        vm, functionName.toCharPointer(), functionName.length);
-    bindings.sq_get(vm, -2);
-    bindings.sq_pushroottable(vm);
+        _vmpointer, functionName.toCharPointer(), functionName.length);
+    bindings.sq_get(_vmpointer, -2);
+    bindings.sq_pushroottable(_vmpointer);
     for (dynamic arg in args) {
-      pushToStack(vm, arg);
+      pushToStack(arg);
     }
-    successful(
-        vm,
-        bindings.sq_call(vm, args.length + 1, SQTrue,
-            SQTrue)); // Calls and checks if the call was successful.
-    final returnValue = getValueFromStack(vm); // Returns the return value.
-    bindings.sq_pop(vm, 2); // Pops the function and the root table.
+    successful(bindings.sq_call(_vmpointer, args.length + 1, SQTrue,
+        SQTrue)); // Calls and checks if the call was successful.
+    final returnValue = getValueFromStack(); // Returns the return value.
+    bindings.sq_pop(_vmpointer, 2); // Pops the function and the root table.
     // malloc.free(vm);
     return returnValue;
   }
 
-  static dynamic getValueFromStack(HSQUIRRELVM vm,
+  dynamic getValueFromStack(
       {tagSQObjectType? expectedType,
       dynamic defaultValue,
       int index = -1,
       bool noPop = false}) {
-    final result = bindings.sq_gettype(vm, index);
+    final result = bindings.sq_gettype(_vmpointer, index);
     dynamic value;
     if (expectedType != null && result.index != expectedType.index) {
       if (defaultValue != null) {
@@ -194,7 +201,7 @@ function $className::export() {
       }
       throw Exception(
           """Expected type $expectedType but got $result. Squirrel Stack: 
-          ${getStackForPrint(vm)}""");
+          ${getStackForPrint()}""");
     } else {
       // print("Type: $result");
     }
@@ -203,7 +210,7 @@ function $className::export() {
       final p = ffi.calloc<Pointer<Char>>();
       try {
         bindings.sq_getstring(
-            vm, index, p); // pass along the pointer to get the value.
+            _vmpointer, index, p); // pass along the pointer to get the value.
         value = p.value.toDartString();
       } finally {
         ffi.calloc.free(p); // free memory
@@ -211,7 +218,7 @@ function $className::export() {
     } else if (result == tagSQObjectType.OT_INTEGER) {
       final p = ffi.calloc<LongLong>();
       try {
-        bindings.sq_getinteger(vm, index, p);
+        bindings.sq_getinteger(_vmpointer, index, p);
         value = p.value;
       } finally {
         ffi.calloc.free(p);
@@ -219,7 +226,7 @@ function $className::export() {
     } else if (result == tagSQObjectType.OT_FLOAT) {
       final p = ffi.calloc<Float>();
       try {
-        bindings.sq_getfloat(vm, index, p);
+        bindings.sq_getfloat(_vmpointer, index, p);
         value = p.value;
       } finally {
         ffi.calloc.free(p);
@@ -227,41 +234,40 @@ function $className::export() {
     } else if (result == tagSQObjectType.OT_BOOL) {
       final p = ffi.calloc<UnsignedLongLong>();
       try {
-        bindings.sq_getbool(vm, index, p);
+        bindings.sq_getbool(_vmpointer, index, p);
         value = p.value == 1 ? true : false;
       } finally {
         ffi.calloc.free(p);
       }
     } else if (result == tagSQObjectType.OT_ARRAY) {
-      bindings.sq_pushnull(vm);
+      bindings.sq_pushnull(_vmpointer);
       value = [];
-      while (bindings.sq_next(vm, -2) == 0) {
-        (value as List).add(getValueFromStack(vm, index: -1, noPop: true));
-        bindings.sq_pop(vm, 1);
+      while (bindings.sq_next(_vmpointer, -2) == 0) {
+        (value as List).add(getValueFromStack(index: -1, noPop: true));
+        bindings.sq_pop(_vmpointer, 1);
       }
     } else if (result == tagSQObjectType.OT_TABLE) {
-      bindings.sq_pushnull(vm);
+      bindings.sq_pushnull(_vmpointer);
       value = {};
-      while (bindings.sq_next(vm, -2) == 0) {
+      while (bindings.sq_next(_vmpointer, -2) == 0) {
         // print("Stack \n${getStackForPrint(vm)}");
-        (value as Map).putIfAbsent(
-            getValueFromStack(vm, index: -2, noPop: true),
-            () => getValueFromStack(vm, index: -1, noPop: true));
-        bindings.sq_pop(vm, 2);
+        (value as Map).putIfAbsent(getValueFromStack(index: -2, noPop: true),
+            () => getValueFromStack(index: -1, noPop: true));
+        bindings.sq_pop(_vmpointer, 2);
       }
-      if (bindings.sq_gettype(vm, -1) != tagSQObjectType.OT_TABLE) {
-        bindings.sq_pop(vm, 1);
+      if (bindings.sq_gettype(_vmpointer, -1) != tagSQObjectType.OT_TABLE) {
+        bindings.sq_pop(_vmpointer, 1);
       }
     } else if (result == tagSQObjectType.OT_INSTANCE) {
-      bindings.sq_pushroottable(vm);
-      bindings.sq_pushstring(vm, "__export__".toCharPointer(), -1);
-      bindings.sq_get(vm, -2);
-      bindings.sq_pushroottable(vm);
-      bindings.sq_push(vm, -4);
-      bindings.sq_remove(vm, -4);
-      successful(vm, bindings.sq_call(vm, 2, SQTrue, SQTrue));
-      value = getValueFromStack(vm, index: -1, noPop: true);
-      bindings.sq_pop(vm, 2);
+      bindings.sq_pushroottable(_vmpointer);
+      bindings.sq_pushstring(_vmpointer, "__export__".toCharPointer(), -1);
+      bindings.sq_get(_vmpointer, -2);
+      bindings.sq_pushroottable(_vmpointer);
+      bindings.sq_push(_vmpointer, -4);
+      bindings.sq_remove(_vmpointer, -4);
+      successful(bindings.sq_call(_vmpointer, 2, SQTrue, SQTrue));
+      value = getValueFromStack(index: -1, noPop: true);
+      bindings.sq_pop(_vmpointer, 2);
     } else if (result == tagSQObjectType.OT_NULL) {
       value = null;
     } else {
@@ -270,31 +276,31 @@ function $className::export() {
     }
 
     if (!noPop) {
-      bindings.sq_pop(vm, 1);
+      bindings.sq_pop(_vmpointer, 1);
     }
     return value;
   }
 
-  static void pushToStack(HSQUIRRELVM vm, dynamic value) {
+  void pushToStack(dynamic value) {
     if (value is String) {
-      bindings.sq_pushstring(vm, value.toCharPointer(), -1);
+      bindings.sq_pushstring(_vmpointer, value.toCharPointer(), -1);
     } else if (value is int) {
-      bindings.sq_pushinteger(vm, value);
+      bindings.sq_pushinteger(_vmpointer, value);
     } else if (value is double) {
-      bindings.sq_pushfloat(vm, value);
+      bindings.sq_pushfloat(_vmpointer, value);
     } else if (value is bool) {
-      bindings.sq_pushbool(vm, value ? 1 : 0);
+      bindings.sq_pushbool(_vmpointer, value ? 1 : 0);
     } else if (value is List<dynamic>) {
-      bindings.sq_newarray(vm, 0);
+      bindings.sq_newarray(_vmpointer, 0);
       for (int i = 0; i < value.length; i++) {
-        pushToStack(vm, value[i]);
-        if (bindings.sq_arrayappend(vm, -2) == SQ_ERROR) {
-          bindings.sq_pop(vm, 1);
+        pushToStack(value[i]);
+        if (bindings.sq_arrayappend(_vmpointer, -2) == SQ_ERROR) {
+          bindings.sq_pop(_vmpointer, 1);
           break;
         }
       }
     } else {
-      bindings.sq_pushnull(vm);
+      bindings.sq_pushnull(_vmpointer);
     }
   }
 }
@@ -312,7 +318,13 @@ class SquirrelFunction {
   /// Optional arguments must be at the end of the list, to avoid skipping required arguments.
   final Map<String, dynamic> arguments;
 
-  final dynamic Function(Pointer<SQVM> vm, Map<String, dynamic> params) _call;
+  Squirrel? _squirrel;
+
+  void setInstance(Squirrel squirrel) {
+    _squirrel = squirrel;
+  }
+
+  final dynamic Function(Map<String, dynamic> params) _call;
 
   SquirrelFunction(
     this.name,
@@ -322,39 +334,38 @@ class SquirrelFunction {
 
   int get nargs => arguments.entries.length;
 
-  Map<String, dynamic> _getParams(Pointer<SQVM> vm) {
+  Map<String, dynamic> _getParams(Squirrel squirrel) {
     Map<String, dynamic> params = {};
     // print(arguments.keys.toList().reversed);
     for (String key in arguments.keys.toList().reversed) {
       switch (arguments[key]) {
         case tagSQObjectType.OT_STRING:
-          params[key] = Squirrel.getValueFromStack(vm,
+          params[key] = squirrel.getValueFromStack(
               expectedType: tagSQObjectType.OT_STRING);
           break;
         case tagSQObjectType.OT_INTEGER:
-          params[key] = Squirrel.getValueFromStack(vm,
+          params[key] = squirrel.getValueFromStack(
               expectedType: tagSQObjectType.OT_INTEGER);
           break;
         case tagSQObjectType.OT_FLOAT:
-          params[key] = Squirrel.getValueFromStack(vm,
+          params[key] = squirrel.getValueFromStack(
               expectedType: tagSQObjectType.OT_FLOAT);
           break;
         case tagSQObjectType.OT_BOOL:
-          params[key] = Squirrel.getValueFromStack(vm,
-              expectedType: tagSQObjectType.OT_BOOL);
+          params[key] =
+              squirrel.getValueFromStack(expectedType: tagSQObjectType.OT_BOOL);
           break;
         default:
           if (arguments[key] is Map) {
             params[key] = arguments[key].cast<dynamic, dynamic>();
-            Map<dynamic, dynamic> table = Squirrel.getValueFromStack(
-              vm,
+            Map<dynamic, dynamic> table = squirrel.getValueFromStack(
               expectedType: tagSQObjectType.OT_TABLE,
               defaultValue: arguments[key],
             );
             params[key].addAll(table);
           } else if (arguments[key] is (tagSQObjectType, dynamic)) {
             try {
-              params[key] = Squirrel.getValueFromStack(vm,
+              params[key] = squirrel.getValueFromStack(
                   expectedType: arguments[key].$1,
                   defaultValue: arguments[key].$2);
             } catch (e) {
@@ -369,17 +380,17 @@ class SquirrelFunction {
   /// # `void` _returnValue(Pointer<SQVM> vm, dynamic value)
   /// ## Pushes the return value to the stack.
   /// It will also print the stack of the Squirrel instance.
-  void _returnValue(Pointer<SQVM> vm, dynamic value) {
-    Squirrel.pushToStack(vm, value);
+  void _returnValue(Squirrel squirrel, dynamic value) {
+    squirrel.pushToStack(value);
   }
 
   /// # `int` call(Pointer<SQVM> vm)
-  /// ## Calls the function given Dart function and return its result to Squirrel.
+  /// ## Calls the _call function with the given parameters from the Squirrel instance and return its result to Squirrel.
   int call(Pointer<SQVM> vm) {
     try {
-      final result = _call(vm, _getParams(vm));
+      final result = _call(_getParams(_squirrel!));
       if (result != null) {
-        _returnValue(vm, result);
+        _returnValue(_squirrel!, result);
       }
     } catch (e) {
       print(e);

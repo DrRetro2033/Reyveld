@@ -16,7 +16,7 @@ class IntergrationAddonContext extends AddonContext {
 
   void launch(String endpoint) {
     final vm = startVM();
-    Squirrel.call(vm, "launch", args: [endpoint]);
-    Squirrel.dispose(vm);
+    vm.call("launch", args: [endpoint]);
+    vm.dispose();
   }
 }

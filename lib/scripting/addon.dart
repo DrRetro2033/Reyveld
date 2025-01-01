@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:cli_spin/cli_spin.dart';
@@ -7,7 +6,6 @@ import 'package:yaml/yaml.dart';
 
 import './squirrel.dart';
 import './feature_sets/feature_sets.dart';
-import './squirrel_bindings_generated.dart';
 import '../version_control/constellation.dart';
 import '../extensions.dart';
 import '../arceus.dart';
@@ -334,7 +332,7 @@ abstract class AddonContext {
   void test(YamlMap yaml);
 
   AddonContext([this.addon]) {
-    Squirrel.init("C:/Repos/arceus");
+    Squirrel.loadSquirrelLibs("C:/Repos/arceus");
   }
 
   bool hasRequiredFunctions(String code) {
@@ -350,8 +348,8 @@ abstract class AddonContext {
     for (int repeat = 1; repeat <= retries; repeat++) {
       spinner.text = " Testing memory... ($repeat/$retries)";
       try {
-        final pointer = startVM();
-        Squirrel.dispose(pointer);
+        final vm = startVM();
+        vm.dispose();
       } catch (e) {
         spinner.fail(" Memory test failed ($repeat/$retries) 🚫");
         rethrow;
@@ -361,10 +359,10 @@ abstract class AddonContext {
     spinner.success(" Memory test passed! 🎉");
   }
 
-  Pointer<SQVM> startVM() {
+  Squirrel startVM() {
     String additionalCode = _buildEnums();
-    final vm = Squirrel.run(additionalCode + addon!.code);
-    Squirrel.createAPI(vm, functions);
+    final vm = Squirrel(additionalCode + addon!.code);
+    vm.createAPI(functions);
     return vm;
   }
 

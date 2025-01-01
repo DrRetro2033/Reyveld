@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -163,16 +162,16 @@ class PatternAddonContext extends AddonContext {
     this.doingMemoryTest = doingMemoryTest;
     this.plasma = plasma;
     final vm = startVM();
-    final result = Squirrel.call(vm, "read");
-    Squirrel.dispose(vm);
+    final result = vm.call("read");
+    vm.dispose();
     return result;
   }
 
   Map<dynamic, dynamic> summary(Plasma plasma) {
     this.plasma = plasma;
     final vm = startVM();
-    final result = Squirrel.call(vm, "summary");
-    Squirrel.dispose(vm);
+    final result = vm.call("summary");
+    vm.dispose();
     return result;
   }
 
@@ -185,77 +184,77 @@ class PatternAddonContext extends AddonContext {
     }
   }
 
-  int readU8(Pointer<SQVM> ctx, Map<String, dynamic> params) {
+  int readU8(Map<String, dynamic> params) {
     return plasma!.data.getUint8(params['address'] as int);
   }
 
-  int read8(Pointer<SQVM> ctx, Map<String, dynamic> params) {
+  int read8(Map<String, dynamic> params) {
     return plasma!.data.getInt8(params['address'] as int);
   }
 
-  int readU16(Pointer<SQVM> ctx, Map<String, dynamic> params) {
+  int readU16(Map<String, dynamic> params) {
     return plasma!.data.getUint16(params['address'] as int,
         (params['endian'] as bool) ? Endian.little : Endian.big);
   }
 
-  int read16(Pointer<SQVM> ctx, Map<String, dynamic> params) {
+  int read16(Map<String, dynamic> params) {
     return plasma!.data.getInt16(params['address'] as int,
         (params['endian'] as bool) ? Endian.little : Endian.big);
   }
 
-  int readU32(Pointer<SQVM> ctx, Map<String, dynamic> params) {
+  int readU32(Map<String, dynamic> params) {
     return plasma!.data.getUint32(params['address'] as int,
         (params['endian'] as bool) ? Endian.little : Endian.big);
   }
 
-  int read32(Pointer<SQVM> ctx, Map<String, dynamic> params) {
+  int read32(Map<String, dynamic> params) {
     return plasma!.data.getInt32(params['address'] as int,
         (params['endian'] as bool) ? Endian.little : Endian.big);
   }
 
-  int readU64(Pointer<SQVM> ctx, Map<String, dynamic> params) {
+  int readU64(Map<String, dynamic> params) {
     return plasma!.data.getUint64(params['address'] as int,
         (params['endian'] as bool) ? Endian.little : Endian.big);
   }
 
-  int read64(Pointer<SQVM> ctx, Map<String, dynamic> params) {
+  int read64(Map<String, dynamic> params) {
     return plasma!.data.getInt64(params['address'] as int,
         (params['endian'] as bool) ? Endian.little : Endian.big);
   }
 
-  String readChar8(Pointer<SQVM> ctx, Map<String, dynamic> params) {
+  String readChar8(Map<String, dynamic> params) {
     return utf8.decode([plasma!.data.getUint8(params['address'] as int)]);
   }
 
-  String readChar16(Pointer<SQVM> ctx, Map<String, dynamic> params) {
+  String readChar16(Map<String, dynamic> params) {
     return String.fromCharCode(plasma!.data.getUint16(params['address'] as int,
         (params['endian'] as bool) ? Endian.little : Endian.big));
   }
 
-  List<int> readU8Array(Pointer<SQVM> ctx, Map<String, dynamic> params) {
+  List<int> readU8Array(Map<String, dynamic> params) {
     final start = params['start'] as int;
     int end = params['end'] as int;
-    if (end < 0) end = getEOFAddress(ctx, params);
+    if (end < 0) end = getEOFAddress(params);
     if (start >= end) return [];
     List<int> data =
         plasma!.data.buffer.asUint8List(start, end - start).toList();
     return params['invert'] as bool ? data.reversed.toList() : data;
   }
 
-  List<int> read8Array(Pointer<SQVM> ctx, Map<String, dynamic> params) {
+  List<int> read8Array(Map<String, dynamic> params) {
     final start = params['start'] as int;
     int end = params['end'] as int;
-    if (end < 0) end = getEOFAddress(ctx, params);
+    if (end < 0) end = getEOFAddress(params);
     if (start >= end) return [];
     List<int> data =
         plasma!.data.buffer.asInt8List(start, end - start).toList();
     return params['invert'] as bool ? data.reversed.toList() : data;
   }
 
-  List<int> readU16Array(Pointer<SQVM> ctx, Map<String, dynamic> params) {
+  List<int> readU16Array(Map<String, dynamic> params) {
     final start = params['start'] as int;
     int end = params['end'] as int;
-    if (end < 0) end = getEOFAddress(ctx, params);
+    if (end < 0) end = getEOFAddress(params);
     if (start >= end - 1) return [];
     List<int> data = [];
     for (int i = start; i < end; i += 2) {
@@ -265,10 +264,10 @@ class PatternAddonContext extends AddonContext {
     return params['invert'] as bool ? data.reversed.toList() : data;
   }
 
-  List<int> read16Array(Pointer<SQVM> ctx, Map<String, dynamic> params) {
+  List<int> read16Array(Map<String, dynamic> params) {
     final start = params['start'] as int;
     int end = params['end'] as int;
-    if (end < 0) end = getEOFAddress(ctx, params);
+    if (end < 0) end = getEOFAddress(params);
     if (start >= end - 1) return [];
     List<int> data = [];
     for (int i = start; i < end; i += 2) {
@@ -278,10 +277,10 @@ class PatternAddonContext extends AddonContext {
     return params['invert'] as bool ? data.reversed.toList() : data;
   }
 
-  List<int> readU32Array(Pointer<SQVM> ctx, Map<String, dynamic> params) {
+  List<int> readU32Array(Map<String, dynamic> params) {
     final start = params['start'] as int;
     int end = params['end'] as int;
-    if (end < 0) end = getEOFAddress(ctx, params);
+    if (end < 0) end = getEOFAddress(params);
     if (start >= end - 3) return [];
     List<int> data = [];
     for (int i = start; i < end; i += 4) {
@@ -291,10 +290,10 @@ class PatternAddonContext extends AddonContext {
     return params['invert'] as bool ? data.reversed.toList() : data;
   }
 
-  List<int> read32Array(Pointer<SQVM> ctx, Map<String, dynamic> params) {
+  List<int> read32Array(Map<String, dynamic> params) {
     final start = params['start'] as int;
     int end = params['end'] as int;
-    if (end < 0) end = getEOFAddress(ctx, params);
+    if (end < 0) end = getEOFAddress(params);
     if (start >= end - 3) return [];
     List<int> data = [];
     for (int i = start; i < end; i += 4) {
@@ -304,10 +303,10 @@ class PatternAddonContext extends AddonContext {
     return params['invert'] as bool ? data.reversed.toList() : data;
   }
 
-  List<int> readU64Array(Pointer<SQVM> ctx, Map<String, dynamic> params) {
+  List<int> readU64Array(Map<String, dynamic> params) {
     final start = params['start'] as int;
     int end = params['end'] as int;
-    if (end < 0) end = getEOFAddress(ctx, params);
+    if (end < 0) end = getEOFAddress(params);
     if (start >= end - 7) return [];
     List<int> data = [];
     for (int i = start; i < end; i += 8) {
@@ -317,10 +316,10 @@ class PatternAddonContext extends AddonContext {
     return params['invert'] as bool ? data.reversed.toList() : data;
   }
 
-  List<int> read64Array(Pointer<SQVM> ctx, Map<String, dynamic> params) {
+  List<int> read64Array(Map<String, dynamic> params) {
     final start = params['start'] as int;
     int end = params['end'] as int;
-    if (end < 0) end = getEOFAddress(ctx, params);
+    if (end < 0) end = getEOFAddress(params);
     if (start >= end - 7) return [];
     List<int> data = [];
     for (int i = start; i < end; i += 8) {
@@ -330,7 +329,7 @@ class PatternAddonContext extends AddonContext {
     return params['invert'] as bool ? data.reversed.toList() : data;
   }
 
-  String readChar8Array(Pointer<SQVM> ctx, Map<String, dynamic> params) {
+  String readChar8Array(Map<String, dynamic> params) {
     final start = params['start'] as int;
     final end = params['length'] as int;
     if (end <= 0) return '';
@@ -343,7 +342,7 @@ class PatternAddonContext extends AddonContext {
     return utf8.decode(data);
   }
 
-  String readChar16Array(Pointer<SQVM> ctx, Map<String, dynamic> params) {
+  String readChar16Array(Map<String, dynamic> params) {
     final start = params['start'] as int;
     final length = params['length'] as int;
     if (length <= 0) return '';
@@ -359,17 +358,17 @@ class PatternAddonContext extends AddonContext {
         params['other']['invert'] as bool ? data.reversed.toList() : data);
   }
 
-  int getEOFAddress(Pointer<SQVM> ctx, Map<String, dynamic> params) {
+  int getEOFAddress(Map<String, dynamic> params) {
     return plasma!.data.lengthInBytes;
   }
 
-  void passCheck(Pointer<SQVM> ctx, Map<String, dynamic> params) {
+  void passCheck(Map<String, dynamic> params) {
     final name = params['name'] as String;
     if (!doingMemoryTest) print("✅ $name");
     checks[name] = true;
   }
 
-  void failCheck(Pointer<SQVM> ctx, Map<String, dynamic> params) {
+  void failCheck(Map<String, dynamic> params) {
     final name = params['name'] as String;
     if (!doingMemoryTest) print("❌ $name");
     checks[name] = false;
