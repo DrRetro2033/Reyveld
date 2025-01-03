@@ -23,7 +23,6 @@ import 'package:arceus/widget_system.dart';
 /// Runs the CLI.
 
 Future<dynamic> main(List<String> arguments) async {
-  // AnsiX.ensureSupportsAnsi();
   final newUpdate = await Updater().checkForUpdate();
   if (newUpdate) {
     final confirm = Confirm(
@@ -173,7 +172,7 @@ class CreateConstellationCommand extends ArceusCommand {
       return;
     }
     final spinner =
-        CliSpin(text: "Creating constellation...", spinner: CliSpinners.moon)
+        CliSpin(text: " Creating constellation...", spinner: CliSpinners.moon)
             .start();
     try {
       List<String>? users = argResults?["user"];
@@ -183,10 +182,10 @@ class CreateConstellationCommand extends ArceusCommand {
         Constellation(path: Arceus.currentPath, name: getRest());
       }
     } catch (e) {
-      spinner.fail("Unable to create constellation.");
+      spinner.fail(" Unable to create constellation.");
       rethrow;
     }
-    spinner.success("Constellation created.");
+    spinner.success(" Constellation created.");
   }
 }
 
@@ -211,7 +210,7 @@ The current star is marked with ✨
 
   @override
   void _run() {
-    print("Currently signed in as ${constellation.loggedInUser?.name.italic}.");
+    print("Currently signed in as ${constellation.loggedInUser.name.italic}.");
     constellation.starmap?.printMap();
     constellation.printSumOfCurStar();
   }
@@ -297,7 +296,7 @@ If you decide to resync back to the current star, call 'resync'.
   @override
   void run() {
     Constellation constellation = Constellation(path: Arceus.currentPath);
-    final files = constellation.listStarFiles();
+    final files = constellation.listStarHashes();
     final stars = files.map((e) => Star(constellation, hash: e)).toList();
     final options =
         stars.map((e) => "${e.name} - ${e.createdAt.toString()}").toList();
@@ -332,9 +331,12 @@ If you decide to resync back to the current star, call 'resync'.
 class ConstellationJumpToCommand extends ConstellationArceusCommand {
   @override
   String get description => """
-Jumps to a different star in the constellation.
+Jump to stars in the constellation.
 
-Give it either a star hash, or use the commands below. Replace X with a number:
+Give it either a star hash, or use the commands below. Replace X to specify the number of repeats/children/siblings. 
+X defaults to 1 if not provided.
+
+Commands:
 - root: Jumps to the root star
 - recent: Jumps to the most recent star
 
@@ -343,18 +345,17 @@ Give it either a star hash, or use the commands below. Replace X with a number:
 - forward`: Will jump to the first child of the current star. Will be clamped to any ending stars.
 - forward X: Will jump to the Xth child of the current star. Will be clamped to a valid index of the current star's children.
 
-- above: Jumps to the sibling above the current star. Will wrap around to lowest star.
 - above X: Will jump to the Xth sibling above the current star. Will wrap around to lowest star.
 - below: Jumps to the sibling below the current star. Will wrap around to highest star.
-- below X: Will jump to the Xth sibling above the current star. Will wrap around to lowest star.
+- below X: Will jump to the Xth sibling above the current star. Will wrap around to lowest star. If X is not provided, it will default to 1.
 
-- `next X`: Will jump to the Xth child of the current star. Will be wrapped to a valid index of the current star's children.
+- next X: Will jump to the Xth child of the current star. Will be wrapped to a valid index of the current star's children.
 
 You can also chain multiple commands together by adding a comma between each.
 """;
 
   @override
-  String get summary => "Jumps to a different star in the constellation.";
+  String get summary => "Jump to stars in the constellation.";
 
   @override
   String get name => "jump";
@@ -435,7 +436,7 @@ This will fail if there no changes to commit, unless '--force' is provided.""";
 
 class TrimCommand extends ConstellationArceusCommand {
   @override
-  String get summary => "Trims a star and its parents off of the starmap. ";
+  String get summary => "Trims a star and its descendants off of the starmap. ";
 
   @override
   String get description => """
@@ -471,7 +472,8 @@ Will confirm before proceeding, unless --force is provided.
 
 class UsersCommands extends ArceusCommand {
   @override
-  String get description => "Contains commands for users in the constellation.";
+  String get description => "Contains commands for users in Arceus.";
+
   @override
   String get name => "users";
 
@@ -568,7 +570,8 @@ class LoginUserCommand extends ConstellationArceusCommand {
     argParser.addFlag("stay",
         abbr: "s",
         defaultsTo: false,
-        help: "Stay at current star instead of jumping to the most recent.");
+        help:
+            "Stay at current star instead of jumping to the most recent star owned by the user.");
   }
 
   @override
@@ -583,9 +586,11 @@ class LoginUserCommand extends ConstellationArceusCommand {
       }
       constellation.loginAs(user);
     }
-    print("Logged in as ${constellation.loggedInUser!.name}.");
+    print("Logged in as ${constellation.loggedInUser.name.italic}.");
     if (!argResults!["stay"]) {
-      constellation.starmap?.getMostRecentStar().makeCurrent();
+      constellation.starmap
+          ?.getMostRecentStar(forceUser: true)
+          .makeCurrent(login: false);
     }
   }
 }
@@ -720,29 +725,43 @@ class InstallPackagedAddonCommand extends ArceusCommand {
 
 class UninstallAddonCommand extends ArceusCommand {
   @override
-  String get description => "Uninstalls an addon.";
+  String get description => "Uninstall an addon.";
   @override
   String get name => "uninstall";
 
   @override
   void run() {
     if (getRest().isEmpty) {
-      throw Exception("Please provide the name of the addon.");
-    }
+      final addons = Addon.getInstalledAddons();
+      if (addons.isEmpty) {
+        print(" No addons installed. 🚫");
+        return;
+      } else {
+        final names = addons.map((e) => e.name).toList();
+        final selected = Select(
+          prompt: " Select an addon to uninstall.",
+          options: [...names, "Cancel"],
+        ).interact();
+        if (selected == names.length) {
+          return;
+        }
+        addons[selected].uninstall();
+      }
+    } else {}
     String addonName = getRest();
     CliSpin? spinner;
     if (!Arceus.isInternal) {
       spinner =
-          CliSpin(text: "Uninstalling addon... 🗑️", spinner: CliSpinners.moon)
+          CliSpin(text: " Uninstalling addon... 🗑️", spinner: CliSpinners.moon)
               .start();
     }
 
     final found = Addon.uninstallByName(addonName);
 
     if (!Arceus.isInternal && found) {
-      spinner!.success("Addon uninstalled successfully! 🎉");
+      spinner!.success(" Addon uninstalled successfully! 🎉");
     } else if (!Arceus.isInternal) {
-      spinner!.fail("Addon not found! 🚫");
+      spinner!.fail(" Addon not found! 🚫");
     }
   }
 }

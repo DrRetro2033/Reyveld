@@ -267,6 +267,8 @@ class Plasma {
     }
   }
 
+  /// # `String` getExtension()
+  /// ## Returns the extension of the plasma.
   String getExtension() {
     if (origin == Origin.internal) {
       return pathInStar!.getExtension();
@@ -339,9 +341,7 @@ class Plasma {
   /// If the plasma is external, BUT it is not tracked, then `null` will be returned.
   Plasma? findOlderVersion() {
     if (origin == Origin.internal) {
-      if (star!.parent != null) {
-        return Plasma.fromStar(star!.parent!, pathInStar!);
-      }
+      return Plasma.fromStar(star!.parent, pathInStar!);
     } else if (origin == Origin.external) {
       if (isTracked()) {
         Constellation x = Arceus.getConstellationFromPath(file!.path)!;

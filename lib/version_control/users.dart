@@ -6,7 +6,6 @@ import 'package:arceus/widget_system.dart';
 /// # `class` UserIndex
 /// ## A class that represents a user index.
 /// The user index is a file that contains all the users in Arceus.
-/// Right now, the index is unique to each constellation, however in the future, it will be shared across all constellations.
 class UserIndex {
   final String filepath;
   File get file => File(filepath);
@@ -108,6 +107,15 @@ class User {
   Badge get badge => Badge("👤$name", badgeColor: color);
 
   late String hash;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is User && runtimeType == other.runtimeType && hash == other.hash;
+
+  @override
+  int get hashCode => hash.hashCode;
+
   User(this.userIndex, this._name, this.hash);
 
   @override

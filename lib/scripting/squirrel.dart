@@ -117,11 +117,11 @@ function $className::export() {
   /// ## Creates the API for the Squirrel instance.
   /// It takes a list of [SquirrelFunction] objects and adds them to the global scope of the Squirrel instance.
   void createAPI(List<SquirrelFunction> apiFunctions) {
+    bindings.sq_pushroottable(_vmpointer);
+    bindings.sq_newtable(_vmpointer);
     for (SquirrelFunction func in apiFunctions) {
       func.setInstance(this);
-      bindings.sq_pushroottable(_vmpointer);
-      bindings.sq_pushstring(_vmpointer, func.name.toCharPointer(),
-          func.name.toNativeUtf8().length);
+      bindings.sq_pushstring(_vmpointer, func.name.toCharPointer(), -1);
       bindings.sq_newclosure(
           _vmpointer,
           NativeCallable<LongLong Function(Pointer<SQVM> ctx)>.isolateLocal(
@@ -130,8 +130,12 @@ function $className::export() {
               .nativeFunction,
           0);
       bindings.sq_newslot(_vmpointer, -3, SQFalse);
-      bindings.sq_pop(_vmpointer, 1);
     }
+    bindings.sq_pushstring(_vmpointer, "arceus".toCharPointer(), -1);
+    bindings.sq_push(_vmpointer, -2);
+    bindings.sq_remove(_vmpointer, -3);
+    bindings.sq_newslot(_vmpointer, -3, SQFalse);
+    bindings.sq_pop(_vmpointer, 1);
   }
 
   /// # `static` void successful(Pointer<SQVM> vm, int result)

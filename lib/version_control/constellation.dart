@@ -56,10 +56,23 @@ class Constellation {
   /// ## Fetches a directory object that represents the `addonFolderPath` folder.
   Directory get addonDirectory => Directory(addonFolderPath);
 
-  /// # [User]? loggedInUser
+  String? _loggedInUserHash;
+
+  /// # [User] loggedInUser
   /// ## The user that is currently logged into the constellation.
-  /// Should be the host user, however, it can be null. Automatically loaded.
-  User? loggedInUser;
+  User get loggedInUser {
+    if (_loggedInUserHash != null) {
+      return userIndex.getUser(_loggedInUserHash!);
+    } else if (starmap!.currentStar!.user != null) {
+      return starmap!.currentStar!.user!;
+    } else {
+      return userIndex.getHostUser();
+    }
+  }
+
+  set loggedInUser(User user) {
+    _loggedInUserHash = user.hash;
+  }
 
   String? summaryFile;
 
@@ -129,7 +142,7 @@ class Constellation {
   /// # String generateUniqueStarHash()
   /// ## Generates a unique star hash.
   String generateUniqueStarHash() {
-    return generateUniqueHash(listStarFiles());
+    return generateUniqueHash(listStarHashes());
   }
 
   /// # String getStarPath(String hash)
@@ -141,7 +154,7 @@ class Constellation {
   /// ## Lists all stars in the constellation.
   /// Returns a list of the hashes of all stars in the constellation folder (NOT the starmap).
   /// Used for recovering a constellation from corruption.
-  Set<String> listStarFiles() {
+  Set<String> listStarHashes() {
     Set<String> stars = {};
     for (String hash in Directory(constellationPath)
         .listSync()
@@ -184,9 +197,9 @@ class Constellation {
     name = json["name"];
     starmap = Starmap(this, map: json["map"]);
     if (json.containsKey("loggedInUser")) {
-      loggedInUser = userIndex.getUser(json["loggedInUser"]);
-    } else {
-      loggedInUser = starmap?.currentStar?.user;
+      if (json["loggedInUser"] != null) {
+        _loggedInUserHash = json["loggedInUser"];
+      }
     }
   }
 
@@ -195,7 +208,7 @@ class Constellation {
   /// This is used when saving the constellation to disk, and is internal, so do not call it directly.
   Map<String, dynamic> toJson() => {
         "name": name,
-        "loggedInUser": loggedInUser?.hash,
+        "loggedInUser": loggedInUser.hash,
         "map": starmap?._toJson()
       };
 
@@ -289,8 +302,8 @@ class Starmap {
   Constellation constellation;
 
   // Maps for storing children and parents.
-  Map<String, List<dynamic>> _childMap = {}; // Format: {parent: [children]}
-  Map<String, dynamic> parentMap = {}; // Format: {child: parent}
+  Map<String, List<String>> _childMap = {}; // Format: {parent: [children]}
+  Map<String, String> _parentMap = {}; // Format: {child: parent}
 
   /// # String? _rootHash
   /// ## The hash of the root star.
@@ -309,7 +322,7 @@ class Starmap {
   Starmap(this.constellation, {Map<dynamic, dynamic>? map}) {
     if (map == null) {
       _childMap = {};
-      parentMap = {};
+      _parentMap = {};
     } else {
       _fromJson(map);
     }
@@ -328,15 +341,17 @@ class Starmap {
   /// # [Star] getMostRecentStar()
   /// ## Returns the most recent star that was created in the constellation.
   /// Will first get all the ending stars, then find the one with the most recent creation date.
-  Star getMostRecentStar() {
+  Star getMostRecentStar({bool forceUser = false}) {
     List<Star> endings = getEndings();
     if (endings.isEmpty) {
       throw Exception("WHAT? How are there no ending stars?");
     }
-    final userEndings = endings.where(
-        (element) => element.user?.hash == constellation.loggedInUser?.hash);
+    final userEndings =
+        endings.where((element) => element.user == constellation.loggedInUser);
     if (userEndings.isNotEmpty) {
       endings = userEndings.toList();
+    } else if (forceUser) {
+      return currentStar!;
     }
     Star mostRecentStar = endings.first;
 
@@ -379,29 +394,23 @@ class Starmap {
         } else if (command.startsWith("forward")) {
           // Jump forward by X stars.
           final x = command.replaceFirst("forward", "");
-          int? i = int.tryParse(x) ?? 1;
-          Star? star = current;
-          while (i! > 0) {
-            if (star!.children.isEmpty) {
-              break;
-            }
+          int i = int.tryParse(x) ?? 1;
+          Star star = current;
+          while (i > 0) {
             star = star.getChild(0);
             i--;
           }
-          current = star!;
+          current = star;
         } else if (command.startsWith("back")) {
           // Jump back by X stars.
           final x = command.replaceFirst("back", "");
-          int? i = int.tryParse(x) ?? 1;
-          Star? star = current;
+          int? i = int.tryParse(x.trim()) ?? 1;
+          Star star = current;
           while (i! > 0) {
-            if (star!.isRoot) {
-              break;
-            }
             star = star.parent;
             i--;
           }
-          current = star!;
+          current = star;
         } else if (command.startsWith("above")) {
           // Jump above
           final x = command.replaceFirst("above", "");
@@ -415,8 +424,7 @@ class Starmap {
         } else if (command.startsWith("next")) {
           // Jump to next child
           final x = command.replaceFirst("next", "");
-          int? i = int.tryParse(x);
-          if (i == null) throw Exception("Please provide an index.");
+          int? i = int.tryParse(x) ?? 1;
           current = current.getChild(i - 1);
         } else if (constellation.doesStarExist(hash)) {
           current = Star(constellation, hash: hash);
@@ -435,7 +443,7 @@ class Starmap {
       "root": _rootHash,
       "current": _currentStarHash,
       "children": _childMap,
-      "parents": parentMap
+      "parents": _parentMap
     };
   }
 
@@ -445,17 +453,16 @@ class Starmap {
   void _fromJson(Map<dynamic, dynamic> json) {
     _rootHash = json["root"];
     _currentStarHash = json["current"];
-    for (String hash in json["children"].keys) {
-      _childMap[hash] = json["children"][hash];
-    }
-    for (String hash in json["parents"].keys) {
-      parentMap[hash] = json["parents"][hash];
-    }
+    (json["children"] as Map).forEach((key, value) {
+      final newValue = (value as List).cast<String>();
+      _childMap[key] = newValue;
+    });
+    _parentMap.addAll((json["parents"]).cast<String, String>());
   }
 
   Star? getParent(Star star) {
     try {
-      return Star(constellation, hash: parentMap[star.hash]);
+      return Star(constellation, hash: _parentMap[star.hash]);
     } catch (e) {
       return null;
     }
@@ -466,7 +473,7 @@ class Starmap {
   /// The list will be empty if the parent has no children.
   List<Star> getChildren(Star parent) {
     List<Star> children = [];
-    for (String hash in _getChildrenHashes(parent.hash!)) {
+    for (String hash in _getChildrenHashes(parent.hash)) {
       children.add(Star(constellation, hash: hash));
     }
     return children;
@@ -475,23 +482,23 @@ class Starmap {
   /// # `List<String>` getChildrenHashes(`String` parent)
   /// ## Returns a list of all children hashes of the given parent.
   /// The list will be empty if the parent has no children.
-  List _getChildrenHashes(String parent) {
-    return _childMap[parent] ?? <String>[];
+  List<String> _getChildrenHashes(String hash) {
+    return _childMap[hash] ?? [];
   }
 
   /// # `void` addRelationship([Star] parent, [Star] child)
   /// ## Adds the given child to the given parent.
   /// Throws an exception if the child already has a parent.
   void addRelationship(Star parent, Star child) {
-    if (parentMap[child.hash] != null) {
+    if (_parentMap[child.hash] != null) {
       throw Exception("Star already has a parent.");
     }
 
     if (_childMap[parent.hash] == null) {
-      _childMap[parent.hash!] = [];
+      _childMap[parent.hash] = [];
     }
-    _childMap[parent.hash!]?.add(child.hash!);
-    parentMap[child.hash!] = parent.hash!;
+    _childMap[parent.hash]?.add(child.hash);
+    _parentMap[child.hash] = parent.hash;
     constellation.save();
   }
 
@@ -508,12 +515,12 @@ class Starmap {
   Map<String, dynamic> _getTree(Star star, Map<String, dynamic> tree,
       {bool branch = false}) {
     tree[star.getDisplayName()] = <String, dynamic>{};
-    if (star.singleChild) {
+    if (star.hasSingleChild) {
       if (branch) {
-        tree[star.getDisplayName()].addAll(_getTree(star.children.first, {}));
+        tree[star.getDisplayName()].addAll(_getTree(star.singleChild, {}));
         return tree;
       }
-      return _getTree(star.children.first, tree);
+      return _getTree(star.singleChild, tree);
     } else {
       for (Star child in getChildren(star)) {
         tree[star.getDisplayName()].addAll(_getTree(child, {}, branch: true));
@@ -531,7 +538,7 @@ class Starmap {
       print("Cannot trim the root star!");
       return;
     }
-    star.parent!.makeCurrent(save: false);
+    star.parent.makeCurrent(save: false);
     star.trim(); // Calls the trim function on the star.
     constellation.save();
   }
@@ -547,9 +554,9 @@ class Starmap {
   }
 
   void _removeFromTree(Star star) {
-    _childMap[star.parent?.hash]
+    _childMap[star.parent.hash]
         ?.remove(star.hash); // Remove the star from the parent's children.
-    parentMap.remove(star.hash); // Remove the star from the parent map.
+    _parentMap.remove(star.hash); // Remove the star from the parent map.
     if (_childMap.containsKey(star.hash)) {
       _childMap.remove(star.hash);
     }
@@ -597,7 +604,9 @@ class Starmap {
   /// ## Returns true if there is a star next to the given coordinates.
   /// Returns false otherwise.
   bool moreExistAtDepth(int depth, Star star) {
-    getStarsAtDepth(depth).removeWhere((element) => element.hash == star.hash);
-    return getStarsAtDepth(depth).isNotEmpty;
+    final stars = getStarsAtDepth(depth);
+    stars.removeWhere(
+        (element) => element == star || element.isAncestorOf(star));
+    return stars.isNotEmpty;
   }
 }

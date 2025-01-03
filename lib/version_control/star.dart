@@ -1,4 +1,3 @@
-import 'package:arceus/arceus.dart';
 import 'package:arceus/widget_system.dart';
 import 'package:archive/archive_io.dart';
 import 'dart:convert';
@@ -23,11 +22,19 @@ class Star {
 
   /// # String? name
   /// ## The name of the star.
-  late String? name;
+  late String name;
 
   /// # String? hash
   /// ## The hash of the star.
-  late String? hash;
+  late String hash;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Star && runtimeType == other.runtimeType && hash == other.hash;
+
+  @override
+  int get hashCode => hash.hashCode;
 
   /// # DateTime? createdAt
   /// ## The time the star was created.
@@ -45,8 +52,8 @@ class Star {
 
   /// # [Star]? get parent
   /// ## Returns the parent of this star from the starmap contained in the constellation.
-  /// Will return null if this star is the root star.
-  Star? get parent => starmap.getParent(this);
+  /// Will return the root star if this star is the root star.
+  Star get parent => isRoot ? this : starmap.getParent(this) ?? this;
 
   /// # List<[Star]> children
   /// ## Returns a list of all children of this star from the starmap contained in the constellation.
@@ -54,16 +61,17 @@ class Star {
 
   /// # int childIndex
   /// ## Returns the index of this star in its parent's children list.
-  int get childIndex =>
-      parent != null ? parent!.children.indexWhere((e) => e.hash == hash) : 0;
+  int get childIndex => parent.children.indexWhere((e) => e == this);
 
   /// # int siblingCount
   /// ## Returns the number of siblings of this star.
-  int get siblingCount => parent != null ? parent!.children.length - 1 : 0;
+  int get siblingCount => getDeepSiblings(includeSelf: false).length;
 
   /// # bool singleChild
   /// ## Does this star only have a single child?
-  bool get singleChild => children.length == 1;
+  bool get hasSingleChild => children.length == 1;
+
+  Star get singleChild => children.first;
 
   /// # bool hasNoChildren
   /// ## Does this star have no children?
@@ -75,15 +83,15 @@ class Star {
 
   /// # bool isCurrent
   /// ## Is this star the current star?
-  bool get isCurrent => hash == constellation.starmap?.currentStar?.hash;
+  bool get isCurrent => this == constellation.starmap?.currentStar;
 
   /// # bool isRoot
   /// ## Is this star the root star?
-  bool get isRoot => hash == constellation.starmap?.root?.hash;
+  bool get isRoot => this == constellation.starmap?.root;
 
   /// # bool isSingleChild
   /// ## Is this star a single child?
-  bool get isSingleChild => parent != null ? parent!.singleChild : false;
+  bool get isSingleChild => parent.hasSingleChild;
 
   /// # Star([Constellation] constellation, {String? name, String? hash, [User]? user})
   /// ## Creates a new star.
@@ -91,17 +99,22 @@ class Star {
   /// When loading a already existing star, call this constructor with the argument hash.
   Star(
     this.constellation, {
-    this.name,
-    this.hash,
+    String? name,
+    String? hash,
     User? user,
   }) {
+    if (name != null) {
+      this.name = name;
+    }
+    if (hash != null) {
+      this.hash = hash;
+    }
     constellation.starmap?.initEntry(hash ?? "");
     if (name != null) {
       if (user != null) {
         _userHash = user.hash;
       } else {
-        _userHash = constellation.loggedInUser?.hash ??
-            Arceus.userIndex.getHostUser().hash;
+        _userHash = constellation.loggedInUser.hash;
       }
       _create();
     } else if (hash != null) {
@@ -119,7 +132,7 @@ class Star {
     hash = constellation.generateUniqueStarHash();
     tags = {};
     ZipFileEncoder archive = ZipFileEncoder();
-    archive.create(constellation.getStarPath(hash!));
+    archive.create(constellation.getStarPath(hash));
     String content = _generateStarFileData();
     archive.addArchiveFile(ArchiveFile("star", content.length, content));
     for (FileSystemEntity entity in constellation.directory.listSync()) {
@@ -152,7 +165,7 @@ class Star {
     star.makeCurrent(save: false);
     constellation.save();
     print("Created child star: ${star.name}");
-    return star.hash!;
+    return star.hash;
   }
 
   /// # void _load()
@@ -194,13 +207,11 @@ class Star {
   /// # void makeCurrent()
   /// ## Makes the star the current star in the constellation.
   /// It also saves the constellation.
-  void makeCurrent({bool save = true}) {
+  void makeCurrent({bool save = true, bool login = true}) {
     _extract();
     constellation.starmap!.currentStar = this;
-    constellation.loggedInUser = user;
-    if (save) {
-      constellation.save();
-    }
+    if (login) constellation.loggedInUser = user!;
+    if (save) constellation.save();
   }
 
   /// # Archive getArchive()
@@ -208,7 +219,7 @@ class Star {
   /// ALWAYS, ALWAYS, ALWAYS call [clearSync] on the archive object after using it.
   /// If you don't, then trimming the star will not work, and will throw an access error.
   Archive getArchive() {
-    final inputStream = InputFileStream(constellation.getStarPath(hash!));
+    final inputStream = InputFileStream(constellation.getStarPath(hash));
     final archive = ZipDecoder().decodeBuffer(inputStream);
     return archive;
   }
@@ -279,8 +290,8 @@ class Star {
   /// The list will be empty if the star has no ancestors, which usually means it is the root star.
   List<Star> getAncestors() {
     List<Star> ancestors = [];
-    Star? parent = this.parent;
-    while (parent != null) {
+    Star parent = this.parent;
+    while (parent.parent != parent) {
       ancestors.add(parent);
       parent = parent.parent;
     }
@@ -289,13 +300,11 @@ class Star {
 
   /// # bool isChildOf([Star] star)
   /// ## Is the star a child of the given star?
-  bool isChildOf(Star star) =>
-      star.children.any((element) => element.hash == hash);
+  bool isChildOf(Star star) => star.children.any((element) => element == this);
 
   /// # bool isParentOf([Star] star)
   /// ## Is the star a parent of the given star?
-  bool isParentOf(Star star) =>
-      children.any((element) => element.hash == star.hash);
+  bool isParentOf(Star star) => children.contains(star);
 
   /// # bool isDescendantOf([Star] star)
   /// ## Is the star a descendant of the given star?
@@ -324,7 +333,7 @@ class Star {
   /// DO NOT USE THIS DIRECTLY, AS IT WILL CORRUPT THE CONSTELLATION IF NOT TRIMED PROPERLY.
   /// Use the [trim] method instead.
   void _delete() {
-    File(constellation.getStarPath(hash!)).deleteSync();
+    File(constellation.getStarPath(hash)).deleteSync();
   }
 
   /// # void fromJson(Map<String, dynamic> json)
@@ -348,7 +357,7 @@ class Star {
   void save() {
     Archive archive = getArchive();
     ZipFileEncoder archiveEncoder = ZipFileEncoder();
-    archiveEncoder.create(constellation.getStarPath(hash!, temp: true));
+    archiveEncoder.create(constellation.getStarPath(hash, temp: true));
     for (ArchiveFile file in archive.files) {
       if (file.name == "star") {
         String content = _generateStarFileData();
@@ -362,15 +371,15 @@ class Star {
     archive.clearSync();
     archiveEncoder.closeSync();
 
-    File(constellation.getStarPath(hash!)).deleteSync();
-    File(constellation.getStarPath(hash!, temp: true))
-        .renameSync(constellation.getStarPath(hash!));
+    File(constellation.getStarPath(hash)).deleteSync();
+    File(constellation.getStarPath(hash, temp: true))
+        .renameSync(constellation.getStarPath(hash));
   }
 
   /// # `String` toString()
   /// ## Returns the hash of the star.
   @override
-  String toString() => hash!;
+  String toString() => hash;
 
   /// # String getDisplayName()
   /// ## Returns the name of the star for displaying.
@@ -399,7 +408,7 @@ class Star {
     if (hasNoChildren) {
       return this; // A failsafe in the case a star does not have any children.
     }
-    // A safe guard for if any logic breaks in another function, and a index is out of bounds.
+    // A safe guard for if any logic breaks in another function, and an index is out of bounds.
     if (index < 0) index = 0;
     if (index >= children.length) index = children.length - 1;
 
@@ -409,23 +418,19 @@ class Star {
   /// # int getDepth()
   /// ## Returns the depth of the star in the starmap.
   int getDepth() {
-    return getAncestors().length;
+    return getAncestors().length + 1;
   }
 
   /// # int getIndex()
   /// ## Returns the index of the star in the starmap.
   int getIndex() {
-    return starmap
-        .getStarsAtDepth(getDepth())
-        .indexWhere((star) => star.hash == hash);
+    return starmap.getStarsAtDepth(getDepth()).indexOf(this);
   }
 
   /// # List<[Star]> getDeepSiblings()
   /// ## Returns a list of all of the siblings at the same depth as this star, including this star.
-  List<Star> getDeepSiblings() {
+  List<Star> getDeepSiblings({bool includeSelf = true}) {
     int depth = getDepth(); // Get the depth of this star.
-    int index =
-        getIndex(); // Get the index of this star (i.e. where is it relative to its siblings?)
     while (depth > 0) {
       // While the depth is greater than 0 (i.e. not the root star)
       if (starmap.moreExistAtDepth(depth, this)) {
@@ -435,8 +440,10 @@ class Star {
       depth--;
     }
     List<Star> stars = starmap.getStarsAtDepth(depth);
-    stars.removeAt(index);
-    stars.insert(index, this);
+    if (!includeSelf) {
+      stars.removeWhere(
+          (element) => element == this || element.isAncestorOf(this));
+    }
     return stars;
   }
 
@@ -447,7 +454,8 @@ class Star {
     List<Star> siblings = getDeepSiblings();
     int offset = below ??
         -above!; // If above is null, then below is not null. above will add to the index, while below will subtract.
-    return siblings[(getIndex() + offset) %
+    int index = siblings.indexWhere((e) => e == this || e.isAncestorOf(this));
+    return siblings[(index + offset) %
         siblings
             .length]; // I ❤️ modulo. It's almost magic how easily it can wrap a index around to a valid range! I just wish I could use it more often.
   }
