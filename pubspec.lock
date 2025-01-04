@@ -151,7 +151,7 @@ packages:
     source: hosted
     version: "3.0.6"
   dart_console:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: dart_console
       sha256: dfa4b63eb4382325ff975fdb6b7a0db8303bb5809ee5cb4516b44153844742ed

@@ -1,4 +1,5 @@
 import 'dart:ffi';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
@@ -11,11 +12,19 @@ import 'scripting/addon.dart';
 /// Used to compress and decompress strings.
 extension Compression on String {
   /// # `String` fixPath()
-  /// ## Fixes the path by replacing backslashes with forward slashes.
-  /// This is used to make the path compatible with the operating system.
+  /// ## Fixes the path by replacing windows formatting with an absolute path and universal format.
+  /// This will also replace environment variables with their values.
   String fixPath() {
     String path = replaceAll("\"", "");
-    return path.replaceAll("\\", "/");
+    path = path.replaceAll("\\", "/");
+    if (Platform.isWindows) {
+      RegExp envVar = RegExp(r"(?:%(\w*)%)");
+      for (RegExpMatch match in envVar.allMatches(path)) {
+        path = path.replaceFirst(
+            match.group(0)!, Platform.environment[match.group(1)!]!.fixPath());
+      }
+    }
+    return path;
   }
 
   /// # `String` makeRelPath(`String` relativeTo)

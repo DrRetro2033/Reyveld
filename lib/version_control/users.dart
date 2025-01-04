@@ -43,6 +43,10 @@ class UserIndex {
     }
   }
 
+  bool doesUserHashExist(String hash) {
+    return users.any((element) => element.hash == hash);
+  }
+
   User getUser(String hash) {
     if (users.isEmpty) {
       throw Exception("No users found!");

@@ -42,13 +42,13 @@ class Star {
 
   /// # String? _userHash
   /// ## The hash of the user who this star belongs to.
-  late String? _userHash;
+  late String _userHash;
 
   late Set<String> tags;
 
   /// # [User]? get user
   /// ## Returns the user who this star belongs to.
-  User? get user => constellation.userIndex.getUser(_userHash!);
+  User get user => constellation.userIndex.getUser(_userHash);
 
   /// # [Star]? get parent
   /// ## Returns the parent of this star from the starmap contained in the constellation.
@@ -210,7 +210,7 @@ class Star {
   void makeCurrent({bool save = true, bool login = true}) {
     _extract();
     constellation.starmap!.currentStar = this;
-    if (login) constellation.loggedInUser = user!;
+    if (login) constellation.loggedInUser = user;
     if (save) constellation.save();
   }
 
@@ -241,6 +241,10 @@ class Star {
       resave = true;
     }
     _fromJson(json);
+    if (!constellation.userIndex.doesUserHashExist(_userHash)) {
+      _userHash = constellation.loggedInUser.hash;
+      resave = true;
+    }
     if (resave) {
       save();
     }
@@ -354,6 +358,9 @@ class Star {
         "tags": tags.toList(),
       };
 
+  /// # void save()
+  /// ## Saves the star to disk.
+  /// This is used when modifying tags for a star.
   void save() {
     Archive archive = getArchive();
     ZipFileEncoder archiveEncoder = ZipFileEncoder();
@@ -396,7 +403,7 @@ class Star {
       badges.add(Badge(tag));
       tagsToDisplay--;
     }
-    Badge userBadge = user!.badge;
+    Badge userBadge = user.badge;
     final displayName =
         "$name $userBadge ${badges.isNotEmpty ? badges.join(" ") : ""} ${isCurrent ? "✨" : ""}";
     return displayName;

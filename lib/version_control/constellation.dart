@@ -63,8 +63,8 @@ class Constellation {
   User get loggedInUser {
     if (_loggedInUserHash != null) {
       return userIndex.getUser(_loggedInUserHash!);
-    } else if (starmap!.currentStar!.user != null) {
-      return starmap!.currentStar!.user!;
+    } else if (starmap!.currentStar != null) {
+      return starmap!.currentStar!.user;
     } else {
       return userIndex.getHostUser();
     }
@@ -250,7 +250,7 @@ class Constellation {
   }
 
   /// # void clear()
-  /// ## Clears all files in the associated path, expect for the `.constellation` folder and its contents.
+  /// ## Clears all files in the associated path, except for the `.constellation` folder and its contents.
   void clear() {
     directory.listSync(recursive: true).forEach((entity) {
       if (entity is File &&
