@@ -6,7 +6,7 @@ import 'users.dart';
 import 'dart:io';
 import 'dossier.dart';
 
-/// # `class` Star
+/// # class Star
 /// ## Represents a star in the constellation.
 /// Stars can be thought as an analog to Git commits.
 /// They are saved as a `.star` file in the constellation's directory.
@@ -214,24 +214,24 @@ class Star {
     if (save) constellation.save();
   }
 
-  /// # Archive getArchive()
+  /// # [Archive] getArchive()
   /// ## Returns the archive of the star.
-  /// ALWAYS, ALWAYS, ALWAYS call [clearSync] on the archive object after using it.
-  /// If you don't, then trimming the star will not work, and will throw an access error.
+  /// ALWAYS, ALWAYS, ALWAYS call [Archive.clearSync] on the archive object after using it.
+  /// If you don't, then trimming a star will not work, and will throw an access error.
   Archive getArchive() {
     final inputStream = InputFileStream(constellation.getStarPath(hash));
     final archive = ZipDecoder().decodeBuffer(inputStream);
     return archive;
   }
 
-  /// # `Plasma` getPlasma(`String` pathOfFileInStar)
-  /// ## Returns a new `Plasma` for a file at path relative to the star.
+  /// # [Plasma] getPlasma(String pathOfFileInStar)
+  /// ## Returns a new Plasma for a file at path relative to the star.
   Plasma getPlasma(String pathOfFileInStar) {
     return Plasma.fromStar(this, pathOfFileInStar);
   }
 
-  /// # `void` _fromStarFileData(`String` data)
-  /// ## Converts the JSON `data` into usable info about a star.
+  /// # void _fromStarFileData(String data)
+  /// ## Converts the JSON data into usable info about a star.
   /// JSON data is stored in a file named `star` inside a `.star` file.
   void _fromStarFileData(String data) {
     Map<String, dynamic> json = jsonDecode(data);
@@ -250,15 +250,15 @@ class Star {
     }
   }
 
-  /// # `String` _generateStarFileData()
-  /// ## Generates the data for the `star` file inside the `.star`.
+  /// # String _generateStarFileData()
+  /// ## Generates the data for the star file inside the `.star`.
   /// Inside a `.star` file, there is a single file just called `star` with no extension.
   /// This file contains the star's data in JSON format.
   String _generateStarFileData() {
     return jsonEncode(toJson());
   }
 
-  /// # `Star` getMostRecentStar()
+  /// # [Star] getMostRecentStar()
   /// ## Returns the most recent star in the constellation.
   /// If the star has no children, it returns itself.
   Star getMostRecentStar() {
@@ -277,7 +277,7 @@ class Star {
     return mostRecentStar.getMostRecentStar();
   }
 
-  /// # `List<Star>` getDescendants()
+  /// # List<[Star]> getDescendants()
   /// ## Returns a list of all descendants of the star.
   /// The list will be empty if the star has no descendants.
   List<Star> getDescendants() {
@@ -289,7 +289,7 @@ class Star {
     return descendants;
   }
 
-  /// # `List<Star>` getAncestors()
+  /// # List<[Star]> getAncestors()
   /// ## Returns a list of all ancestors of the star.
   /// The list will be empty if the star has no ancestors, which usually means it is the root star.
   List<Star> getAncestors() {
@@ -383,7 +383,7 @@ class Star {
         .renameSync(constellation.getStarPath(hash));
   }
 
-  /// # `String` toString()
+  /// # String toString()
   /// ## Returns the hash of the star.
   @override
   String toString() => hash;

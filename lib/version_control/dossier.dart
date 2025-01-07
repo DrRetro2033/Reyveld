@@ -46,20 +46,20 @@ class Dossier {
       spinner = CliSpin(text: " Checking for new files...").start();
     }
 
-    List<String> newFiles = _listAddedFiles();
+    List<String> newFiles = listAddedFiles();
     if (!silent) spinner!.stop();
     // Check for removed files.
     if (!silent) {
       spinner = CliSpin(text: " Checking for removed files...").start();
     }
-    List<String> removedFiles = _listRemovedFiles();
+    List<String> removedFiles = listRemovedFiles();
     if (!silent) spinner!.stop();
 
     // Check for moved files. Done after new and removed files, as they can be used here to make a cross reference.
     if (!silent) {
       spinner = CliSpin(text: " Checking for moved files...").start();
     }
-    Map<String, String> movedFiles = _listMovedFiles(newFiles, removedFiles);
+    Map<String, String> movedFiles = listMovedFiles(newFiles, removedFiles);
     if (movedFiles.isNotEmpty) {
       check = true;
       spinner!.stop();
@@ -102,7 +102,7 @@ class Dossier {
     if (!silent) {
       spinner = CliSpin(text: " Checking for changed files...").start();
     }
-    List<String> changedFiles = _listChangedFiles(removedFiles);
+    List<String> changedFiles = listChangedFiles(removedFiles);
     if (changedFiles.isNotEmpty) {
       spinner?.fail(" Changed files found:");
       check = true;
@@ -117,7 +117,7 @@ class Dossier {
 
   /// # `List<String>` listAddedFiles()
   /// ## Lists all files in the current directory that have been recently added.
-  List<String> _listAddedFiles() {
+  List<String> listAddedFiles() {
     Archive archive = star.getArchive();
     List<String> newFiles = [];
     for (FileSystemEntity entity
@@ -139,7 +139,7 @@ class Dossier {
 
   /// # `List<String>` listRemovedFiles()
   /// ## Lists all files in the current directory that have been recently removed.
-  List<String> _listRemovedFiles() {
+  List<String> listRemovedFiles() {
     Archive archive = star.getArchive();
     List<String> removedFiles = [];
     for (ArchiveFile file in archive.files) {
@@ -155,7 +155,7 @@ class Dossier {
 
   /// # `Map<String, String>` listMovedFiles(`List<String>` newFiles, `List<String>` removedFiles)
   /// ## Lists all files in the current directory that have been recently moved.
-  Map<String, String> _listMovedFiles(
+  Map<String, String> listMovedFiles(
       List<String> newFiles, List<String> removedFiles) {
     Map<String, String> movedFiles = {};
     for (String file in removedFiles) {
@@ -174,7 +174,7 @@ class Dossier {
 
   /// # `List<String>` listChangedFiles(`List<String>` removedFiles)
   /// ## Lists all files in the current directory that have been recently changed.
-  List<String> _listChangedFiles(List<String> removedFiles) {
+  List<String> listChangedFiles(List<String> removedFiles) {
     Archive archive = star.getArchive();
     List<String> changedFiles = [];
     for (ArchiveFile file in archive.files) {

@@ -10,7 +10,7 @@ import 'star.dart';
 import 'dossier.dart';
 import 'users.dart';
 
-/// # `class` Constellation
+/// # class Constellation
 /// ## Represents a constellation.
 class Constellation {
   /// # String name
@@ -18,7 +18,7 @@ class Constellation {
   String name = "";
 
   /// # late String path
-  /// ## The path to the folder the constellation is in (not the `.constellation` folder).
+  /// ## The path to the folder the constellation is in (not the .constellation folder).
   late String path;
 
   /// # [Starmap]? starmap
@@ -28,24 +28,24 @@ class Constellation {
 
   /// # [UserIndex] get userIndex
   /// ## The user index of the constellation.
-  /// The index used to be stored in the `.constellation` folder,
+  /// The index used to be stored in the .constellation folder,
   /// but it is now stored in the AppData folder, and is shared across all constellations.
   UserIndex get userIndex => Arceus.userIndex;
 
   /// # [Directory] get directory
-  /// ## Fetches a directory object that represents the `addonFolderPath` folder
+  /// ## Fetches a directory object that represents the addonFolderPath folder
   Directory get directory => Directory(path);
 
   /// # bool doesStarExist(String hash)
   /// ## Checks if a star exists in the constellation.
-  /// Returns `true` if the star exists, `false` otherwise.
+  /// Returns true if the star exists, false otherwise.
   bool doesStarExist(String hash) => File(getStarPath(hash)).existsSync();
 
-  /// The path to the folder the constellation stores its data in. (The `.constellation` folder)
+  /// The path to the folder the constellation stores its data in. (The .constellation folder)
   String get constellationPath => "$path/.constellation";
 
   /// # [Directory] get constellationDirectory
-  /// ## Fetches a directory object that represents the `constellationPath` folder
+  /// ## Fetches a directory object that represents the constellationPath folder
   Directory get constellationDirectory => Directory(constellationPath);
 
   /// # String get addonFolderPath
@@ -53,7 +53,7 @@ class Constellation {
   String get addonFolderPath => "$constellationPath/addons";
 
   /// # [Directory] get addonDirectory
-  /// ## Fetches a directory object that represents the `addonFolderPath` folder.
+  /// ## Fetches a directory object that represents the addonFolderPath folder.
   Directory get addonDirectory => Directory(addonFolderPath);
 
   String? _loggedInUserHash;
@@ -236,7 +236,7 @@ class Constellation {
     starmap = null;
   }
 
-  /// # `void` trim()
+  /// # void trim()
   /// ## Trims the given or current star and all of its children out of the tree.
   void trim([Star? star]) {
     starmap?.trim(star);
@@ -250,7 +250,7 @@ class Constellation {
   }
 
   /// # void clear()
-  /// ## Clears all files in the associated path, except for the `.constellation` folder and its contents.
+  /// ## Clears all files in the associated path, except for the .constellation folder and its contents.
   void clear() {
     directory.listSync(recursive: true).forEach((entity) {
       if (entity is File &&
@@ -270,7 +270,7 @@ class Constellation {
 
   /// # bool checkForDifferences()
   /// ## Checks if the constellation has differences between the current star and the root star.
-  /// Returns `true` if there are differences, `false` otherwise.
+  /// Returns true if there are differences, false otherwise.
   /// If silent is true (default), will not print any output.
   /// If silent is false, will print the differences to the console.
   bool checkForDifferences([bool silent = true]) {
@@ -280,7 +280,7 @@ class Constellation {
 
   /// # bool checkForConstellation(String path)
   /// ## Checks if the constellation exists at the given path.
-  /// Returns `true` if the constellation exists, `false` otherwise.
+  /// Returns true if the constellation exists, false otherwise.
   static bool checkForConstellation(String path) {
     return Directory("$path/.constellation").existsSync();
   }
@@ -328,9 +328,9 @@ class Starmap {
     }
   }
 
-  /// # `void` initEntry(`String` hash)
+  /// # void initEntry(String hash)
   /// ## Initializes the entry in the child map for the given hash.
-  /// Called by `Star` when a new star is created.
+  /// Called by Star when a new star is created.
   void initEntry(String hash) {
     if (_childMap[hash] != null) {
       return;
@@ -364,21 +364,21 @@ class Starmap {
     return mostRecentStar;
   }
 
-  /// # `operator` []([Star] star)
+  /// # operator []([Star] star)
   /// ## Get the star with the given hash.
   /// Pass a hash to get the star with that hash.
-  /// There are some keywords that you can use instead of a hash. Any keywords below can be chained together with `;`:
-  /// - `root`: The root star
-  /// - `recent`: The most recent star
-  /// - `back`: The parent of the current star. Will be clamped to the root star.
-  /// - `back X`: Will return the first child of every star preceeding the current star by X. Will be clamped to the the root star.
-  /// - `forward`: Will return the first child from the current star. Will be clamped to any ending stars.
-  /// - `forward X`: Will return the first child of every star proceeding the current star by X. Will be clamped to any ending stars.
-  /// - `above`: The sibling above the current star. If the sibling doesn't exist, it will try and find a sibling of one of its parents. If that doesn't exist, it will return the root star.
-  /// - `above X`: The Xth sibling above the current star. If the sibling doesn't exist, it will try and find a sibling of one of its parents. If that doesn't exist, it will return the root star.
-  /// - `below`: The sibling below the current star. If the sibling doesn't exist, it will try and find a sibling of one of its parents. If that doesn't exist, it will return the root star.
-  /// - `below X`: The Xth sibling below the current star. If the sibling doesn't exist, it will try and find the next available sibling of one of its parents. If that doesn't exist, it will return the root star. Will be wrapped if there is a sibling.
-  /// - `next X`: Will return the Xth child of the current star. Will be wrapped to a valid index of the current star's children.
+  /// There are some keywords that you can use instead of a hash. Any keywords below can be chained together with ;:
+  /// - root: The root star
+  /// - recent: The most recent star
+  /// - back: The parent of the current star. Will be clamped to the root star.
+  /// - back X: Will return the first child of every star preceeding the current star by X. Will be clamped to the the root star.
+  /// - forward: Will return the first child from the current star. Will be clamped to any ending stars.
+  /// - forward X: Will return the first child of every star proceeding the current star by X. Will be clamped to any ending stars.
+  /// - above: The sibling above the current star. If the sibling doesn't exist, it will try and find a sibling of one of its parents. If that doesn't exist, it will return the root star.
+  /// - above X: The Xth sibling above the current star. If the sibling doesn't exist, it will try and find a sibling of one of its parents. If that doesn't exist, it will return the root star.
+  /// - below: The sibling below the current star. If the sibling doesn't exist, it will try and find a sibling of one of its parents. If that doesn't exist, it will return the root star.
+  /// - below X: The Xth sibling below the current star. If the sibling doesn't exist, it will try and find the next available sibling of one of its parents. If that doesn't exist, it will return the root star. Will be wrapped if there is a sibling.
+  /// - next X: Will return the Xth child of the current star. Will be wrapped to a valid index of the current star's children.
   operator [](Object hash) {
     if (hash is String) {
       List<String> commands = hash.split(",");
@@ -434,7 +434,7 @@ class Starmap {
     }
   }
 
-  /// # `Map<dynamic, dynamic>` toJson()
+  /// # Map<dynamic, dynamic> toJson()
   /// ## Returns a JSON map of the starmap.
   /// This is used when saving the starmap to disk.
   Map<dynamic, dynamic> _toJson() {
@@ -447,7 +447,7 @@ class Starmap {
     };
   }
 
-  /// # `void` fromJson(`Map<dynamic, dynamic>` json)
+  /// # void fromJson(Map<dynamic, dynamic> json)
   /// ## Uses a JSON map to initialize the starmap.
   /// This is used when loading the starmap from disk.
   void _fromJson(Map<dynamic, dynamic> json) {
@@ -479,14 +479,14 @@ class Starmap {
     return children;
   }
 
-  /// # `List<String>` getChildrenHashes(`String` parent)
+  /// # List<String> getChildrenHashes(String parent)
   /// ## Returns a list of all children hashes of the given parent.
   /// The list will be empty if the parent has no children.
   List<String> _getChildrenHashes(String hash) {
     return _childMap[hash] ?? [];
   }
 
-  /// # `void` addRelationship([Star] parent, [Star] child)
+  /// # void addRelationship([Star] parent, [Star] child)
   /// ## Adds the given child to the given parent.
   /// Throws an exception if the child already has a parent.
   void addRelationship(Star parent, Star child) {
@@ -502,14 +502,14 @@ class Starmap {
     constellation.save();
   }
 
-  /// # `void` printMap()
+  /// # void printMap()
   /// ## Prints the constellation's stars.
   /// This is a tree view of the constellation's stars and their children.
   void printMap() {
     print(TreeWidget(_getTree(root!, {})));
   }
 
-  /// # `Map<String, dynamic>` _getTree([Star] star, `Map<String, dynamic>` tree, {`bool` branch = false})
+  /// # Map<String, dynamic> _getTree([Star] star, Map<String, dynamic> tree, {bool branch = false})
   /// ## Returns the tree of the star and its children, for printing.
   /// This is called recursively, to give a reasonable formatting to the tree, by making single children branches be in one column, instead of infinitely nested.
   Map<String, dynamic> _getTree(Star star, Map<String, dynamic> tree,
@@ -529,7 +529,7 @@ class Starmap {
     return tree;
   }
 
-  /// # `void` trim([Star] star)
+  /// # void trim([Star] star)
   /// ## Trims the given star and all of its children.
   /// This will not discard any changes in files, BUT will destroy previous changes in files.
   void trim([Star? star]) {
@@ -543,9 +543,9 @@ class Starmap {
     constellation.save();
   }
 
-  /// # `void` sterilizeStar([Star] star)
+  /// # void sterilizeStar([Star] star)
   /// ## Will safely remove the given star's relationships from the starmap.
-  /// Remember to call [save] in the constellation afterwards.
+  /// Remember to call [Constellation.save] in the constellation afterwards.
   void sterilizeStar(Star star) {
     if (star.isRoot) {
       throw Exception("Cannot sterilize the root star!");
@@ -600,8 +600,8 @@ class Starmap {
     return endings;
   }
 
-  /// # [bool] existBesideCoordinates([int] depth, [int] index)
-  /// ## Returns true if there is a star next to the given coordinates.
+  /// # bool moreExistAtDepth(int depth, [Star] star)
+  /// ## Returns true if there is a star at the given depth that is not the given star.
   /// Returns false otherwise.
   bool moreExistAtDepth(int depth, Star star) {
     final stars = getStarsAtDepth(depth);
