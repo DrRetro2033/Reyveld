@@ -114,57 +114,73 @@ class TreeWidget {
 
   @override
   String toString() {
-    return _createTree(data, 0, {});
+    return _createTree(data);
   }
 
-  String _createTree(
-      Map<dynamic, dynamic> data, int level, Set<int> levelsEnded) {
+  String _createTree(Map<dynamic, dynamic> data) {
+    return MapLevel(data).toString();
+  }
+}
+
+abstract class Level {
+  final String? name;
+
+  final int padding;
+  String get pipeColor => "blueviolet";
+  String get pipe => '│';
+  String get startPipe => '╭';
+  String get junctionPipe => '├';
+  String get endPipe => '╰';
+
+  Level({this.padding = 2, this.name});
+
+  StringBuffer build();
+
+  @override
+  String toString() => build().toString();
+}
+
+class MapLevel extends Level {
+  final Map<dynamic, dynamic> data;
+  MapLevel(this.data, {super.padding, super.name});
+
+  @override
+  StringBuffer build() {
     StringBuffer buffer = StringBuffer();
     List keys = data.keys.toList();
     for (int i = 0; i < keys.length; i++) {
       String key = keys[i];
       bool isFirst = i == 0;
       bool isLast = i == keys.length - 1;
-      if (isLast) {
-        levelsEnded.add(level);
-      }
-      String? prefix;
-      if (level <= 0 && keys.length == 1) {
+      bool isSingle = keys.length == 1;
+      String prefix;
+      if (isFirst && name == null && !isSingle) {
+        prefix = '$startPipe── ';
+      } else if (isSingle && name == null) {
         prefix = '─── ';
-        levelsEnded.add(0);
-      } else if (level <= 0 && isFirst) {
-        prefix = '╭── ';
-      } else if (level <= 0 && !isFirst && !isLast) {
-        prefix = '├── ';
-      } else if (level <= 0 && isLast) {
-        prefix = '╰── ';
+      } else if (isLast) {
+        prefix = '$endPipe── ';
       } else {
-        String pipes = '';
-        for (int j = 0; j < level; j++) {
-          if (levelsEnded.contains(j)) {
-            pipes += '    '.padLeft(4 + padding);
-          } else {
-            pipes += '│   '.padLeft(4 + padding);
-          }
-        }
-        prefix =
-            "$pipes${isLast ? '╰── '.padLeft(4 + padding) : '├── '.padLeft(4 + padding)}";
+        prefix = '$junctionPipe── ';
       }
       if (data[key] is Map) {
         buffer.writeln('${prefix.keyword(pipeColor)}$key');
-        if (data[key].isNotEmpty) {
-          buffer.write(_createTree(data[key], level + 1, levelsEnded));
+        StringBuffer x = MapLevel(data[key], name: key).build();
+        if (x.isEmpty) {
+          continue;
         }
-      } else if (data[key] is List) {
-        buffer.writeln('${prefix.keyword(pipeColor)}$key');
-        if (data[key].isNotEmpty) {
-          buffer.write(_createTree(data[key], level + 1, levelsEnded));
+        String pad = '${pipe.keyword(pipeColor)}   ';
+        if (isLast || isSingle) {
+          pad = '    ';
         }
+        x.toString().split('\n').forEach((element) {
+          buffer.writeln('$pad$element');
+        });
       } else {
         buffer.writeln('${prefix.keyword(pipeColor)}$key: ${data[key]}');
       }
     }
-    return buffer.toString();
+    return buffer;
   }
 }
 
