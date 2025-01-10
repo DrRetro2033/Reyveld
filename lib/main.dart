@@ -4,18 +4,17 @@ import 'dart:convert';
 import 'package:args/command_runner.dart';
 import 'package:chalkdart/chalkstrings.dart';
 import 'package:cli_spin/cli_spin.dart';
-import 'version_control/constellation.dart';
-import 'version_control/star.dart';
-import 'arceus.dart';
-import 'scripting/addon.dart';
+import 'package:arceus/version_control/constellation.dart';
+import 'package:arceus/version_control/star.dart';
+import 'package:arceus/arceus.dart';
+import 'package:arceus/scripting/addon.dart';
 import 'package:interact/interact.dart';
 
-import 'hex_editor/editor.dart';
-import 'version_control/dossier.dart';
-import 'extensions.dart';
-import 'server.dart';
-import 'updater.dart';
-import 'scripting/feature_sets/feature_sets.dart';
+import 'package:arceus/hex_editor/editor.dart';
+import 'package:arceus/version_control/plasma.dart';
+import 'package:arceus/extensions.dart';
+import 'package:arceus/server.dart';
+import 'package:arceus/updater.dart';
 import 'package:arceus/widget_system.dart';
 
 /// # `void` main(List<String> arguments)
@@ -822,15 +821,9 @@ class ReadFileCommand extends ArceusCommand {
     }
     String filepath = getRest();
     File file = File(filepath.fixPath());
-    List<Addon> addons = Addon.getInstalledAddons()
-        .filterByAssociatedFile(filepath.getExtension());
-    if (addons.isEmpty && !Arceus.isInternal) {
-      print("Unable to find an addon associated with this file!");
-      return null;
-    }
     Plasma plasma = Plasma.fromFile(file);
 
-    final result = (addons.first.context as PatternAddonContext).read(plasma);
+    final result = plasma.readAsJson();
     if (!Arceus.isInternal) {
       print(TreeWidget(result));
     }

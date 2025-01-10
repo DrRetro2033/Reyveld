@@ -4,7 +4,7 @@ import 'dart:async';
 import 'package:chalkdart/chalkstrings.dart';
 import 'package:dart_console/dart_console.dart';
 import '../cli.dart';
-import '../version_control/dossier.dart';
+import '../version_control/plasma.dart';
 import '../widget_system.dart';
 
 enum Views {

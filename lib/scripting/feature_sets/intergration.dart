@@ -1,7 +1,7 @@
 import 'package:yaml/yaml.dart';
 
-import '../addon.dart';
-import '../squirrel.dart';
+import 'package:arceus/scripting/addon.dart';
+import 'package:arceus/scripting/squirrel.dart';
 
 class IntergrationAddonContext extends AddonContext {
   IntergrationAddonContext(super.addon);

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:arceus/version_control/plasma.dart';
 import 'package:talker/talker.dart';
 import 'cli.dart';
 
@@ -44,25 +45,24 @@ class ArceusServer {
     final response = request.response;
     try {
       switch (request.uri.path) {
-        // case '/read':
-        //   // Get the 'path' query parameter
-        //   final filePath = request.uri.queryParameters['path'];
+        case '/read':
+          // Get the 'path' query parameter
+          final filePath = request.uri.queryParameters['path'];
 
-        //   if (filePath == null) {
-        //     response
-        //       ..statusCode = HttpStatus.badRequest
-        //       ..write('Error: Missing "path" query parameter')
-        //       ..close();
-        //     talker.error("Error: Missing 'path' query parameter");
-        //   } else {
-        //     // Call the function with the extracted path
-        //     dynamic result =
-        //         PatternAddon.getAssoiatedAddon(filePath).read(filePath);
-        //     response
-        //       ..statusCode = HttpStatus.ok
-        //       ..write(result);
-        //   }
-        //   break;
+          if (filePath == null) {
+            response
+              ..statusCode = HttpStatus.badRequest
+              ..write('Error: Missing "path" query parameter')
+              ..close();
+            talker.error("Error: Missing 'path' query parameter");
+          } else {
+            // Call the function with the extracted path
+            dynamic result = Plasma.fromFile(File(filePath)).readAsJson();
+            response
+              ..statusCode = HttpStatus.ok
+              ..write(result);
+          }
+          break;
         case '/stop':
           return true;
         case '/':

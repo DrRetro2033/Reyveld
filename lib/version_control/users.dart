@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import '../uuid.dart';
+import 'package:arceus/uuid.dart';
 import 'package:arceus/widget_system.dart';
 
 /// # `class` UserIndex

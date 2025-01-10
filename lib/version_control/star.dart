@@ -1,10 +1,10 @@
 import 'package:arceus/widget_system.dart';
 import 'package:archive/archive_io.dart';
 import 'dart:convert';
-import 'constellation.dart';
-import 'users.dart';
+import 'package:arceus/version_control/constellation.dart';
+import 'package:arceus/version_control/users.dart';
 import 'dart:io';
-import 'dossier.dart';
+import 'package:arceus/version_control/plasma.dart';
 
 /// # class Star
 /// ## Represents a star in the constellation.
@@ -404,8 +404,16 @@ class Star {
       tagsToDisplay--;
     }
     Badge userBadge = user.badge;
+    Badge dateBadge = Badge(
+        '📅${createdAt?.year}/${createdAt?.month}/${createdAt?.day}',
+        badgeColor: "grey",
+        textColor: "white");
+    Badge timeBadge = Badge(
+        '🕒${createdAt!.hour % 12 == 0 ? 12 : createdAt!.hour % 12}:${createdAt?.minute} ${createdAt!.hour >= 12 ? 'PM' : 'AM'}',
+        badgeColor: "grey",
+        textColor: "white");
     final displayName =
-        "$name $userBadge ${badges.isNotEmpty ? badges.join(" ") : ""} ${isCurrent ? "✨" : ""}";
+        "$name $userBadge  $dateBadge $timeBadge  ${badges.isNotEmpty ? badges.join(" ") : ""} ${isCurrent ? "✨" : ""}";
     return displayName;
   }
 

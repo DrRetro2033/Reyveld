@@ -4,10 +4,10 @@ import 'dart:typed_data';
 
 import 'package:yaml/yaml.dart';
 
-import '../addon.dart';
-import '../squirrel.dart';
-import '../squirrel_bindings_generated.dart';
-import '../../version_control/dossier.dart';
+import 'package:arceus/scripting/addon.dart';
+import 'package:arceus/scripting/squirrel.dart';
+import 'package:arceus/scripting/squirrel_bindings_generated.dart';
+import 'package:arceus/version_control/plasma.dart';
 
 class PatternAddonContext extends AddonContext {
   PatternAddonContext([super.addon]);

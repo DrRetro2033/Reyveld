@@ -3,12 +3,13 @@ import 'dart:io';
 
 import 'package:arceus/widget_system.dart';
 
-import '../uuid.dart';
-import '../arceus.dart';
-import '../extensions.dart';
-import 'star.dart';
-import 'dossier.dart';
-import 'users.dart';
+import 'package:arceus/uuid.dart';
+import 'package:arceus/arceus.dart';
+import 'package:arceus/extensions.dart';
+import 'package:arceus/version_control/star.dart';
+import 'package:arceus/version_control/plasma.dart';
+import 'package:arceus/version_control/dossier.dart';
+import 'package:arceus/version_control/users.dart';
 
 /// # class Constellation
 /// ## Represents a constellation.

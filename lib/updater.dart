@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'arceus.dart';
+import 'package:arceus/arceus.dart';
 
 class Updater {
   static const String currentVersion = "0.0.1-alpha";

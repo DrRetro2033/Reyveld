@@ -4,9 +4,9 @@ import 'package:arceus/arceus.dart';
 import 'package:ffi/ffi.dart' as ffi;
 import 'package:ffi/ffi.dart';
 import 'package:talker/talker.dart';
-import '../extensions.dart';
+import 'package:arceus/extensions.dart';
 
-import 'squirrel_bindings_generated.dart';
+import 'package:arceus/scripting/squirrel_bindings_generated.dart';
 
 DynamicLibrary _getDylib() {
   if (Arceus.isDev) {

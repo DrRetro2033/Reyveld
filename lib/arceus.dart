@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:arceus/version_control/users.dart';
 import 'package:interact/interact.dart';
 
-import 'extensions.dart';
-import 'version_control/constellation.dart';
+import 'package:arceus/extensions.dart';
+import 'package:arceus/version_control/constellation.dart';
 
 /// # `class` Arceus
 /// ## A class that represents the Arceus application.

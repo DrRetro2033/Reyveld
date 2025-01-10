@@ -4,11 +4,11 @@ import 'dart:typed_data';
 import 'package:cli_spin/cli_spin.dart';
 import 'package:yaml/yaml.dart';
 
-import './squirrel.dart';
-import './feature_sets/feature_sets.dart';
-import '../version_control/constellation.dart';
-import '../extensions.dart';
-import '../arceus.dart';
+import 'package:arceus/scripting/squirrel.dart';
+import 'package:arceus/scripting/feature_sets/feature_sets.dart';
+import 'package:arceus/version_control/constellation.dart';
+import 'package:arceus/extensions.dart';
+import 'package:arceus/arceus.dart';
 
 enum FeatureSets {
   none,
@@ -289,7 +289,7 @@ class Addon {
     return addons;
   }
 
-  static List<Addon> getInstalledAddonsByFeatureSet(FeatureSets featureSet) {
+  static List<Addon> getAddonsByFeatureSet(FeatureSets featureSet) {
     List<Addon> addons = <Addon>[];
     for (Addon addon in getInstalledAddons()) {
       if (addon.featureSet == featureSet) {
