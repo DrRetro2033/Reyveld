@@ -98,7 +98,7 @@ class Plasma {
     Addon addon = Addon.getAddonsByFeatureSet(FeatureSets.pattern).firstWhere(
         (e) => (e.getMetadata()["associated-files"] as YamlList)
             .contains(getExtension()));
-    print(TreeWidget((addon.context as PatternAddonContext).read(this)));
+    print(TreeWidget((addon.context as PatternAddonContext).read(this).data));
   }
 
   /// # `bool` isTracked()
@@ -170,16 +170,26 @@ class Plasma {
     return null;
   }
 
-  /// # dynamic readAsJson()
-  /// ## Returns the data of the plasma as JSON, using an assoiated addon.
-  dynamic readAsJson() {
-    List<Addon> addons =
-        Addon.getInstalledAddons().filterByAssociatedFile(getExtension());
-    if (addons.isEmpty && !Arceus.isInternal) {
-      print("Unable to find an addon associated with this file!");
-      return null;
+  /// # dynamic readWithAddon()
+  /// ## Returns the data of the plasma as [Map], using an associated addon.
+  ReadResult? readWithAddon({String? addonPath}) {
+    PatternAddonContext context;
+    if (addonPath != null) {
+      final addon = Addon(File(addonPath.fixPath()));
+      if (addon.featureSet != FeatureSets.pattern) {
+        return null;
+      } else {
+        context = addon.context as PatternAddonContext;
+      }
+    } else {
+      List<Addon> addons =
+          Addon.getInstalledAddons().filterByAssociatedFile(getExtension());
+      if (addons.isEmpty && !Arceus.isInternal) {
+        // print("Unable to find an addon associated with this file!");
+        return null;
+      }
+      context = addons.last.context as PatternAddonContext;
     }
-    PatternAddonContext context = addons.last.context as PatternAddonContext;
 
     return context.read(this);
   }

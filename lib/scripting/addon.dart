@@ -40,7 +40,7 @@ class Addon {
       throw Exception("Addon is not installed.");
     }
 
-    if (Constellation.checkForConstellation(path)) {
+    if (Constellation.exists(path)) {
       return false;
     }
 
@@ -269,7 +269,7 @@ class Addon {
 
   static List<Addon> getInstalledAddons() {
     List<Addon> addons = <Addon>[];
-    if (Constellation.checkForConstellation(Arceus.currentPath)) {
+    if (Constellation.exists(Arceus.currentPath)) {
       final constellation = Constellation(path: Arceus.currentPath);
       if (!constellation.addonDirectory.existsSync()) {
         constellation.addonDirectory.createSync();

@@ -30,6 +30,17 @@ void _printSquirl(Pointer<SQVM> vm, Pointer<Char> s) {
   return;
 }
 
+Pointer<
+        NativeFunction<
+            Void Function(Pointer<SQVM>, Pointer<Char>, Pointer<Char>, LongLong,
+                LongLong)>> printSquirlCompileError =
+    Pointer.fromFunction(_printSquirlError);
+
+void _printSquirlError(Pointer<SQVM> vm, Pointer<Char> s, Pointer<Char> file,
+    int line, int column) {
+  throw Exception("${s.toDartString()} ${file.toDartString()}:$line:$column");
+}
+
 class Squirrel {
   /// # `static` Talker talker
   /// ## The logger for the Squirrel instance.
@@ -70,13 +81,16 @@ class Squirrel {
     }
     final vm = bindings.sq_open(1024);
     bindings.sq_setprintfunc(vm, printSquirl, printSquirl);
+    bindings.sq_setcompilererrorhandler(vm, printSquirlCompileError);
     code = _addExports(code);
     final pointer = code.toCharPointer();
-    successful(bindings.sq_compilebuffer(
-        vm, pointer, code.length, "run.nut".toCharPointer(), SQTrue));
+    successful(
+        bindings.sq_compilebuffer(
+            vm, pointer, code.length, "run.nut".toCharPointer(), SQTrue),
+        pointer: vm);
     malloc.free(pointer);
     bindings.sq_pushroottable(vm);
-    successful(bindings.sq_call(vm, 1, SQFalse, SQTrue));
+    successful(bindings.sq_call(vm, 1, SQFalse, SQTrue), pointer: vm);
     bindings.sq_collectgarbage(vm);
     bindings.sq_pop(vm, 1);
     return vm;
@@ -141,34 +155,37 @@ function $className::export() {
   /// # `static` void successful(Pointer<SQVM> vm, int result)
   /// ## Throws an exception if the result is not 0.
   /// It will also print the stack of the Squirrel instance.
-  bool successful(int result) {
+  bool successful(int result, {Pointer<SQVM>? pointer}) {
+    final vm = pointer ?? _vmpointer;
     if (result != 0) {
-      bindings.sq_getlasterror(_vmpointer);
-      final error = getValueFromStack();
-      throw Exception("$error \n ${getStack()} \n");
+      bindings.sq_getlasterror(vm);
+      final error = getValueFromStack(pointer: vm);
+      throw Exception("$error \n ${getStackForPrint(pointer: vm)} \n");
     }
     return true;
   }
 
   /// # `static` void getStack(Pointer<SQVM> vm)
   /// ## Gets the stack of the Squirrel instance.
-  List<String> getStack() {
+  List<String> getStack({Pointer<SQVM>? pointer}) {
+    final vm = pointer ?? _vmpointer;
     List<String> stack = [];
-    int i = bindings.sq_gettop(_vmpointer);
+    int i = bindings.sq_gettop(vm);
     while (i > 0) {
-      bindings.sq_tostring(_vmpointer, i);
+      bindings.sq_tostring(vm, i);
       final p = ffi.calloc<Pointer<Char>>();
-      bindings.sq_getstring(_vmpointer, -1, p);
+      bindings.sq_getstring(vm, -1, p);
       stack.add(p.value.toDartString());
       ffi.calloc.free(p);
-      bindings.sq_pop(_vmpointer, 1);
+      bindings.sq_pop(vm, 1);
       i--;
     }
     return stack;
   }
 
-  String getStackForPrint() {
-    final stack = getStack();
+  String getStackForPrint({Pointer<SQVM>? pointer}) {
+    final vm = pointer ?? _vmpointer;
+    final stack = getStack(pointer: vm);
     return stack.join("\n");
   }
 
@@ -193,11 +210,13 @@ function $className::export() {
   }
 
   dynamic getValueFromStack(
-      {tagSQObjectType? expectedType,
+      {Pointer<SQVM>? pointer,
+      tagSQObjectType? expectedType,
       dynamic defaultValue,
       int index = -1,
       bool noPop = false}) {
-    final result = bindings.sq_gettype(_vmpointer, index);
+    final vm = pointer ?? _vmpointer;
+    final result = bindings.sq_gettype(vm, index);
     dynamic value;
     if (expectedType != null && result.index != expectedType.index) {
       if (defaultValue != null) {
@@ -214,7 +233,7 @@ function $className::export() {
       final p = ffi.calloc<Pointer<Char>>();
       try {
         bindings.sq_getstring(
-            _vmpointer, index, p); // pass along the pointer to get the value.
+            vm, index, p); // pass along the pointer to get the value.
         value = p.value.toDartString();
       } finally {
         ffi.calloc.free(p); // free memory
@@ -222,7 +241,7 @@ function $className::export() {
     } else if (result == tagSQObjectType.OT_INTEGER) {
       final p = ffi.calloc<LongLong>();
       try {
-        bindings.sq_getinteger(_vmpointer, index, p);
+        bindings.sq_getinteger(vm, index, p);
         value = p.value;
       } finally {
         ffi.calloc.free(p);
@@ -230,7 +249,7 @@ function $className::export() {
     } else if (result == tagSQObjectType.OT_FLOAT) {
       final p = ffi.calloc<Float>();
       try {
-        bindings.sq_getfloat(_vmpointer, index, p);
+        bindings.sq_getfloat(vm, index, p);
         value = p.value;
       } finally {
         ffi.calloc.free(p);
@@ -238,40 +257,40 @@ function $className::export() {
     } else if (result == tagSQObjectType.OT_BOOL) {
       final p = ffi.calloc<UnsignedLongLong>();
       try {
-        bindings.sq_getbool(_vmpointer, index, p);
+        bindings.sq_getbool(vm, index, p);
         value = p.value == 1 ? true : false;
       } finally {
         ffi.calloc.free(p);
       }
     } else if (result == tagSQObjectType.OT_ARRAY) {
-      bindings.sq_pushnull(_vmpointer);
+      bindings.sq_pushnull(vm);
       value = [];
-      while (bindings.sq_next(_vmpointer, -2) == 0) {
+      while (bindings.sq_next(vm, -2) == 0) {
         (value as List).add(getValueFromStack(index: -1, noPop: true));
-        bindings.sq_pop(_vmpointer, 1);
+        bindings.sq_pop(vm, 1);
       }
     } else if (result == tagSQObjectType.OT_TABLE) {
-      bindings.sq_pushnull(_vmpointer);
+      bindings.sq_pushnull(vm);
       value = {};
-      while (bindings.sq_next(_vmpointer, -2) == 0) {
+      while (bindings.sq_next(vm, -2) == 0) {
         // print("Stack \n${getStackForPrint(vm)}");
         (value as Map).putIfAbsent(getValueFromStack(index: -2, noPop: true),
             () => getValueFromStack(index: -1, noPop: true));
-        bindings.sq_pop(_vmpointer, 2);
+        bindings.sq_pop(vm, 2);
       }
-      if (bindings.sq_gettype(_vmpointer, -1) != tagSQObjectType.OT_TABLE) {
-        bindings.sq_pop(_vmpointer, 1);
+      if (bindings.sq_gettype(vm, -1) != tagSQObjectType.OT_TABLE) {
+        bindings.sq_pop(vm, 1);
       }
     } else if (result == tagSQObjectType.OT_INSTANCE) {
-      bindings.sq_pushroottable(_vmpointer);
-      bindings.sq_pushstring(_vmpointer, "__export__".toCharPointer(), -1);
-      bindings.sq_get(_vmpointer, -2);
-      bindings.sq_pushroottable(_vmpointer);
-      bindings.sq_push(_vmpointer, -4);
-      bindings.sq_remove(_vmpointer, -4);
-      successful(bindings.sq_call(_vmpointer, 2, SQTrue, SQTrue));
+      bindings.sq_pushroottable(vm);
+      bindings.sq_pushstring(vm, "__export__".toCharPointer(), -1);
+      bindings.sq_get(vm, -2);
+      bindings.sq_pushroottable(vm);
+      bindings.sq_push(vm, -4);
+      bindings.sq_remove(vm, -4);
+      successful(bindings.sq_call(vm, 2, SQTrue, SQTrue));
       value = getValueFromStack(index: -1, noPop: true);
-      bindings.sq_pop(_vmpointer, 2);
+      bindings.sq_pop(vm, 2);
     } else if (result == tagSQObjectType.OT_NULL) {
       value = null;
     } else {
@@ -280,31 +299,32 @@ function $className::export() {
     }
 
     if (!noPop) {
-      bindings.sq_pop(_vmpointer, 1);
+      bindings.sq_pop(vm, 1);
     }
     return value;
   }
 
-  void pushToStack(dynamic value) {
+  void pushToStack(dynamic value, {Pointer<SQVM>? pointer}) {
+    final vm = pointer ?? _vmpointer;
     if (value is String) {
-      bindings.sq_pushstring(_vmpointer, value.toCharPointer(), -1);
+      bindings.sq_pushstring(vm, value.toCharPointer(), -1);
     } else if (value is int) {
-      bindings.sq_pushinteger(_vmpointer, value);
+      bindings.sq_pushinteger(vm, value);
     } else if (value is double) {
-      bindings.sq_pushfloat(_vmpointer, value);
+      bindings.sq_pushfloat(vm, value);
     } else if (value is bool) {
-      bindings.sq_pushbool(_vmpointer, value ? 1 : 0);
+      bindings.sq_pushbool(vm, value ? 1 : 0);
     } else if (value is List<dynamic>) {
-      bindings.sq_newarray(_vmpointer, 0);
+      bindings.sq_newarray(vm, 0);
       for (int i = 0; i < value.length; i++) {
         pushToStack(value[i]);
-        if (bindings.sq_arrayappend(_vmpointer, -2) == SQ_ERROR) {
-          bindings.sq_pop(_vmpointer, 1);
+        if (bindings.sq_arrayappend(vm, -2) == SQ_ERROR) {
+          bindings.sq_pop(vm, 1);
           break;
         }
       }
     } else {
-      bindings.sq_pushnull(_vmpointer);
+      bindings.sq_pushnull(vm);
     }
   }
 }

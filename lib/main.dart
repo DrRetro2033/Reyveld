@@ -70,7 +70,7 @@ Future<dynamic> main(List<String> arguments) async {
   } else {
     Arceus.isInternal = false;
   }
-  if (!Constellation.checkForConstellation(Arceus.currentPath)) {
+  if (!Constellation.exists(Arceus.currentPath)) {
     runner.addCommand(CreateConstellationCommand());
   } else {
     runner.addCommand(ShowMapConstellationCommand());
@@ -710,7 +710,7 @@ class InstallPackagedAddonCommand extends ArceusCommand {
     }
     if (argResults!["global"]) {
       Addon.installGlobally(addonFile);
-    } else if (Constellation.checkForConstellation(Arceus.currentPath)) {
+    } else if (Constellation.exists(Arceus.currentPath)) {
       Addon.installLocally(addonFile);
     } else {
       print(
@@ -823,11 +823,11 @@ class ReadFileCommand extends ArceusCommand {
     File file = File(filepath.fixPath());
     Plasma plasma = Plasma.fromFile(file);
 
-    final result = plasma.readAsJson();
+    final result = plasma.readWithAddon()!;
     if (!Arceus.isInternal) {
-      print(TreeWidget(result));
+      print(TreeWidget(result.data));
     }
-    return jsonEncode(result);
+    return jsonEncode(result.data);
   }
 }
 
@@ -920,7 +920,7 @@ class StartServerCommand extends ArceusCommand {
   bool get hidden => true;
 
   @override
-  Future<void> run() async => await ArceusServer.start();
+  Future<void> run() async => await ArceusServer().start();
 }
 
 class TagCommands extends ArceusCommand {

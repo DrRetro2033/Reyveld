@@ -158,13 +158,14 @@ class PatternAddonContext extends AddonContext {
   bool doingMemoryTest = false;
   Map<String, bool> checks = {};
 
-  Map<dynamic, dynamic> read(Plasma plasma, {bool doingMemoryTest = false}) {
+  ReadResult read(Plasma plasma, {bool doingMemoryTest = false}) {
+    checks = {};
     this.doingMemoryTest = doingMemoryTest;
     this.plasma = plasma;
     final vm = startVM();
     final result = vm.call("read");
     vm.dispose();
-    return result;
+    return ReadResult(result, checks);
   }
 
   Map<dynamic, dynamic> summary(Plasma plasma) {
@@ -373,4 +374,11 @@ class PatternAddonContext extends AddonContext {
     if (!doingMemoryTest) print("❌ $name");
     checks[name] = false;
   }
+}
+
+class ReadResult {
+  Map<dynamic, dynamic> data;
+  Map<String, bool> checks;
+
+  ReadResult(this.data, this.checks);
 }

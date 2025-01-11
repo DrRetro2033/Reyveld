@@ -210,7 +210,7 @@ class Constellation {
   Map<String, dynamic> toJson() => {
         "name": name,
         "loggedInUser": loggedInUser.hash,
-        "map": starmap?._toJson()
+        "map": starmap?.toJson()
       };
 
   // ============================================================================
@@ -282,7 +282,7 @@ class Constellation {
   /// # bool checkForConstellation(String path)
   /// ## Checks if the constellation exists at the given path.
   /// Returns true if the constellation exists, false otherwise.
-  static bool checkForConstellation(String path) {
+  static bool exists(String path) {
     return Directory("$path/.constellation").existsSync();
   }
 
@@ -325,7 +325,7 @@ class Starmap {
       _childMap = {};
       _parentMap = {};
     } else {
-      _fromJson(map);
+      fromJson(map);
     }
   }
 
@@ -438,7 +438,7 @@ class Starmap {
   /// # Map<dynamic, dynamic> toJson()
   /// ## Returns a JSON map of the starmap.
   /// This is used when saving the starmap to disk.
-  Map<dynamic, dynamic> _toJson() {
+  Map<dynamic, dynamic> toJson() {
     _childMap.removeWhere((key, value) => value.isEmpty);
     return {
       "root": _rootHash,
@@ -451,7 +451,7 @@ class Starmap {
   /// # void fromJson(Map<dynamic, dynamic> json)
   /// ## Uses a JSON map to initialize the starmap.
   /// This is used when loading the starmap from disk.
-  void _fromJson(Map<dynamic, dynamic> json) {
+  void fromJson(Map<dynamic, dynamic> json) {
     _rootHash = json["root"];
     _currentStarHash = json["current"];
     (json["children"] as Map).forEach((key, value) {
