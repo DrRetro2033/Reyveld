@@ -98,26 +98,46 @@ class Squirrel {
 
   static String _addExports(String code) {
     RegExp regExp = RegExp(
-        r'class\s(\w*)\s?<\/\s?export\s?=\s?\[((?:\s?"(?:\w+)"\s?,?)+)\]\s?\/\s?>\s?(?:[\s\S]*)');
+        r'class\s(\w*)\s?(?:extends (\w*))?\s?<\s?\/\s?export\s?=\s?\[((?:\s?"?(?:\w+)"?\s?,?)+)\]\s?\/\s?>');
     String addCode = """
+\n
 function __export__(obj) {
   return obj.export();
 }
 """;
-    regExp.allMatches(code).forEach((m) {
+    List<String> parsedClasses = [];
+    while (regExp.hasMatch(code)) {
+      List<Match> matches = regExp
+          .allMatches(code)
+          .toList()
+          .where((x) => !parsedClasses.contains(x.group(1)))
+          .toList();
+      if (matches.isEmpty) {
+        break;
+      }
+      Match m = matches.first;
       String className = m.group(1)!;
-      String exportsStr = m.group(2)!;
+      String? superName = m.group(2);
+      String exportsStr = m.group(3)!;
       List<String> exports = exportsStr
           .split(",")
           .map((e) => e.trim().replaceAll('"', ''))
           .toList();
+      parsedClasses.add(className);
       addCode += """
+\n
 function $className::export() {
   return {
     ${exports.map((e) => "$e = this.$e").join(",\n    ")}
   };
 }""";
-    });
+      code = code.replaceRange(
+          m.start,
+          m.end,
+          "class $className${superName != null ? " extends $superName" : ""} </ export = [${exports.map(
+                (e) => '"$e"',
+              ).join(", ")}] />");
+    }
     return code + addCode;
   }
 
