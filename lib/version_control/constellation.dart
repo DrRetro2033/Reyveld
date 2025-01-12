@@ -92,7 +92,11 @@ class Constellation {
     this.path = path!.fixPath();
     if (constellationDirectory.existsSync()) {
       // If the constellation already exists, then load
-      _load();
+      try {
+        _load();
+      } catch (e) {
+        throw Exception("Failed to load constellation at $path: $e");
+      }
       if (name == null) {
         return;
       }
@@ -217,7 +221,7 @@ class Constellation {
 
   /// # String? grow(String name)
   /// ## Creates a new star with the given name and returns the hash of the new star at the current star.
-  String? grow(String name, {bool force = false, bool signIn = true}) {
+  Star? grow(String name, {bool force = false, bool signIn = true}) {
     User? user = loggedInUser;
     if (signIn) {
       user = Arceus.userSelect(prompt: "Assign Star to...");
@@ -226,6 +230,10 @@ class Constellation {
       }
     }
     return starmap?.currentStar?.createChild(name, force: force, user: user);
+  }
+
+  String getAutoStarName() {
+    return "Auto Star";
   }
 
   /// # void delete()
@@ -427,6 +435,11 @@ class Starmap {
           final x = command.replaceFirst("next", "");
           int? i = int.tryParse(x) ?? 1;
           current = current.getChild(i - 1);
+        } else if (command.startsWith("depth")) {
+          // Jump to depth
+          final x = command.replaceFirst("depth", "");
+          int? i = int.tryParse(x) ?? 1;
+          current = getStarsAtDepth(i)[0];
         } else if (constellation.doesStarExist(hash)) {
           current = Star(constellation, hash: hash);
         }

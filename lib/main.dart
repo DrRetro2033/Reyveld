@@ -92,6 +92,7 @@ Future<dynamic> main(List<String> arguments) async {
   runner.addCommand(ArceusConstellationsCommand());
   runner.addCommand(AddonsCommand());
   runner.addCommand(UpdateCommand());
+  runner.addCommand(GrowAllCommand());
 
   if (arguments.isNotEmpty) {
     dynamic result = await runner.run(arguments);
@@ -349,6 +350,7 @@ Commands:
 - below X: Will jump to the Xth sibling above the current star. Will wrap around to lowest star. If X is not provided, it will default to 1.
 
 - next X: Will jump to the Xth child of the current star. Will be wrapped to a valid index of the current star's children.
+- depth X: Jumps to the first star at the given depth.
 
 You can also chain multiple commands together by adding a comma between each.
 """;
@@ -382,7 +384,7 @@ You can also chain multiple commands together by adding a comma between each.
     CliSpin? spinner =
         CliSpin(text: "Jumping to star...", spinner: CliSpinners.moon).start();
     if (argResults!.rest.isEmpty) {
-      spinner.fail("Please provide a star hash or command to jump.");
+      spinner.fail(" Please provide a star hash or command to jump.");
       return;
     }
     String hash = getRest();
@@ -390,12 +392,12 @@ You can also chain multiple commands together by adding a comma between each.
     try {
       final star = constellation.starmap?[hash] as Star;
       star.makeCurrent();
-      spinner.success("Jumped to \"${star.name}\".");
+      spinner.success(" Jumped to \"${star.name}\".");
       if (argResults!["print"]) {
         constellation.starmap?.printMap();
       }
     } catch (e) {
-      spinner.fail("Star with the hash of \"$hash\" not found.");
+      spinner.fail(" Star with the hash of \"$hash\" not found.");
       rethrow;
     }
   }
@@ -428,8 +430,9 @@ This will fail if there no changes to commit, unless '--force' is provided.""";
     if (getRest().isEmpty) {
       throw Exception("Please provide a name for the new star.");
     }
-    constellation.grow(getRest(),
-        force: argResults!["force"], signIn: argResults!["sign-in"]);
+    final star = constellation.grow(getRest(),
+        force: argResults!["force"], signIn: argResults!["sign-in"])!;
+    print("Created child star: ${star.name}");
   }
 }
 
@@ -1009,6 +1012,47 @@ class TagListCommand extends ConstellationArceusCommand {
     print("Tags for ${constellation.starmap!.currentStar!.name}:");
     for (String tag in constellation.starmap!.currentStar!.tags) {
       print(Badge(tag));
+    }
+  }
+}
+
+class GrowAllCommand extends Command {
+  @override
+  String get description => "Grow stars for every constellation.";
+
+  @override
+  String get name => "grow-all";
+
+  @override
+  String get category => "Global";
+
+  @override
+  void run() {
+    CliSpin spinner =
+        CliSpin(text: " Starting...", spinner: CliSpinners.moon).start();
+    bool noChanges = true;
+    for (ConstellationEntry entry in Arceus.getConstellationEntries()) {
+      try {
+        final constellation = Constellation(path: entry.path);
+        spinner.text = " Checking ${entry.name.italic} for changes...";
+        if (!constellation.checkForDifferences()) {
+          continue;
+        }
+        spinner.text = " Growing ${entry.name.italic}...";
+        constellation.grow(constellation.getAutoStarName(), signIn: false);
+
+        spinner.success(" Successfully grown ${entry.name.italic}!");
+        noChanges = false;
+        spinner =
+            CliSpin(text: " Starting...", spinner: CliSpinners.moon).start();
+      } catch (e) {
+        continue;
+      }
+    }
+    if (noChanges) {
+      spinner.fail(" No changes found.");
+    } else {
+      spinner.stop();
     }
   }
 }

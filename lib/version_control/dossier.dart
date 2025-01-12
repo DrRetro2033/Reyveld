@@ -56,8 +56,10 @@ class Dossier {
     if (movedFiles.isNotEmpty) {
       check = true;
       spinner!.stop();
-      for (String file in movedFiles.keys) {
-        print("  $file $_moveSymbol ${movedFiles[file]}");
+      if (!silent) {
+        for (String file in movedFiles.keys) {
+          print("  $file $_moveSymbol ${movedFiles[file]}");
+        }
       }
     } else {
       spinner?.success(" There are no moved files.");
@@ -67,11 +69,13 @@ class Dossier {
     if (newFiles.isNotEmpty) {
       check = true;
       spinner?.fail(" New files found:");
-      for (String file in newFiles) {
-        if (movedFiles.containsValue(file)) {
-          continue;
+      if (!silent) {
+        for (String file in newFiles) {
+          if (movedFiles.containsValue(file)) {
+            continue;
+          }
+          print("  $_addSymbol $file");
         }
-        print("  $_addSymbol $file");
       }
     } else {
       spinner?.success(" There are no new files.");
@@ -81,11 +85,13 @@ class Dossier {
     if (removedFiles.isNotEmpty) {
       check = true;
       spinner?.fail(" Removed files found:");
-      for (String file in removedFiles) {
-        if (movedFiles.containsKey(file)) {
-          continue;
+      if (!silent) {
+        for (String file in removedFiles) {
+          if (movedFiles.containsKey(file)) {
+            continue;
+          }
+          print("  $_removeSymbol $file");
         }
-        print("  $_removeSymbol $file");
       }
     } else {
       spinner?.success(" There are no removed files.");
@@ -99,8 +105,10 @@ class Dossier {
     if (changedFiles.isNotEmpty) {
       spinner?.fail(" Changed files found:");
       check = true;
-      for (String file in changedFiles) {
-        print("  $_modifiedSymbol $file");
+      if (!silent) {
+        for (String file in changedFiles) {
+          print("  $_modifiedSymbol $file");
+        }
       }
     } else {
       spinner?.success(" There are no changed files.");

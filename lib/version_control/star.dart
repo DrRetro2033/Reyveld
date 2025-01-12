@@ -154,18 +154,17 @@ class Star {
   /// # String createChild(String name)
   /// ## Creates a new star with the given name.
   /// It returns the hash of the new star.
-  String createChild(String name, {bool force = false, User? user}) {
+  Star createChild(String name, {bool force = false, User? user}) {
     if (!force && !constellation.checkForDifferences()) {
       print(
           "Cannot create a new child star, as there are no changes to the constellation. If you want to grow anyway, use the '--force' flag.");
-      return "";
+      return this;
     }
     Star star = Star(constellation, name: name, user: user ?? this.user);
     constellation.starmap?.addRelationship(this, star);
     star.makeCurrent(save: false);
     constellation.save();
-    print("Created child star: ${star.name}");
-    return star.hash;
+    return star;
   }
 
   /// # void _load()
