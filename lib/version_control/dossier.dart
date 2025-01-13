@@ -119,7 +119,7 @@ class Dossier {
   /// # `List<String>` listAddedFiles()
   /// ## Lists all files in the current directory that have been recently added.
   List<String> listAddedFiles() {
-    Archive archive = star.getArchive();
+    Archive archive = star.file.getArchive();
     List<String> newFiles = [];
     for (FileSystemEntity entity
         in star.constellation.directory.listSync(recursive: true)) {
@@ -141,7 +141,7 @@ class Dossier {
   /// # `List<String>` listRemovedFiles()
   /// ## Lists all files in the current directory that have been recently removed.
   List<String> listRemovedFiles() {
-    Archive archive = star.getArchive();
+    Archive archive = star.file.getArchive();
     List<String> removedFiles = [];
     for (ArchiveFile file in archive.files) {
       if (file.isFile && file.name != "star") {
@@ -176,7 +176,7 @@ class Dossier {
   /// # `List<String>` listChangedFiles(`List<String>` removedFiles)
   /// ## Lists all files in the current directory that have been recently changed.
   List<String> listChangedFiles(List<String> removedFiles) {
-    Archive archive = star.getArchive();
+    Archive archive = star.file.getArchive();
     List<String> changedFiles = [];
     for (ArchiveFile file in archive.files) {
       if (file.isFile &&

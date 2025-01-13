@@ -47,7 +47,7 @@ class Plasma {
   /// ## Creates a new plasma from a star and a path in the star.
   /// The returned plasma will be an internal plasma.
   factory Plasma.fromStar(Star star, String pathInStar) {
-    Archive? archive = star.getArchive();
+    Archive? archive = star.file.getArchive();
     ArchiveFile? file = archive.findFile(pathInStar);
     Plasma plasma = Plasma(
         (file!.content as Uint8List).buffer.asByteData(), Origin.internal,

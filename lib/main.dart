@@ -9,7 +9,6 @@ import 'package:arceus/version_control/star.dart';
 import 'package:arceus/arceus.dart';
 import 'package:arceus/scripting/addon.dart';
 import 'package:interact/interact.dart';
-
 import 'package:arceus/hex_editor/editor.dart';
 import 'package:arceus/version_control/plasma.dart';
 import 'package:arceus/extensions.dart';
@@ -80,12 +79,12 @@ Future<dynamic> main(List<String> arguments) async {
     runner.addCommand(ConstellationDeleteCommand());
     runner.addCommand(StartServerCommand());
     runner.addCommand(TrimCommand());
-    runner.addCommand(RecoverCommand());
     runner.addCommand(ResyncCommand());
     runner.addCommand(LoginUserCommand());
     runner.addCommand(TagCommands());
   }
   runner.addCommand(UsersCommands());
+  runner.addCommand(RecoverCommand());
   runner.addCommand(DoesConstellationExistCommand());
   runner.addCommand(ReadFileCommand());
   runner.addCommand(OpenFileInHexCommand());
@@ -294,10 +293,16 @@ If you decide to resync back to the current star, call 'resync'.
   RecoverCommand();
 
   @override
-  void run() {
-    Constellation constellation = Constellation(path: Arceus.currentPath);
-    final files = constellation.listStarHashes();
-    final stars = files.map((e) => Star(constellation, hash: e)).toList();
+  Future<void> run() async {
+    final directory = Directory("${Arceus.currentPath}/.constellation");
+    if (!directory.existsSync()) {
+      print(
+          "No constellation folder found. Please make sure a .constellation folder exists at the given path.");
+      return;
+    }
+    final files = directory.listSync().cast<FileSystemEntity>();
+    files.removeWhere((e) => !e.path.endsWith(".star"));
+    final stars = files.map((e) => StarFile(e.path)).toList();
     final options =
         stars.map((e) => "${e.name} - ${e.createdAt.toString()}").toList();
     final selected = Select(
@@ -307,22 +312,21 @@ If you decide to resync back to the current star, call 'resync'.
     if (selected == options.length) {
       return;
     }
-    (stars[selected]).recover();
+    final star = stars[selected];
+    final user = Arceus.userIndex.getUser(star.userHash);
+    star.extract(Arceus.currentPath);
     final confirm = Confirm(
       prompt:
           " Do you also want to recreate the constellation? All other stars will be lost.",
     ).interact();
     if (confirm) {
-      String name = constellation.name;
-      stars.clear();
-      constellation.delete();
-      if (name.isEmpty) {
-        name = Input(
-            prompt:
-                " Unable to determine constellation name. Please enter a new name.",
-            validator: (p0) => p0.isNotEmpty).interact();
-      }
-      constellation = Constellation(path: Arceus.currentPath, name: name);
+      final name = Input(prompt: " Name of the new constellation.").interact();
+      Constellation.deleteStatic(Arceus.currentPath);
+      Constellation(
+        path: Arceus.currentPath,
+        name: name,
+        user: user,
+      );
     }
     print("Recovery complete ✔️");
   }
@@ -371,7 +375,7 @@ You can also chain multiple commands together by adding a comma between each.
   }
 
   @override
-  void _run() {
+  Future<void> _run() async {
     if (!argResults!["force"] && constellation.checkForDifferences()) {
       final confirm = Confirm(
         prompt:
@@ -431,8 +435,8 @@ This will fail if there no changes to commit, unless '--force' is provided.""";
       throw Exception("Please provide a name for the new star.");
     }
     final star = constellation.grow(getRest(),
-        force: argResults!["force"], signIn: argResults!["sign-in"])!;
-    print("Created child star: ${star.name}");
+        force: argResults!["force"], signIn: argResults!["sign-in"]);
+    print("Created child star: ${star!.name}");
   }
 }
 
@@ -458,7 +462,7 @@ Will confirm before proceeding, unless --force is provided.
   }
 
   @override
-  void _run() {
+  Future<void> _run() async {
     if (!argResults!["force"]) {
       final confirm = Confirm(
         prompt:

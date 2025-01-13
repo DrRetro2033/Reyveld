@@ -112,7 +112,7 @@ class TreeWidget {
   }
 
   String _createTree(Map<dynamic, dynamic> data) {
-    return MapLevel(data).toString();
+    return MapLevel(data).build();
   }
 }
 
@@ -128,14 +128,7 @@ abstract class Level {
 
   Level({this.padding = 2, this.name});
 
-  StringBuffer build();
-
-  @override
-  String toString() {
-    final tree = build().toString().split('\n');
-    tree.removeWhere((x) => x.replaceAll(' ', "").isEmpty);
-    return tree.join('\n');
-  }
+  String build();
 }
 
 class MapLevel extends Level {
@@ -143,7 +136,7 @@ class MapLevel extends Level {
   MapLevel(this.data, {super.padding, super.name});
 
   @override
-  StringBuffer build() {
+  String build() {
     StringBuffer buffer = StringBuffer();
     List keys = data.keys.toList();
     for (int i = 0; i < keys.length; i++) {
@@ -163,22 +156,25 @@ class MapLevel extends Level {
       }
       if (data[key] is Map) {
         buffer.writeln('${prefix.keyword(pipeColor)}$key');
-        StringBuffer x = MapLevel(data[key], name: key).build();
-        if (x.isEmpty) {
+        if (data[key].isEmpty) {
           continue;
         }
+        String x = MapLevel(data[key], name: key).build();
         String pad = '${pipe.keyword(pipeColor)}   ';
         if (isLast || isSingle) {
           pad = '    ';
         }
-        x.toString().split('\n').forEach((element) {
+        x.split('\n').forEach((element) {
           buffer.writeln('$pad$element');
         });
       } else {
         buffer.writeln('${prefix.keyword(pipeColor)}$key: ${data[key]}');
       }
     }
-    return buffer;
+    final tree = buffer.toString().split('\n');
+    tree.removeWhere((x) => x.replaceAll(' ', "").isEmpty);
+    String result = tree.join('\n');
+    return "$result\n";
   }
 }
 

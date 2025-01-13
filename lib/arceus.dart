@@ -86,7 +86,7 @@ class Arceus {
   /// ## Adds a new constellation to the list of constellations.
   static void addConstellation(String name, String path) {
     if (doesConstellationExist(name: name)) {
-      throw Exception("Constellation already exists");
+      return;
     }
     final index = _getConstellations();
     index[name] = path.fixPath();

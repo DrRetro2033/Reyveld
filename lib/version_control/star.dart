@@ -1,3 +1,5 @@
+import 'package:arceus/arceus.dart';
+import 'package:arceus/extensions.dart';
 import 'package:arceus/widget_system.dart';
 import 'package:archive/archive_io.dart';
 import 'dart:convert';
@@ -5,6 +7,140 @@ import 'package:arceus/version_control/constellation.dart';
 import 'package:arceus/version_control/users.dart';
 import 'dart:io';
 import 'package:arceus/version_control/plasma.dart';
+
+class StarFile {
+  final String path;
+
+  String get name => getDetails()["name"];
+  set name(String name) => _saveDetails({"name": name});
+  DateTime get createdAt => DateTime.parse(getDetails()["createdAt"]);
+  String get userHash => getDetails()["user"];
+  set userHash(String hash) => _saveDetails({"user": hash});
+  Set<String> get tags =>
+      (getDetails()["tags"] as List<dynamic>).toSet().cast<String>();
+
+  StarFile(this.path);
+
+  factory StarFile.create(String path, String compressPath,
+      {required String name, required String userHash}) {
+    Map<String, dynamic> details = {
+      "name": name,
+      "createdAt": DateTime.now().toString(),
+      "user": userHash,
+      "tags": <String>[],
+    };
+    ZipFileEncoder archive = ZipFileEncoder();
+    archive.create(path);
+    String content = jsonEncode(details);
+    archive.addArchiveFile(ArchiveFile("star", content.length, content));
+    for (FileSystemEntity entity in Directory(compressPath).listSync()) {
+      if (entity is File) {
+        if (entity.path.endsWith(".star")) {
+          continue;
+        }
+        archive.addFile(entity);
+      } else if (entity is Directory) {
+        if (entity.path.endsWith(".constellation")) {
+          continue;
+        }
+        archive.addDirectory(entity);
+      }
+    }
+    archive.closeSync();
+    return StarFile(path);
+  }
+
+  /// # void _extract()
+  /// ## Extracts the star from the archive.
+  /// This is used when jumping to an existing star.
+  void extract(String extractPath) {
+    Archive archive = getArchive();
+    for (ArchiveFile file in archive.files) {
+      if (file.isFile && file.name != "star") {
+        final x = File("$extractPath/${file.name}");
+        if (!x.existsSync()) {
+          x.createSync(recursive: true);
+        }
+        x.writeAsBytesSync(file.content);
+      }
+    }
+    archive.clearSync();
+  }
+
+  void _saveDetails(Map<String, dynamic> details) {
+    final content = getDetails();
+    content.addAll(details);
+
+    Archive archive = getArchive();
+    ZipFileEncoder archiveEncoder = ZipFileEncoder();
+    final tempPath = "$path.temp";
+    archiveEncoder.create(tempPath);
+    final contentString = jsonEncode(content);
+    for (ArchiveFile file in archive.files) {
+      if (file.name == "star") {
+        archiveEncoder.addArchiveFile(
+            ArchiveFile('star', contentString.length, contentString));
+      } else {
+        archiveEncoder.addArchiveFile(file);
+      }
+      file.closeSync();
+    }
+    archive.clearSync();
+    archiveEncoder.closeSync();
+
+    File(path).deleteSync();
+    File(tempPath).renameSync(path.getFilename());
+  }
+
+  Map<String, dynamic> getDetails() {
+    Archive archive = getArchive();
+    ArchiveFile? file = archive.findFile("star");
+    String content = utf8.decode(file!.content);
+    archive.clearSync();
+    file.closeSync();
+    return jsonDecode(content);
+  }
+
+  /// # [Archive] getArchive()
+  /// ## Returns the archive of the star.
+  /// ALWAYS, ALWAYS, ALWAYS call [Archive.clearSync] on the archive object after using it.
+  /// If you don't, then trimming a star will not work, and will throw an access error.
+  Archive getArchive() {
+    final inputStream = InputFileStream(path);
+    final archive = ZipDecoder().decodeBuffer(inputStream);
+    return archive;
+  }
+
+  bool addTag(String tag) {
+    Set<String> newTags = {...tags};
+    if (tags.add(tag)) {
+      _saveDetails({"tags": newTags});
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  bool removeTag(String tag) {
+    Set<String> newTags = {...tags};
+    if (newTags.remove(tag)) {
+      _saveDetails({"tags": newTags});
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  bool hasTag(String tag) {
+    return tags.contains(tag);
+  }
+
+  void clearTags() {
+    Set<String> newTags = {...tags};
+    newTags.clear();
+    _saveDetails({"tags": newTags});
+  }
+}
 
 /// # class Star
 /// ## Represents a star in the constellation.
@@ -14,19 +150,19 @@ import 'package:arceus/version_control/plasma.dart';
 class Star {
   /// # [Constellation] constellation
   /// ## The constellation this star belongs to.
-  Constellation constellation;
+  final Constellation constellation;
 
   /// # [Starmap] get starmap
   /// ## Returns the starmap of the constellation.
   Starmap get starmap => constellation.starmap;
 
+  /// # String hash
+  /// ## The hash of the star.
+  final String hash;
+
   /// # String? name
   /// ## The name of the star.
-  late String name;
-
-  /// # String? hash
-  /// ## The hash of the star.
-  late String hash;
+  String get name => file.name;
 
   @override
   bool operator ==(Object other) =>
@@ -38,17 +174,17 @@ class Star {
 
   /// # DateTime? createdAt
   /// ## The time the star was created.
-  late DateTime? createdAt;
+  DateTime get createdAt => file.createdAt;
 
   /// # String? _userHash
   /// ## The hash of the user who this star belongs to.
-  late String _userHash;
-
-  late Set<String> tags;
+  String get _userHash => file.userHash;
 
   /// # [User]? get user
   /// ## Returns the user who this star belongs to.
   User get user => constellation.userIndex.getUser(_userHash);
+
+  Set<String> get tags => file.tags;
 
   /// # [Star]? get parent
   /// ## Returns the parent of this star from the starmap contained in the constellation.
@@ -93,62 +229,23 @@ class Star {
   /// ## Is this star a single child?
   bool get isSingleChild => parent.hasSingleChild;
 
+  StarFile get file => StarFile(constellation.getStarPath(hash));
+
   /// # Star([Constellation] constellation, {String? name, String? hash, [User]? user})
   /// ## Creates a new star.
   /// When creating a new star, call this constructor with the arguments name and user.
   /// When loading a already existing star, call this constructor with the argument hash.
-  Star(
-    this.constellation, {
-    String? name,
-    String? hash,
-    User? user,
-  }) {
-    if (name != null) {
-      this.name = name;
-    }
-    if (hash != null) {
-      this.hash = hash;
-    }
-    constellation.starmap.initEntry(hash ?? "");
-    if (name != null) {
-      if (user != null) {
-        _userHash = user.hash;
-      } else {
-        _userHash = constellation.loggedInUser.hash;
-      }
-      _create();
-    } else if (hash != null) {
-      _load();
-    } else {
-      throw Exception("Star must have a name and user, or a hash.");
-    }
-  }
+  Star(this.constellation, this.hash);
 
   /// # void _create()
   /// ## Creates the star and saves it to the constellation.
   /// It also adds the star to the constellation's starmap.
-  void _create() {
-    createdAt = DateTime.now();
-    hash = constellation.generateUniqueStarHash();
-    tags = {};
-    ZipFileEncoder archive = ZipFileEncoder();
-    archive.create(constellation.getStarPath(hash));
-    String content = _generateStarFileData();
-    archive.addArchiveFile(ArchiveFile("star", content.length, content));
-    for (FileSystemEntity entity in constellation.directory.listSync()) {
-      if (entity is File) {
-        if (entity.path.endsWith(".star")) {
-          continue;
-        }
-        archive.addFile(entity);
-      } else if (entity is Directory) {
-        if (entity.path.endsWith(".constellation")) {
-          continue;
-        }
-        archive.addDirectory(entity);
-      }
-    }
-    archive.closeSync();
+  factory Star.create(Constellation constellation, String name, {User? user}) {
+    final hash = constellation.generateUniqueStarHash();
+    StarFile.create(constellation.getStarPath(hash), constellation.path,
+        name: name,
+        userHash: user?.hash ?? Arceus.userIndex.getHostUser().hash);
+    return Star(constellation, hash);
   }
 
   /// # String createChild(String name)
@@ -160,101 +257,31 @@ class Star {
           "Cannot create a new child star, as there are no changes to the constellation. If you want to grow anyway, use the '--force' flag.");
       return this;
     }
-    Star star = Star(constellation, name: name, user: user ?? this.user);
+    Star star = Star.create(constellation, name, user: user);
     constellation.starmap.addRelationship(this, star);
     star.makeCurrent(save: false);
     constellation.save();
     return star;
   }
 
-  /// # void _load()
-  /// ## Loads the star from disk.
-  void _load() {
-    Archive archive = getArchive();
-    ArchiveFile? file = archive.findFile("star");
-    String content = utf8.decode(file!.content);
-    archive.clearSync();
-    file.closeSync();
-    _fromStarFileData(content);
-  }
-
-  /// # void _extract()
-  /// ## Extracts the star from the archive.
-  /// This is used when jumping to an existing star.
-  Future<void> _extract() async {
-    Archive archive = getArchive();
-    constellation.clear();
-    for (ArchiveFile file in archive.files) {
-      if (file.isFile && file.name != "star") {
-        final x = File("${constellation.path}/${file.name}");
-        if (!x.existsSync()) {
-          await x.create(recursive: true);
-        }
-        await x.writeAsBytes(file.content);
-      }
-    }
-    archive.clearSync();
-  }
-
-  /// # void recover()
-  /// ## Extracts everything from the star, without interacting with the constellation and its starmap.
-  /// Used for recovering data from corrupted constellation.
-  Future<void> recover() async {
-    await _extract();
+  void resync() {
+    file.extract(constellation.path);
   }
 
   /// # void makeCurrent()
   /// ## Makes the star the current star in the constellation.
   /// It also saves the constellation.
-  Future<void> makeCurrent({bool save = true, bool login = true}) async {
-    await _extract();
+  void makeCurrent({bool save = true, bool login = true}) {
+    resync();
     constellation.starmap.currentStar = this;
     if (login) constellation.loggedInUser = user;
     if (save) constellation.save();
-  }
-
-  /// # [Archive] getArchive()
-  /// ## Returns the archive of the star.
-  /// ALWAYS, ALWAYS, ALWAYS call [Archive.clearSync] on the archive object after using it.
-  /// If you don't, then trimming a star will not work, and will throw an access error.
-  Archive getArchive() {
-    final inputStream = InputFileStream(constellation.getStarPath(hash));
-    final archive = ZipDecoder().decodeBuffer(inputStream);
-    return archive;
   }
 
   /// # [Plasma] getPlasma(String pathOfFileInStar)
   /// ## Returns a new Plasma for a file at path relative to the star.
   Plasma getPlasma(String pathOfFileInStar) {
     return Plasma.fromStar(this, pathOfFileInStar);
-  }
-
-  /// # void _fromStarFileData(String data)
-  /// ## Converts the JSON data into usable info about a star.
-  /// JSON data is stored in a file named `star` inside a `.star` file.
-  void _fromStarFileData(String data) {
-    Map<String, dynamic> json = jsonDecode(data);
-    bool resave =
-        false; // Resave the star if any details are missing, with the new details.
-    if (!json.containsKey("tags")) {
-      resave = true;
-    }
-    _fromJson(json);
-    if (!constellation.userIndex.doesUserHashExist(_userHash)) {
-      _userHash = constellation.loggedInUser.hash;
-      resave = true;
-    }
-    if (resave) {
-      save();
-    }
-  }
-
-  /// # String _generateStarFileData()
-  /// ## Generates the data for the star file inside the `.star`.
-  /// Inside a `.star` file, there is a single file just called `star` with no extension.
-  /// This file contains the star's data in JSON format.
-  String _generateStarFileData() {
-    return jsonEncode(toJson());
   }
 
   /// # [Star] getMostRecentStar()
@@ -269,7 +296,7 @@ class Star {
     }
     Star mostRecentStar = starmap.getChildren(this)[0];
     for (Star child in starmap.getChildren(this)) {
-      if (child.createdAt!.isAfter(mostRecentStar.createdAt!)) {
+      if (child.createdAt.isAfter(mostRecentStar.createdAt)) {
         mostRecentStar = child;
       }
     }
@@ -339,49 +366,6 @@ class Star {
     File(constellation.getStarPath(hash)).deleteSync();
   }
 
-  /// # void fromJson(Map<String, dynamic> json)
-  /// ## Converts the JSON data into a [Star] object.
-  void _fromJson(Map<String, dynamic> json) {
-    name = json["name"];
-    createdAt = DateTime.tryParse(json["createdAt"]);
-    _userHash = json["user"];
-    tags = Set<String>.from(json["tags"] ?? {});
-  }
-
-  /// # Map<String, dynamic> toJson()
-  /// ## Converts the [Star] object into a JSON object.
-  Map<String, dynamic> toJson() => {
-        "name": name,
-        "createdAt": createdAt.toString(),
-        "user": _userHash,
-        "tags": tags.toList(),
-      };
-
-  /// # void save()
-  /// ## Saves the star to disk.
-  /// This is used when modifying tags for a star.
-  void save() {
-    Archive archive = getArchive();
-    ZipFileEncoder archiveEncoder = ZipFileEncoder();
-    archiveEncoder.create(constellation.getStarPath(hash, temp: true));
-    for (ArchiveFile file in archive.files) {
-      if (file.name == "star") {
-        String content = _generateStarFileData();
-        archiveEncoder
-            .addArchiveFile(ArchiveFile('star', content.length, content));
-      } else {
-        archiveEncoder.addArchiveFile(file);
-      }
-      file.closeSync();
-    }
-    archive.clearSync();
-    archiveEncoder.closeSync();
-
-    File(constellation.getStarPath(hash)).deleteSync();
-    File(constellation.getStarPath(hash, temp: true))
-        .renameSync(constellation.getStarPath(hash));
-  }
-
   /// # String toString()
   /// ## Returns the hash of the star.
   @override
@@ -404,15 +388,15 @@ class Star {
     }
     Badge userBadge = user.badge;
     Badge dateBadge = Badge(
-        '📅${createdAt?.year}/${createdAt?.month}/${createdAt?.day}',
+        '📅${createdAt.year}/${createdAt.month}/${createdAt.day}',
         badgeColor: "grey",
         textColor: "white");
     Badge timeBadge = Badge(
-        '🕒${createdAt!.hour % 12 == 0 ? 12 : createdAt!.hour % 12}:${createdAt?.minute.toString().padLeft(2, '0')} ${createdAt!.hour >= 12 ? 'PM' : 'AM'}',
+        '🕒${createdAt.hour % 12 == 0 ? 12 : createdAt.hour % 12}:${createdAt.minute.toString().padLeft(2, '0')} ${createdAt.hour >= 12 ? 'PM' : 'AM'}',
         badgeColor: "grey",
         textColor: "white");
     final displayName =
-        "$name $userBadge$dateBadge$timeBadge${badges.isNotEmpty ? badges.join(" ") : ""}${isCurrent ? "✨" : ""}";
+        "${isSingleChild ? "↪ " : ""}$name $userBadge$dateBadge$timeBadge${badges.isNotEmpty ? badges.join(" ") : ""}${isCurrent ? "✨" : ""}";
     return displayName;
   }
 
@@ -475,29 +459,18 @@ class Star {
   }
 
   bool addTag(String tag) {
-    if (tags.add(tag)) {
-      save();
-      return true;
-    } else {
-      return false;
-    }
+    return file.addTag(tag);
   }
 
   bool removeTag(String tag) {
-    if (tags.remove(tag)) {
-      save();
-      return true;
-    } else {
-      return false;
-    }
+    return file.removeTag(tag);
   }
 
   bool hasTag(String tag) {
-    return tags.contains(tag);
+    return file.hasTag(tag);
   }
 
   void clearTags() {
-    tags.clear();
-    save();
+    file.clearTags();
   }
 }
