@@ -14,6 +14,8 @@ import 'package:arceus/version_control/users.dart';
 /// # class Constellation
 /// ## Represents a constellation.
 class Constellation {
+  static int get numberOfBackups => 2;
+
   /// # String name
   /// ## The name of the constellation.
   String name = "";
@@ -22,10 +24,10 @@ class Constellation {
   /// ## The path to the folder the constellation is in (not the .constellation folder).
   late String path;
 
-  /// # [Starmap]? starmap
+  /// # [Starmap] starmap
   /// ## The starmap of the constellation.
   /// No extra action is needed to load the starmap, as it is automatically loaded when the constellation is loaded.
-  Starmap? starmap;
+  late Starmap starmap;
 
   /// # [UserIndex] get userIndex
   /// ## The user index of the constellation.
@@ -64,11 +66,8 @@ class Constellation {
   User get loggedInUser {
     if (_loggedInUserHash != null) {
       return userIndex.getUser(_loggedInUserHash!);
-    } else if (starmap!.currentStar != null) {
-      return starmap!.currentStar!.user;
-    } else {
-      return userIndex.getHostUser();
     }
+    return starmap.currentStar.user;
   }
 
   set loggedInUser(User user) {
@@ -100,8 +99,8 @@ class Constellation {
       if (name == null) {
         return;
       }
-      if (starmap?._currentStarHash == null) {
-        starmap?._currentStarHash = starmap?._rootHash;
+      if (starmap._currentStarHash == null) {
+        starmap._currentStarHash = starmap._rootHash;
         save();
       }
       if (!Arceus.doesConstellationExist(name: this.name)) {
@@ -138,9 +137,9 @@ class Constellation {
   /// Called when the constellation is created.a
   /// Does not need to be called manually.
   void _createRootStar() {
-    starmap?.root =
+    starmap.root =
         Star(this, name: "Initial Star", user: userIndex.getHostUser());
-    starmap?.currentStar = starmap?.root;
+    starmap.currentStar = starmap.root;
     save();
   }
 
@@ -189,9 +188,14 @@ class Constellation {
   /// This includes the root star and the current star hashes.
   void _load() {
     File file = File("$constellationPath/starmap");
-
     if (file.existsSync()) {
-      _fromJson(jsonDecode(file.readAsStringSync()));
+      try {
+        _fromJson(jsonDecode(file.readAsStringSync()));
+      } catch (e) {
+        throw Exception("Failed to load constellation $name: $e");
+      }
+    } else {
+      throw Exception("Constellation at $path does not exist.");
     }
   }
 
@@ -214,7 +218,7 @@ class Constellation {
   Map<String, dynamic> toJson() => {
         "name": name,
         "loggedInUser": loggedInUser.hash,
-        "map": starmap?.toJson()
+        "map": starmap.toJson()
       };
 
   // ============================================================================
@@ -229,11 +233,18 @@ class Constellation {
         return null;
       }
     }
-    return starmap?.currentStar?.createChild(name, force: force, user: user);
+    return starmap.currentStar.createChild(name, force: force, user: user);
   }
 
   String getAutoStarName() {
-    return "Auto Star";
+    final autoName = "Auto Star";
+    final prevStar = starmap.currentStar;
+    if (prevStar.name.startsWith("Auto Star")) {
+      int i =
+          int.tryParse(prevStar.name.replaceFirst(autoName, "").trim()) ?? 1;
+      return "$autoName ${i + 1}";
+    }
+    return autoName;
   }
 
   /// # void delete()
@@ -242,20 +253,19 @@ class Constellation {
   void delete() {
     Arceus.removeConstellation(path: path);
     constellationDirectory.deleteSync(recursive: true);
-    starmap = null;
   }
 
   /// # void trim()
   /// ## Trims the given or current star and all of its children out of the tree.
   void trim([Star? star]) {
-    starmap?.trim(star);
+    starmap.trim(star);
   }
 
   /// # void resyncToCurrentStar()
   /// ## Restores the files from current star.
   /// This WILL discard any changes in files, so make sure you grown the constellation before calling this.
   void resyncToCurrentStar() {
-    starmap?.currentStar?.recover();
+    starmap.currentStar.recover();
   }
 
   /// # void clear()
@@ -283,7 +293,7 @@ class Constellation {
   /// If silent is true (default), will not print any output.
   /// If silent is false, will print the differences to the console.
   bool checkForDifferences([bool silent = true]) {
-    Star star = Star(this, hash: starmap?._currentStarHash);
+    Star star = Star(this, hash: starmap._currentStarHash);
     return Dossier(star).checkForDifferences(silent);
   }
 
@@ -291,15 +301,19 @@ class Constellation {
   /// ## Checks if the constellation exists at the given path.
   /// Returns true if the constellation exists, false otherwise.
   static bool exists(String path) {
-    return Directory("$path/.constellation").existsSync();
+    if (Directory("$path/.constellation").existsSync() &&
+        File("$path/.constellation/starmap").existsSync()) {
+      return true;
+    }
+    return false;
   }
 
   void printSumOfCurStar() {
     if (summaryFile == null) {
       return;
     }
-    Plasma plasma = starmap!.currentStar!.getPlasma(summaryFile!);
-    plasma.printSummary();
+    Plasma plasma = starmap.currentStar.getPlasma(summaryFile!);
+    print(TreeWidget(plasma.readWithAddon()!.data));
   }
 }
 
@@ -316,16 +330,26 @@ class Starmap {
 
   /// # String? _rootHash
   /// ## The hash of the root star.
-  String? _rootHash;
-  Star? get root => Star(constellation,
-      hash: _rootHash!); // Fetches the root star as a Star object.
-  set root(Star? value) => _rootHash =
-      value?.hash; // Sets the root star hash with the given Star object.
+  late String _rootHash;
+  Star get root => Star(constellation,
+      hash: _rootHash); // Fetches the root star as a Star object.
+  set root(Star value) => _rootHash =
+      value.hash; // Sets the root star hash with the given Star object.
 
   /// # String? _currentStarHash
   /// ## The hash of the current star.
   String? _currentStarHash;
-  Star? get currentStar => Star(constellation, hash: _currentStarHash!);
+  Star get currentStar {
+    if (_currentStarHash == null) {
+      return root;
+    } else if (!constellation.doesStarExist(_currentStarHash!)) {
+      return root;
+    } else {
+      return Star(constellation,
+          hash: _currentStarHash); // Fetches the current star as a Star object.
+    }
+  }
+
   set currentStar(Star? value) => _currentStarHash = value?.hash;
 
   Starmap(this.constellation, {Map<dynamic, dynamic>? map}) {
@@ -360,7 +384,7 @@ class Starmap {
     if (userEndings.isNotEmpty) {
       endings = userEndings.toList();
     } else if (forceUser) {
-      return currentStar!;
+      return currentStar;
     }
     Star mostRecentStar = endings.first;
 
@@ -391,7 +415,7 @@ class Starmap {
   operator [](Object hash) {
     if (hash is String) {
       List<String> commands = hash.split(",");
-      Star current = currentStar!;
+      Star current = currentStar;
       for (String command in commands) {
         command = command.trim(); // Remove any whitespace.
         if (command == "recent") {
@@ -399,7 +423,7 @@ class Starmap {
           current = getMostRecentStar();
         } else if (command == "root") {
           // Jump to root star.
-          current = root!;
+          current = root;
         } else if (command.startsWith("forward")) {
           // Jump forward by X stars.
           final x = command.replaceFirst("forward", "");
@@ -520,7 +544,7 @@ class Starmap {
   /// ## Prints the constellation's stars.
   /// This is a tree view of the constellation's stars and their children.
   void printMap() {
-    print(TreeWidget(_getTree(root!, {})));
+    print(TreeWidget(_getTree(root, {})));
   }
 
   /// # Map<String, dynamic> _getTree([Star] star, Map<String, dynamic> tree, {bool branch = false})
@@ -547,7 +571,7 @@ class Starmap {
   /// ## Trims the given star and all of its children.
   /// This will not discard any changes in files, BUT will destroy previous changes in files.
   void trim([Star? star]) {
-    star ??= currentStar!; // If no star is given, use the current star.
+    star ??= currentStar; // If no star is given, use the current star.
     if (star.isRoot) {
       print("Cannot trim the root star!");
       return;
@@ -579,7 +603,7 @@ class Starmap {
   /// # List<[Star]> getStarsAtDepth(int depth)
   /// ## Returns a list of all stars at the given depth.
   List<Star> getStarsAtDepth(int depth) {
-    List<Star> stars = [root!];
+    List<Star> stars = [root];
     while (depth > 0) {
       List<Star> newStars = [];
       for (Star star in stars) {
@@ -599,7 +623,7 @@ class Starmap {
   /// An ending star is a star that has no children.
   List<Star> getEndings() {
     List<Star> endings = [];
-    List<Star> stars = [root!];
+    List<Star> stars = [root];
     while (stars.isNotEmpty) {
       List<Star> newStars = [];
       for (Star star in stars) {

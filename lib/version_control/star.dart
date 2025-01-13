@@ -18,7 +18,7 @@ class Star {
 
   /// # [Starmap] get starmap
   /// ## Returns the starmap of the constellation.
-  Starmap get starmap => constellation.starmap!;
+  Starmap get starmap => constellation.starmap;
 
   /// # String? name
   /// ## The name of the star.
@@ -83,11 +83,11 @@ class Star {
 
   /// # bool isCurrent
   /// ## Is this star the current star?
-  bool get isCurrent => this == constellation.starmap?.currentStar;
+  bool get isCurrent => this == constellation.starmap.currentStar;
 
   /// # bool isRoot
   /// ## Is this star the root star?
-  bool get isRoot => this == constellation.starmap?.root;
+  bool get isRoot => this == constellation.starmap.root;
 
   /// # bool isSingleChild
   /// ## Is this star a single child?
@@ -109,7 +109,7 @@ class Star {
     if (hash != null) {
       this.hash = hash;
     }
-    constellation.starmap?.initEntry(hash ?? "");
+    constellation.starmap.initEntry(hash ?? "");
     if (name != null) {
       if (user != null) {
         _userHash = user.hash;
@@ -161,7 +161,7 @@ class Star {
       return this;
     }
     Star star = Star(constellation, name: name, user: user ?? this.user);
-    constellation.starmap?.addRelationship(this, star);
+    constellation.starmap.addRelationship(this, star);
     star.makeCurrent(save: false);
     constellation.save();
     return star;
@@ -181,16 +181,16 @@ class Star {
   /// # void _extract()
   /// ## Extracts the star from the archive.
   /// This is used when jumping to an existing star.
-  void _extract() {
+  Future<void> _extract() async {
     Archive archive = getArchive();
     constellation.clear();
     for (ArchiveFile file in archive.files) {
       if (file.isFile && file.name != "star") {
         final x = File("${constellation.path}/${file.name}");
         if (!x.existsSync()) {
-          x.createSync(recursive: true);
+          await x.create(recursive: true);
         }
-        x.writeAsBytesSync(file.content);
+        await x.writeAsBytes(file.content);
       }
     }
     archive.clearSync();
@@ -199,16 +199,16 @@ class Star {
   /// # void recover()
   /// ## Extracts everything from the star, without interacting with the constellation and its starmap.
   /// Used for recovering data from corrupted constellation.
-  void recover() {
-    _extract();
+  Future<void> recover() async {
+    await _extract();
   }
 
   /// # void makeCurrent()
   /// ## Makes the star the current star in the constellation.
   /// It also saves the constellation.
-  void makeCurrent({bool save = true, bool login = true}) {
-    _extract();
-    constellation.starmap!.currentStar = this;
+  Future<void> makeCurrent({bool save = true, bool login = true}) async {
+    await _extract();
+    constellation.starmap.currentStar = this;
     if (login) constellation.loggedInUser = user;
     if (save) constellation.save();
   }
@@ -408,11 +408,11 @@ class Star {
         badgeColor: "grey",
         textColor: "white");
     Badge timeBadge = Badge(
-        '🕒${createdAt!.hour % 12 == 0 ? 12 : createdAt!.hour % 12}:${createdAt?.minute} ${createdAt!.hour >= 12 ? 'PM' : 'AM'}',
+        '🕒${createdAt!.hour % 12 == 0 ? 12 : createdAt!.hour % 12}:${createdAt?.minute.toString().padLeft(2, '0')} ${createdAt!.hour >= 12 ? 'PM' : 'AM'}',
         badgeColor: "grey",
         textColor: "white");
     final displayName =
-        "$name $userBadge  $dateBadge $timeBadge  ${badges.isNotEmpty ? badges.join(" ") : ""} ${isCurrent ? "✨" : ""}";
+        "$name $userBadge$dateBadge$timeBadge${badges.isNotEmpty ? badges.join(" ") : ""}${isCurrent ? "✨" : ""}";
     return displayName;
   }
 

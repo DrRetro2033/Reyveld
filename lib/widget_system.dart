@@ -104,13 +104,7 @@ class Badge {
 
 class TreeWidget {
   final Map<dynamic, dynamic> data;
-  final String pipeColor;
-  final int padding;
-  TreeWidget(
-    this.data, {
-    this.pipeColor = "blueviolet",
-    this.padding = 2,
-  });
+  TreeWidget(this.data);
 
   @override
   String toString() {
@@ -137,7 +131,11 @@ abstract class Level {
   StringBuffer build();
 
   @override
-  String toString() => build().toString();
+  String toString() {
+    final tree = build().toString().split('\n');
+    tree.removeWhere((x) => x.replaceAll(' ', "").isEmpty);
+    return tree.join('\n');
+  }
 }
 
 class MapLevel extends Level {

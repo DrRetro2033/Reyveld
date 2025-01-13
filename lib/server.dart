@@ -210,7 +210,7 @@ class StarmapCommand extends ServerCommand {
       talker.error('Error: Constellation does not exist at path! "$constPath"');
       return;
     }
-    final result = Constellation(path: constPath).starmap!.toJson();
+    final result = Constellation(path: constPath).starmap.toJson();
     response
       ..statusCode = HttpStatus.ok
       ..write(jsonEncode({"path": constPath.getFilename(), "result": result}));

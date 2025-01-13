@@ -117,9 +117,9 @@ abstract class ConstellationArceusCommand extends ArceusCommand {
 
   @override
   dynamic run() {
-    if (constellation.starmap == null) {
+    if (!Constellation.exists(Arceus.currentPath)) {
       print(
-          "No starmap found! The constellation might be corrupted. Try running 'recover' to fix the problem.");
+          "No constellation found! The constellation might be corrupted. Try running 'recover' to fix the problem.");
     } else {
       return _run();
     }
@@ -211,7 +211,7 @@ The current star is marked with ✨
   @override
   void _run() {
     print("Currently signed in as ${constellation.loggedInUser.name.italic}.");
-    constellation.starmap?.printMap();
+    constellation.starmap.printMap();
     constellation.printSumOfCurStar();
   }
 }
@@ -390,11 +390,11 @@ You can also chain multiple commands together by adding a comma between each.
     String hash = getRest();
 
     try {
-      final star = constellation.starmap?[hash] as Star;
+      final star = constellation.starmap[hash] as Star;
       star.makeCurrent();
       spinner.success(" Jumped to \"${star.name}\".");
       if (argResults!["print"]) {
-        constellation.starmap?.printMap();
+        constellation.starmap.printMap();
       }
     } catch (e) {
       spinner.fail(" Star with the hash of \"$hash\" not found.");
@@ -591,7 +591,7 @@ class LoginUserCommand extends ConstellationArceusCommand {
     print("Logged in as ${constellation.loggedInUser.name.italic}.");
     if (!argResults!["stay"]) {
       constellation.starmap
-          ?.getMostRecentStar(forceUser: true)
+          .getMostRecentStar(forceUser: true)
           .makeCurrent(login: false);
     }
   }
@@ -957,7 +957,7 @@ class TagAddCommand extends ConstellationArceusCommand {
     }
     final spinner =
         CliSpin(text: "Adding tag...", spinner: CliSpinners.moon).start();
-    final success = constellation.starmap!.currentStar!.addTag(getRest());
+    final success = constellation.starmap.currentStar.addTag(getRest());
     if (success) {
       spinner.success("Tag added successfully.");
     } else {
@@ -977,7 +977,7 @@ class TagRemoveCommand extends ConstellationArceusCommand {
   void _run() {
     String tag = getRest();
     if (tag.isEmpty) {
-      final tags = constellation.starmap!.currentStar!.tags;
+      final tags = constellation.starmap.currentStar.tags;
       final selected = Select(
         prompt: " Select a tag to remove.",
         options: [...tags, "Cancel"],
@@ -989,7 +989,7 @@ class TagRemoveCommand extends ConstellationArceusCommand {
     }
     final spinner =
         CliSpin(text: "Removing tag...", spinner: CliSpinners.moon).start();
-    if (constellation.starmap!.currentStar!.removeTag(tag)) {
+    if (constellation.starmap.currentStar.removeTag(tag)) {
       spinner.success("Tag removed successfully.");
     } else {
       spinner.fail("Tag not found.");
@@ -1006,11 +1006,11 @@ class TagListCommand extends ConstellationArceusCommand {
 
   @override
   void _run() {
-    if (constellation.starmap!.currentStar!.tags.isEmpty) {
-      print("No tags found for ${constellation.starmap!.currentStar!.name}.");
+    if (constellation.starmap.currentStar.tags.isEmpty) {
+      print("No tags found for ${constellation.starmap.currentStar.name}.");
     }
-    print("Tags for ${constellation.starmap!.currentStar!.name}:");
-    for (String tag in constellation.starmap!.currentStar!.tags) {
+    print("Tags for ${constellation.starmap.currentStar.name}:");
+    for (String tag in constellation.starmap.currentStar.tags) {
       print(Badge(tag));
     }
   }

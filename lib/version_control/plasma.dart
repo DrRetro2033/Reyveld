@@ -7,9 +7,7 @@ import 'package:arceus/scripting/addon.dart';
 import 'package:arceus/scripting/feature_sets/patterns.dart';
 import 'package:arceus/version_control/constellation.dart';
 import 'package:arceus/version_control/star.dart';
-import 'package:arceus/widget_system.dart';
 import 'package:archive/archive_io.dart';
-import 'package:yaml/yaml.dart';
 
 /// # `enum` `Origin`
 /// ## The origin of a `Plasma` object.
@@ -94,13 +92,6 @@ class Plasma {
     }
   }
 
-  void printSummary() {
-    Addon addon = Addon.getAddonsByFeatureSet(FeatureSets.pattern).firstWhere(
-        (e) => (e.getMetadata()["associated-files"] as YamlList)
-            .contains(getExtension()));
-    print(TreeWidget((addon.context as PatternAddonContext).read(this).data));
-  }
-
   /// # `bool` isTracked()
   /// ## Returns `true` if the plasma is tracked in a constellation, `false` otherwise.
   bool isTracked() {
@@ -163,7 +154,7 @@ class Plasma {
       if (isTracked()) {
         Constellation x = Arceus.getConstellationFromPath(file!.path)!;
         print(file!.path.fixPath().replaceFirst("${x.path}/", ""));
-        return x.starmap?.currentStar!
+        return x.starmap.currentStar
             .getPlasma(file!.path.fixPath().replaceFirst("${x.path}/", ""));
       }
     }
