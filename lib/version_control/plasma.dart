@@ -139,6 +139,10 @@ class Plasma {
     return differences;
   }
 
+  /// # `bool` checkForDifferences(Plasma other)
+  /// ## Compares the current plasma to another plasma.
+  /// Returns `true` if there are differences in the data between the two plasmas, `false` otherwise.
+  /// Does not check if path is the same.
   bool checkForDifferences(Plasma other) => getDifferences(other).hasChanges();
 
   /// # `Plasma?` findOlderVersion()

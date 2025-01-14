@@ -1,8 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
-
+import 'package:arceus/updater.dart';
 import 'package:arceus/widget_system.dart';
-
 import 'package:arceus/uuid.dart';
 import 'package:arceus/arceus.dart';
 import 'package:arceus/extensions.dart';
@@ -10,6 +9,7 @@ import 'package:arceus/version_control/star.dart';
 import 'package:arceus/version_control/plasma.dart';
 import 'package:arceus/version_control/dossier.dart';
 import 'package:arceus/version_control/users.dart';
+import 'package:archive/archive_io.dart';
 
 /// # class Constellation
 /// ## Represents a constellation.
@@ -119,7 +119,7 @@ class Constellation {
   /// ## Creates the directory the constellation stores its data in.
   /// On Linux and MacOS, no extra action is needed to hide the folder.
   /// On Windows however, an attribute needs to be set to hide the folder.
-  void _createConstellationDirectory(String path) {
+  static void _createConstellationDirectory(String path) {
     String constellationPath = "$path/.constellation";
     Directory constellationDirectory = Directory(constellationPath);
     constellationDirectory.createSync();
@@ -327,6 +327,42 @@ class Constellation {
     final starfiles = files.map((e) => StarFile(e.path)).toList();
     return starfiles;
   }
+
+  ConstellationPackage package() {
+    save();
+    return ConstellationPackage.compress(this);
+  }
+
+  /// # static Constellation unpackage(ConstellationPackage package, String toPath)
+  /// ## Unpackages the given constellation package to the given path.
+  /// If a constellation already exists at the given path, then a merge will be performed.
+  /// If the roots of both constellations are different, then an error will be thrown.
+  static Constellation unpackage(ConstellationPackage package, String toPath) {
+    String path = toPath;
+    bool constExists = false;
+    if (Constellation.exists(toPath)) {
+      path = Arceus.getTempFolder();
+      constExists = true;
+    }
+    Constellation._createConstellationDirectory(path);
+    package.unpack(path);
+    final constellationNew = Constellation(path: path);
+    if (constExists) {
+      final constellationOld = Constellation(path: toPath);
+      constellationOld.merge(constellationNew, deleteOther: false);
+      return constellationOld;
+    }
+    constellationNew.resyncToCurrentStar();
+    return constellationNew;
+  }
+
+  void merge(Constellation other, {bool deleteOther = false}) {
+    starmap.merge(other.starmap);
+    if (deleteOther) {
+      other.delete();
+    }
+    save();
+  }
 }
 
 /// # class Starmap
@@ -336,9 +372,6 @@ class Constellation {
 class Starmap {
   Constellation constellation;
 
-  // Maps for storing children and parents.
-  final Map<String, List<String>> _childMap =
-      {}; // Format: {parent: [children]}
   final Map<String, String> _parentMap = {}; // Format: {child: parent}
 
   /// # late String _rootHash
@@ -365,16 +398,6 @@ class Starmap {
     if (map != null) {
       fromJson(map);
     }
-  }
-
-  /// # void initEntry(String hash)
-  /// ## Initializes the entry in the child map for the given hash.
-  /// Called by Star when a new star is created.
-  void initEntry(String hash) {
-    if (_childMap[hash] != null) {
-      return;
-    }
-    _childMap[hash] = [];
   }
 
   /// # [Star] getMostRecentStar()
@@ -482,11 +505,9 @@ class Starmap {
   /// ## Returns a JSON map of the starmap.
   /// This is used when saving the starmap to disk.
   Map<dynamic, dynamic> toJson() {
-    _childMap.removeWhere((key, value) => value.isEmpty);
     return {
       "root": _rootHash,
       "current": _currentStarHash,
-      "children": _childMap,
       "parents": _parentMap
     };
   }
@@ -497,10 +518,6 @@ class Starmap {
   void fromJson(Map<dynamic, dynamic> json) {
     _rootHash = json["root"];
     _currentStarHash = json["current"];
-    (json["children"] as Map).forEach((key, value) {
-      final newValue = (value as List).cast<String>();
-      _childMap[key] = newValue;
-    });
     _parentMap.addAll((json["parents"]).cast<String, String>());
   }
 
@@ -527,23 +544,22 @@ class Starmap {
   /// ## Returns a list of all children hashes of the given parent.
   /// The list will be empty if the parent has no children.
   List<String> _getChildrenHashes(String hash) {
-    return _childMap[hash] ?? [];
+    return _parentMap.entries
+        .where((e) => e.value == hash)
+        .map((e) => e.key)
+        .toList();
   }
 
   /// # void addRelationship([Star] parent, [Star] child)
   /// ## Adds the given child to the given parent.
   /// Throws an exception if the child already has a parent.
-  void addRelationship(Star parent, Star child) {
+  void addRelationship(Star parent, Star child, {bool save = true}) {
     if (_parentMap[child.hash] != null) {
       throw Exception("Star already has a parent.");
     }
 
-    if (_childMap[parent.hash] == null) {
-      _childMap[parent.hash] = [];
-    }
-    _childMap[parent.hash]?.add(child.hash);
     _parentMap[child.hash] = parent.hash;
-    constellation.save();
+    if (save) constellation.save();
   }
 
   /// # void printMap()
@@ -598,24 +614,19 @@ class Starmap {
   }
 
   void _removeFromTree(Star star) {
-    _childMap[star.parent.hash]
-        ?.remove(star.hash); // Remove the star from the parent's children.
     _parentMap.remove(star.hash); // Remove the star from the parent map.
-    if (_childMap.containsKey(star.hash)) {
-      _childMap.remove(star.hash);
-    }
   }
 
   /// # List<[Star]> getStarsAtDepth(int depth)
   /// ## Returns a list of all stars at the given depth.
-  List<Star> getStarsAtDepth(int depth) {
+  List<Star> getStarsAtDepth(int depth, {bool allowEmpty = false}) {
     List<Star> stars = [root];
     while (depth > 0) {
       List<Star> newStars = [];
       for (Star star in stars) {
         newStars.addAll(star.children);
       }
-      if (newStars.isEmpty) {
+      if (newStars.isEmpty && !allowEmpty) {
         break;
       }
       stars = newStars;
@@ -652,5 +663,109 @@ class Starmap {
     stars.removeWhere(
         (element) => element == star || element.isAncestorOf(star));
     return stars.isNotEmpty;
+  }
+
+  bool existAtDepth(int depth) {
+    return getStarsAtDepth(depth, allowEmpty: true).isNotEmpty;
+  }
+
+  void merge(Starmap other) {
+    if (!other.root.exactlyMatches(root)) {
+      // If the roots are different, throw an error.
+      throw Exception("Cannot merge starmaps with different roots!");
+    }
+
+    int depth = 1;
+    while (other.existAtDepth(depth)) {
+      List<Star> starsToCopy = other.getStarsAtDepth(depth);
+      starsToCopy.removeWhere(
+          (x) => getStarsAtDepth(depth).any((y) => y.exactlyMatches(x)));
+      for (Star star in starsToCopy) {
+        star.copyTo(constellation);
+      }
+      depth++;
+    }
+  }
+}
+
+/// # class ConstellationPackage
+/// ## A class that represents a constellation package.
+/// This clas represents a ".constpack" file.
+/// Can be used to both share save data between users, but also make cloud syncing possible.
+class ConstellationPackage {
+  final String path;
+
+  ConstellationPackage(this.path);
+
+  String get name => _getDetails()["name"];
+
+  String get hostname => _getDetails()["hostname"];
+
+  String get version => _getDetails()["version"];
+
+  DateTime get date => DateTime.parse(_getDetails()["date"]);
+
+  /// # [Archive] getArchive()
+  /// ## Returns the archive of the star.
+  /// ALWAYS, ALWAYS, ALWAYS call [Archive.clearSync] on the archive object after using it.
+  /// If you don't, then trimming a star will not work, and will throw an access error.
+  Archive _getArchive() {
+    final inputStream = InputFileStream(path);
+    final archive = ZipDecoder().decodeBuffer(inputStream);
+    return archive;
+  }
+
+  factory ConstellationPackage.compress(Constellation constellation) {
+    ZipFileEncoder archive = ZipFileEncoder();
+    archive.create("${constellation.path}/${constellation.name}.constpack");
+    Map<dynamic, dynamic> details = {};
+    details["name"] = constellation.name;
+    details["hostname"] = Arceus.userIndex.getHostUser().name;
+    details["version"] = Updater.currentVersion;
+    details["date"] = DateTime.now().toString();
+    final detailsJson = jsonEncode(details);
+    archive.addArchiveFile(
+      ArchiveFile(
+        "pack",
+        detailsJson.length,
+        detailsJson.codeUnits,
+      ),
+    );
+    for (FileSystemEntity entity
+        in Directory(constellation.constellationPath).listSync()) {
+      if (entity is File) {
+        if (!(entity.path.endsWith(".star") ||
+            entity.path.endsWith("starmap"))) {
+          continue;
+        }
+        archive.addFile(entity);
+      }
+    }
+    archive.closeSync();
+    return ConstellationPackage(
+        "${constellation.path}/${constellation.name}.constpack");
+  }
+
+  Map<String, dynamic> _getDetails() {
+    Archive archive = _getArchive();
+    ArchiveFile? file = archive.findFile("pack");
+    String content = utf8.decode(file!.content);
+    archive.clearSync();
+    file.closeSync();
+    return jsonDecode(content);
+  }
+
+  /// # void unpack(String toPath)
+  /// ## Unpacks the constellation package to the given path.
+  /// This is used when importing a constellation package into the a directory.
+  void unpack(String toPath) {
+    Archive archive = _getArchive();
+    for (ArchiveFile file in archive.files) {
+      if (file.isFile && file.name != "pack") {
+        File("$toPath/.constellation/${file.name}")
+            .writeAsBytesSync(file.content);
+      }
+    }
+    archive.clearSync();
   }
 }

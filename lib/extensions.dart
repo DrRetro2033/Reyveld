@@ -77,7 +77,7 @@ extension Compression on String {
   /// The extension will be the same for both internal and external paths.
   String getExtension() {
     String path = fixPath();
-    return path.split(".").last;
+    return path.split(".").sublist(1).join(".");
   }
 }
 

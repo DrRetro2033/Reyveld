@@ -84,7 +84,9 @@ Future<dynamic> main(List<String> arguments) async {
     runner.addCommand(LoginUserCommand());
     runner.addCommand(TagCommands());
     runner.addCommand(EditStarCommand());
+    runner.addCommand(PackageCommand());
   }
+  runner.addCommand(UnpackageCommand());
   runner.addCommand(UsersCommands());
   runner.addCommand(RecoverCommand());
   runner.addCommand(DoesConstellationExistCommand());
@@ -1122,6 +1124,51 @@ class EditStarCommand extends ConstellationArceusCommand {
           star.getDescendants().forEach((element) => element.user = user);
         }
       }
+    }
+  }
+}
+
+class PackageCommand extends ConstellationArceusCommand {
+  @override
+  String get description => "Packages the current constellation.";
+
+  @override
+  String get name => "pack";
+
+  @override
+  void _run() {
+    final spinner =
+        CliSpin(text: "Packaging...", spinner: CliSpinners.moon).start();
+    final package = constellation.package();
+    spinner
+        .success(" Packaged ${constellation.name.italic} at ${package.path}!");
+  }
+}
+
+class UnpackageCommand extends ArceusCommand {
+  @override
+  String get description =>
+      "Unpackages the a .constpack file into a constellation.";
+
+  @override
+  String get name => "unpack";
+
+  @override
+  void run() {
+    if (getRest().isEmpty) {
+      print("Usage: arceus unpack <path>");
+      return;
+    }
+    final spinner =
+        CliSpin(text: "Unpacking...", spinner: CliSpinners.moon).start();
+    try {
+      final constellation = Constellation.unpackage(
+          ConstellationPackage(getRest().fixPath()), Arceus.currentPath);
+      spinner.success(
+          " Unpackaged ${constellation.name.italic} at ${constellation.path}!");
+    } catch (e) {
+      spinner.fail(" Unable to unpack constellation.");
+      rethrow;
     }
   }
 }

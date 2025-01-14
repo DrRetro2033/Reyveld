@@ -170,6 +170,23 @@ class StarFile {
         "$name $userBadge$dateBadge$timeBadge${badges.isNotEmpty ? badges.join(" ") : ""}";
     return displayName;
   }
+
+  /// # [Plasma] toPlasma()
+  /// ## Converts the star file to a [Plasma] object.
+  /// Used for checking to see if star files have the same hash, but different content.
+  Plasma toPlasma() {
+    return Plasma.fromFile(File(path));
+  }
+
+  /// # String copyTo(Constellation constellation)
+  /// ## Copies the star file to the given constellation and returns the new hash of the star.
+  /// Used for unpacking constellation packages.
+  String copyTo(Constellation constellation) {
+    final newHash = constellation.generateUniqueStarHash();
+    final file = File(path);
+    file.copySync(constellation.getStarPath(newHash));
+    return newHash;
+  }
 }
 
 /// # class Star
@@ -282,6 +299,16 @@ class Star {
         name: name,
         userHash: user?.hash ?? Arceus.userIndex.getHostUser().hash);
     return Star(constellation, hash);
+  }
+
+  /// # Star copyTo(Constellation newConstellation)
+  /// ## Copies the star to the given constellation and returns the new star.
+  /// It also adds the star to the new constellation's starmap.
+  Star copyTo(Constellation newConstellation) {
+    final newHash = file.copyTo(newConstellation);
+    final star = Star(newConstellation, newHash);
+    newConstellation.starmap.addRelationship(parent, star, save: false);
+    return star;
   }
 
   /// # String createChild(String name)
@@ -492,5 +519,16 @@ class Star {
 
   void clearTags() {
     file.clearTags();
+  }
+
+  /// # bool exactlyMatches(Star star)
+  /// ## Returns true if the given star is exactly the same as this star.
+  /// Returns false otherwise.
+  /// This is NOT the same as == operator, as that only checks the hash, and not the star file.
+  bool exactlyMatches(Star star) {
+    if (star.hash == hash) {
+      return !file.toPlasma().checkForDifferences(star.file.toPlasma());
+    }
+    return false;
   }
 }
