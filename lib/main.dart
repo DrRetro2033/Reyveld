@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
+import 'package:arceus/cli.dart';
 import 'package:args/command_runner.dart';
 import 'package:chalkdart/chalkstrings.dart';
 import 'package:cli_spin/cli_spin.dart';
@@ -82,6 +83,7 @@ Future<dynamic> main(List<String> arguments) async {
     runner.addCommand(ResyncCommand());
     runner.addCommand(LoginUserCommand());
     runner.addCommand(TagCommands());
+    runner.addCommand(EditStarCommand());
   }
   runner.addCommand(UsersCommands());
   runner.addCommand(RecoverCommand());
@@ -196,7 +198,14 @@ class ShowMapConstellationCommand extends ConstellationArceusCommand {
   String get description => """
 Shows the map of the constellation. 
 
-The current star is marked with ✨
+Legend:
+
+✨ - The current star.
+${Badge("👤User", badgeColor: "aqua")} - The assigned user to a star.
+${Badge("🏷️Tag")} - The assigned tag.
+${Badge("📅1990/1/1", badgeColor: "grey", textColor: "white")} - Date when created.
+${Badge("🕒0:00 AM", badgeColor: "grey", textColor: "white")} - Time when created.
+↪ - A star is the only child of its parent.
 """;
 
   @override
@@ -210,6 +219,9 @@ The current star is marked with ✨
   @override
   void _run() {
     print("Currently signed in as ${constellation.loggedInUser.name.italic}.");
+    print(constellation.checkForDifferences()
+        ? "Changes found.".bold
+        : "No changes found.".bold);
     constellation.starmap.printMap();
     constellation.printSumOfCurStar();
   }
@@ -294,17 +306,13 @@ If you decide to resync back to the current star, call 'resync'.
 
   @override
   Future<void> run() async {
-    final directory = Directory("${Arceus.currentPath}/.constellation");
-    if (!directory.existsSync()) {
+    final starfiles = Constellation.listStarFiles(Arceus.currentPath);
+    if (starfiles == null) {
       print(
-          "No constellation folder found. Please make sure a .constellation folder exists at the given path.");
+          "No constellation folder found! Unfortunately, there is nothing to recover from.");
       return;
     }
-    final files = directory.listSync().cast<FileSystemEntity>();
-    files.removeWhere((e) => !e.path.endsWith(".star"));
-    final stars = files.map((e) => StarFile(e.path)).toList();
-    final options =
-        stars.map((e) => "${e.name} - ${e.createdAt.toString()}").toList();
+    final options = starfiles.map((e) => e.getDisplayName()).toList();
     final selected = Select(
       prompt: " Select a star to recover.",
       options: [...options, "Cancel"],
@@ -312,7 +320,7 @@ If you decide to resync back to the current star, call 'resync'.
     if (selected == options.length) {
       return;
     }
-    final star = stars[selected];
+    final star = starfiles[selected];
     final user = Arceus.userIndex.getUser(star.userHash);
     star.extract(Arceus.currentPath);
     final confirm = Confirm(
@@ -448,7 +456,7 @@ class TrimCommand extends ConstellationArceusCommand {
   String get description => """
 Trims the current star and its descendants off of the starmap.
 
-Trimming will discard all changes to tracked files, but will not destroy previous changes.
+Trimming will not delete the current files.
 Will confirm before proceeding, unless --force is provided.
 """;
   @override
@@ -465,8 +473,7 @@ Will confirm before proceeding, unless --force is provided.
   Future<void> _run() async {
     if (!argResults!["force"]) {
       final confirm = Confirm(
-        prompt:
-            " Are you sure you want to trim off the current star? (Will discard current star and all of its descendants.)",
+        prompt: " Are you sure you want to trim off the current star?",
       ).interact();
       if (!confirm) {
         return;
@@ -481,7 +488,7 @@ class UsersCommands extends ArceusCommand {
   String get description => "Contains commands for users in Arceus.";
 
   @override
-  String get name => "users";
+  String get name => "user";
 
   @override
   String get category => "Global";
@@ -534,7 +541,7 @@ class UsersRenameCommand extends ArceusCommand {
 
     if (argResults?["new-name"] == null) {
       name = Input(
-        prompt: " What would you like to name the user?",
+        prompt: " New name.",
         validator: (p0) => p0.isNotEmpty,
       ).interact();
     }
@@ -935,7 +942,7 @@ class TagCommands extends ArceusCommand {
   String get description => "Commands for working with tags for stars.";
 
   @override
-  String get name => "tags";
+  String get name => "tag";
 
   @override
   String get category => "Constellation";
@@ -957,7 +964,7 @@ class TagAddCommand extends ConstellationArceusCommand {
   @override
   void _run() {
     if (getRest().isEmpty) {
-      print("Please provide a tag to add.");
+      print("Please provide a name for the tag to add.");
     }
     final spinner =
         CliSpin(text: "Adding tag...", spinner: CliSpinners.moon).start();
@@ -1057,6 +1064,64 @@ class GrowAllCommand extends Command {
       spinner.fail(" No changes found.");
     } else {
       spinner.stop();
+    }
+  }
+}
+
+class EditStarCommand extends ConstellationArceusCommand {
+  @override
+  String get description => "Edits the current star.";
+
+  @override
+  String get name => "edit";
+
+  Map<String, Function(Star)> get fields =>
+      {"Name": _editName, "User": _editUser};
+
+  @override
+  void _run() {
+    editor(constellation.starmap.currentStar);
+  }
+
+  void editor(Star star) {
+    while (true) {
+      Cli.clearTerminal();
+      print("Currently editing: ${star.file.getDisplayName()} - ${star.hash}");
+      final selected = Select(
+        prompt: "Select a field to edit.",
+        options: [...fields.keys, "Exit"],
+      ).interact();
+
+      if (selected == fields.keys.length) {
+        return;
+      }
+
+      fields[fields.keys.elementAt(selected)]!(star);
+    }
+  }
+
+  void _editName(Star star) {
+    String name = Input(
+      prompt: "Enter the new name for the star.",
+      validator: (p0) => p0.isNotEmpty,
+    ).interact();
+    star.name = name;
+  }
+
+  void _editUser(Star star) {
+    final user =
+        Arceus.userSelect(prompt: "Select a new user to assign to this star.");
+    if (user != null) {
+      star.user = user;
+      if (star.hasChildren) {
+        final confirm = Confirm(
+          prompt:
+              "This star has descendants, do you want to assign them to the same user?",
+        ).interact();
+        if (confirm) {
+          star.getDescendants().forEach((element) => element.user = user);
+        }
+      }
     }
   }
 }

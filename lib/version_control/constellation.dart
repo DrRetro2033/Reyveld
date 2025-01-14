@@ -243,6 +243,7 @@ class Constellation {
   }
 
   static void deleteStatic(String path) {
+    Arceus.removeConstellation(path: path);
     final dir = Directory("$path/.constellation");
     if (!dir.existsSync()) return;
     dir.deleteSync(recursive: true);
@@ -314,6 +315,17 @@ class Constellation {
     }
     Plasma plasma = starmap.currentStar.getPlasma(summaryFile!);
     print(TreeWidget(plasma.readWithAddon()!.data));
+  }
+
+  static List<StarFile>? listStarFiles(String path) {
+    final directory = Directory("${Arceus.currentPath}/.constellation");
+    if (!directory.existsSync()) {
+      return null;
+    }
+    final files = directory.listSync().cast<FileSystemEntity>();
+    files.removeWhere((e) => !e.path.endsWith(".star"));
+    final starfiles = files.map((e) => StarFile(e.path)).toList();
+    return starfiles;
   }
 }
 

@@ -18,6 +18,9 @@ class StarFile {
   set userHash(String hash) => _saveDetails({"user": hash});
   Set<String> get tags =>
       (getDetails()["tags"] as List<dynamic>).toSet().cast<String>();
+  set tags(Set<String> tags) => _saveDetails({"tags": tags.toList()});
+
+  String get hash => path.getFilename(withExtension: false);
 
   StarFile(this.path);
 
@@ -89,7 +92,7 @@ class StarFile {
     archiveEncoder.closeSync();
 
     File(path).deleteSync();
-    File(tempPath).renameSync(path.getFilename());
+    File(tempPath).renameSync(path);
   }
 
   Map<String, dynamic> getDetails() {
@@ -113,8 +116,8 @@ class StarFile {
 
   bool addTag(String tag) {
     Set<String> newTags = {...tags};
-    if (tags.add(tag)) {
-      _saveDetails({"tags": newTags});
+    if (newTags.add(tag)) {
+      _saveDetails({"tags": newTags.toList()});
       return true;
     } else {
       return false;
@@ -124,7 +127,7 @@ class StarFile {
   bool removeTag(String tag) {
     Set<String> newTags = {...tags};
     if (newTags.remove(tag)) {
-      _saveDetails({"tags": newTags});
+      _saveDetails({"tags": newTags.toList()});
       return true;
     } else {
       return false;
@@ -138,7 +141,34 @@ class StarFile {
   void clearTags() {
     Set<String> newTags = {...tags};
     newTags.clear();
-    _saveDetails({"tags": newTags});
+    _saveDetails({"tags": newTags.toList()});
+  }
+
+  /// # String getDisplayName()
+  /// ## Returns the formatted name of the star file for displaying.
+  /// This is used when printing details about a star file to the terminal.
+  String getDisplayName() {
+    int tagsToDisplay = 2;
+    List<Badge> badges = [];
+    for (String tag in tags) {
+      if (tagsToDisplay == 0) {
+        break;
+      }
+      badges.add(Badge("🏷️$tag"));
+      tagsToDisplay--;
+    }
+    Badge userBadge = Arceus.userIndex.getUser(userHash).badge;
+    Badge dateBadge = Badge(
+        '📅${createdAt.year}/${createdAt.month}/${createdAt.day}',
+        badgeColor: "grey",
+        textColor: "white");
+    Badge timeBadge = Badge(
+        '🕒${createdAt.hour % 12 == 0 ? 12 : createdAt.hour % 12}:${createdAt.minute.toString().padLeft(2, '0')} ${createdAt.hour >= 12 ? 'PM' : 'AM'}',
+        badgeColor: "grey",
+        textColor: "white");
+    final displayName =
+        "$name $userBadge$dateBadge$timeBadge${badges.isNotEmpty ? badges.join(" ") : ""}";
+    return displayName;
   }
 }
 
@@ -164,6 +194,8 @@ class Star {
   /// ## The name of the star.
   String get name => file.name;
 
+  set name(String value) => file.name = value;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -184,7 +216,11 @@ class Star {
   /// ## Returns the user who this star belongs to.
   User get user => constellation.userIndex.getUser(_userHash);
 
+  set user(User value) => file.userHash = value.hash;
+
   Set<String> get tags => file.tags;
+
+  set tags(Set<String> value) => file.tags = value;
 
   /// # [Star]? get parent
   /// ## Returns the parent of this star from the starmap contained in the constellation.
@@ -258,6 +294,7 @@ class Star {
       return this;
     }
     Star star = Star.create(constellation, name, user: user);
+    star.tags = tags;
     constellation.starmap.addRelationship(this, star);
     star.makeCurrent(save: false);
     constellation.save();
@@ -377,26 +414,9 @@ class Star {
   /// The name will end with a ✨ if it's the current star.
   /// It will also show a user badge, and the first two tags attached to the star.
   String getDisplayName() {
-    int tagsToDisplay = 2;
-    List<Badge> badges = [];
-    for (String tag in tags) {
-      if (tagsToDisplay == 0) {
-        break;
-      }
-      badges.add(Badge(tag));
-      tagsToDisplay--;
-    }
-    Badge userBadge = user.badge;
-    Badge dateBadge = Badge(
-        '📅${createdAt.year}/${createdAt.month}/${createdAt.day}',
-        badgeColor: "grey",
-        textColor: "white");
-    Badge timeBadge = Badge(
-        '🕒${createdAt.hour % 12 == 0 ? 12 : createdAt.hour % 12}:${createdAt.minute.toString().padLeft(2, '0')} ${createdAt.hour >= 12 ? 'PM' : 'AM'}',
-        badgeColor: "grey",
-        textColor: "white");
+    String fileName = file.getDisplayName();
     final displayName =
-        "${isSingleChild ? "↪ " : ""}$name $userBadge$dateBadge$timeBadge${badges.isNotEmpty ? badges.join(" ") : ""}${isCurrent ? "✨" : ""}";
+        "${!isRoot && isSingleChild ? "↪ " : ""}$fileName${isCurrent ? "✨" : ""}";
     return displayName;
   }
 
