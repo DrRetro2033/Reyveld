@@ -20,6 +20,21 @@ class StarFile {
       (getDetails()["tags"] as List<dynamic>).toSet().cast<String>();
   set tags(Set<String> tags) => _saveDetails({"tags": tags.toList()});
 
+  /// # DateTime get [lastModified]
+  /// ## Returns the last modified date of the star file.
+  /// If the last modified date is not set in details, it returns the creation date.
+  /// This is always updated when [_saveDetails] is called.
+  DateTime get lastModified {
+    if (!getDetails().containsKey("lastModified")) {
+      return createdAt;
+    } else {
+      return DateTime.parse(getDetails()["lastModified"]);
+    }
+  }
+
+  /// # String get [hash]
+  /// ## Returns the hash of the star file.
+  /// The hash is the filename of the star file without the extension.
   String get hash => path.getFilename(withExtension: false);
 
   StarFile(this.path);
@@ -70,29 +85,35 @@ class StarFile {
     archive.clearSync();
   }
 
+  /// # void _saveDetails(Map<String, dynamic> details)
+  /// ## Saves the details of the star.
+  /// This is used when updating the details of the star to disk.
   void _saveDetails(Map<String, dynamic> details) {
     final content = getDetails();
     content.addAll(details);
 
-    Archive archive = getArchive();
-    ZipFileEncoder archiveEncoder = ZipFileEncoder();
-    final tempPath = "$path.temp";
-    archiveEncoder.create(tempPath);
-    final contentString = jsonEncode(content);
+    content["lastModified"] = DateTime.now().toString(); // update last modified
+    Archive archive = getArchive(); // get archive from star
+    ZipFileEncoder archiveEncoder = ZipFileEncoder(); // create new encoder
+    final tempPath = "$path.temp"; // create temp path for star file.
+    archiveEncoder.create(tempPath); // create new temp archive
+    final contentString = jsonEncode(content); // encode content
+    archiveEncoder.addArchiveFile(ArchiveFile(
+        'star', contentString.length, contentString)); // add star file
     for (ArchiveFile file in archive.files) {
+      // add all other files
       if (file.name == "star") {
-        archiveEncoder.addArchiveFile(
-            ArchiveFile('star', contentString.length, contentString));
+        continue;
       } else {
         archiveEncoder.addArchiveFile(file);
       }
-      file.closeSync();
+      file.closeSync(); // close file
     }
-    archive.clearSync();
-    archiveEncoder.closeSync();
+    archive.clearSync(); // clear archive safely
+    archiveEncoder.closeSync(); // close the encoder
 
-    File(path).deleteSync();
-    File(tempPath).renameSync(path);
+    File(path).deleteSync(); // delete old star file
+    File(tempPath).renameSync(path); // rename temp file to path
   }
 
   Map<String, dynamic> getDetails() {
@@ -171,18 +192,51 @@ class StarFile {
     return displayName;
   }
 
-  /// # [Plasma] toPlasma()
-  /// ## Converts the star file to a [Plasma] object.
+  /// # String getContentChecksum()
+  /// ## Returns the checksum of the content of the star file.
   /// Used for checking to see if star files have the same hash, but different content.
-  Plasma toPlasma() {
-    return Plasma.fromFile(File(path));
+  String getChecksum({bool excludeDetails = true}) {
+    List<int> checksums = [];
+    Archive archive = getArchive();
+    for (ArchiveFile file in archive.files) {
+      if (file.isFile) {
+        if (excludeDetails && file.name == "star") {
+          continue;
+        }
+        checksums.add(file.crc32!);
+      }
+      file.closeSync();
+    }
+    archive.clearSync();
+    final checksum = checksums.map((crc32) => crc32.toRadixString(16)).join();
+    return checksum;
   }
 
   /// # String copyTo(Constellation constellation)
   /// ## Copies the star file to the given constellation and returns the new hash of the star.
   /// Used for unpacking constellation packages.
   String copyTo(Constellation constellation) {
-    final newHash = constellation.generateUniqueStarHash();
+    String newHash =
+        hash; // The hash the star file will have when copied to the constellation.
+    if (constellation.doesStarExist(hash)) {
+      // Does a star already exists with the same hash?
+
+      // Check if the star file has different content. If so, generate a new hash.
+      if (getChecksum() != Star(constellation, hash).file.getChecksum()) {
+        newHash = constellation.generateUniqueStarHash();
+      } else {
+        // If the star files do have the same content, check last date modified.
+        final oldStar = StarFile(constellation.getStarPath(hash));
+
+        if (lastModified.isAfter(oldStar.lastModified)) {
+          // If the new star file is newer, delete the old star file to replace it.
+          File(constellation.getStarPath(hash)).deleteSync();
+        } else {
+          // If the old star file is newer, do not copy new file over.
+          return hash;
+        }
+      }
+    }
     final file = File(path);
     file.copySync(constellation.getStarPath(newHash));
     return newHash;
@@ -527,7 +581,7 @@ class Star {
   /// This is NOT the same as == operator, as that only checks the hash, and not the star file.
   bool exactlyMatches(Star star) {
     if (star.hash == hash) {
-      return !file.toPlasma().checkForDifferences(star.file.toPlasma());
+      return file.getChecksum() == star.file.getChecksum();
     }
     return false;
   }

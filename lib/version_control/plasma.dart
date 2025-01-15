@@ -8,6 +8,7 @@ import 'package:arceus/scripting/feature_sets/patterns.dart';
 import 'package:arceus/version_control/constellation.dart';
 import 'package:arceus/version_control/star.dart';
 import 'package:archive/archive_io.dart';
+import 'package:archive/src/util/crc32.dart';
 
 /// # `enum` `Origin`
 /// ## The origin of a `Plasma` object.
@@ -139,11 +140,18 @@ class Plasma {
     return differences;
   }
 
-  /// # `bool` checkForDifferences(Plasma other)
+  String getChecksum() {
+    return getCrc32(data.buffer.asUint8List()).toRadixString(16);
+  }
+
+  /// # `bool` checkForDifferences(Plasma other, {bool fuzzy = true})
   /// ## Compares the current plasma to another plasma.
   /// Returns `true` if there are differences in the data between the two plasmas, `false` otherwise.
-  /// Does not check if path is the same.
-  bool checkForDifferences(Plasma other) => getDifferences(other).hasChanges();
+  /// Does not check if path is the same. Fuzzy check is enabled by default, which means that it will check if the checksums are the same, and not recurvevely check for differences.
+  bool checkForDifferences(Plasma other, {bool fuzzy = true}) {
+    if (fuzzy) return getChecksum() != other.getChecksum();
+    return getDifferences(other).hasChanges();
+  }
 
   /// # `Plasma?` findOlderVersion()
   /// ## Returns the older version of the plasma if it exists, or `null` if it doesn't.

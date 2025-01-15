@@ -14,8 +14,6 @@ import 'package:archive/archive_io.dart';
 /// # class Constellation
 /// ## Represents a constellation.
 class Constellation {
-  static int get numberOfBackups => 2;
-
   /// # String name
   /// ## The name of the constellation.
   String name = "";
@@ -328,9 +326,9 @@ class Constellation {
     return starfiles;
   }
 
-  ConstellationPackage package() {
+  ConstellationPackage package(String to) {
     save();
-    return ConstellationPackage.compress(this);
+    return ConstellationPackage.compress(this, to);
   }
 
   /// # static Constellation unpackage(ConstellationPackage package, String toPath)
@@ -554,11 +552,7 @@ class Starmap {
   /// ## Adds the given child to the given parent.
   /// Throws an exception if the child already has a parent.
   void addRelationship(Star parent, Star child, {bool save = true}) {
-    if (_parentMap[child.hash] != null) {
-      throw Exception("Star already has a parent.");
-    }
-
-    _parentMap[child.hash] = parent.hash;
+    _parentMap.putIfAbsent(child.hash, () => parent.hash);
     if (save) constellation.save();
   }
 
@@ -678,8 +672,9 @@ class Starmap {
     int depth = 1;
     while (other.existAtDepth(depth)) {
       List<Star> starsToCopy = other.getStarsAtDepth(depth);
-      starsToCopy.removeWhere(
-          (x) => getStarsAtDepth(depth).any((y) => y.exactlyMatches(x)));
+      // Remove the stars that are already in the starmap, and add the new stars.
+      // starsToCopy.removeWhere(
+      //     (x) => getStarsAtDepth(depth).any((y) => y.exactlyMatches(x)));
       for (Star star in starsToCopy) {
         star.copyTo(constellation);
       }
@@ -715,9 +710,19 @@ class ConstellationPackage {
     return archive;
   }
 
-  factory ConstellationPackage.compress(Constellation constellation) {
+  factory ConstellationPackage.compress(
+      Constellation constellation, String output) {
     ZipFileEncoder archive = ZipFileEncoder();
-    archive.create("${constellation.path}/${constellation.name}.constpack");
+    String to = "";
+    if (output.endsWith(".constpack")) {
+      to = output;
+    } else if (Directory(output).existsSync()) {
+      to = "$output/${constellation.name}.constpack";
+    } else {
+      Directory(output).createSync();
+      to = "$output/${constellation.name}.constpack";
+    }
+    archive.create(to);
     Map<dynamic, dynamic> details = {};
     details["name"] = constellation.name;
     details["hostname"] = Arceus.userIndex.getHostUser().name;
@@ -742,8 +747,7 @@ class ConstellationPackage {
       }
     }
     archive.closeSync();
-    return ConstellationPackage(
-        "${constellation.path}/${constellation.name}.constpack");
+    return ConstellationPackage(to);
   }
 
   Map<String, dynamic> _getDetails() {

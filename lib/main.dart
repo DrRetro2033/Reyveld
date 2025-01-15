@@ -39,8 +39,11 @@ Future<dynamic> main(List<String> arguments) async {
       Arceus.skipUpdate(await Updater.getLatestVersion() ?? "");
     }
   }
-  var runner = CommandRunner('arceus', """The ultimate save manager + editor.
-  v${Updater.currentVersion}""");
+  var runner = CommandRunner('arceus', """
+The ultimate save manager and editor.
+
+Current Version:
+v${Updater.currentVersion}""");
   runner.argParser.addOption(
     "path",
     abbr: "p",
@@ -61,7 +64,7 @@ Future<dynamic> main(List<String> arguments) async {
         arguments[arguments.indexWhere((e) => e == "--const" || e == "-c") + 1];
     if (!Arceus.doesConstellationExist(name: constellationName)) {
       throw Exception(
-          "Constellation with the name of $constellationName does not exist");
+          "Constellation with the name of ${constellationName.italic} does not exist");
     }
     Arceus.currentPath = Arceus.getConstellationPath(constellationName)!;
   }
@@ -78,15 +81,15 @@ Future<dynamic> main(List<String> arguments) async {
     runner.addCommand(ConstellationJumpToCommand());
     runner.addCommand(ConstellationGrowCommand());
     runner.addCommand(ConstellationDeleteCommand());
-    runner.addCommand(StartServerCommand());
     runner.addCommand(TrimCommand());
     runner.addCommand(ResyncCommand());
     runner.addCommand(LoginUserCommand());
     runner.addCommand(TagCommands());
     runner.addCommand(EditStarCommand());
-    runner.addCommand(PackageCommand());
+    runner.addCommand(OpenFolderInExplorerCommand());
   }
-  runner.addCommand(UnpackageCommand());
+  runner.addCommand(StartServerCommand());
+  runner.addCommand(ShareCommands());
   runner.addCommand(UsersCommands());
   runner.addCommand(RecoverCommand());
   runner.addCommand(DoesConstellationExistCommand());
@@ -158,7 +161,18 @@ class UpdateCommand extends ArceusCommand {
 
 class CreateConstellationCommand extends ArceusCommand {
   @override
-  String get description =>
+  String get description => """
+Creates a new constellation at a given, or current, path.
+
+Usage:
+    arceus [--path <path-to-location>] create <constellation-name>
+
+--const is not available here.
+
+""";
+
+  @override
+  String get summary =>
       "Creates a new constellation at a given, or current, path.";
 
   @override
@@ -198,7 +212,10 @@ class ShowMapConstellationCommand extends ConstellationArceusCommand {
 
   @override
   String get description => """
-Shows the map of the constellation. 
+Shows the map of the constellation.
+
+Usage:
+    arceus [--path <path-to-location>, --const <name-of-const>] map
 
 Legend:
 
@@ -231,13 +248,24 @@ ${Badge("🕒0:00 AM", badgeColor: "grey", textColor: "white")} - Time when crea
 
 class CheckForDifferencesCommand extends ConstellationArceusCommand {
   @override
-  String get description => "Checks for new changes.";
+  String get description => """
+Checks for new changes.
+
+Usage:
+    arceus [--path <path-to-location>, --const <name-of-const>]  check
+""";
+
+  @override
+  String get summary => "Checks for new changes.";
 
   @override
   String get name => "check";
 
   @override
   String get category => "Constellation";
+
+  @override
+  bool get hidden => true;
 
   CheckForDifferencesCommand();
 
@@ -260,8 +288,15 @@ class CheckForDifferencesCommand extends ConstellationArceusCommand {
 
 class ResyncCommand extends ConstellationArceusCommand {
   @override
-  String get description =>
-      "Resyncs files to the current star. WILL DISCARD ANY CHANGES!";
+  String get summary => "Resyncs files to the current star.";
+
+  @override
+  String get description => """
+Resyncs files to the current star.
+
+Usage:
+    arceus [--path <path-to-location>, --const <name-of-const>] resync
+""";
 
   @override
   String get name => "resync";
@@ -288,15 +323,14 @@ class ResyncCommand extends ConstellationArceusCommand {
 class RecoverCommand extends ArceusCommand {
   @override
   String get description => """
-Recover from a star, without interacting with starmap.
+Recover from from a broken constellation.
 
-Files will be out of sync with the starmap, so only use this when the constellation has been corrupted.
-If you decide to resync back to the current star, call 'resync'.
+Usage:
+    arceus [--path <path-to-location>, --const <name-of-const>] recover
 """;
 
   @override
-  String get summary =>
-      "Recover from a star, without interacting with starmap.";
+  String get summary => "Recover from from a broken constellation.";
 
   @override
   String get name => "recover";
@@ -316,7 +350,8 @@ If you decide to resync back to the current star, call 'resync'.
     }
     final options = starfiles.map((e) => e.getDisplayName()).toList();
     final selected = Select(
-      prompt: " Select a star to recover.",
+      prompt:
+          " Select a star to recover from (this will overwrite the current data).",
       options: [...options, "Cancel"],
     ).interact();
     if (selected == options.length) {
@@ -349,6 +384,9 @@ Jump to stars in the constellation.
 
 Give it either a star hash, or use the commands below. Replace X to specify the number of repeats/children/siblings. 
 X defaults to 1 if not provided.
+
+Usage:
+    arceus --path/--const jump [flags] [<commands>] 
 
 Commands:
 - root: Jumps to the root star
@@ -427,7 +465,12 @@ class ConstellationGrowCommand extends ConstellationArceusCommand {
 Grow from the current star to a new star with a given name.
 
 Growing will commit changes from tracked files into a new star in the constellation. Will branch if necessary. 
-This will fail if there no changes to commit, unless '--force' is provided.""";
+This will fail if there no changes to commit, unless '--force' is provided.
+
+Usage:
+    arceus [--path <path-to-location>, --const <name-of-const>] grow <name> [flags]
+
+""";
   @override
   String get name => "grow";
 
@@ -460,6 +503,9 @@ Trims the current star and its descendants off of the starmap.
 
 Trimming will not delete the current files.
 Will confirm before proceeding, unless --force is provided.
+
+Usage:
+  arceus [--path <path-to-location>, --const <name-of-const>] trim [flags]
 """;
   @override
   String get name => "trim";
@@ -504,7 +550,14 @@ class UsersCommands extends ArceusCommand {
 
 class UsersListCommand extends ArceusCommand {
   @override
-  String get description => "Lists the users in the constellation.";
+  String get summary => "Lists the users in Arceus.";
+  @override
+  String get description => """
+Lists the users in Arceus.
+
+Usage:
+    arceus [--path <path-to-location>, --const <name-of-const>] user list
+""";
   @override
   String get name => "list";
 
@@ -516,7 +569,15 @@ class UsersListCommand extends ArceusCommand {
 
 class UsersRenameCommand extends ArceusCommand {
   @override
-  String get description => "Renames a user in the constellation.";
+  String get summary => "Renames a user in Arceus.";
+
+  @override
+  String get description => """
+Renames a user in Arceus.
+
+Usage:
+    arceus [--path <path-to-location>, --const <name-of-const>] user rename <new-name>
+""";
   @override
   String get name => "rename";
 
@@ -554,7 +615,15 @@ class UsersRenameCommand extends ArceusCommand {
 
 class NewUserCommand extends ArceusCommand {
   @override
-  String get description => "Create a new user in Arceus.";
+  String get summary => "Creates a new user in Arceus.";
+
+  @override
+  String get description => """
+Creates a new user in Arceus.
+
+Usage:
+    arceus [--path <path-to-location>, --const <name-of-const>] user new <name>
+""";
 
   @override
   String get name => "new";
@@ -572,7 +641,15 @@ class NewUserCommand extends ArceusCommand {
 
 class LoginUserCommand extends ConstellationArceusCommand {
   @override
-  String get description => "Login as a user in a constellation.";
+  String get summary => "Login as a user in a constellation.";
+
+  @override
+  String get description => """
+Login as a user in a constellation.
+
+Usage:
+    arceus [--path <path-to-location>, --const <name-of-const>] [flags] login 
+""";
 
   @override
   String get name => "login";
@@ -586,7 +663,7 @@ class LoginUserCommand extends ConstellationArceusCommand {
         abbr: "s",
         defaultsTo: false,
         help:
-            "Stay at current star instead of jumping to the most recent star owned by the user.");
+            "Stay at current star, instead of jumping to the most recent star owned by the user.");
   }
 
   @override
@@ -612,7 +689,15 @@ class LoginUserCommand extends ConstellationArceusCommand {
 
 class ConstellationDeleteCommand extends ArceusCommand {
   @override
-  String get description => "Deletes the constellation. Be CAREFUL!";
+  String get summary => "Deletes the constellation.";
+
+  @override
+  String get description => """
+Deletes the constellation.
+
+Usage:
+  arceus constellation [flags] delete 
+""";
 
   @override
   String get name => "delete";
@@ -641,7 +726,14 @@ class ConstellationDeleteCommand extends ArceusCommand {
 
 class AddonCompileCommand extends ArceusCommand {
   @override
-  String get description => "Packages an addon for distribution.";
+  String get summary => "Packages an addon for distribution.";
+  @override
+  String get description => """
+Packages an addon for distribution.
+
+Usage:
+  arceus addon compile [options] [flags] <project-path> 
+""";
   @override
   String get name => "compile";
 
@@ -700,7 +792,14 @@ class AddonCompileCommand extends ArceusCommand {
 
 class InstallPackagedAddonCommand extends ArceusCommand {
   @override
-  String get description => "Installs a packaged addon.";
+  String get summary => "Installs a packaged addon.";
+  @override
+  String get description => """
+Installs a packaged addon.
+
+Usage:
+  arceus addon install [flags] <addon-path> 
+""";
   @override
   String get name => "install";
 
@@ -740,7 +839,15 @@ class InstallPackagedAddonCommand extends ArceusCommand {
 
 class UninstallAddonCommand extends ArceusCommand {
   @override
-  String get description => "Uninstall an addon.";
+  String get summary => "Uninstalls an addon.";
+
+  @override
+  String get description => """
+Uninstalls an addon.
+
+Usage:
+  arceus addon uninstall <addon-name>
+""";
   @override
   String get name => "uninstall";
 
@@ -783,7 +890,15 @@ class UninstallAddonCommand extends ArceusCommand {
 
 class ListAddonsCommand extends ArceusCommand {
   @override
-  String get description => "Lists all installed addons.";
+  String get summary => "Lists all installed addons.";
+
+  @override
+  String get description => """
+Lists all installed addons.
+
+Usage:
+  arceus [--path <path-to-location>, --const <name-of-const>] addon list
+""";
   @override
   String get name => "list";
 
@@ -821,8 +936,11 @@ class ReadFileCommand extends ArceusCommand {
   @override
   String get summary => "Read a file with an associated addon.";
   @override
-  String get description =>
-      "Reads a file with an addon associated with it, so you can see a simplified view of its data.";
+  String get description => """
+Reads a file with an addon associated with it, so you can see a simplified view of its data.
+
+Usage:
+  arceus [--path <path-to-location>, --const <name-of-const>] addon read <filepath>""";
 
   @override
   String get name => "read";
@@ -849,7 +967,15 @@ class ReadFileCommand extends ArceusCommand {
 
 class ArceusConstellationsCommand extends ArceusCommand {
   @override
-  String get description => "Lists all constellations.";
+  String get summary => "Lists all constellations.";
+
+  @override
+  String get description => """
+Lists all constellations.
+
+Usage:
+  arceus [--path <path-to-location>, --const <name-of-const>] consts list""";
+
   @override
   String get name => "consts";
 
@@ -870,7 +996,14 @@ class ArceusConstellationsCommand extends ArceusCommand {
 
 class OpenFileInHexCommand extends ArceusCommand {
   @override
-  String get description => "Opens a file in the Héx Editor.";
+  String get summary => "Opens a file in the Héx Editor.";
+  @override
+  String get description => """
+Opens a file in the Héx Editor.
+
+Usage:
+  arceus [--path <path-to-location>, --const <name-of-const>] hex <filepath>""";
+
   @override
   String get name => "hex";
 
@@ -893,8 +1026,14 @@ class OpenFileInHexCommand extends ArceusCommand {
 
 class DoesConstellationExistCommand extends ArceusCommand {
   @override
-  String get description =>
-      "Checks if a constellation exists at the given path.";
+  String get summary => "Checks if a constellation exists.";
+
+  @override
+  String get description => """
+Checks if a constellation exists.
+
+Usage:
+  arceus [--path <path-to-location>, --const <name-of-const>] exists""";
   @override
   String get name => "exists";
 
@@ -924,7 +1063,14 @@ class DoesConstellationExistCommand extends ArceusCommand {
 
 class StartServerCommand extends ArceusCommand {
   @override
-  String get description => "Starts the Arceus server.";
+  String get summary => "Starts the Arceus server.";
+
+  @override
+  String get description => """
+Starts the Arceus server.
+
+Usage:
+  arceus server""";
 
   @override
   String get name => "server";
@@ -941,7 +1087,15 @@ class StartServerCommand extends ArceusCommand {
 
 class TagCommands extends ArceusCommand {
   @override
-  String get description => "Commands for working with tags for stars.";
+  String get summary => "Commands for working with tags for stars.";
+
+  @override
+  String get description => """
+Commands for working with tags for stars.
+
+Usage:
+  arceus [--path <path-to-location>, --const <name-of-const>] tag [subcommand]
+""";
 
   @override
   String get name => "tag";
@@ -958,7 +1112,14 @@ class TagCommands extends ArceusCommand {
 
 class TagAddCommand extends ConstellationArceusCommand {
   @override
-  String get description => "Adds a tag to the current star.";
+  String get summary => "Adds a tag to the current star.";
+
+  @override
+  String get description => """
+Adds a tag to the current star.
+
+Usage:
+  arceus [--path <path-to-location>, --const <name-of-const>] tag add <tag>""";
 
   @override
   String get name => "add";
@@ -981,7 +1142,14 @@ class TagAddCommand extends ConstellationArceusCommand {
 
 class TagRemoveCommand extends ConstellationArceusCommand {
   @override
-  String get description => "Removes a tag from the current star.";
+  String get summary => "Removes a tag from the current star.";
+
+  @override
+  String get description => """
+Removes a tag from the current star.
+
+Usage:
+  arceus [--path <path-to-location>, --const <name-of-const>] tag remove <tag>""";
 
   @override
   String get name => "remove";
@@ -1012,7 +1180,14 @@ class TagRemoveCommand extends ConstellationArceusCommand {
 
 class TagListCommand extends ConstellationArceusCommand {
   @override
-  String get description => "Lists all tags for the current star.";
+  String get summary => "Lists all tags for the current star.";
+
+  @override
+  String get description => """
+Lists all tags for the current star.
+
+Usage:
+  arceus [--path <path-to-location>, --const <name-of-const>] tag list""";
 
   @override
   String get name => "list";
@@ -1031,7 +1206,14 @@ class TagListCommand extends ConstellationArceusCommand {
 
 class GrowAllCommand extends Command {
   @override
-  String get description => "Grow stars for every constellation.";
+  String get summary => "Grows all stars for every constellation.";
+
+  @override
+  String get description => """
+Grows all stars for every constellation.
+
+Usage:
+  arceus [--path <path-to-location>, --const <name-of-const>] grow-all""";
 
   @override
   String get name => "grow-all";
@@ -1072,10 +1254,20 @@ class GrowAllCommand extends Command {
 
 class EditStarCommand extends ConstellationArceusCommand {
   @override
-  String get description => "Edits the current star.";
+  String get summary => "Edits the current star.";
+
+  @override
+  String get description => """
+Edits the current star.
+
+Usage:
+  arceus [--path <path-to-location>, --const <name-of-const>] edit""";
 
   @override
   String get name => "edit";
+
+  @override
+  String get category => "Constellation";
 
   Map<String, Function(Star)> get fields =>
       {"Name": _editName, "User": _editUser};
@@ -1128,27 +1320,69 @@ class EditStarCommand extends ConstellationArceusCommand {
   }
 }
 
+class ShareCommands extends Command {
+  @override
+  String get summary => "Commands for sharing constellations with others.";
+
+  @override
+  String get description => """
+Commands for sharing constellations with others.
+
+Usage:
+  arceus [--path <path-to-location>, --const <name-of-const>] share [subcommand]""";
+
+  @override
+  String get name => "share";
+
+  @override
+  String get category => "Constellation";
+
+  ShareCommands() {
+    if (Constellation.exists(Arceus.currentPath)) {
+      addSubcommand(PackageCommand());
+    }
+    addSubcommand(UnpackageCommand());
+  }
+}
+
 class PackageCommand extends ConstellationArceusCommand {
   @override
-  String get description => "Packages the current constellation.";
+  String get summary => "Packages the current constellation.";
+
+  @override
+  String get description => """
+Packages the current constellation.
+
+Usage:
+  arceus [--path <path-to-location>, --const <name-of-const>] pack <output-path>""";
 
   @override
   String get name => "pack";
 
   @override
   void _run() {
+    if (getRest().isEmpty) {
+      print("Please provide an output path!");
+    }
     final spinner =
-        CliSpin(text: "Packaging...", spinner: CliSpinners.moon).start();
-    final package = constellation.package();
+        CliSpin(text: " Packaging...", spinner: CliSpinners.moon).start();
+    final package = constellation.package(getRest().fixPath());
     spinner
-        .success(" Packaged ${constellation.name.italic} at ${package.path}!");
+        .success(" Packaged ${constellation.name.italic} to ${package.path}!");
   }
 }
 
 class UnpackageCommand extends ArceusCommand {
   @override
-  String get description =>
-      "Unpackages the a .constpack file into a constellation.";
+  String get summary => "Unpackages a .constpack file.";
+
+  @override
+  String get description => """
+Unpackages a .constpack file into a new constellation or merges into an existing constellation.
+
+Usage:
+  arceus [--path <path-to-location>, --const <name-of-const>] unpack <path-to-constpack-file>
+""";
 
   @override
   String get name => "unpack";
@@ -1156,7 +1390,7 @@ class UnpackageCommand extends ArceusCommand {
   @override
   void run() {
     if (getRest().isEmpty) {
-      print("Usage: arceus unpack <path>");
+      print("Please provide a path to a .constpack file!");
       return;
     }
     final spinner =
@@ -1170,5 +1404,44 @@ class UnpackageCommand extends ArceusCommand {
       spinner.fail(" Unable to unpack constellation.");
       rethrow;
     }
+  }
+}
+
+class OpenFolderInExplorerCommand extends ConstellationArceusCommand {
+  @override
+  String get description => """
+Open the location, or hidden folder, of the current constellation.
+
+Usage: 
+  arceus [--path <path-to-location>, --const <name-of-const>] open <option>
+
+Options:
+  current (default) - Open the tracked folder of the current constellation.
+  hidden - Open the hidden folder, where the constellation data is actually stored.
+""";
+
+  @override
+  String get summary =>
+      "Open the location, or hidden folder, of the current constellation.";
+
+  @override
+  String get name => "open";
+
+  @override
+  String get category => "Constellation";
+
+  @override
+  Future<void> _run() async {
+    String option = getRest().isNotEmpty ? getRest() : "current";
+    String pathToOpen = Arceus.currentPath;
+    switch (option) {
+      case "current":
+        pathToOpen = constellation.path;
+        break;
+      case "hidden":
+        pathToOpen = constellation.constellationPath;
+        break;
+    }
+    await Arceus.openURLInExplorer(pathToOpen);
   }
 }

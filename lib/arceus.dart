@@ -186,6 +186,14 @@ class Arceus {
     }
     return file.readAsStringSync();
   }
+
+  static Future<void> openURLInExplorer(String url) async {
+    if (Platform.isWindows) {
+      await Process.run("start", [url], runInShell: true);
+    } else if (Platform.isLinux) {
+      await Process.run("xdg-open", [url], runInShell: true);
+    }
+  }
 }
 
 /// # `class` ConstellationEntry
