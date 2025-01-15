@@ -91,7 +91,7 @@ Future<void> main(List<String> args) async {
 
     // Step 3: Create a release
     print('Creating release...');
-    String version = Updater.currentVersion;
+    String version = Updater.currentVersion.toString();
     final createReleaseResponse = await http.post(
       Uri.parse('$apiBase/releases'),
       headers: {

@@ -36,7 +36,7 @@ Future<dynamic> main(List<String> arguments) async {
     } else {
       print(
           "If you change your mind, you can update at any time by running 'arceus update'.");
-      Arceus.skipUpdate(await Updater.getLatestVersion() ?? "");
+      Arceus.skipUpdate((await Updater.getLatestVersion()).toString());
     }
   }
   var runner = CommandRunner('arceus', """

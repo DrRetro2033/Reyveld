@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'dart:convert';
+import 'package:archive/archive_io.dart';
 import 'package:http/http.dart' as http;
 import 'package:arceus/arceus.dart';
+import 'package:version/version.dart';
 
 class Updater {
-  static const String currentVersion = "1.0.0-alpha";
+  static Version get currentVersion => Version(0, 0, 1, preRelease: ["alpha"]);
   static const String repoOwner = 'DrRetro2033';
   static const String repoName = 'Arceus';
 
@@ -17,13 +19,13 @@ class Updater {
     if (latestVersion == null) {
       return false;
     }
-    if (skip && latestVersion == Arceus.getSkippedVersion()) {
+    if (skip) {
       return false;
     }
-    return latestVersion != currentVersion;
+    return latestVersion > currentVersion;
   }
 
-  static Future<String?>? getLatestVersion() async {
+  static Future<Version?>? getLatestVersion() async {
     try {
       final response = await http.get(
           Uri.parse('https://api.github.com/repos/$repoOwner/$repoName/tags'));
@@ -32,7 +34,7 @@ class Updater {
         if (latestVersionTags.isEmpty) {
           return null;
         }
-        return latestVersionTags.first['name'];
+        return Version.parse(latestVersionTags.first['name']);
       } else {
         return null;
       }
@@ -54,21 +56,24 @@ class Updater {
   }
 
   static Future<void> update() async {
+    final installPath = Arceus.appDataPath;
     try {
       final apiUrl = Uri.parse(
           'https://github.com/$repoOwner/$repoName/releases/download/v${getLatestVersion()}/${_getZipName()}');
-      final tempDir = Directory.systemTemp.createTempSync();
-      final tempFile = File('${tempDir.path}/$repoName.zip');
       final response = await http.get(apiUrl);
       if (response.statusCode == 200) {
-        await tempFile.writeAsBytes(response.bodyBytes);
-        await Process.run('unzip', ['-o', tempFile.path, '-d', tempDir.path]);
-        await Process.run(
-            'cp', ['-r', '${tempDir.path}/$repoName', Arceus.appDataPath]);
-        await tempDir.delete(recursive: true);
+        Archive archive = ZipDecoder().decodeBytes(response.bodyBytes);
+        for (ArchiveFile file in archive) {
+          if (file.isFile) {
+            final filePath = '$installPath/${file.name}';
+            File(filePath).createSync(recursive: true);
+            File(filePath).writeAsBytesSync(file.content);
+          }
+        }
+        archive.clearSync();
       }
     } catch (e) {
-      return;
+      rethrow;
     }
   }
 }
