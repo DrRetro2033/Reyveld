@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:arceus/arceus.dart';
 
 class Updater {
-  static const String currentVersion = "0.0.1-alpha";
+  static const String currentVersion = "1.0.0-alpha";
   static const String repoOwner = 'DrRetro2033';
   static const String repoName = 'Arceus';
 
