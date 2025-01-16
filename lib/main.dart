@@ -140,21 +140,30 @@ class UpdateCommand extends ArceusCommand {
   @override
   String get name => "update";
 
-  UpdateCommand() {
-    argParser.addFlag("force", abbr: "f", defaultsTo: false);
-  }
+  UpdateCommand();
 
   @override
   void run() async {
+    final spinnerForUpdateCheck =
+        CliSpin(text: " Checking for updates...", spinner: CliSpinners.moon)
+            .start();
     final newUpdate = await Updater().checkForUpdate(skip: false);
-    if (newUpdate || argResults!["force"]) {
-      final spinner =
-          CliSpin(text: "Updating...", spinner: CliSpinners.moon).start();
-      await Updater.update();
-      spinner.success("Update complete!");
-      exit(0);
+    if (newUpdate) {
+      final version = await Updater.getLatestVersion();
+      spinnerForUpdateCheck.success(" A new update is available!");
+      final confirm = Confirm(
+        prompt:
+            " Do you want to update to the latest version? (v${version.toString()})",
+      ).interact();
+      if (confirm) {
+        final spinner =
+            CliSpin(text: " Updating...", spinner: CliSpinners.moon).start();
+        await Updater.update();
+        spinner.success(" Update complete!");
+        exit(0);
+      }
     } else {
-      print("You are up to date!");
+      spinnerForUpdateCheck.success(" You are up to date!");
     }
   }
 }

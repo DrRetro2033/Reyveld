@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:arceus/updater.dart';
 import 'package:arceus/version_control/users.dart';
 import 'package:interact/interact.dart';
 
 import 'package:arceus/extensions.dart';
 import 'package:arceus/version_control/constellation.dart';
+import 'package:version/version.dart';
 
 /// # `class` Arceus
 /// ## A class that represents the Arceus application.
@@ -179,12 +181,12 @@ class Arceus {
     file.writeAsStringSync(version);
   }
 
-  static String getSkippedVersion() {
+  static Version getSkippedVersion() {
     final file = File("$appDataPath/skipupdate");
     if (!file.existsSync()) {
-      return "";
+      return Updater.currentVersion;
     }
-    return file.readAsStringSync();
+    return Version.parse(file.readAsStringSync());
   }
 
   static Future<void> openURLInExplorer(String url) async {
