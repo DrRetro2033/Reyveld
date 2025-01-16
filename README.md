@@ -27,6 +27,10 @@ Arceus allows you to rollback saves to earlier versions, preserving your previou
 
 Multiple people can play the same game, even if it’s not designed for switching between different players. Just create an user profile!
 
+## Share your journey 🗺️
+
+Share your journey with others by packing up your progress into a single file.
+
 ## Go Beyond with Add-Ons 📦
 
 Arceus integrates Squirrel, enabling anyone to add new functionality to Arceus. Add-ons make it easy to read and write to files, integrate game launchers like Steam, and so much more!
@@ -39,10 +43,6 @@ Arceus includes a CLI hex editor you can use to edit saves, view changes, and te
 
 ![alt text](images/image.png)
 
-## Tiny Size 📁
-
-Arceus requires no extra downloads to work, and fits into less than five megabytes!
-
 ## Cross Platform 🖥️📱
 
 Arceus can run on any modern device!
@@ -52,6 +52,10 @@ Arceus can run on any modern device!
 Any developer can use Arceus in their projects, even you! Just remember to give credit if you incorporate it into your project.
 > [!NOTE]
 > If you want an example of what you can do with Arceus, check out my other project [MudkiPC](https://github.com/Pokemon-Manager/MudkiPC).
+
+## With more to come...
+
+Arceus is growing and evolving, so please, feel free to suggest features that you would love to see!
 
 # Want to Try?
 Click the badge below to download the latest artifact.
@@ -71,6 +75,7 @@ Click the badge below to download the latest artifact.
 | Multi-User Support | ✅ | ❌ | ❌ |
 | Save Editing | ✅ | ❌ | ❌ |
 | Addon Support | ✅ | ❌ | ❌ |
+| Sharing | ✅ | ❌ | ❌ |
 | Cloud-Sync | ❌ | ✅ | ✅ |
 | Open-Source | ✅ | ❌ | ✅ | 
 | Integration w/ Steam | ❌ | ✅ | ✅ |
@@ -108,9 +113,9 @@ The main use case for Arceus is for developers wanting to make a save editor. Ar
 
 Easily roll back to any point in your game for testing, provide items for debugging, or intentionally corrupt a save to test edge cases—without writing debug menus! You could even use Arceus as a backend for saving and loading data in any engine.
 
-## For Multiple Players 🫂
+## For Artists 🎨
 
-Even if a game doesn’t support multiple saves, Arceus can make it easy for multiple players to maintain their own saves.
+Arceus is not just useful for gamers, artists can join the fun as well! Simply create a constellation inside a folder, and add the files you would like to track! It's that simple! Arceus will work with anything; [Krita](https://krita.org/en/), [Blender](https://www.blender.org/), [Godot](https://godotengine.org/), etc...
 
 ## For Achievement Hunting 🏆
 
@@ -122,7 +127,7 @@ Arceus makes it easier to practice routes, find exploits, and keep your personal
 
 ## For Mods 🛠️
 
-Keep your modded saves away from your main game saves.
+Keep your modded saves away from your main game saves, and recover from a mod corrupting your save.
 
 ## For Reverse Engineering 📋
 
