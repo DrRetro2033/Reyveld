@@ -7,7 +7,6 @@ Future<void> main(List<String> args) async {
   // Configuration
   const repoOwner = 'DrRetro2033'; // Replace with your GitHub username or org
   const repoName = 'Arceus'; // Replace with your repository name
-
   final apiBase = 'https://api.github.com/repos/$repoOwner/$repoName';
   final token = String.fromEnvironment('GITHUB_TOKEN');
   if (args.isEmpty) {
@@ -101,7 +100,6 @@ Future<void> main(List<String> args) async {
       body: jsonEncode({
         'tag_name': 'v$version',
         'name': 'v$version',
-        'body': File('$pathOfProject/CHANGELOG.md').readAsStringSync(),
         'draft': draft,
         'prerelease': version.contains("alpha"),
       }),

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:arceus/suggester.dart';
 import 'package:arceus/updater.dart';
 import 'package:arceus/version_control/users.dart';
 import 'package:interact/interact.dart';
@@ -146,6 +147,11 @@ class Arceus {
         .entries
         .map((e) => ConstellationEntry(e.key, e.value))
         .toList();
+  }
+
+  static String getClosestConstName(String query) {
+    final suggester = Suggester().addEntries(getConstellationNames());
+    return suggester.suggest(query);
   }
 
   /// # `static` `String` getTempFolder
