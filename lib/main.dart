@@ -76,6 +76,8 @@ v${Updater.currentVersion}""");
   } else {
     Arceus.isInternal = false;
   }
+
+  Arceus.talker.info("Arceus has started successfully.");
   if (!Constellation.exists(Arceus.currentPath)) {
     runner.addCommand(CreateConstellationCommand());
   } else {
@@ -275,9 +277,11 @@ ${Badge("🕒0:00 AM", badgeColor: "grey", textColor: "white")} - Time when crea
   @override
   void _run() {
     print("Currently signed in as ${constellation.loggedInUser.name.italic}.");
-    print(constellation.checkForDifferences()
-        ? "Changes found.".bold
-        : "No changes found.".bold);
+    CliSpin spinner =
+        CliSpin(text: " Loading map...", spinner: CliSpinners.moon);
+    final changes = constellation.checkForDifferences();
+    spinner.stop();
+    print(changes ? "Changes found.".bold : "No changes found.".bold);
     constellation.starmap.printMap();
     constellation.printSumOfCurStar();
   }

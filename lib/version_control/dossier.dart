@@ -27,7 +27,7 @@ class Dossier {
   bool checkForDifferences([bool silent = true]) {
     bool check =
         false; // The main check. If any of the preceding checks fail, this will be true, which means that there is a difference.
-
+    Archive archive = star.file.getArchive();
     // There are four checks that need to be done:
     // 1. Check for new files.
     // 2. Check for removed files.
@@ -39,13 +39,13 @@ class Dossier {
       spinner = CliSpin(text: " Checking for new files...").start();
     }
 
-    List<String> newFiles = listAddedFiles();
+    List<String> newFiles = listAddedFiles(archive);
     if (!silent) spinner!.stop();
     // Check for removed files.
     if (!silent) {
       spinner = CliSpin(text: " Checking for removed files...").start();
     }
-    List<String> removedFiles = listRemovedFiles();
+    List<String> removedFiles = listRemovedFiles(archive);
     if (!silent) spinner!.stop();
 
     // Check for moved files. Done after new and removed files, as they can be used here to make a cross reference.
@@ -101,7 +101,7 @@ class Dossier {
     if (!silent) {
       spinner = CliSpin(text: " Checking for changed files...").start();
     }
-    List<String> changedFiles = listChangedFiles(removedFiles);
+    List<String> changedFiles = listChangedFiles(archive, removedFiles);
     if (changedFiles.isNotEmpty) {
       spinner?.fail(" Changed files found:");
       check = true;
@@ -118,8 +118,7 @@ class Dossier {
 
   /// # `List<String>` listAddedFiles()
   /// ## Lists all files in the current directory that have been recently added.
-  List<String> listAddedFiles() {
-    Archive archive = star.file.getArchive();
+  List<String> listAddedFiles(Archive archive) {
     List<String> newFiles = [];
     for (FileSystemEntity entity
         in star.constellation.directory.listSync(recursive: true)) {
@@ -140,8 +139,7 @@ class Dossier {
 
   /// # `List<String>` listRemovedFiles()
   /// ## Lists all files in the current directory that have been recently removed.
-  List<String> listRemovedFiles() {
-    Archive archive = star.file.getArchive();
+  List<String> listRemovedFiles(Archive archive) {
     List<String> removedFiles = [];
     for (ArchiveFile file in archive.files) {
       if (file.isFile && file.name != "star") {
@@ -175,8 +173,7 @@ class Dossier {
 
   /// # `List<String>` listChangedFiles(`List<String>` removedFiles)
   /// ## Lists all files in the current directory that have been recently changed.
-  List<String> listChangedFiles(List<String> removedFiles) {
-    Archive archive = star.file.getArchive();
+  List<String> listChangedFiles(Archive archive, List<String> removedFiles) {
     List<String> changedFiles = [];
     for (ArchiveFile file in archive.files) {
       if (file.isFile &&

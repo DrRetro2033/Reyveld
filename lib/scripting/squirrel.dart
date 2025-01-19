@@ -96,6 +96,11 @@ class Squirrel {
     return vm;
   }
 
+  /// # `static` String _addExports(String code)
+  /// ## Adds exports to the Squirrel instance.
+  /// It creates an export function for each class that has the `export` attribute, so that it can be passed to Dart for use.
+  /// It also adds an export function to the global scope of the Squirrel instance.
+  /// It returns the code with the exports added.
   static String _addExports(String code) {
     RegExp regExp = RegExp(
         r'class\s(\w*)\s?(?:extends (\w*))?\s?<\s?\/\s?export\s?=\s?\[((?:\s?"?(?:\w+)"?\s?,?)+)\]\s?\/\s?>');
@@ -151,9 +156,10 @@ function $className::export() {
   /// ## Creates the API for the Squirrel instance.
   /// It takes a list of [SquirrelFunction] objects and adds them to the global scope of the Squirrel instance.
   void createAPI(List<SquirrelFunction> apiFunctions) {
-    bindings.sq_pushroottable(_vmpointer);
-    bindings.sq_newtable(_vmpointer);
+    bindings.sq_pushroottable(_vmpointer); // Pushes the root table.
+    bindings.sq_newtable(_vmpointer); // Creates a new table.
     for (SquirrelFunction func in apiFunctions) {
+      // Adds the functions to the table.
       func.setInstance(this);
       bindings.sq_pushstring(_vmpointer, func.name.toCharPointer(), -1);
       bindings.sq_newclosure(
@@ -165,7 +171,8 @@ function $className::export() {
           0);
       bindings.sq_newslot(_vmpointer, -3, SQFalse);
     }
-    bindings.sq_pushstring(_vmpointer, "arceus".toCharPointer(), -1);
+    bindings.sq_pushstring(_vmpointer, "arceus".toCharPointer(),
+        -1); // Adds the table to the global scope.
     bindings.sq_push(_vmpointer, -2);
     bindings.sq_remove(_vmpointer, -3);
     bindings.sq_newslot(_vmpointer, -3, SQFalse);
@@ -192,13 +199,13 @@ function $className::export() {
     List<String> stack = [];
     int i = bindings.sq_gettop(vm);
     while (i > 0) {
-      bindings.sq_tostring(vm, i);
-      final p = ffi.calloc<Pointer<Char>>();
-      bindings.sq_getstring(vm, -1, p);
-      stack.add(p.value.toDartString());
-      ffi.calloc.free(p);
-      bindings.sq_pop(vm, 1);
-      i--;
+      bindings.sq_tostring(vm, i); // convert to string
+      final p = ffi.calloc<Pointer<Char>>(); // create a pointer
+      bindings.sq_getstring(vm, -1, p); // get the string
+      stack.add(p.value.toDartString()); // add to the stack
+      ffi.calloc.free(p); // free memory
+      bindings.sq_pop(vm, 1); // pop
+      i--; // decrement
     }
     return stack;
   }

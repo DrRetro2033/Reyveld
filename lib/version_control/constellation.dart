@@ -10,6 +10,7 @@ import 'package:arceus/version_control/plasma.dart';
 import 'package:arceus/version_control/dossier.dart';
 import 'package:arceus/version_control/users.dart';
 import 'package:archive/archive_io.dart';
+import 'package:cli_spin/cli_spin.dart';
 
 /// # class Constellation
 /// ## Represents a constellation.
@@ -91,8 +92,8 @@ class Constellation {
       // If the constellation already exists, then load
       try {
         _load();
-      } catch (e) {
-        throw Exception("Failed to load constellation at $path: $e");
+      } catch (e, st) {
+        Arceus.talker.error("Failed to load constellation at $path.", e, st);
       }
       // if (name == null) {
       //   return;
@@ -107,9 +108,11 @@ class Constellation {
       _createRootStar(user);
       save();
       Arceus.addConstellation(name, path);
+      Arceus.talker
+          .info("Created a new constellation named '$name' at '$path'.");
     } else {
-      throw Exception(
-          "Constellation not found: $constellationPath. If the constellation does not exist at the provided path, you must provide a name.");
+      Arceus.talker.error("Constellation does not exist at path! $path",
+          Exception("Does not exist"), StackTrace.current);
     }
   }
 
@@ -176,6 +179,7 @@ class Constellation {
     File file = File("$constellationPath/starmap");
     file.createSync();
     file.writeAsStringSync(jsonEncode(toJson()));
+    Arceus.talker.info("Saved constellation '$name'.");
   }
 
   /// # void load()
@@ -186,11 +190,12 @@ class Constellation {
     if (file.existsSync()) {
       try {
         _fromJson(jsonDecode(file.readAsStringSync()));
-      } catch (e) {
-        throw Exception("Failed to load constellation $name: $e");
+      } catch (e, st) {
+        Arceus.talker.error("Failed to load constellation at $path.", e, st);
       }
     } else {
-      throw Exception("Constellation at $path does not exist.");
+      Arceus.talker.error("Constellation does not exist at path! $path",
+          Exception("Does not exist"), StackTrace.current);
     }
   }
 
@@ -245,6 +250,7 @@ class Constellation {
     final dir = Directory("$path/.constellation");
     if (!dir.existsSync()) return;
     dir.deleteSync(recursive: true);
+    Arceus.talker.info("Staticly deleted constellation at '$path'.");
   }
 
   /// # void delete()
@@ -253,6 +259,7 @@ class Constellation {
   void delete() {
     Arceus.removeConstellation(path: path);
     constellationDirectory.deleteSync(recursive: true);
+    Arceus.talker.info("Deleted constellation '$name' at '$path'.");
   }
 
   /// # void trim()
@@ -285,6 +292,7 @@ class Constellation {
   void loginAs(User user) {
     loggedInUser = user;
     save();
+    Arceus.talker.info("Logged in as '${user.name}'.");
   }
 
   /// # bool checkForDifferences()
@@ -328,7 +336,9 @@ class Constellation {
 
   ConstellationPackage package(String to) {
     save();
-    return ConstellationPackage.compress(this, to);
+    final package = ConstellationPackage.compress(this, to);
+    Arceus.talker.info("Packed constellation to '$to'.");
+    return package;
   }
 
   /// # static Constellation unpackage(ConstellationPackage package, String toPath)
@@ -348,7 +358,12 @@ class Constellation {
     if (constExists) {
       final constellationOld = Constellation(path: toPath);
       constellationOld.merge(constellationNew, deleteOther: false);
+      Arceus.talker.info(
+          "Merged packed constellation '${constellationNew.name}' into '${constellationOld.name}'.");
       return constellationOld;
+    } else {
+      Arceus.talker.info(
+          "Extracted packed constellation '${constellationNew.name}' to '${constellationNew.path}'.");
     }
     constellationNew.resyncToCurrentStar();
     return constellationNew;
@@ -560,7 +575,11 @@ class Starmap {
   /// ## Prints the constellation's stars.
   /// This is a tree view of the constellation's stars and their children.
   void printMap() {
-    print(TreeWidget(_getTree(root, {})));
+    final spinner =
+        CliSpin(text: " Generating map...", spinner: CliSpinners.moon).start();
+    final tree = TreeWidget(_getTree(root, {}));
+    spinner.stop();
+    print(tree);
   }
 
   /// # Map<String, dynamic> _getTree([Star] star, Map<String, dynamic> tree, {bool branch = false})
@@ -666,7 +685,8 @@ class Starmap {
   void merge(Starmap other) {
     if (!other.root.exactlyMatches(root)) {
       // If the roots are different, throw an error.
-      throw Exception("Cannot merge starmaps with different roots!");
+      Arceus.talker.error("Cannot merge constellations with different roots.",
+          Exception("Different roots!"), StackTrace.current);
     }
 
     int depth = 1;

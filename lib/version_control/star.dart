@@ -11,13 +11,16 @@ import 'package:arceus/version_control/plasma.dart';
 class StarFile {
   final String path;
 
-  String get name => getDetails()["name"];
+  Map<String, dynamic>? _details;
+  String? _checksum;
+
+  String get name => _getDetails()["name"];
   set name(String name) => _saveDetails({"name": name});
-  DateTime get createdAt => DateTime.parse(getDetails()["createdAt"]);
-  String get userHash => getDetails()["user"];
+  DateTime get createdAt => DateTime.parse(_getDetails()["createdAt"]);
+  String get userHash => _getDetails()["user"];
   set userHash(String hash) => _saveDetails({"user": hash});
   Set<String> get tags =>
-      (getDetails()["tags"] as List<dynamic>).toSet().cast<String>();
+      (_getDetails()["tags"] as List<dynamic>).toSet().cast<String>();
   set tags(Set<String> tags) => _saveDetails({"tags": tags.toList()});
 
   /// # DateTime get [lastModified]
@@ -25,10 +28,10 @@ class StarFile {
   /// If the last modified date is not set in details, it returns the creation date.
   /// This is always updated when [_saveDetails] is called.
   DateTime get lastModified {
-    if (!getDetails().containsKey("lastModified")) {
+    if (!_getDetails().containsKey("lastModified")) {
       return createdAt;
     } else {
-      return DateTime.parse(getDetails()["lastModified"]);
+      return DateTime.parse(_getDetails()["lastModified"]);
     }
   }
 
@@ -65,10 +68,11 @@ class StarFile {
       }
     }
     archive.closeSync();
+    Arceus.talker.info("Created star file '$path'.");
     return StarFile(path);
   }
 
-  /// # void _extract()
+  /// # void extract()
   /// ## Extracts the star from the archive.
   /// This is used when jumping to an existing star.
   void extract(String extractPath) {
@@ -83,13 +87,15 @@ class StarFile {
       }
     }
     archive.clearSync();
+    Arceus.talker
+        .info("Extracted star file '${path.getFilename()}' to '$extractPath'.");
   }
 
   /// # void _saveDetails(Map<String, dynamic> details)
   /// ## Saves the details of the star.
   /// This is used when updating the details of the star to disk.
   void _saveDetails(Map<String, dynamic> details) {
-    final content = getDetails();
+    final content = _getDetails();
     content.addAll(details);
 
     content["lastModified"] = DateTime.now().toString(); // update last modified
@@ -113,16 +119,24 @@ class StarFile {
     archiveEncoder.closeSync(); // close the encoder
 
     File(path).deleteSync(); // delete old star file
-    File(tempPath).renameSync(path); // rename temp file to path
+    File(tempPath).renameSync(path); // rename temp file to path.
+
+    _details = content;
+    _checksum = null;
+
+    Arceus.talker.info("Updated details of star file '${path.getFilename()}'.");
   }
 
-  Map<String, dynamic> getDetails() {
-    Archive archive = getArchive();
-    ArchiveFile? file = archive.findFile("star");
-    String content = utf8.decode(file!.content);
-    archive.clearSync();
-    file.closeSync();
-    return jsonDecode(content);
+  Map<String, dynamic> _getDetails() {
+    if (_details == null) {
+      Archive archive = getArchive();
+      ArchiveFile? file = archive.findFile("star");
+      String content = utf8.decode(file!.content);
+      archive.clearSync();
+      file.closeSync();
+      _details = jsonDecode(content);
+    }
+    return _details!;
   }
 
   /// # [Archive] getArchive()
@@ -132,6 +146,7 @@ class StarFile {
   Archive getArchive() {
     final inputStream = InputFileStream(path);
     final archive = ZipDecoder().decodeBuffer(inputStream);
+    Arceus.talker.info("Got archive of star file '${path.getFilename()}'.");
     return archive;
   }
 
@@ -196,20 +211,22 @@ class StarFile {
   /// ## Returns the checksum of the content of the star file.
   /// Used for checking to see if star files have the same hash, but different content.
   String getChecksum({bool excludeDetails = true}) {
-    List<int> checksums = [];
-    Archive archive = getArchive();
-    for (ArchiveFile file in archive.files) {
-      if (file.isFile) {
-        if (excludeDetails && file.name == "star") {
-          continue;
+    if (_checksum == null) {
+      List<int> checksums = [];
+      Archive archive = getArchive();
+      for (ArchiveFile file in archive.files) {
+        if (file.isFile) {
+          if (excludeDetails && file.name == "star") {
+            continue;
+          }
+          checksums.add(file.crc32!);
         }
-        checksums.add(file.crc32!);
+        file.closeSync();
       }
-      file.closeSync();
+      archive.clearSync();
+      _checksum = checksums.map((crc32) => crc32.toRadixString(16)).join();
     }
-    archive.clearSync();
-    final checksum = checksums.map((crc32) => crc32.toRadixString(16)).join();
-    return checksum;
+    return _checksum!;
   }
 
   /// # String copyTo(Constellation constellation)
@@ -341,7 +358,7 @@ class Star {
   /// # Star([Constellation] constellation, {String? name, String? hash, [User]? user})
   /// ## Creates a new star.
   /// When creating a new star, call this constructor with the arguments name and user.
-  /// When loading a already existing star, call this constructor with the argument hash.
+  /// When loading an already existing star, call this constructor with the argument hash.
   Star(this.constellation, this.hash);
 
   /// # void _create()
@@ -352,6 +369,8 @@ class Star {
     StarFile.create(constellation.getStarPath(hash), constellation.path,
         name: name,
         userHash: user?.hash ?? Arceus.userIndex.getHostUser().hash);
+    Arceus.talker.info(
+        "Created star '$name' with hash '$hash' in constellation '${constellation.name}' at path '${constellation.path}'.");
     return Star(constellation, hash);
   }
 
@@ -394,12 +413,15 @@ class Star {
     constellation.starmap.currentStar = this;
     if (login) constellation.loggedInUser = user;
     if (save) constellation.save();
+    Arceus.talker.info("Star '$hash' is now the current star.");
   }
 
   /// # [Plasma] getPlasma(String pathOfFileInStar)
   /// ## Returns a new Plasma for a file at path relative to the star.
   Plasma getPlasma(String pathOfFileInStar) {
-    return Plasma.fromStar(this, pathOfFileInStar);
+    final plasma = Plasma.fromStar(this, pathOfFileInStar);
+    Arceus.talker.info("Got plasma '$pathOfFileInStar' in star '$hash'.");
+    return plasma;
   }
 
   /// # [Star] getMostRecentStar()

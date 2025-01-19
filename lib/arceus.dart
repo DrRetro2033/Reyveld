@@ -8,6 +8,7 @@ import 'package:interact/interact.dart';
 import 'package:arceus/extensions.dart';
 import 'package:arceus/version_control/constellation.dart';
 import 'package:version/version.dart';
+import 'package:talker/talker.dart';
 
 /// # `class` Arceus
 /// ## A class that represents the Arceus application.
@@ -19,6 +20,19 @@ class Arceus {
   static late bool isInternal;
   static bool get isDev =>
       const bool.fromEnvironment('DEBUG', defaultValue: true);
+
+  static Talker? _logger;
+
+  static Talker get talker {
+    _logger ??= Talker(
+      logger: TalkerLogger(
+          formatter: ArceusLogFormatter(),
+          output: ArceusLogger(
+                  "$appDataPath/logs/arceus-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log")
+              .output),
+    );
+    return _logger!;
+  }
 
   /// # `static` `String` _appDataPath
   /// ## The path to the application data directory.
@@ -217,4 +231,35 @@ class ConstellationEntry {
   final String path;
 
   ConstellationEntry(this.name, this.path);
+}
+
+class ArceusLogger {
+  final File logFile;
+
+  ArceusLogger(String path) : logFile = File(path) {
+    if (!logFile.existsSync()) {
+      logFile.createSync(recursive: true);
+      logFile.writeAsStringSync("""
+[Device Info]
+  OS                    ${Platform.operatingSystemVersion}
+  Number of Processors  ${Platform.numberOfProcessors}
+  Locale                ${Platform.localeName}
+  
+[App Info]
+  Version               ${Updater.currentVersion.toString()}
+───────────────────────────────────────────────────────────────
+""");
+    }
+  }
+
+  void output(String message) {
+    logFile.writeAsStringSync("$message\n", mode: FileMode.append);
+  }
+}
+
+class ArceusLogFormatter extends LoggerFormatter {
+  @override
+  String fmt(LogDetails details, TalkerLoggerSettings settings) {
+    return "${details.message}";
+  }
 }
