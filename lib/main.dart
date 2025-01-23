@@ -20,7 +20,6 @@ import 'package:arceus/widget_system.dart';
 /// # `void` main(List<String> arguments)
 /// ## Main entry point.
 /// Runs the CLI.
-
 Future<dynamic> main(List<String> arguments) async {
   final newUpdate = await Updater().checkForUpdate();
   if (newUpdate) {
@@ -77,7 +76,8 @@ v${Updater.currentVersion}""");
     Arceus.isInternal = false;
   }
 
-  Arceus.talker.info("Arceus has started successfully.");
+  Arceus.talker.info(
+      "Arceus has started successfully with arguments: ${arguments.join(" ")}");
   if (!Constellation.exists(Arceus.currentPath)) {
     runner.addCommand(CreateConstellationCommand());
   } else {
@@ -104,6 +104,7 @@ v${Updater.currentVersion}""");
   runner.addCommand(AddonsCommand());
   runner.addCommand(UpdateCommand());
   runner.addCommand(GrowAllCommand());
+  runner.addCommand(LogCommand());
 
   if (arguments.isNotEmpty) {
     dynamic result = await runner.run(arguments);
@@ -283,7 +284,7 @@ ${Badge("🕒0:00 AM", badgeColor: "grey", textColor: "white")} - Time when crea
     spinner.stop();
     print(changes ? "Changes found.".bold : "No changes found.".bold);
     constellation.starmap.printMap();
-    constellation.printSumOfCurStar();
+    // constellation.printSumOfCurStar();
   }
 }
 
@@ -400,7 +401,12 @@ Recover from from a broken constellation.
     }
     final star = starfiles[selected];
     final user = Arceus.userIndex.getUser(star.userHash);
-    star.extract(Arceus.currentPath);
+    if (star.extract(Arceus.currentPath)) {
+      print("Star recovered successfully!");
+    } else {
+      print(
+          "Was not able to recover the star! Please check the logs for more information.");
+    }
     final confirm = Confirm(
       prompt:
           " Do you also want to recreate the constellation? All other stars will be lost.",
@@ -1469,5 +1475,23 @@ Options:
         break;
     }
     await Arceus.openURLInExplorer(pathToOpen);
+  }
+}
+
+class LogCommand extends Command {
+  @override
+  String get name => "logs";
+
+  @override
+  String get description => """
+Open the logs folder.
+""";
+
+  @override
+  String get summary => "Open the logs folder.";
+
+  @override
+  Future<void> run() async {
+    await Arceus.openURLInExplorer("${Arceus.appDataPath}/logs");
   }
 }

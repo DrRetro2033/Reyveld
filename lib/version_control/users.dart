@@ -15,7 +15,7 @@ class UserIndex {
 
   late List<User> users;
 
-  List<List<Object?>> get rows {
+  List<List<Object?>> get rowsForDisplay {
     List<List<Object?>> rows = [];
     rows.add(<Object?>["#", "Name"]);
     for (User user in users) {
@@ -86,6 +86,11 @@ class UserIndex {
   }
 }
 
+/// # `class` User
+/// ## A class that represents a user.
+/// A user is not related to cloud storage or any other user system.
+/// It is just a simple way of switching between different people in Arceus.
+/// So friends and or family can use the same system without interfering with each others saves.
 class User {
   static const int lengthOfHash = 8;
   static const Set<String> _userColors = {

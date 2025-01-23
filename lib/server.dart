@@ -169,8 +169,6 @@ class ConstellationCommands extends ServerCommand {
         ..write('Error: Missing "path" query parameter.')
         ..close();
       ArceusServer.talker.error("Error: Missing 'path' query parameter.");
-    } else {
-      return Constellation(path: path).toJson();
     }
   }
 

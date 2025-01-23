@@ -6,7 +6,7 @@ import 'package:arceus/uuid.dart';
 import 'package:arceus/arceus.dart';
 import 'package:arceus/extensions.dart';
 import 'package:arceus/version_control/star.dart';
-import 'package:arceus/version_control/plasma.dart';
+// import 'package:arceus/version_control/plasma.dart';
 import 'package:arceus/version_control/dossier.dart';
 import 'package:arceus/version_control/users.dart';
 import 'package:archive/archive_io.dart';
@@ -15,18 +15,33 @@ import 'package:cli_spin/cli_spin.dart';
 /// # class Constellation
 /// ## Represents a constellation.
 class Constellation {
+  Map<String, dynamic>? _details; // The last updated details of the constellation
+
   /// # String name
   /// ## The name of the constellation.
-  String name = "";
+  String get name => _getDetails()["name"] ?? "Unnamed";
+  set name(String value) {
+    _saveDetails({"name": value});
+  }
 
   /// # late String path
   /// ## The path to the folder the constellation is in (not the .constellation folder).
   late String path;
 
+  /// # [Starmap]? _starmap
+  /// ## The starmap of the constellation.
+  /// This will be null if the starmap has not been loaded yet.
+  /// The starmap is automatically loaded when [starmap] is accessed.
+  /// Call [save] to save the starmap to disk.
+  Starmap? _starmap;
+
   /// # [Starmap] starmap
   /// ## The starmap of the constellation.
   /// No extra action is needed to load the starmap, as it is automatically loaded when the constellation is loaded.
-  late Starmap starmap;
+  Starmap get starmap {
+    _starmap ??= Starmap(this, map: _getDetails()["map"]);
+    return _starmap!;
+  }
 
   /// # [UserIndex] get userIndex
   /// ## The user index of the constellation.
@@ -58,7 +73,13 @@ class Constellation {
   /// ## Fetches a directory object that represents the addonFolderPath folder.
   Directory get addonDirectory => Directory(addonFolderPath);
 
-  String? _loggedInUserHash;
+  String? get _loggedInUserHash => _getDetails().containsKey("loggedInUser")
+      ? _getDetails()["loggedInUser"]
+      : null;
+
+  set _loggedInUserHash(String? hash) {
+    _saveDetails({"loggedInUser": hash});
+  }
 
   /// # [User] loggedInUser
   /// ## The user that is currently logged into the constellation.
@@ -73,7 +94,10 @@ class Constellation {
     _loggedInUserHash = user.hash;
   }
 
-  String? summaryFile;
+  /// # String? summaryFile
+  /// ## The path to the summary file relative to the constellation path.
+  /// TODO: Implement this.
+  /// String? summaryFile;
 
   /// # Constellation({String? path, String? name})
   /// ## Creates a new constellation.
@@ -89,24 +113,14 @@ class Constellation {
     }
     this.path = path!.fixPath();
     if (constellationDirectory.existsSync()) {
-      // If the constellation already exists, then load
-      try {
-        _load();
-      } catch (e, st) {
-        Arceus.talker.error("Failed to load constellation at $path.", e, st);
-      }
-      // if (name == null) {
-      //   return;
-      // }
       if (!Arceus.doesConstellationExist(name: this.name)) {
+        // If the constellation does not exist inside Arceus, then add it.
         Arceus.addConstellation(this.name, path);
       }
     } else if (name != null) {
       // If the constellation does not exist, then create it with the provided name
       _createConstellationDirectory(path);
-      starmap = Starmap(this);
       _createRootStar(user);
-      save();
       Arceus.addConstellation(name, path);
       Arceus.talker
           .info("Created a new constellation named '$name' at '$path'.");
@@ -169,59 +183,29 @@ class Constellation {
     return stars;
   }
 
-  // ============================================================================
-  // These methods are for saving and loading the constellation.
+  Map<String, dynamic> _getDetails() {
+    if (_details == null) {
+      final file = File("$constellationPath/starmap");
+      _details = jsonDecode(file.readAsStringSync());
+    }
+    return _details!;
+  }
 
-  /// # void save()
-  /// ## Saves the constellation to disk.
-  /// This includes the root star and the current star hashes.
+  void _saveDetails(Map<String, dynamic> details) {
+    final content = _getDetails();
+    content.addAll(details);
+
+    content["lastModified"] = DateTime.now().toString(); // update last modified
+
+    final file = File("$constellationPath/starmap");
+    file.writeAsString(jsonEncode(content));
+    // zlib.encode(jsonEncode(content).codeUnits);
+    _details = content;
+  }
+
   void save() {
-    File file = File("$constellationPath/starmap");
-    file.createSync();
-    file.writeAsStringSync(jsonEncode(toJson()));
-    Arceus.talker.info("Saved constellation '$name'.");
+    _saveDetails({"map": starmap.toJson()});
   }
-
-  /// # void load()
-  /// ## Loads the constellation from disk.
-  /// This includes the root star and the current star hashes.
-  void _load() {
-    File file = File("$constellationPath/starmap");
-    if (file.existsSync()) {
-      try {
-        _fromJson(jsonDecode(file.readAsStringSync()));
-      } catch (e, st) {
-        Arceus.talker.error("Failed to load constellation at $path.", e, st);
-      }
-    } else {
-      Arceus.talker.error("Constellation does not exist at path! $path",
-          Exception("Does not exist"), StackTrace.current);
-    }
-  }
-
-  /// # void fromJson(Map<String, dynamic> json)
-  /// ## Converts the JSON data into the data for the constellation.
-  /// This is used when loading the constellation from disk, and is internal, so do not call it directly.
-  void _fromJson(Map<String, dynamic> json) {
-    name = json["name"];
-    starmap = Starmap(this, map: json["map"]);
-    if (json.containsKey("loggedInUser")) {
-      if (json["loggedInUser"] != null) {
-        _loggedInUserHash = json["loggedInUser"];
-      }
-    }
-  }
-
-  /// # Map<String, dynamic> toJson()
-  /// ## Converts the constellation into a JSON map.
-  /// This is used when saving the constellation to disk, and is internal, so do not call it directly.
-  Map<String, dynamic> toJson() => {
-        "name": name,
-        "loggedInUser": loggedInUser.hash,
-        "map": starmap.toJson()
-      };
-
-  // ============================================================================
 
   /// # String? grow(String name)
   /// ## Creates a new star with the given name and returns the hash of the new star at the current star.
@@ -271,8 +255,8 @@ class Constellation {
   /// # void resyncToCurrentStar()
   /// ## Restores the files from current star.
   /// This WILL discard any changes in files, so make sure you grown the constellation before calling this.
-  void resyncToCurrentStar() {
-    starmap.currentStar.resync();
+  bool resyncToCurrentStar() {
+    return starmap.currentStar.resync();
   }
 
   /// # void clear()
@@ -315,13 +299,13 @@ class Constellation {
     return false;
   }
 
-  void printSumOfCurStar() {
-    if (summaryFile == null) {
-      return;
-    }
-    Plasma plasma = starmap.currentStar.getPlasma(summaryFile!);
-    print(TreeWidget(plasma.readWithAddon()!.data));
-  }
+  // void printSumOfCurStar() {
+  //   if (summaryFile == null) {
+  //     return;
+  //   }
+  //   Plasma plasma = starmap.currentStar.getPlasma(summaryFile!);
+  //   print(TreeWidget(plasma.readWithAddon()!.data));
+  // }
 
   static List<StarFile>? listStarFiles(String path) {
     final directory = Directory("${Arceus.currentPath}/.constellation");
@@ -365,7 +349,9 @@ class Constellation {
       Arceus.talker.info(
           "Extracted packed constellation '${constellationNew.name}' to '${constellationNew.path}'.");
     }
-    constellationNew.resyncToCurrentStar();
+    if (!constellationNew.resyncToCurrentStar()) {
+      Arceus.talker.error("Could not resync to current star!");
+    }
     return constellationNew;
   }
 
@@ -442,7 +428,7 @@ class Starmap {
   /// # operator []([Star] star)
   /// ## Get the star with the given hash.
   /// Pass a hash to get the star with that hash.
-  /// There are some keywords that you can use instead of a hash. Any keywords below can be chained together with ;:
+  /// There are some keywords that you can use instead of a hash. Any keywords below can be chained together with ,:
   /// - root: The root star
   /// - recent: The most recent star
   /// - back: The parent of the current star. Will be clamped to the root star.
@@ -454,6 +440,7 @@ class Starmap {
   /// - below: The sibling below the current star. If the sibling doesn't exist, it will try and find a sibling of one of its parents. If that doesn't exist, it will return the root star.
   /// - below X: The Xth sibling below the current star. If the sibling doesn't exist, it will try and find the next available sibling of one of its parents. If that doesn't exist, it will return the root star. Will be wrapped if there is a sibling.
   /// - next X: Will return the Xth child of the current star. Will be wrapped to a valid index of the current star's children.
+  /// - depth X: Will return the star at the depth X. Will be clamped to the last star in the starmap.
   operator [](Object hash) {
     if (hash is String) {
       List<String> commands = hash.split(",");
@@ -605,15 +592,19 @@ class Starmap {
   /// # void trim([Star] star)
   /// ## Trims the given star and all of its children.
   /// This will not discard any changes in files, BUT will destroy previous changes in files.
-  void trim([Star? star]) {
+  bool trim([Star? star]) {
     star ??= currentStar; // If no star is given, use the current star.
     if (star.isRoot) {
-      print("Cannot trim the root star!");
-      return;
+      return false;
     }
-    star.parent.makeCurrent(save: false);
-    star.trim(); // Calls the trim function on the star.
-    constellation.save();
+    if (star.parent.makeCurrent(save: false)) {
+      star.trim(); // Calls the trim function on the star.
+      constellation.save();
+      return true;
+    } else {
+      Arceus.talker.error("Could not trim star!");
+      return false;
+    }
   }
 
   /// # void sterilizeStar([Star] star)

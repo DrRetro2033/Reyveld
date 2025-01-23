@@ -8,7 +8,6 @@ import 'package:arceus/scripting/feature_sets/patterns.dart';
 import 'package:arceus/version_control/constellation.dart';
 import 'package:arceus/version_control/star.dart';
 import 'package:archive/archive_io.dart';
-import 'package:archive/src/util/crc32.dart';
 
 /// # `enum` `Origin`
 /// ## The origin of a `Plasma` object.
@@ -144,7 +143,7 @@ class Plasma {
     return getCrc32(data.buffer.asUint8List()).toRadixString(16);
   }
 
-  /// # `bool` checkForDifferences(Plasma other, {bool fuzzy = true})
+  /// # [bool] checkForDifferences([Plasma] other, {bool fuzzy = true})
   /// ## Compares the current plasma to another plasma.
   /// Returns `true` if there are differences in the data between the two plasmas, `false` otherwise.
   /// Does not check if path is the same. Fuzzy check is enabled by default, which means that it will check if the checksums are the same, and not recurvevely check for differences.
@@ -153,7 +152,7 @@ class Plasma {
     return getDifferences(other).hasChanges();
   }
 
-  /// # `Plasma?` findOlderVersion()
+  /// # [Plasma]? findOlderVersion()
   /// ## Returns the older version of the plasma if it exists, or `null` if it doesn't.
   /// The older version will ALWAYS be an internal plasma, as there can only be one version of an external plasma at one time.
   /// If this plasma is external, then the version from the current star in the constellation where it is tracked will be returned.
@@ -200,7 +199,7 @@ class Plasma {
 
 enum ChangeOrigin { from, to }
 
-/// # `class` `DifferenceMap`
+/// # class [DifferenceMap]
 /// ## Used to organize the differences between two plasmas into maps.
 class DifferenceMap {
   Map<int, Map<ChangeOrigin, int>> modifications = {};

@@ -20,6 +20,7 @@ dependencies:
   http: ^1.2.2
   dart_console: ^1.2.0
   version: ^3.0.2
+  ini: ^2.1.0
 
 dev_dependencies:
   lints: ^4.0.0

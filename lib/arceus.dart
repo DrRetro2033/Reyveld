@@ -34,6 +34,9 @@ class Arceus {
     return _logger!;
   }
 
+  static File get mostRecentLog => File(
+      "$appDataPath/logs/arceus-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log");
+
   /// # `static` `String` _appDataPath
   /// ## The path to the application data directory.
   static String get appDataPath => _getAppDataPath();
@@ -233,6 +236,13 @@ class ConstellationEntry {
   ConstellationEntry(this.name, this.path);
 }
 
+/// # `class` ArceusLogger
+/// ## A class that logs messages to a file.
+/// The log file is created in the application data directory.
+/// Each message is appended to the file.
+/// A new log file is created each day, and will log all of the messages for that day.
+/// The reason for this behavior is so that if the log needs to be sent for debugging,
+/// all the pertinent information is in one file and not spread across multiple logs.
 class ArceusLogger {
   final File logFile;
 
@@ -247,9 +257,17 @@ class ArceusLogger {
   
 [App Info]
   Version               ${Updater.currentVersion.toString()}
+
+[Log]
+  Date                  ${DateTime.now().year}/${DateTime.now().month}/${DateTime.now().day}
 ───────────────────────────────────────────────────────────────
 """);
     }
+    logFile.writeAsStringSync("""
+
+Run at ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, "0")}:${DateTime.now().second.toString().padLeft(2, "0")}.${DateTime.now().millisecond.toString().padLeft(3, "0")}
+───────────────────────────────────────────────────────────────
+""", mode: FileMode.append);
   }
 
   void output(String message) {

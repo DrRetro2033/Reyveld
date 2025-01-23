@@ -8,11 +8,16 @@ import 'package:arceus/version_control/users.dart';
 import 'dart:io';
 import 'package:arceus/version_control/plasma.dart';
 
+/// # class StarFile
+/// ## Represents a star file, which is a ZIP file containing the contents and details of a star.
+/// TODO: Change every other class that uses a JSON to store details to use this design pattern, as it is more efficient, safe, and easier to understand.
 class StarFile {
   final String path;
 
-  Map<String, dynamic>? _details;
-  String? _checksum;
+  Map<String, dynamic>?
+      _details; // the last updated details of the star. used to improve performance by not redoing the same operation, when nothing has changed.
+  String?
+      _checksum; // the checksum of the content of the star. also used to improve performance.
 
   String get name => _getDetails()["name"];
   set name(String name) => _saveDetails({"name": name});
@@ -43,7 +48,7 @@ class StarFile {
   StarFile(this.path);
 
   factory StarFile.create(String path, String compressPath,
-      {required String name, required String userHash}) {
+      String name, String userHash) {
     Map<String, dynamic> details = {
       "name": name,
       "createdAt": DateTime.now().toString(),
@@ -75,20 +80,34 @@ class StarFile {
   /// # void extract()
   /// ## Extracts the star from the archive.
   /// This is used when jumping to an existing star.
-  void extract(String extractPath) {
+  bool extract(String extractPath) {
     Archive archive = getArchive();
+    bool finishedSuccessfully = true;
     for (ArchiveFile file in archive.files) {
       if (file.isFile && file.name != "star") {
         final x = File("$extractPath/${file.name}");
         if (!x.existsSync()) {
           x.createSync(recursive: true);
         }
-        x.writeAsBytesSync(file.content);
+        try {
+          x.writeAsBytesSync(file.content);
+        } catch (e) {
+          Arceus.talker.error(
+              "Failed to extract file '${path.getFilename()}'. Most likely due to it being used in another program.");
+          finishedSuccessfully = false;
+          continue;
+        }
       }
     }
     archive.clearSync();
+    if (!finishedSuccessfully) {
+      Arceus.talker.error(
+          "Failed to properly extract star file '${path.getFilename()}'!");
+      return false;
+    }
     Arceus.talker
         .info("Extracted star file '${path.getFilename()}' to '$extractPath'.");
+    return true;
   }
 
   /// # void _saveDetails(Map<String, dynamic> details)
@@ -127,6 +146,10 @@ class StarFile {
     Arceus.talker.info("Updated details of star file '${path.getFilename()}'.");
   }
 
+  /// # Map<String, dynamic> _getDetails()
+  /// ## Gets the details of the star.
+  /// If the details haven't been loaded yet, it loads them from the "star" file in the archive.
+  /// The details are cached to prevent disk I/O from being needed every time the details are accessed.
   Map<String, dynamic> _getDetails() {
     if (_details == null) {
       Archive archive = getArchive();
@@ -146,7 +169,7 @@ class StarFile {
   Archive getArchive() {
     final inputStream = InputFileStream(path);
     final archive = ZipDecoder().decodeBuffer(inputStream);
-    Arceus.talker.info("Got archive of star file '${path.getFilename()}'.");
+    // Arceus.talker.info("Got archive of star file '${path.getFilename()}'.");
     return archive;
   }
 
@@ -207,7 +230,7 @@ class StarFile {
     return displayName;
   }
 
-  /// # String getContentChecksum()
+  /// # String getChecksum()
   /// ## Returns the checksum of the content of the star file.
   /// Used for checking to see if star files have the same hash, but different content.
   String getChecksum({bool excludeDetails = true}) {
@@ -367,8 +390,8 @@ class Star {
   factory Star.create(Constellation constellation, String name, {User? user}) {
     final hash = constellation.generateUniqueStarHash();
     StarFile.create(constellation.getStarPath(hash), constellation.path,
-        name: name,
-        userHash: user?.hash ?? Arceus.userIndex.getHostUser().hash);
+        name,
+        user?.hash ?? Arceus.userIndex.getHostUser().hash);
     Arceus.talker.info(
         "Created star '$name' with hash '$hash' in constellation '${constellation.name}' at path '${constellation.path}'.");
     return Star(constellation, hash);
@@ -396,24 +419,37 @@ class Star {
     Star star = Star.create(constellation, name, user: user);
     star.tags = tags;
     constellation.starmap.addRelationship(this, star);
-    star.makeCurrent(save: false);
+    if (!star.makeCurrent(save: false)) {
+      Arceus.talker.info("Was unable to make new star current.");
+    }
     constellation.save();
     return star;
   }
 
-  void resync() {
-    file.extract(constellation.path);
+  bool resync() {
+    return file.extract(constellation.path);
   }
 
   /// # void makeCurrent()
   /// ## Makes the star the current star in the constellation.
   /// It also saves the constellation.
-  void makeCurrent({bool save = true, bool login = true}) {
-    resync();
-    constellation.starmap.currentStar = this;
-    if (login) constellation.loggedInUser = user;
-    if (save) constellation.save();
-    Arceus.talker.info("Star '$hash' is now the current star.");
+  bool makeCurrent({bool save = true, bool login = true}) {
+    if (!resync()) {
+      Arceus.talker.error(
+          "Failed to resync star '$hash'. Cannot make it the current star.");
+      return false;
+    }
+    try {
+      constellation.starmap.currentStar = this;
+      if (login) constellation.loggedInUser = user;
+      if (save) constellation.save();
+      Arceus.talker.info("Star '$hash' is now the current star.");
+      return true;
+    } catch (e) {
+      Arceus.talker.error(
+          "Failed to resync star '$hash'. Cannot make it the current star.");
+      return false;
+    }
   }
 
   /// # [Plasma] getPlasma(String pathOfFileInStar)

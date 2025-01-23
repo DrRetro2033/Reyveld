@@ -9,6 +9,7 @@ import 'package:arceus/version_control/plasma.dart';
 
 /// # `class` `Dossier`
 /// ## A class that checks for differences between the star and the current directory.
+/// There use to be a moved files check, but it was removed because it was not really necessary.
 class Dossier {
   /// # `Star` star
   /// ## The star that is being checked against the current directory.
@@ -17,7 +18,6 @@ class Dossier {
   // The following are used for the CLI:
   final String _addSymbol = "A".bold.greenBright;
   final String _removeSymbol = "D".bold.redBright;
-  final String _moveSymbol = "→".bold.cyanBright;
   final String _modifiedSymbol = "M".bold.yellowBright;
 
   Dossier(this.star);
@@ -48,32 +48,12 @@ class Dossier {
     List<String> removedFiles = listRemovedFiles(archive);
     if (!silent) spinner!.stop();
 
-    // Check for moved files. Done after new and removed files, as they can be used here to make a cross reference.
-    if (!silent) {
-      spinner = CliSpin(text: " Checking for moved files...").start();
-    }
-    Map<String, String> movedFiles = listMovedFiles(newFiles, removedFiles);
-    if (movedFiles.isNotEmpty) {
-      check = true;
-      spinner!.stop();
-      if (!silent) {
-        for (String file in movedFiles.keys) {
-          print("  $file $_moveSymbol ${movedFiles[file]}");
-        }
-      }
-    } else {
-      spinner?.success(" There are no moved files.");
-    }
-
     // Check for new files.
     if (newFiles.isNotEmpty) {
       check = true;
       spinner?.fail(" New files found:");
       if (!silent) {
         for (String file in newFiles) {
-          if (movedFiles.containsValue(file)) {
-            continue;
-          }
           print("  $_addSymbol $file");
         }
       }
@@ -87,9 +67,6 @@ class Dossier {
       spinner?.fail(" Removed files found:");
       if (!silent) {
         for (String file in removedFiles) {
-          if (movedFiles.containsKey(file)) {
-            continue;
-          }
           print("  $_removeSymbol $file");
         }
       }
@@ -113,6 +90,7 @@ class Dossier {
     } else {
       spinner?.success(" There are no changed files.");
     }
+    archive.clearSync();
     return check;
   }
 
@@ -133,7 +111,6 @@ class Dossier {
         }
       }
     }
-    archive.clearSync();
     return newFiles;
   }
 
@@ -148,27 +125,7 @@ class Dossier {
         }
       }
     }
-    archive.clearSync();
     return removedFiles;
-  }
-
-  /// # `Map<String, String>` listMovedFiles(`List<String>` newFiles, `List<String>` removedFiles)
-  /// ## Lists all files in the current directory that have been recently moved.
-  Map<String, String> listMovedFiles(
-      List<String> newFiles, List<String> removedFiles) {
-    Map<String, String> movedFiles = {};
-    for (String file in removedFiles) {
-      if (newFiles.any((e) => e.getFilename() == file.getFilename())) {
-        Plasma externalFile = Plasma.fromFile(File(
-            "${star.constellation.path}/${newFiles.firstWhere((e) => e.getFilename() == file.getFilename())}"));
-        Plasma internalFile = Plasma.fromStar(star, file);
-        if (!externalFile.checkForDifferences(internalFile)) {
-          movedFiles[file] =
-              newFiles.firstWhere((e) => e.getFilename() == file.getFilename());
-        }
-      }
-    }
-    return movedFiles;
   }
 
   /// # `List<String>` listChangedFiles(`List<String>` removedFiles)
@@ -187,7 +144,6 @@ class Dossier {
         }
       }
     }
-    archive.clearSync();
     return changedFiles;
   }
 }
