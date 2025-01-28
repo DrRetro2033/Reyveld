@@ -1,0 +1,24 @@
+
+<!-- This file is an example of an uncompressed SERE kit file for testing and rough blueprint of the file layout. -->
+
+<!-- 
+The 'sere' tag acts as the header for the file.
+It contains small data such as constellation infomation, the star tree, addon data, and more.
+-->
+<sere> 
+    <!-- The 'const' tag is an abbrivation of 'Constellation', and contains the name of the constellation, the current star, and more. -->
+    <const name="Test Constellation">
+        <!-- The 'star' tag represents a star in a constellation. It contains the star name, its children, its commit hash, and more.  -->
+        <star name="Initial Star" comit="ffffffff">
+        </star>
+    </const>
+</sere>
+
+<!-- 
+The 'comit' tag is a commited version of a file system. 
+It contains files, which could be extremely big, so they are seperate to the header, and will only be loaded into memory when needed.
+-->
+<comit hash="ffffffff">
+    <file path="test/test.txt">
+    </file>
+</comit>

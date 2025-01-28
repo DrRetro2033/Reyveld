@@ -3,9 +3,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
-import 'package:yaml/yaml.dart';
 
-import 'package:arceus/scripting/addon.dart';
+// import 'package:arceus/scripting/addon.dart';
 
 /// # `extension` Compression
 /// ## Extension for the `String` class.
@@ -112,13 +111,13 @@ extension DifferenceChecking on ByteData {
   }
 }
 
-extension AddonList on List<Addon> {
-  List<Addon> filterByAssociatedFile(String associatedFile) {
-    return where((addon) {
-      if (addon.featureSet != FeatureSets.pattern) return false;
-      return (addon.getMetadata()["associated-files"] as YamlList).any(
-          (extension) =>
-              (extension as String).endsWith(associatedFile.getExtension()));
-    }).toList();
-  }
-}
+// extension AddonList on List<Addon> {
+//   List<Addon> filterByAssociatedFile(String associatedFile) {
+//     return where((addon) {
+//       if (addon.featureSet != FeatureSets.pattern) return false;
+//       return (addon.getMetadata()["associated-files"] as YamlList).any(
+//           (extension) =>
+//               (extension as String).endsWith(associatedFile.getExtension()));
+//     }).toList();
+//   }
+// }
