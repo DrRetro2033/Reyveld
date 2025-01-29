@@ -21,3 +21,5 @@ _deps
 CMakeUserPresets.json
 command_for_release
 rclone.dart
+test.xml
+test.xml.tmp

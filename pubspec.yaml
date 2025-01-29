@@ -8,7 +8,6 @@ environment:
 # Add regular dependencies here.
 dependencies:
   args: ^2.4.2
-  yaml: ^3.1.2
   uuid: any
   archive: ^3.6.1
   cli_spin: ^1.0.1
@@ -20,7 +19,6 @@ dependencies:
   http: ^1.2.2
   dart_console: ^1.2.0
   version: ^3.0.2
-  ini: ^2.1.0
   xml: ^6.5.0
 
 dev_dependencies:

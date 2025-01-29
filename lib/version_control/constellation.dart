@@ -1,25 +1,22 @@
-import 'package:arceus/serekit.dart';
+import 'package:arceus/serekit/serekit.dart';
 
 class Constellation extends SObject {
-  Constellation(super._node);
+  Constellation(super._kit, super._node);
 
   String get name => get("name") ?? "Constellation";
 }
 
 class ConstFactory extends SFactory<Constellation> {
   @override
-  Constellation load(XmlNode node) => Constellation(node);
+  Constellation load(SKit kit, XmlNode node) => Constellation(kit, node);
 
   @override
-  void create(XmlBuilder builder, [Map<String, String> overrides = const {}]) {
-    builder.element("const", nest: () {
-      if (overrides.containsKey("name")) {
-        builder.attribute("name", overrides["name"]);
-      } else {
-        builder.attribute("name", "Constellation");
-      }
-    });
-  }
+  get creator =>
+      (XmlBuilder builder, [Map<String, dynamic> attributes = const {}]) {
+        builder.element("const", nest: () {
+          builder.attribute("name", attributes["name"] ?? "Constellation");
+        });
+      };
 
   @override
   String get tag => "const";

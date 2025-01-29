@@ -1,13 +1,16 @@
-import 'package:arceus/serekit.dart';
+import 'package:arceus/serekit/serekit.dart';
+import 'package:arceus/serekit/file_system.dart';
 
 class Star extends SObject {
-  Star(super._node);
+  Star(super._kit, super._node);
 
   String get name => get("name") ?? "Initial Star";
 
   set name(String value) => set("name", value);
 
-  static Star fromXml(XmlNode node) => Star(node);
+  Future<SArchive> get archive async => await kit.getArchive(get("comit")!);
+
+  static Star fromXml(SKit kit, XmlNode node) => Star(kit, node);
 
   static XmlBuilder create() {
     final builder = XmlBuilder();
@@ -23,16 +26,13 @@ class StarFactory extends SFactory<Star> {
   String get tag => "star";
 
   @override
-  Star load(XmlNode node) => Star(node);
+  Star load(SKit kit, XmlNode node) => Star(kit, node);
 
   @override
-  void create(XmlBuilder builder, [Map<String, String> overrides = const {}]) {
-    builder.element("star", nest: () {
-      if (overrides.containsKey("name")) {
-        builder.attribute("name", overrides["name"]);
-      } else {
-        builder.attribute("name", "Initial Star");
-      }
-    });
-  }
+  get creator =>
+      (XmlBuilder builder, [Map<String, dynamic> attributes = const {}]) {
+        builder.element("star", nest: () {
+          builder.attribute("name", attributes["name"] ?? "Initial Star");
+        });
+      };
 }

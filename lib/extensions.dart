@@ -9,7 +9,7 @@ import 'package:ffi/ffi.dart';
 /// # `extension` Compression
 /// ## Extension for the `String` class.
 /// Used to compress and decompress strings.
-extension Compression on String {
+extension Pathing on String {
   /// # `String` fixPath()
   /// ## Fixes the path by replacing windows formatting with an absolute path and universal format.
   /// This will also replace environment variables with their values.
@@ -110,14 +110,3 @@ extension DifferenceChecking on ByteData {
     return false;
   }
 }
-
-// extension AddonList on List<Addon> {
-//   List<Addon> filterByAssociatedFile(String associatedFile) {
-//     return where((addon) {
-//       if (addon.featureSet != FeatureSets.pattern) return false;
-//       return (addon.getMetadata()["associated-files"] as YamlList).any(
-//           (extension) =>
-//               (extension as String).endsWith(associatedFile.getExtension()));
-//     }).toList();
-//   }
-// }

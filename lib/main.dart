@@ -1,7 +1,5 @@
-import "package:arceus/serekit.dart";
+import "package:arceus/serekit/serekit.dart";
 
 Future<int> main(List<String> args) async {
-  final s = SKit("C:/Repos/arceus/example.xml");
-  s.test();
   return 0;
 }

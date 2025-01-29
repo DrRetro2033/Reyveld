@@ -1,14 +1,8 @@
 import 'dart:io';
-import 'package:arceus/suggester.dart';
 import 'package:arceus/updater.dart';
-// import 'package:arceus/version_control/users.dart';
-// import 'package:interact/interact.dart';
-
 import 'package:arceus/extensions.dart';
-// import 'package:arceus/version_control/constellation.dart';
 import 'package:version/version.dart';
 import 'package:talker/talker.dart';
-import 'package:ini/ini.dart';
 
 /// # `class` Arceus
 /// ## A class that represents the Arceus application.
@@ -47,21 +41,6 @@ class Arceus {
 
   // static UserIndex userIndex = UserIndex("$appDataPath/userindex");
 
-  static File get _config => File("$appDataPath/config.ini");
-  static Config get config {
-    if (!_config.existsSync()) {
-      _config.createSync(recursive: true);
-    }
-    return Config.fromString(_config.readAsStringSync());
-  }
-
-  static set config(Config value) {
-    if (!_config.existsSync()) {
-      _config.createSync(recursive: true);
-    }
-    _config.writeAsStringSync(value.toString());
-  }
-
   /// # `static` `String` _getAppDataPath
   /// ## Returns the path to the application data directory.
   static String _getAppDataPath() {
@@ -72,100 +51,6 @@ class Arceus {
     }
   }
 
-  /// # `static` `bool` doesConstellationExist(`String?` name, `String?` path)
-  /// ## Checks if a constellation exists at the given path.
-  static bool doesConstellationExist({String? name, String? path}) {
-    if (name != null) {
-      return getConstellationEntries().any((e) => e.name == name);
-    } else if (path != null) {
-      List<String> pathList = path.fixPath().split('/');
-      while (pathList.length > 1) {
-        if (Directory("${pathList.join('/')}/.constellation").existsSync()) {
-          return true;
-        }
-        pathList.removeLast();
-      }
-      return false;
-    } else {
-      return false;
-    }
-  }
-
-  // /// # `static` `Constellation?` getConstellationFromPath(`String` path)
-  // /// ## Returns the constellation at the given path.
-  // static Constellation? getConstellationFromPath(String path) {
-  //   List<String> pathList = path.fixPath().split('/');
-  //   while (pathList.length > 1) {
-  //     if (Directory("${pathList.join('/')}/.constellation").existsSync()) {
-  //       return Constellation(pathList.join('/'));
-  //     }
-  //     pathList.removeLast();
-  //   }
-  //   return null;
-  // }
-
-  /// # `static` `void` addConstellation(`String` name, `String` path)
-  /// ## Adds a new constellation to the list of constellations.
-  static void addConstellation(String name, String path) {
-    if (doesConstellationExist(name: name)) {
-      return;
-    }
-    final con = config;
-    if (!con.hasSection("constellations")) {
-      con.addSection("constellations");
-    }
-    con.set("constellations", name, path);
-    config = con;
-  }
-
-  /// # `static` `void` removeConstellation(`String` name)
-  /// ## Removes a constellation from the list of constellations.
-  static void removeConstellation({String? name, String? path}) {
-    if (name != null && doesConstellationExist(name: name)) {
-      config.removeOption("constellations", name);
-    } else if (path != null && doesConstellationExist(path: path)) {
-      final constellations = getConstellationEntries();
-      config.removeOption("constellations",
-          constellations.firstWhere((e) => e.path == path).name);
-    } else {
-      throw Exception("Constellation does not exist");
-    }
-  }
-
-  /// # `static` `String?` getConstellationPath(`String` name)
-  /// ## Returns the path to the constellation with the given name.
-  /// Throws an exception if the constellation does not exist.
-  static String? getConstellationPath(String name) {
-    if (!doesConstellationExist(name: name)) {
-      throw Exception("Constellation does not exist");
-    }
-    return config.get("constellations", name);
-  }
-
-  /// # `static` `List<String>` getConstellationNames
-  /// ## Returns the list of constellation names.
-  static List<String> getConstellationNames() {
-    return getConstellationEntries().map((e) => e.name).toList();
-  }
-
-  /// # `static` `List<ConstellationEntry>` getConstellationEntries
-  /// ## Returns the list of constellation entries.
-  /// Each entry contains the name and path of the constellation.
-  static List<ConstellationEntry> getConstellationEntries() {
-    if (!config.hasSection("constellations")) {
-      return [];
-    }
-    return config
-        .options("constellations")!
-        .map((e) => ConstellationEntry(e, config.get("constellations", e)!))
-        .toList();
-  }
-
-  static String getClosestConstName(String query) {
-    final suggester = Suggester().addEntries(getConstellationNames());
-    return suggester.suggest(query);
-  }
-
   /// # `static` `String` getTempFolder
   /// ## Returns the path to the temp folder.
   /// Creates a new temp folder if it does not exist.
@@ -173,10 +58,6 @@ class Arceus {
     return TemporaryDirectory(
         Directory.systemTemp.createTempSync("arceus").path);
   }
-
-  /// # `static` `bool` empty
-  /// ## Returns `true` if the list of constellations is empty, `false` otherwise.
-  static bool empty() => getConstellationEntries().isEmpty;
 
   static String getLibraryPath() {
     return "${_getAppDataPath()}/lib";
