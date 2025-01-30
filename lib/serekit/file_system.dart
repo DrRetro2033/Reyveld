@@ -16,9 +16,17 @@ class SArchive extends SObject {
   /// Will not trigger save, must be done manually.
   void markForDeletion() => markedForDeletion.add(hash!);
 
-  /// Adds a file to the archive.
+  /// Adds a [SFile] to the archive.
   /// Does not trigger save, must be done manually.
-  void addFile(SFile file) => addChild(file);
+  void addSFile(SFile file) => addChild(file);
+
+  /// Adds a file to the archive.
+  /// [filepath] should be relative to the archive. For instance: "C://path/to/folder/example.txt" will translate to "example.txt".
+  Future<void> addFile(String filepath, List<int> data) async {
+    final file =
+        await SFileFactory().create(kit, {"path": filepath, "data": data});
+    addSFile(file);
+  }
 
   SFile? getFile(String path) {
     return getChild<SFile>(filter: (e) => e.path == path);
@@ -46,24 +54,33 @@ class SArchiveFactory extends SFactory<SArchive> {
       };
 }
 
+/// A file in an [SArchive].
+/// Contains the path of the file, and its data in the form of compressed base64.
 class SFile extends SObject {
   SFile(super._kit, super._node);
 
+  /// Returns the path of the file.
   String get path => get("path")!;
 
-  List<int> get data {
+  /// Returns the data of the file as a list of bytes.
+  List<int> get bytes {
     final encoded = innerText!;
     return gzip.decode(base64Decode(encoded));
   }
+
+  /// Returns the data of the file as a string.
+  String get text => utf8.decode(bytes);
 }
 
+/// Factory for creating [SFile]s.
 class SFileFactory extends SFactory<SFile> {
   @override
   String get tag => "file";
 
   @override
   get requiredAttributes => {
-        "file": (dynamic value) => value is File,
+        "path": (value) => value is String,
+        "data": (value) => value is List<int>
       };
 
   @override
@@ -71,12 +88,11 @@ class SFileFactory extends SFactory<SFile> {
 
   @override
   get creator =>
-      (XmlBuilder builder, [Map<String, dynamic> attributes = const {}]) async {
-        final file = attributes["file"] as File;
-        List<int> bytes = await file.readAsBytes();
+      (XmlBuilder builder, [Map<String, dynamic> attributes = const {}]) {
+        final path = attributes["path"] as String;
         builder.element("file", nest: () async {
-          builder.attribute("path", file.path.fixPath());
-          builder.text(base64Encode(gzip.encode(bytes)));
+          builder.attribute("path", path.fixPath());
+          builder.text(base64Encode(gzip.encode(attributes["data"])));
         });
       };
 }

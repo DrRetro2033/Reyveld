@@ -17,20 +17,21 @@ extension Pathing on String {
     String path = replaceAll("\"", "");
     path = path.replaceAll("\\", "/");
     if (Platform.isWindows) {
+      /// Replace environment variables to absolute paths on Windows
       RegExp envVar = RegExp(r"(?:%(\w*)%)");
       for (RegExpMatch match in envVar.allMatches(path)) {
         path = path.replaceFirst(
             match.group(0)!, Platform.environment[match.group(1)!]!.fixPath());
       }
     }
+    if (path.startsWith("/")) path = path.substring(1);
     return path;
   }
 
-  /// # `String` makeRelPath(`String` relativeTo)
-  /// ## Makes the path relative to the given path.
-  /// This is used to make the path relative to the given path.
-  String makeRelPath(String relativeTo) {
-    return replaceFirst("$relativeTo\\", "").fixPath();
+  String relativeTo(String relativeTo) {
+    final formattedPath = this.fixPath();
+    final formattedRelativeTo = relativeTo.fixPath();
+    return formattedPath.replaceFirst(formattedRelativeTo, "");
   }
 
   /// # `String` fromHexToCodes()

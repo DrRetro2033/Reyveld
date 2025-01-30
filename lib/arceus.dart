@@ -39,6 +39,8 @@ class Arceus {
   /// ## The path to the global addons directory.
   static String get globalAddonPath => "$appDataPath/addons";
 
+  static String get constFolderPath => "$appDataPath/constellations";
+
   // static UserIndex userIndex = UserIndex("$appDataPath/userindex");
 
   /// # `static` `String` _getAppDataPath
@@ -63,18 +65,6 @@ class Arceus {
     return "${_getAppDataPath()}/lib";
   }
 
-  // static User? userSelect({String prompt = "Select User"}) {
-  //   final users = Arceus.userIndex.users;
-  //   final names = users.map((e) => e.name).toList();
-  //   final selected =
-  //       Select(prompt: prompt, options: [...names, "Cancel"]).interact();
-  //   if (selected == names.length) {
-  //     // Means the user cancelled the operation.
-  //     return null;
-  //   }
-  //   return users[selected];
-  // }
-
   static void skipUpdate(String version) {
     final file = File("$appDataPath/skipupdate");
     file.createSync();
@@ -89,28 +79,13 @@ class Arceus {
     return Version.parse(file.readAsStringSync());
   }
 
-  static Future<void> openURLInExplorer(String url) async {
+  static Future<void> openURL(String url) async {
     if (Platform.isWindows) {
       await Process.run("start", [url], runInShell: true);
     } else if (Platform.isLinux) {
       await Process.run("xdg-open", [url], runInShell: true);
     }
   }
-}
-
-/// # `class` ConstellationEntry
-/// ## A class that represents a constellation entry.
-/// Each entry contains the name and path of the constellation.
-class ConstellationEntry {
-  /// # final `String` name
-  /// ## The name of the constellation.
-  final String name;
-
-  /// # final `String` path
-  /// ## The path to the constellation.
-  final String path;
-
-  ConstellationEntry(this.name, this.path);
 }
 
 /// # `class` ArceusLogger

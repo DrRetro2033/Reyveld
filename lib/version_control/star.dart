@@ -10,15 +10,7 @@ class Star extends SObject {
 
   Future<SArchive> get archive async => await kit.getArchive(get("comit")!);
 
-  static Star fromXml(SKit kit, XmlNode node) => Star(kit, node);
-
-  static XmlBuilder create() {
-    final builder = XmlBuilder();
-    builder.element("star", nest: () {
-      builder.attribute("name", "Initial Star");
-    });
-    return builder;
-  }
+  DateTime get createdOn => DateTime.parse(get("date")!);
 }
 
 class StarFactory extends SFactory<Star> {
@@ -29,10 +21,18 @@ class StarFactory extends SFactory<Star> {
   Star load(SKit kit, XmlNode node) => Star(kit, node);
 
   @override
+  get requiredAttributes => {
+        "name": (value) => value is String && value.isNotEmpty,
+        "archiveHash": (value) => value is String && value.isNotEmpty,
+      };
+
+  @override
   get creator =>
       (XmlBuilder builder, [Map<String, dynamic> attributes = const {}]) {
         builder.element("star", nest: () {
           builder.attribute("name", attributes["name"] ?? "Initial Star");
+          builder.attribute("comit", attributes["archiveHash"]);
+          builder.attribute("date", DateTime.now().toIso8601String());
         });
       };
 }

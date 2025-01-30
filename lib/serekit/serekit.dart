@@ -16,7 +16,7 @@ export 'package:xml/xml.dart';
 final Set<SFactory> _sobjectFactories = {
   ConstFactory(),
   StarFactory(),
-  KitFactory(),
+  KitHeaderFactory(),
   SArchiveFactory(),
   SFileFactory(),
 };
@@ -76,7 +76,7 @@ class SKit {
   /// This is used when loading a kit file.
   FutureOr<KitHeader> getKitHeader() async {
     if (_kit == null) {
-      final factory = KitFactory();
+      final factory = KitHeaderFactory();
       final eventStream = _eventStream;
       _kit = (await eventStream
               .selectSubtreeEvents((e) => e.name == factory.tag)
@@ -86,6 +86,24 @@ class SKit {
               .toList())
           .first;
     }
+    return _kit!;
+  }
+
+  /// Creates a new kit file.
+  /// If the kit file already exists, it will throw an exception unless [overwrite] is true.
+  /// If [type] is unspecified, it will be set to [SKitType.unspecified].
+  /// Returns a future that completes when the kit file is created and saved.
+  Future<KitHeader> create(
+      {bool overwrite = false, SKitType type = SKitType.unspecified}) async {
+    if (await _file.exists() && !overwrite) {
+      throw Exception("Kit file already exists.");
+    }
+    discardChanges(); // clear the current kit from memory
+    if (!await _file.exists()) {
+      await _file.create(recursive: true);
+    }
+    final factory = KitHeaderFactory();
+    _kit = await factory.create(this, {"type": type});
     return _kit!;
   }
 
@@ -198,9 +216,13 @@ class SKit {
   /// The header is saved to the top of the file, and the archives are saved to the bottom of the file.
   /// This will save all of the changes to the file.
   Future<void> save() async {
-    final temp = await File("$path.tmp").create(); // create a temp file
-
-    // Write the new xml to the temp file.
+    final temp = File("$path.tmp"); // initialize the temp file object.
+    if (await temp.exists()) {
+      // if the temp file exists, delete it.
+      await temp.delete(); // delete the temp file.
+    }
+    await temp.create(); // create the temp file.
+    // Write the new kit header to the temp file.
     final xml = (await getKitHeader()).toXmlString();
     await temp.writeAsString(xml);
     // Open the temp file for writing.
@@ -219,7 +241,7 @@ class SKit {
     // Close the sink.
     await tempSink.close();
 
-    // Replace the old file with the temp file.
+    // Replace the old data in the file with the temp file's data.
     final sink = _file.openWrite();
     await sink.addStream(temp.openRead().transform(gzip.encoder));
 
@@ -228,9 +250,9 @@ class SKit {
     await sink.close();
 
     // Delete the temp file.
-    // await temp.delete();
+    await temp.delete();
 
-    discardChanges();
+    discardChanges(); // Clear everything from memory.
   }
 
   /// Discards all of the changes to the kit file.
@@ -267,9 +289,14 @@ class KitHeader extends SObject {
   SKitType get type => SKitType.values[int.parse(get("type") ?? "0")];
 }
 
-class KitFactory extends SFactory<KitHeader> {
+class KitHeaderFactory extends SFactory<KitHeader> {
   @override
   String get tag => "sere";
+
+  @override
+  get requiredAttributes => {
+        "type": (e) => e is SKitType,
+      };
 
   @override
   KitHeader load(SKit kit, XmlNode node) {
@@ -283,8 +310,8 @@ class KitFactory extends SFactory<KitHeader> {
           builder.attribute("createdOn", DateTime.now().toIso8601String());
           builder.attribute("lastModified", DateTime.now().toIso8601String());
           builder.attribute("version", Updater.currentVersion.toString());
-          builder.attribute("type",
-              attributes["type"] ?? SKitType.unspecified.index.toString());
+          builder.attribute(
+              "type", (attributes["type"] as SKitType).index.toString());
         });
       };
 }
@@ -315,8 +342,10 @@ abstract class SObject {
     return _node.getAttribute(key);
   }
 
+  /// Returns the parent of the xml node, if it has one.
   XmlNode? get parent => _node.parent;
 
+  /// Returns the inner text of the xml node.
   String? get innerText {
     return _node.innerText;
   }
@@ -367,6 +396,23 @@ abstract class SObject {
     return null;
   }
 
+  /// Returns a list of descendants of the xml node, with the specific type.
+  List<T?> getDescendants<T extends SObject>({bool Function(T)? filter}) {
+    List<T?> descendants = [];
+    for (var child in _node.descendantElements) {
+      SFactory<T>? factory = getSFactory<T>(child.name.local);
+      if (factory != null) {
+        T obj = factory.load(kit, child);
+        if (filter != null && !filter(obj)) {
+          continue;
+        }
+        descendants.add(obj);
+      }
+    }
+    return descendants;
+  }
+
+  /// Returns the xml node as a xml String.
   String toXmlString() => "\n${_node.toXmlString(pretty: true)}";
 }
 
@@ -378,11 +424,14 @@ abstract class SObject {
 /// }
 /// ```
 abstract class SFactory<T extends SObject> {
+  /// The tag of the associated xml node.
+  /// Will be checked if unique in [_sobjectFactories].
   String get tag;
 
   /// The attributes that are required for creation of the object.
-  /// The values are functions for not only checking if a value
-  /// is in the correct format, but also if they are the correct type.
+  /// The values are functions for not only checking if a value is in the correct format,
+  /// but also if they are the correct type.
+  /// If an attribute is not required, it should not be included in [optionalAttributes].
   ///
   /// Example:
   /// ```dart
@@ -392,7 +441,21 @@ abstract class SFactory<T extends SObject> {
   ///   ...
   /// };
   /// ```
-  Map<String, bool Function(dynamic)> get requiredAttributes => {};
+  Map<String, FutureOr<bool> Function(dynamic)> get requiredAttributes => {};
+
+  /// The attributes that are optional for creation of the object.
+  /// The values are functions for checking if a value is in the correct format and is the correct type.
+  /// If an attribute is not optional, it should be included in [requiredAttributes].
+  ///
+  /// Example:
+  /// ```dart
+  /// get optionalAttributes => {
+  ///   "name": (value) => value is String && value.length <= 20,
+  ///   "age": (value) => value is int,
+  ///   ...
+  /// };
+  /// ```
+  Map<String, FutureOr<bool> Function(dynamic)> get optionalAttributes => {};
 
   /// Loads the [SObject] from the xml node.
   /// The [SKit] and the [XmlNode] are passed for accessing the underlying xml data,
@@ -406,8 +469,17 @@ abstract class SFactory<T extends SObject> {
     if (requiredAttributes.isNotEmpty) {
       for (var attribute in requiredAttributes.keys) {
         if (!attributes.containsKey(attribute) ||
-            !requiredAttributes[attribute]!(attributes[attribute])) {
-          throw ArgumentError("Missing required attribute: $attribute");
+            !await requiredAttributes[attribute]!(attributes[attribute])) {
+          throw ArgumentError(
+              "Missing '$attribute'. Attributes needed: ${requiredAttributes.keys.join(", ")}");
+        }
+      }
+    }
+    if (optionalAttributes.isNotEmpty) {
+      for (var attribute in optionalAttributes.keys) {
+        if (attributes.containsKey(attribute) &&
+            !await optionalAttributes[attribute]!(attributes[attribute])) {
+          throw ArgumentError("Invalid optional value for '$attribute'.");
         }
       }
     }
