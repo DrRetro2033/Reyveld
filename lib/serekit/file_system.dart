@@ -9,12 +9,16 @@ class SArchive extends SObject {
 
   SArchive(super._kit, super._node);
 
-  String? get hash => get("hash");
+  String get hash => get("hash")!;
 
-  /// Marks the commit for deletion.
-  /// Adds the commit's hash to the [markedForDeletion] set.
+  set hash(String? hash) => set("hash", hash);
+
+  DateTime get archivedOn => DateTime.parse(get("date")!);
+
+  /// Marks the archive for deletion.
+  /// Adds the archive's hash to the [markedForDeletion] set.
   /// Will not trigger save, must be done manually.
-  void markForDeletion() => markedForDeletion.add(hash!);
+  void markForDeletion() => markedForDeletion.add(hash);
 
   /// Adds a [SFile] to the archive.
   /// Does not trigger save, must be done manually.
@@ -93,6 +97,38 @@ class SFileFactory extends SFactory<SFile> {
         builder.element("file", nest: () async {
           builder.attribute("path", path.fixPath());
           builder.text(base64Encode(gzip.encode(attributes["data"])));
+        });
+      };
+}
+
+/// A reference to an [SArchive].
+/// Contains the hash of the archive.
+class SRArchive extends SObject {
+  SRArchive(super.kit, super.node);
+
+  String get hash => get("hash")!;
+
+  set hash(String? hash) => set("hash", hash);
+
+  Future<SArchive?> get archive => kit.getArchive(hash);
+}
+
+class SRArchiveFactory extends SFactory<SRArchive> {
+  @override
+  String get tag => "rarchive";
+
+  @override
+  SRArchive load(SKit kit, XmlNode node) => SRArchive(kit, node);
+
+  @override
+  get requiredAttributes =>
+      {"hash": (value) => value is String && value.isNotEmpty};
+
+  @override
+  get creator =>
+      (XmlBuilder builder, [Map<String, dynamic> attributes = const {}]) {
+        builder.element("rarchive", nest: () {
+          builder.attribute("hash", attributes["hash"]);
         });
       };
 }

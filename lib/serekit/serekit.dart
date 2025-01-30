@@ -1,6 +1,7 @@
 import "dart:async";
 import "dart:convert";
 import "dart:io";
+import "package:arceus/extensions.dart";
 import "package:arceus/updater.dart";
 import "package:arceus/uuid.dart";
 import "package:arceus/version_control/constellation.dart";
@@ -18,14 +19,22 @@ final Set<SFactory> _sobjectFactories = {
   StarFactory(),
   KitHeaderFactory(),
   SArchiveFactory(),
+  SRArchiveFactory(),
   SFileFactory(),
 };
 
 /// Get the factory for the given [SObject] subclass.
 /// Returns null if not found.
-SFactory<T>? getSFactory<T extends SObject>(String? tag) => _sobjectFactories
-    .whereType<SFactory<T>?>()
-    .firstWhere((e) => e!.tag == tag, orElse: () => null);
+SFactory<T> getSFactory<T extends SObject>(String? tag) {
+  final factory = _sobjectFactories
+      .whereType<SFactory<T>?>()
+      .firstWhere((e) => e!.tag == tag, orElse: () => null);
+  if (factory == null) {
+    throw Exception(
+        "No factory found for $T with tag $tag. Please make sure you added the factory for this tag!");
+  }
+  return factory;
+}
 
 /// Represents a compressed XML file.
 /// [SKit] is an abrivation for SERE kit, which is a reference to titanfall 2.
@@ -123,8 +132,6 @@ class SKit {
 
   /// Returns a future that generates an unique hash for an archive.
   /// This is used when creating a new archive.
-  Future<String> generateUniqueArchiveHash() async =>
-      generateUniqueHash(await _getArchiveHashes());
 
   /// Returns a stream of [SArchive] objects.
   /// This is used when saving an already existing kit file.
@@ -147,38 +154,85 @@ class SKit {
         .map((e) => factory.load(this, e));
   }
 
-  /// Creates a new archive.
+  /// Creates a new empty archive.
   /// This does not save the archive to the kit file immediately.
   /// It is added to the [_loadedArchives] list, and will be saved when [save] is called.
-  Future<SArchive> createArchive() async {
+  Future<SArchive> createEmptyArchive() async {
     final factory = SArchiveFactory();
-    final hash = await generateUniqueArchiveHash();
-    final archive = await factory.create(this, {"hash": hash});
+    final archive = await factory.create(this, {"hash": generateUUID()});
     _loadedArchives.add(archive);
     return archive;
   }
 
-  Future<SArchive> getArchive(String hash) async {
+  /// Creates a new archive from a folder.
+  /// Adds all of the files in the folder to the archive, making them relative to the archive.
+  Future<SArchive> archiveFolder(String path) async {
+    final dir = Directory(path);
+    if (!await dir.exists()) {
+      throw Exception("Path does not exist.");
+    }
+    final archive = await createEmptyArchive();
+    for (final file in dir.listSync(recursive: true)) {
+      /// Get all of the files in the current directory recursively,
+      /// and add them to the new archive, making them relative to the archive.
+      if (file is File) {
+        await archive.addFile(
+            file.path.relativeTo(path), await file.readAsBytes());
+      }
+    }
+    return archive;
+  }
+
+  Future<SArchive?> getArchive(String hash) async {
     if (_loadedArchives.any((e) => e.hash == hash)) {
       // if the archive is already loaded, return it.
       return _loadedArchives.firstWhere((e) => e.hash == hash);
     }
     final factory = SArchiveFactory(); // get the archive factory
     final eventStream = _eventStream; // get the event stream
-    final commit = (await eventStream
-            .selectSubtreeEvents((e) =>
-                e.name == factory.tag &&
-                e.attributes.any((element) =>
-                    element.name == "hash" &&
-                    element.value ==
-                        hash)) // select the archive with the hash given.
-            .toXmlNodes()
-            .expand((e) => e)
-            .map((e) => factory.load(this, e)) // load the archive
-            .toList())
-        .first;
-    _loadedArchives.add(commit); // add the archive to the loaded archives.
+    final commits = await eventStream
+        .selectSubtreeEvents((e) =>
+            e.name == factory.tag &&
+            e.attributes.any((element) =>
+                element.name == "hash" &&
+                element.value ==
+                    hash)) // select the archive with the hash given.
+        .toXmlNodes()
+        .expand((e) => e)
+        .map((e) => factory.load(this, e)) // load the archive
+        .toList();
+    if (commits.isEmpty) {
+      return null;
+    }
+    final commit = commits.singleOrNull;
+    _loadedArchives.add(commit!); // add the archive to the loaded archives.
     return commit;
+  }
+
+  Future<void> rehashArchives([Set<String>? hashesToAvoid]) async {
+    final hashes = await _getArchiveHashes();
+    final newHashes = <String>{...hashesToAvoid ?? {}};
+    for (final hash in hashes) {
+      final newHash = generateUniqueHash(newHashes); // generate a unique hash
+      await _changeArchiveHash(hash, newHash); // change the hash
+      newHashes.add(
+          newHash); // add the new hash to the set, so that it is not used again.
+    }
+    await save(); // save the changes
+  }
+
+  /// Changes an archive's hash to a new hash.
+  Future<void> _changeArchiveHash(String oldHash, String newHash) async {
+    final archive = await getArchive(oldHash);
+    archive!
+        .markForDeletion(); // mark the old hash for deletion. This makes sure that the old version of the archive is not saved.
+    archive.hash = newHash; // set the new hash
+    final header = await getKitHeader(); // get the kit header
+    for (final ref
+        in header.getDescendants<SRArchive>(filter: (e) => e.hash == oldHash)) {
+      // get all of the references to the archive in the kit header and change the hash.
+      ref!.hash = newHash;
+    }
   }
 
   // Future<void> test() async {
@@ -372,10 +426,9 @@ abstract class SObject {
   List<T?> getChildren<T extends SObject>() {
     List<T?> children = [];
     for (var child in _node.childElements) {
-      SFactory<T>? factory = getSFactory<T>(child.name.local);
-      if (factory != null) {
-        children.add(factory.load(kit, child));
-      }
+      final factory = getSFactory(child.name.local);
+      if (factory is! SFactory<T>) continue;
+      children.add(factory.load(kit, child));
     }
     return children;
   }
@@ -384,32 +437,53 @@ abstract class SObject {
   /// If [filter] is provided, it will only return the first child that matches the filter.
   T? getChild<T extends SObject>({bool Function(T)? filter}) {
     for (var child in _node.childElements) {
-      SFactory<T>? factory = getSFactory<T>(child.name.local);
-      if (factory != null) {
-        T obj = factory.load(kit, child);
-        if (filter != null && !filter(obj)) {
-          continue;
-        }
-        return obj;
+      final factory = getSFactory(child.name.local);
+      if (factory is! SFactory<T>) continue;
+      T obj = factory.load(kit, child);
+      if (filter != null && !filter(obj)) {
+        continue;
       }
+      return obj;
     }
     return null;
+  }
+
+  T? getParent<T extends SObject>({bool Function(T)? filter}) {
+    if (_node.parentElement == null) return null;
+    final factory = getSFactory(_node.parentElement!.name.local);
+    if (factory is! SFactory<T>) return null;
+    T obj = factory.load(kit, _node.parentElement!);
+    if (filter != null && !filter(obj)) return null;
+    return obj;
   }
 
   /// Returns a list of descendants of the xml node, with the specific type.
   List<T?> getDescendants<T extends SObject>({bool Function(T)? filter}) {
     List<T?> descendants = [];
     for (var child in _node.descendantElements) {
-      SFactory<T>? factory = getSFactory<T>(child.name.local);
-      if (factory != null) {
-        T obj = factory.load(kit, child);
-        if (filter != null && !filter(obj)) {
-          continue;
-        }
-        descendants.add(obj);
+      final factory = getSFactory(child.name.local);
+      if (factory is! SFactory<T>) continue;
+      T obj = factory.load(kit, child);
+      if (filter != null && !filter(obj)) {
+        continue;
       }
+      descendants.add(obj);
     }
     return descendants;
+  }
+
+  T? getAncestor<T extends SObject>({bool Function(T)? filter}) {
+    Iterable<XmlElement> ancestors = _node.ancestorElements;
+    for (var ancestor in ancestors) {
+      final factory = getSFactory(ancestor.name.local);
+      if (factory is! SFactory<T>) continue;
+      T obj = factory.load(kit, ancestor);
+      if (filter != null && !filter(obj)) {
+        continue;
+      }
+      return obj;
+    }
+    return null;
   }
 
   /// Returns the xml node as a xml String.
