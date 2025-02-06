@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:arceus/extensions.dart';
@@ -50,6 +51,12 @@ class Constellation extends SObject {
     return root;
   }
 
+  Star getMostRecentStar() {
+    final stars = getDescendants<Star>();
+    stars.sort((a, b) => b!.createdOn.compareTo(a!.createdOn));
+    return stars.last ?? root;
+  }
+
   /// Returns all of the hashes of the stars in the constellation.
   Set<String> getStarHashes() {
     final stars = getDescendants<Star>();
@@ -93,6 +100,72 @@ class Constellation extends SObject {
     }
     return tree;
   }
+
+  Star hopTo(String commandString) {
+    List<String> commands = commandString.split(",");
+    Star current = getCurrentStar();
+    for (String command in commands) {
+      command = command.trim(); // Remove any whitespace.
+      if (command == "recent") {
+        // Jump to most recent star.
+        current = getMostRecentStar();
+      } else if (command == "root") {
+        // Jump to root star.
+        current = root;
+      } else if (command.startsWith("forward")) {
+        // Jump forward by X stars.
+        final x = command.replaceFirst("forward", "");
+        int i = int.tryParse(x) ?? 1;
+        Star star = current;
+        while (i > 0) {
+          star = star.getChild<Star>() ?? current;
+          i--;
+        }
+        current = star;
+      } else if (command.startsWith("back")) {
+        // Jump back by X stars.
+        final x = command.replaceFirst("back", "");
+        int? i = int.tryParse(x.trim()) ?? 1;
+        Star star = current;
+        while (i! > 0) {
+          star = star.getParent<Star>() ?? root;
+          i--;
+        }
+        current = star;
+      } else if (command.startsWith("above")) {
+        // Jump above
+        final x = command.replaceFirst("above", "");
+        int i = int.tryParse(x) ?? 1;
+        while (i > 0) {
+          current = current.getSiblingAbove<Star>() ?? current;
+          i--;
+        }
+      } else if (command.startsWith("below")) {
+        // Jump below
+        final x = command.replaceFirst("below", "");
+        int i = int.tryParse(x) ?? 1;
+        while (i > 0) {
+          current = current.getSiblingBelow<Star>() ?? current;
+          i--;
+        }
+      } else if (command.startsWith("next")) {
+        // Jump to next child
+        final x = command.replaceFirst("next", "");
+        int? i = int.tryParse(x) ?? 1;
+        final children = current.getChildren<Star>();
+        current = children[i % children.length] ?? current;
+      } else if (command.startsWith("depth")) {
+        // Jump to depth
+        final x = command.replaceFirst("depth", "");
+        int? i = int.tryParse(x) ?? 1;
+        current =
+            current.getDescendants<Star>(filter: (e) => e.getDepth() == i)[0] ??
+                current.getDescendants<Star>().last ??
+                current;
+      }
+    }
+    return current;
+  }
 }
 
 class ConstFactory extends SFactory<Constellation> {
@@ -117,4 +190,11 @@ class ConstFactory extends SFactory<Constellation> {
 
   @override
   String get tag => "const";
+}
+
+extension ConstellationExtension on SKit {
+  Future<Constellation?> getConstellation() async {
+    final header = await getKitHeader();
+    return header.getChild<Constellation>();
+  }
 }

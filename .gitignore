@@ -4,7 +4,6 @@
 .vscode/
 .arceus/
 build/
-patterns/
 squirrel.dll
 test_builds/
 CMakeLists.txt.user

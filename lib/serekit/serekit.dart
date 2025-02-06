@@ -118,7 +118,7 @@ class SKit {
 
   /// Returns a future set of all of the hashes used by the archives in the kit.
   /// This is used when creating a new archive.
-  Future<Set<String>> _getArchiveHashes() async {
+  Future<Set<String>> getArchiveHashes() async {
     final factory = SArchiveFactory();
     final eventStream = _eventStream;
     return (await eventStream
@@ -183,6 +183,8 @@ class SKit {
     return archive;
   }
 
+  /// Returns a future [SArchive] from the kit file.
+  /// If the archive is already loaded, it will return the loaded archive.
   Future<SArchive?> getArchive(String hash) async {
     if (_loadedArchives.any((e) => e.hash == hash)) {
       // if the archive is already loaded, return it.
@@ -209,8 +211,9 @@ class SKit {
     return commit;
   }
 
+  /// Rehashes all of the archives in the kit file. Used when merging kit files.
   Future<void> rehashArchives([Set<String>? hashesToAvoid]) async {
-    final hashes = await _getArchiveHashes();
+    final hashes = await getArchiveHashes();
     final newHashes = <String>{...hashesToAvoid ?? {}};
     for (final hash in hashes) {
       final newHash = generateUniqueHash(newHashes); // generate a unique hash
@@ -234,36 +237,6 @@ class SKit {
       ref!.hash = newHash;
     }
   }
-
-  // Future<void> test() async {
-  //   final info = await getKitHeader();
-  //   print(info.createdOn);
-  //   final constellation = info.getChildren<Constellation>().first;
-  //   print(constellation!.name);
-  //   final star = constellation.getChild<Star>();
-  //   print(star!.name);
-  //   star.name = "Test Star";
-  //   final commit = await createArchive();
-  //   print(commit.hash);
-
-  //   final file = await SFileFactory().create(this, {
-  //     "file": File(
-  //         "C:/Users/Colly/OneDrive/Documents/Pokemon/0003 - DaisyTestTES - 0B1CBBBB6F73.pk9")
-  //   });
-  //   commit.addFile(file);
-
-  //   await save();
-  //   final archive =
-  //       await info.getChild<Constellation>()!.getChild<Star>()!.archive;
-
-  //   final file2 = File("../test.pk9");
-
-  //   await file2.create();
-  //   await file2.writeAsBytes(archive
-  //       .getFile(
-  //           "C:/Users/Colly/OneDrive/Documents/Pokemon/0003 - DaisyTestTES - 0B1CBBBB6F73.pk9")!
-  //       .data);
-  // }
 
   /// Saves the kit file.
   /// This will save the kit header and all of the archives to the kit file.
@@ -292,7 +265,7 @@ class SKit {
         Stream.fromIterable(_loadedArchives.map((e) => e.toXmlString()))
             .transform(utf8.encoder));
 
-    // Close the sink.
+    // Close the sink for the temp file.
     await tempSink.close();
 
     // Replace the old data in the file with the temp file's data.
@@ -435,10 +408,17 @@ abstract class SObject {
 
   /// Returns a child of the xml node, with the specific type.
   /// If [filter] is provided, it will only return the first child that matches the filter.
+  /// Any and all [SReference]s will be resolved to their actual objects.
+  /// So if a [SArchive] is needed, then if this method finds a [SRArchive], it will resolve it to a [SArchive].
+  /// ```dart
+  /// getChild<SArchive>(); // A [SRArchive] will be resolved to a SArchive and returned.
+  /// ```
   T? getChild<T extends SObject>({bool Function(T)? filter}) {
     for (var child in _node.childElements) {
       final factory = getSFactory(child.name.local);
-      if (factory is! SFactory<T>) continue;
+      if (factory is! SFactory<T>) {
+        continue;
+      }
       T obj = factory.load(kit, child);
       if (filter != null && !filter(obj)) {
         continue;
@@ -469,6 +449,8 @@ abstract class SObject {
       }
       descendants.add(obj);
     }
+    // sort descendants by depth, with the deepest last.
+    descendants.sort((a, b) => a!.getDepth().compareTo(b!.getDepth()));
     return descendants;
   }
 
@@ -484,6 +466,28 @@ abstract class SObject {
       return obj;
     }
     return null;
+  }
+
+  T? getSiblingAbove<T extends SObject>({bool Function(T)? filter}) {
+    if (_node.previousElementSibling == null) return null;
+    final factory = getSFactory(_node.previousElementSibling!.name.local);
+    if (factory is! SFactory<T>) return null;
+    T obj = factory.load(kit, _node.previousElementSibling!);
+    if (filter != null && !filter(obj)) return null;
+    return obj;
+  }
+
+  T? getSiblingBelow<T extends SObject>({bool Function(T)? filter}) {
+    if (_node.nextElementSibling == null) return null;
+    final factory = getSFactory(_node.nextElementSibling!.name.local);
+    if (factory is! SFactory<T>) return null;
+    T obj = factory.load(kit, _node.nextElementSibling!);
+    if (filter != null && !filter(obj)) return null;
+    return obj;
+  }
+
+  int getDepth() {
+    return _node.depth;
   }
 
   /// Returns the xml node as a xml String.
@@ -581,4 +585,11 @@ abstract class SFactory<T extends SObject> {
 
   @override
   int get hashCode => tag.hashCode;
+}
+
+/// A reference to another [SObject].
+/// This is used when an object needs to reference another object that could be anywhere in the xml file.
+abstract class SReference<T extends SObject> extends SObject {
+  SReference(super.kit, super._node);
+  FutureOr<T?> getRef();
 }

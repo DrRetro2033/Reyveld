@@ -6,29 +6,38 @@ import 'package:arceus/widget_system.dart';
 class Star extends SObject {
   Star(super._kit, super._node);
 
+  /// Returns the name of the star.
   String get name => get("name") ?? "Initial Star";
 
+  /// Sets the name of the star.
   set name(String value) => set("name", value);
 
+  /// Returns the hash of the star.
   String get hash => get("hash")!;
 
+  /// Sets the hash of the star.
   set hash(String value) => set("hash", value);
 
-  Future<SArchive?> get archive async => getChild<SRArchive>()!.archive;
+  /// Returns the archive of the star.
+  Future<SArchive?> get archive async => getChild<SRArchive>()!.getRef();
 
+  /// Returns the date the star was created.
   DateTime get createdOn => DateTime.parse(get("date")!);
 
+  /// Returns the constellation of the star.
   Constellation get constellation => getAncestor<Constellation>()!;
 
+  /// Returns true if the star is the root star.
   bool get isRoot => constellation.getChild<Star>() == this;
 
+  /// Returns true if the star is the current star.
   bool get isCurrent => constellation.currentHash == hash;
 
+  /// Returns true if the star is a single child.
   bool get isSingleChild => getParent<Star>()?.getChildren<Star>().length == 1;
 
   /// Grows a new star from this star.
   /// Returns the new star.
-  /// Does not trigger save.
   Future<Star> grow(String name) async {
     final factory = StarFactory();
     final archive = await kit.archiveFolder(constellation.path);
@@ -38,8 +47,13 @@ class Star extends SObject {
       "hash": constellation.newStarHash()
     });
     addChild(star);
-    constellation.currentHash = star.hash;
+    star.makeCurrent();
     return star;
+  }
+
+  /// Makes this star the current star.
+  void makeCurrent() {
+    constellation.currentHash = hash;
   }
 
   /// Returns the formatted name of the star file for displaying.
@@ -68,6 +82,7 @@ class Star extends SObject {
   }
 }
 
+/// Factory for [Star] objects.
 class StarFactory extends SFactory<Star> {
   @override
   String get tag => "star";

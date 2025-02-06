@@ -1,6 +1,5 @@
 import 'dart:ffi';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 
@@ -29,9 +28,9 @@ extension Pathing on String {
   }
 
   String relativeTo(String relativeTo) {
-    final formattedPath = this.fixPath();
+    final formattedPath = fixPath();
     final formattedRelativeTo = relativeTo.fixPath();
-    return formattedPath.replaceFirst(formattedRelativeTo, "");
+    return formattedPath.replaceFirst(formattedRelativeTo, "").fixPath();
   }
 
   /// # `String` fromHexToCodes()
@@ -98,16 +97,16 @@ extension NativeString on Pointer<Char> {
 /// # `extension` DifferenceChecking
 /// ## Extension for the `ByteData` class.
 /// Used to check if two `ByteData` objects are different.
-extension DifferenceChecking on ByteData {
-  bool checkForDifferences(ByteData other) {
-    if (other.lengthInBytes != lengthInBytes) {
-      return true;
+extension DifferenceChecking on List<int> {
+  bool equals(List<int> other) {
+    if (other.length != length) {
+      return false;
     }
-    for (int i = 0; i < lengthInBytes; i++) {
-      if (getUint8(i) != other.getUint8(i)) {
-        return true;
+    for (int i = 0; i < length; i++) {
+      if (this[i] != other[i]) {
+        return false;
       }
     }
-    return false;
+    return true;
   }
 }
