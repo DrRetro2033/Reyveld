@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:arceus/arceus.dart';
@@ -215,18 +216,18 @@ class TestSquirrelCommand extends Command {
   bool get hidden => true;
 
   @override
-  Future<void> run() async {
+  FutureOr<void> run() async {
     final runner = SquirrelRunner();
     runner.createAPI([
-      SquirrelFunction("test", {"a": sqInteger, "b": sqInteger},
-          (Map<String, dynamic> params) async {
-        await Future.delayed(Duration(seconds: 1));
-        return params["a"] + params["b"];
+      SquirrelFunction('test', {'a': sqInteger, 'b': sqInteger},
+          (Map<String, dynamic> params) {
+        return params['a'] + params['b'];
       })
     ]);
     final result = runner.run("""
 function main() {
-  return arceus.test(1, 2);
+  local testValue = arceus.test(1, 2);
+  return testValue;
 }
 """);
     print(result);

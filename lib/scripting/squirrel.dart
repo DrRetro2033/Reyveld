@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:arceus/arceus.dart';
@@ -7,6 +6,7 @@ import 'package:arceus/scripting/bindings.dart';
 import 'dart:ffi';
 import 'package:ffi/ffi.dart' as ffi;
 
+/// Gets the dynamic library for the squirrel bindings.
 DynamicLibrary _getDylib() {
   if (Arceus.isDev) {
     return DynamicLibrary.open(
@@ -22,6 +22,8 @@ DynamicLibrary _getDylib() {
   throw Exception("Unsupported platform.");
 }
 
+/// Used for debugging.
+/// This is called when an error occurs.
 SQDEBUGHOOK get debugHook => Pointer.fromFunction(_debugHook);
 
 /// Holds the current line of each [SquirrelRunner] instance, used for debugging.
@@ -50,6 +52,13 @@ void _debugCompileHook(Pointer<SQVM> vm, Pointer<Char> description,
       DebugLine(sourceFile.toDartString(), sourceLine, column: sourceColumn);
 }
 
+Pointer<NativeFunction<Void Function(Pointer<SQVM>, Pointer<Char>)>>
+    printSquirl = Pointer.fromFunction(_printSquirl);
+void _printSquirl(Pointer<SQVM> vm, Pointer<Char> s) {
+  print(s.toDartString());
+  return;
+}
+
 final SquirrelBindings bindings = SquirrelBindings(_getDylib());
 
 tagSQObjectType get sqInteger => tagSQObjectType.OT_INTEGER;
@@ -69,7 +78,9 @@ class SquirrelRunner {
 
   /// Creates a new [SquirrelRunner] instance.
   /// The initial stack size is set to 1024.
-  SquirrelRunner() : vm = bindings.sq_open(1024);
+  SquirrelRunner() : vm = bindings.sq_open(1024) {
+    bindings.sq_setprintfunc(vm, printSquirl, printSquirl);
+  }
 
   /// # `void` _createAPI(List<SquirrelFunction> apiFunctions)
   /// ## Creates the API for the Squirrel instance.
@@ -101,11 +112,11 @@ class SquirrelRunner {
 
   /// Returns the value from the stack, popping it if `noPop` is false.
   /// By default, [noPop] is false, and [idx] is -1 (i.e. the top of the stack).
-  T? getStackValue<T>({int idx = -1, bool noPop = false}) {
-    final result = bindings.sq_gettype(vm, idx);
+  T getStackValue<T>({int idx = -1, bool noPop = false}) {
+    final type = bindings.sq_gettype(vm, idx);
     dynamic value;
 
-    if (result == tagSQObjectType.OT_STRING) {
+    if (type == tagSQObjectType.OT_STRING) {
       final p = ffi.calloc<Pointer<Char>>();
       try {
         bindings.sq_getstring(
@@ -114,7 +125,7 @@ class SquirrelRunner {
       } finally {
         ffi.calloc.free(p); // free memory
       }
-    } else if (result == tagSQObjectType.OT_INTEGER) {
+    } else if (type == tagSQObjectType.OT_INTEGER) {
       final p = ffi.calloc<LongLong>();
       try {
         bindings.sq_getinteger(vm, idx, p);
@@ -122,7 +133,7 @@ class SquirrelRunner {
       } finally {
         ffi.calloc.free(p);
       }
-    } else if (result == tagSQObjectType.OT_FLOAT) {
+    } else if (type == tagSQObjectType.OT_FLOAT) {
       final p = ffi.calloc<Float>();
       try {
         bindings.sq_getfloat(vm, idx, p);
@@ -130,7 +141,7 @@ class SquirrelRunner {
       } finally {
         ffi.calloc.free(p);
       }
-    } else if (result == tagSQObjectType.OT_BOOL) {
+    } else if (type == tagSQObjectType.OT_BOOL) {
       final p = ffi.calloc<UnsignedLongLong>();
       try {
         bindings.sq_getbool(vm, idx, p);
@@ -138,14 +149,14 @@ class SquirrelRunner {
       } finally {
         ffi.calloc.free(p);
       }
-    } else if (result == tagSQObjectType.OT_ARRAY) {
+    } else if (type == tagSQObjectType.OT_ARRAY) {
       bindings.sq_pushnull(vm);
       value = [];
       while (bindings.sq_next(vm, -2) == 0) {
         (value as List).add(getStackValue(idx: -1, noPop: true));
         bindings.sq_pop(vm, 1);
       }
-    } else if (result == tagSQObjectType.OT_TABLE) {
+    } else if (type == tagSQObjectType.OT_TABLE) {
       bindings.sq_pushnull(vm);
       value = {};
       while (bindings.sq_next(vm, -2) == 0) {
@@ -157,7 +168,7 @@ class SquirrelRunner {
       if (bindings.sq_gettype(vm, -1) != tagSQObjectType.OT_TABLE) {
         bindings.sq_pop(vm, 1);
       }
-    } else if (result == tagSQObjectType.OT_INSTANCE) {
+    } else if (type == tagSQObjectType.OT_INSTANCE) {
       bindings.sq_pushroottable(vm);
       bindings.sq_pushstring(vm, "__export__".toCharPointer(), -1);
       bindings.sq_get(vm, -2);
@@ -167,16 +178,15 @@ class SquirrelRunner {
       successful(bindings.sq_call(vm, 2, SQTrue, SQTrue));
       value = getStackValue(idx: -1, noPop: true);
       bindings.sq_pop(vm, 2);
-    } else if (result == tagSQObjectType.OT_NULL) {
+    } else if (type == tagSQObjectType.OT_NULL) {
       value = null;
     } else {
-      // print("Unknown type: $result");
       value = null;
     }
 
     if (value is! T) {
       throw Exception(
-          "Stack value is not of type $T! Stack value: $value Type: $result");
+          "Stack value is not of type $T! Stack value: $value Type: $type");
     }
 
     if (!noPop) {
@@ -187,7 +197,7 @@ class SquirrelRunner {
 
   /// Pushes a value to the stack.
   /// The value can be a String, int, double, bool, List, or null.
-  void pushToStack(dynamic value, {Pointer<SQVM>? pointer}) {
+  void pushToStack(dynamic value) {
     if (value is String) {
       bindings.sq_pushstring(vm, value.toCharPointer(), -1);
     } else if (value is int) {
@@ -256,6 +266,7 @@ class SquirrelRunner {
   /// ## Closes the Squirrel instance.
   void dispose() {
     bindings.sq_close(vm);
+    ffi.malloc.free(vm);
   }
 
   /// Checks if the call passed in was successful.
@@ -320,6 +331,8 @@ class SquirrelFunction {
 
   SquirrelRunner? _squirrel;
 
+  final bool returnValue;
+
   /// Sets the instance of the [SquirrelRunner] class in the function.
   void setInstance(SquirrelRunner squirrel) {
     _squirrel = squirrel;
@@ -327,11 +340,8 @@ class SquirrelFunction {
 
   final dynamic Function(Map<String, dynamic> params) _call;
 
-  SquirrelFunction(
-    this.name,
-    this.arguments,
-    this._call,
-  );
+  SquirrelFunction(this.name, this.arguments, this._call,
+      {this.returnValue = true});
 
   int get nargs => arguments.entries.length;
 
@@ -371,20 +381,15 @@ class SquirrelFunction {
     return params;
   }
 
-  /// Pushes the return value to the stack.
-  void _returnValue(SquirrelRunner squirrel, dynamic value) {
-    squirrel.pushToStack(value);
-  }
-
   /// Calls the _call function with the given parameters from the [SquirrelRunner]
   /// instance and return its result back to Squirrel.
   int call(Pointer<SQVM> vm) {
     try {
       final result = _call(_getParams(_squirrel!));
-      _returnValue(_squirrel!, result);
+      _squirrel!.pushToStack(result);
+      return returnValue ? 1 : 0; // Means that there is a return value.
     } catch (e) {
-      print(e);
+      rethrow;
     }
-    return SQ_OK;
   }
 }
