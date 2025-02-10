@@ -1,9 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:arceus/extensions.dart';
-import 'package:arceus/serekit/serekit.dart';
+import 'package:arceus/serekit/sobject.dart';
 
 part 'file_system.g.dart';
 
@@ -67,9 +66,17 @@ class SArchive extends SObject {
       if (!await extFile.exists()) {
         return true; // file was deleted
       }
-      final extFileBytes = await extFile.readAsBytes();
-      if (!extFileBytes.toList().equals(file.bytesSync)) {
-        return true; // file was modified
+      final extFileRandomAccess = await extFile.open();
+      if (await extFileRandomAccess.length() != file.bytesSync.length) {
+        return true;
+      }
+      for (int pos = 0; pos < await extFileRandomAccess.length(); pos++) {
+        final byte = await extFileRandomAccess
+            .setPosition(pos)
+            .then<int>((ext) => ext.readByte());
+        if (byte != file.bytesSync[pos]) {
+          return true;
+        }
       }
     }
     return false;

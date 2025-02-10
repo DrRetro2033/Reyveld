@@ -22,9 +22,8 @@ class StarFactory extends SFactory<Star> {
           builder.attribute("name", attributes["name"]);
           builder.attribute("hash", attributes["hash"]);
           builder.attribute("date", DateTime.now().toIso8601String());
-          builder.element("rarchive", nest: () {
-            builder.attribute("hash", attributes["archiveHash"]);
-          });
+          SRArchiveFactory()
+              .creator(builder, {"hash": attributes["archiveHash"]});
         });
       };
 }

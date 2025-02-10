@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:arceus/arceus.dart';
-import 'package:arceus/serekit/settings.dart';
+import 'package:arceus/serekit/sobjects/settings.dart';
 import 'package:args/command_runner.dart';
 import 'package:interact/interact.dart';
 import 'package:arceus/commands/commands.dart';
@@ -11,6 +11,7 @@ ArceusSettings? settings;
 
 Future<void> main(List<String> args) async {
   final runner = CommandRunner("arceus", "Arceus CLI program");
+  runner.argParser.addOption("const", abbr: "c", hide: true);
   runner.addCommand(NewCommand());
   runner.addCommand(ShowCommand());
   runner.addCommand(JumpCommand());

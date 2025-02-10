@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:arceus/serekit/serekit.dart';
-import 'package:arceus/serekit/settings.dart';
+import 'package:arceus/serekit/sobjects/settings.dart';
 import 'package:arceus/updater.dart';
 import 'package:arceus/extensions.dart';
 import 'package:version/version.dart';

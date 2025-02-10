@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:arceus/serekit/serekit.dart';
+import 'package:arceus/serekit/sobject.dart';
 
 part 'settings.g.dart';
 

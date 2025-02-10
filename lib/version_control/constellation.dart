@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:arceus/extensions.dart';
-import 'package:arceus/serekit/serekit.dart';
+import 'package:arceus/serekit/sobject.dart';
 import 'package:arceus/uuid.dart';
 import 'package:arceus/version_control/star.dart';
 import 'package:arceus/widget_system.dart';
@@ -139,7 +139,16 @@ class Constellation extends SObject {
         final x = command.replaceFirst("above", "");
         int i = int.tryParse(x) ?? 1;
         while (i > 0) {
-          current = current.getSiblingAbove<Star>() ?? current;
+          Star? x = current;
+          Star? sibling;
+          while (sibling == null) {
+            if (x == null) {
+              break;
+            }
+            sibling = x.getSiblingAbove<Star>();
+            x = x.getParent<Star>();
+          }
+          current = sibling ?? current;
           i--;
         }
       } else if (command.startsWith("below")) {
@@ -147,7 +156,16 @@ class Constellation extends SObject {
         final x = command.replaceFirst("below", "");
         int i = int.tryParse(x) ?? 1;
         while (i > 0) {
-          current = current.getSiblingBelow<Star>() ?? current;
+          Star? x = current;
+          Star? sibling;
+          while (sibling == null) {
+            if (x == null) {
+              break;
+            }
+            sibling = x.getSiblingBelow<Star>();
+            x = x.getSiblingBelow<Star>();
+          }
+          current = sibling ?? current;
           i--;
         }
       } else if (command.startsWith("next")) {
@@ -167,5 +185,9 @@ class Constellation extends SObject {
       }
     }
     return current;
+  }
+
+  Future<bool> checkForChanges() {
+    return getCurrentStar().checkForChanges();
   }
 }

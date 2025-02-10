@@ -3,6 +3,7 @@ import 'package:arceus/serekit/serekit.dart';
 import 'package:arceus/version_control/constellation.dart';
 import 'package:args/command_runner.dart';
 import 'package:cli_spin/cli_spin.dart';
+import 'package:arceus/extensions.dart';
 
 class ShowCommand extends Command {
   @override
@@ -30,9 +31,10 @@ class ShowConstellationCommand extends Command {
 
   @override
   Future<void> run() async {
+    final constName = findOption("const");
+    final kit = SKit("${Arceus.constFolderPath}/$constName.skit");
     final spinner =
         CliSpin(text: "Loading...", spinner: CliSpinners.moon).start();
-    final kit = SKit("${Arceus.constFolderPath}/${argResults?["const"]}.skit");
     final constellation = await kit.getConstellation();
     spinner.stop();
     constellation!.printTree();

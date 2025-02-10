@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:arceus/arceus.dart';
@@ -7,6 +8,7 @@ import 'package:arceus/version_control/constellation.dart';
 import 'package:args/command_runner.dart';
 import 'package:cli_spin/cli_spin.dart';
 import 'package:arceus/main.dart';
+import 'package:interact/interact.dart';
 
 class NewCommand extends Command {
   @override
@@ -18,6 +20,7 @@ class NewCommand extends Command {
   NewCommand() {
     addSubcommand(NewConstellationCommand());
     addSubcommand(NewStarCommand());
+    addSubcommand(NewAddonCommand());
   }
 }
 
@@ -72,11 +75,47 @@ class NewStarCommand extends Command with GetRest {
 
   @override
   Future<void> run() async {
+    String constName = findOption("const");
     String name = getRest("Enter a name for the new star.");
-    final kit = SKit("${Arceus.constFolderPath}/${argResults?["const"]}.skit");
+    final kit = SKit("${Arceus.constFolderPath}/$constName.skit");
+    CliSpin spinner =
+        CliSpin(text: "Checking for changes...", spinner: CliSpinners.moon)
+            .start();
     final constellation = await kit.getConstellation();
-    final star = await constellation!.getCurrentStar().grow(name);
-    print("Created '${star.name}'!");
+    if (!await constellation!.checkForChanges()) {
+      spinner.warn("There are no changes in the constellation.");
+      final confirm = Confirm(
+              prompt: "Are you sure you want to create a new star?",
+              defaultValue: false)
+          .interact();
+      if (!confirm) {
+        return;
+      }
+    }
+    spinner =
+        CliSpin(text: "Creating '$name'...", spinner: CliSpinners.moon).start();
+    final star = await constellation.getCurrentStar().grow(name);
     await kit.save();
+    spinner.success("Created '${star.name}'!");
+  }
+}
+
+class NewAddonCommand extends Command {
+  @override
+  String get name => "addon";
+
+  @override
+  String get description => "Create a new addon from a project folder.";
+
+  NewAddonCommand() {
+    argParser.addOption('path', abbr: 'p', mandatory: true);
+  }
+
+  @override
+  Future<void> run() async {
+    String path = argResults!.option("path")!;
+    if (!await Directory(path).exists()) {
+      print("Directory does not exist!");
+    }
   }
 }

@@ -1,5 +1,5 @@
 import 'package:arceus/main.dart';
-import 'package:arceus/serekit/settings.dart';
+import 'package:arceus/serekit/sobjects/settings.dart';
 import 'package:args/command_runner.dart';
 import 'package:cli_spin/cli_spin.dart';
 import 'package:interact/interact.dart';
@@ -27,26 +27,32 @@ class SettingsCommand extends Command {
               .interact();
       switch (selection) {
         case 0:
-          final newFormat = Select(prompt: "Date Format", options: [
-            "Day/Month/Year",
-            "Month/Day/Year",
-          ]).interact();
+          final newFormat = Select(
+                  prompt: "Date Format",
+                  options: ["Day/Month/Year", "Month/Day/Year", "Cancel"],
+                  initialIndex: settings!.dateFormat.index)
+              .interact();
           switch (newFormat) {
             case 0:
               settings!.dateFormat = DateFormat.dayMonthYear;
             case 1:
               settings!.dateFormat = DateFormat.monthDayYear;
+            case 2:
+              continue;
           }
         case 1:
-          final newFormat = Select(prompt: "Time Format", options: [
-            "12-hour",
-            "24-hour",
-          ]).interact();
+          final newFormat = Select(
+                  prompt: "Time Format",
+                  options: ["12-hour", "24-hour", "Cancel"],
+                  initialIndex: settings!.timeFormat.index)
+              .interact();
           switch (newFormat) {
             case 0:
               settings!.timeFormat = TimeFormat.h12;
             case 1:
               settings!.timeFormat = TimeFormat.h24;
+            case 2:
+              continue;
           }
         default:
           if (selection >= options.length) {

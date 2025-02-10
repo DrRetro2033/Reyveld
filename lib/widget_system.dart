@@ -172,9 +172,9 @@ class MapLevel extends Level {
       }
     }
     final tree = buffer.toString().split('\n');
-    tree.removeWhere((x) => x.replaceAll(' ', "").isEmpty);
+    tree.removeWhere((x) => x.replaceAll(' ', '').isEmpty);
     String result = tree.join('\n');
-    return "$result\n";
+    return result;
   }
 }
 

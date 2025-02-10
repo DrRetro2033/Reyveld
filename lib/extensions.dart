@@ -1,6 +1,7 @@
 import 'dart:ffi';
 import 'dart:io';
 
+import 'package:args/command_runner.dart';
 import 'package:ffi/ffi.dart';
 
 // import 'package:arceus/scripting/addon.dart';
@@ -108,5 +109,15 @@ extension DifferenceChecking on List<int> {
       }
     }
     return true;
+  }
+}
+
+extension CommandGlobalCommands on Command {
+  String findOption<T>(String name) {
+    String? value = argResults!.option(name) ?? globalResults!.option(name);
+    if (value == null) {
+      throw ArgumentError.notNull(name);
+    }
+    return value;
   }
 }

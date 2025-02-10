@@ -1,6 +1,6 @@
 import 'package:arceus/main.dart';
-import 'package:arceus/serekit/serekit.dart';
-import 'package:arceus/serekit/file_system.dart';
+import 'package:arceus/serekit/sobject.dart';
+import 'package:arceus/serekit/sobjects/file_system.dart';
 import 'package:arceus/version_control/constellation.dart';
 import 'package:arceus/widget_system.dart';
 
@@ -58,8 +58,9 @@ class Star extends SObject {
   }
 
   /// Makes this star the current star.
-  void makeCurrent() {
+  Future<void> makeCurrent() async {
     constellation.currentHash = hash;
+    await archive.then((value) => value!.extract(constellation.path));
   }
 
   /// Returns the formatted name of the star file for displaying.
@@ -82,5 +83,10 @@ class Star extends SObject {
     final displayName =
         "$name $dateBadge$timeBadge${badges.isNotEmpty ? badges.join(" ") : ""}";
     return "${!isRoot && isSingleChild ? "↪ " : ""}$displayName${isCurrent ? "✨" : ""}";
+  }
+
+  Future<bool> checkForChanges() async {
+    return archive
+        .then<bool>((value) => value!.checkForChanges(constellation.path));
   }
 }
