@@ -2,6 +2,7 @@ import "dart:async";
 import "dart:convert";
 import "dart:io";
 import "package:arceus/extensions.dart";
+import "package:arceus/serekit/settings.dart";
 import "package:arceus/updater.dart";
 import "package:arceus/uuid.dart";
 import "package:arceus/version_control/constellation.dart";
@@ -12,41 +13,24 @@ import 'package:arceus/serekit/file_system.dart';
 
 export 'package:xml/xml.dart';
 
-/// The set of all [SFactory] objects.
-/// This is used to load [SObject]s from xml.
-final Set<SFactory> _sobjectFactories = {
-  ConstFactory(),
-  StarFactory(),
-  KitHeaderFactory(),
-  SArchiveFactory(),
-  SRArchiveFactory(),
-  SFileFactory(),
-};
-
-/// Get the factory for the given [SObject] subclass.
-/// Returns null if not found.
-SFactory<T> getSFactory<T extends SObject>(String? tag) {
-  final factory = _sobjectFactories
-      .whereType<SFactory<T>?>()
-      .firstWhere((e) => e!.tag == tag, orElse: () => null);
-  if (factory == null) {
-    throw Exception(
-        "No factory found for $T with tag $tag. Please make sure you added the factory for this tag!");
-  }
-  return factory;
-}
+part 'serekit.g.dart';
 
 /// Represents a compressed XML file.
 /// [SKit] is an abrivation for SERE kit, which is a reference to titanfall 2.
-/// [SKit]s can contain any data that Arceus needs. It can contain constellations, stars, users, settings, files, and more.
+/// [SKit]s can contain any data that Arceus would ever need. It can contain data about constellations, stars, users, settings, files, and more.
+/// The two core [SObject]s that is used in [SKit]s are the [SHeader] and [SArchive].
+/// The [SHeader] contains information about the kit (e.g. name, version, author, constellations, etc),
+/// while the [SArchive]s can contain muchn larger sets of data (e.g. save data, scripts, images, etc).
+///
+/// Every other [SObject] is optional and can be left out.
 class SKit {
   /// The path to the kit file.
   final String path;
 
-  /// The loaded [KitHeader] of the kit file.
+  /// The loaded [SHeader] of the kit file.
   /// This will be null if the kit file has not been loaded yet by calling [getKitHeader].
   /// Every subsequent call to [getKitHeader] will return this.
-  KitHeader? _kit;
+  SHeader? _kit;
   SKit(this.path);
 
   /// Returns the [File] of the kit file.
@@ -81,11 +65,11 @@ class SKit {
       .normalizeEvents()
       .withParentEvents();
 
-  /// Returns the [KitHeader] of the kit file.
+  /// Returns the [SHeader] of the kit file.
   /// This is used when loading a kit file.
-  FutureOr<KitHeader> getKitHeader() async {
+  FutureOr<SHeader> getKitHeader() async {
     if (_kit == null) {
-      final factory = KitHeaderFactory();
+      final factory = SHeaderFactory();
       final eventStream = _eventStream;
       _kit = (await eventStream
               .selectSubtreeEvents((e) => e.name == factory.tag)
@@ -102,7 +86,7 @@ class SKit {
   /// If the kit file already exists, it will throw an exception unless [overwrite] is true.
   /// If [type] is unspecified, it will be set to [SKitType.unspecified].
   /// Returns a future that completes when the kit file is created and saved.
-  Future<KitHeader> create(
+  Future<SHeader> create(
       {bool overwrite = false, SKitType type = SKitType.unspecified}) async {
     if (await _file.exists() && !overwrite) {
       throw Exception("Kit file already exists.");
@@ -111,10 +95,12 @@ class SKit {
     if (!await _file.exists()) {
       await _file.create(recursive: true);
     }
-    final factory = KitHeaderFactory();
+    final factory = SHeaderFactory();
     _kit = await factory.create(this, {"type": type});
     return _kit!;
   }
+
+  Future<bool> exists() => _file.exists();
 
   /// Returns a future set of all of the hashes used by the archives in the kit.
   /// This is used when creating a new archive.
@@ -294,8 +280,8 @@ enum SKitType { unspecified, constellation, constellationPack, addon, settings }
 
 /// The header node of a SERE kit file.
 /// This is the top level node of the kit file, and contains information about the kit, and the contents of the kit.
-class KitHeader extends SObject {
-  KitHeader(super.kit, super._node);
+class SHeader extends SObject {
+  SHeader(super.kit, super._node);
 
   DateTime get createdOn =>
       DateTime.parse(get("createdOn") ?? DateTime.now().toIso8601String());
@@ -314,9 +300,23 @@ class KitHeader extends SObject {
   String get version => get("version") ?? Updater.currentVersion.toString();
 
   SKitType get type => SKitType.values[int.parse(get("type") ?? "0")];
+
+  @override
+  void addChild(SObject child) {
+    if (child is SArchive || child is SFile) {
+      /// Stops anyone from adding an SArchive or SFile to the kit header.
+      /// This is because the kit header should be as small as possible to
+      /// save memory when accessing information about the kit.
+      ///
+      /// If you need to add an reference to an SArchive to the kit header,
+      /// use the [SRArchive] object instead.
+      throw Exception("Cannot add a SArchive or SFile to KitHeader!");
+    }
+    super.addChild(child);
+  }
 }
 
-class KitHeaderFactory extends SFactory<KitHeader> {
+class SHeaderFactory extends SFactory<SHeader> {
   @override
   String get tag => "sere";
 
@@ -326,8 +326,8 @@ class KitHeaderFactory extends SFactory<KitHeader> {
       };
 
   @override
-  KitHeader load(SKit kit, XmlNode node) {
-    return KitHeader(kit, node);
+  SHeader load(SKit kit, XmlNode node) {
+    return SHeader(kit, node);
   }
 
   @override
@@ -428,6 +428,8 @@ abstract class SObject {
     return null;
   }
 
+  /// Returns the parent of the xml node, if it has one.
+  /// If [filter] is provided, it will only return the parent that matches the filter.
   T? getParent<T extends SObject>({bool Function(T)? filter}) {
     if (_node.parentElement == null) return null;
     final factory = getSFactory(_node.parentElement!.name.local);
@@ -454,7 +456,9 @@ abstract class SObject {
     return descendants;
   }
 
-  T? getAncestor<T extends SObject>({bool Function(T)? filter}) {
+  /// Returns the closest ancestor of the xml node, if it has one.
+  List<T?> getAncestors<T extends SObject>({bool Function(T)? filter}) {
+    final ancest = <T>[];
     Iterable<XmlElement> ancestors = _node.ancestorElements;
     for (var ancestor in ancestors) {
       final factory = getSFactory(ancestor.name.local);
@@ -463,11 +467,12 @@ abstract class SObject {
       if (filter != null && !filter(obj)) {
         continue;
       }
-      return obj;
+      ancest.add(obj);
     }
-    return null;
+    return ancest;
   }
 
+  /// Returns the sibling of the xml node above it, if it has one.
   T? getSiblingAbove<T extends SObject>({bool Function(T)? filter}) {
     if (_node.previousElementSibling == null) return null;
     final factory = getSFactory(_node.previousElementSibling!.name.local);
@@ -477,6 +482,7 @@ abstract class SObject {
     return obj;
   }
 
+  /// Returns the sibling of the xml node below it, if it has one.
   T? getSiblingBelow<T extends SObject>({bool Function(T)? filter}) {
     if (_node.nextElementSibling == null) return null;
     final factory = getSFactory(_node.nextElementSibling!.name.local);

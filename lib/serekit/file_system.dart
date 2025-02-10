@@ -5,6 +5,8 @@ import 'dart:io';
 import 'package:arceus/extensions.dart';
 import 'package:arceus/serekit/serekit.dart';
 
+part 'file_system.g.dart';
+
 class SArchive extends SObject {
   static Set<String> markedForDeletion = {};
 
@@ -84,27 +86,6 @@ class SArchive extends SObject {
   }
 }
 
-class SArchiveFactory extends SFactory<SArchive> {
-  @override
-  String get tag => "archive";
-
-  @override
-  SArchive load(SKit kit, XmlNode node) => SArchive(kit, node);
-
-  @override
-  get requiredAttributes => {"hash": (dynamic value) => value is String};
-
-  @override
-  get creator =>
-      (XmlBuilder builder, [Map<String, dynamic> attributes = const {}]) {
-        final hash = attributes["hash"];
-        if (hash == null) throw ArgumentError.notNull("hash");
-        builder.element("archive", nest: () {
-          builder.attribute("hash", hash);
-        });
-      };
-}
-
 /// A file in an [SArchive].
 /// Contains the path of the file, and its data in the form of compressed base64.
 class SFile extends SObject {
@@ -123,31 +104,6 @@ class SFile extends SObject {
   String get textSync => utf8.decode(bytesSync);
 }
 
-/// Factory for creating [SFile]s.
-class SFileFactory extends SFactory<SFile> {
-  @override
-  String get tag => "file";
-
-  @override
-  get requiredAttributes => {
-        "path": (value) => value is String,
-        "data": (value) => value is List<int>
-      };
-
-  @override
-  SFile load(SKit kit, XmlNode node) => SFile(kit, node);
-
-  @override
-  get creator =>
-      (XmlBuilder builder, [Map<String, dynamic> attributes = const {}]) {
-        final path = attributes["path"] as String;
-        builder.element("file", nest: () async {
-          builder.attribute("path", path.fixPath());
-          builder.text(base64Encode(gzip.encode(attributes["data"])));
-        });
-      };
-}
-
 /// A reference to an [SArchive].
 /// Contains the hash of the archive.
 class SRArchive extends SReference<SArchive> {
@@ -161,24 +117,4 @@ class SRArchive extends SReference<SArchive> {
   FutureOr<SArchive?> getRef() async {
     return kit.getArchive(hash);
   }
-}
-
-class SRArchiveFactory extends SFactory<SRArchive> {
-  @override
-  String get tag => "rarchive";
-
-  @override
-  SRArchive load(SKit kit, XmlNode node) => SRArchive(kit, node);
-
-  @override
-  get requiredAttributes =>
-      {"hash": (value) => value is String && value.isNotEmpty};
-
-  @override
-  get creator =>
-      (XmlBuilder builder, [Map<String, dynamic> attributes = const {}]) {
-        builder.element("rarchive", nest: () {
-          builder.attribute("hash", attributes["hash"]);
-        });
-      };
 }

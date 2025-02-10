@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:arceus/serekit/serekit.dart';
+import 'package:arceus/serekit/settings.dart';
 import 'package:arceus/updater.dart';
 import 'package:arceus/extensions.dart';
 import 'package:version/version.dart';
@@ -85,6 +87,17 @@ class Arceus {
     } else if (Platform.isLinux) {
       await Process.run("xdg-open", [url], runInShell: true);
     }
+  }
+
+  static Future<SKit> getSettingKit() async {
+    final skit = SKit("${Arceus.appDataPath}/settings.skit");
+    if (!await skit.exists()) {
+      final header = await skit.create(type: SKitType.settings);
+      final settings = await ArceusSettingsFactory().create(skit);
+      header.addChild(settings);
+      await skit.save();
+    }
+    return skit;
   }
 }
 

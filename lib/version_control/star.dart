@@ -1,8 +1,14 @@
+import 'package:arceus/main.dart';
 import 'package:arceus/serekit/serekit.dart';
 import 'package:arceus/serekit/file_system.dart';
 import 'package:arceus/version_control/constellation.dart';
 import 'package:arceus/widget_system.dart';
 
+part 'star.g.dart';
+
+/// This class represents a star in a constellation.
+/// A star is a node in the constellation tree, and contains a reference to an archive.
+/// TODO: Add multi-user support, either by making a unique constellation for each user, or by associating the star with a user.
 class Star extends SObject {
   Star(super._kit, super._node);
 
@@ -25,7 +31,7 @@ class Star extends SObject {
   DateTime get createdOn => DateTime.parse(get("date")!);
 
   /// Returns the constellation of the star.
-  Constellation get constellation => getAncestor<Constellation>()!;
+  Constellation get constellation => getAncestors<Constellation>().first!;
 
   /// Returns true if the star is the root star.
   bool get isRoot => constellation.getChild<Star>() == this;
@@ -58,6 +64,7 @@ class Star extends SObject {
 
   /// Returns the formatted name of the star file for displaying.
   /// This is used when printing details about a star file to the terminal.
+  /// TODO: Add support for tags.
   String getDisplayName() {
     // int tagsToDisplay = 2;
     List<Badge> badges = [];
@@ -68,45 +75,12 @@ class Star extends SObject {
     //   badges.add(Badge("🏷️$tag"));
     //   tagsToDisplay--;
     // }
-    Badge dateBadge = Badge(
-        '📅${createdOn.year}/${createdOn.month}/${createdOn.day}',
-        badgeColor: "grey",
-        textColor: "white");
-    Badge timeBadge = Badge(
-        '🕒${createdOn.hour % 12 == 0 ? 12 : createdOn.hour % 12}:${createdOn.minute.toString().padLeft(2, '0')} ${createdOn.hour >= 12 ? 'PM' : 'AM'}',
-        badgeColor: "grey",
-        textColor: "white");
+    Badge dateBadge = Badge('📅${settings!.formatDate(createdOn)}',
+        badgeColor: "grey", textColor: "white");
+    Badge timeBadge = Badge('🕒${settings!.formatTime(createdOn)}',
+        badgeColor: "grey", textColor: "white");
     final displayName =
         "$name $dateBadge$timeBadge${badges.isNotEmpty ? badges.join(" ") : ""}";
     return "${!isRoot && isSingleChild ? "↪ " : ""}$displayName${isCurrent ? "✨" : ""}";
   }
-}
-
-/// Factory for [Star] objects.
-class StarFactory extends SFactory<Star> {
-  @override
-  String get tag => "star";
-
-  @override
-  Star load(SKit kit, XmlNode node) => Star(kit, node);
-
-  @override
-  get requiredAttributes => {
-        "name": (value) => value is String && value.isNotEmpty,
-        "hash": (value) => value is String && value.isNotEmpty,
-        "archiveHash": (value) => value is String && value.isNotEmpty,
-      };
-
-  @override
-  get creator =>
-      (XmlBuilder builder, [Map<String, dynamic> attributes = const {}]) {
-        builder.element("star", nest: () {
-          builder.attribute("name", attributes["name"]);
-          builder.attribute("hash", attributes["hash"]);
-          builder.attribute("date", DateTime.now().toIso8601String());
-          builder.element("rarchive", nest: () {
-            builder.attribute("hash", attributes["archiveHash"]);
-          });
-        });
-      };
 }
