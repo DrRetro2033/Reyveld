@@ -1,6 +1,14 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
 part of 'description.dart';
 
+// **************************************************************************
+// SGenGenerator
+// **************************************************************************
+
 class DescriptionFactory extends SFactory<Description> {
+  DescriptionFactory();
+
   @override
   Description load(SKit kit, XmlNode node) => Description(kit, node);
 
@@ -8,14 +16,9 @@ class DescriptionFactory extends SFactory<Description> {
   String get tag => "descr";
 
   @override
-  get requiredAttributes =>
-      {"text": (value) => value is String && value.isNotEmpty};
-
-  @override
-  get creator =>
-      (XmlBuilder builder, [Map<String, dynamic> attributes = const {}]) {
+  get creator => (builder, [attributes = const {}]) {
         builder.element(tag, nest: () {
-          builder.text(attributes["text"]);
+          Description.create(builder, attributes);
         });
       };
 }

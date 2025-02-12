@@ -1,19 +1,24 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
 part of 'settings.dart';
 
+// **************************************************************************
+// SGenGenerator
+// **************************************************************************
+
 class ArceusSettingsFactory extends SFactory<ArceusSettings> {
-  @override
-  String get tag => "settings";
+  ArceusSettingsFactory();
 
   @override
   ArceusSettings load(SKit kit, XmlNode node) => ArceusSettings(kit, node);
 
   @override
-  // TODO: implement creator
-  get creator =>
-      (XmlBuilder builder, [Map<String, dynamic>? attributes]) async {
-        builder.element("settings", nest: () {
-          builder.attribute("date-format", DateFormat.dayMonthYear.index);
-          builder.attribute("time-format", TimeFormat.h12.index);
+  String get tag => "settings";
+
+  @override
+  get creator => (builder, [attributes = const {}]) {
+        builder.element(tag, nest: () {
+          ArceusSettings.create(builder, attributes);
         });
       };
 }

@@ -1,71 +1,58 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
 part of 'file_system.dart';
 
+// **************************************************************************
+// SGenGenerator
+// **************************************************************************
+
 class SArchiveFactory extends SFactory<SArchive> {
-  @override
-  String get tag => "archive";
+  SArchiveFactory();
 
   @override
   SArchive load(SKit kit, XmlNode node) => SArchive(kit, node);
 
   @override
-  get requiredAttributes => {"hash": (dynamic value) => value is String};
+  String get tag => "archive";
 
   @override
-  get creator =>
-      (XmlBuilder builder, [Map<String, dynamic> attributes = const {}]) {
-        final hash = attributes["hash"];
-        if (hash == null) throw ArgumentError.notNull("hash");
-        builder.element("archive", nest: () {
-          builder.attribute("hash", hash);
+  get creator => (builder, [attributes = const {}]) {
+        builder.element(tag, nest: () {
+          SArchive.create(builder, attributes);
         });
       };
 }
 
-/// Factory for creating [SFile]s.
 class SFileFactory extends SFactory<SFile> {
-  @override
-  String get tag => "file";
-
-  @override
-  get requiredAttributes => {
-        "path": (value) => value is String,
-        "data": (value) => value is Stream<List<int>>
-      };
+  SFileFactory();
 
   @override
   SFile load(SKit kit, XmlNode node) => SFile(kit, node);
 
   @override
-  get creator =>
-      (XmlBuilder builder, [Map<String, dynamic> attributes = const {}]) async {
-        final path = attributes["path"] as String;
-        final bytes = (attributes["data"] as Stream<List<int>>)
-            .transform(gzip.encoder)
-            .transform(base64.encoder);
-        final data = await bytes.reduce((a, b) => a + b);
-        builder.element("file", nest: () async {
-          builder.attribute("path", path.fixPath());
-          builder.text(data);
+  String get tag => "file";
+
+  @override
+  get creator => (builder, [attributes = const {}]) {
+        builder.element(tag, nest: () {
+          SFile.create(builder, attributes);
         });
       };
 }
 
 class SRArchiveFactory extends SFactory<SRArchive> {
-  @override
-  String get tag => "rarchive";
+  SRArchiveFactory();
 
   @override
   SRArchive load(SKit kit, XmlNode node) => SRArchive(kit, node);
 
   @override
-  get requiredAttributes =>
-      {"hash": (value) => value is String && value.isNotEmpty};
+  String get tag => "rarchive";
 
   @override
-  get creator =>
-      (XmlBuilder builder, [Map<String, dynamic> attributes = const {}]) {
-        builder.element("rarchive", nest: () {
-          builder.attribute("hash", attributes["hash"]);
+  get creator => (builder, [attributes = const {}]) {
+        builder.element(tag, nest: () {
+          SRArchive.create(builder, attributes);
         });
       };
 }

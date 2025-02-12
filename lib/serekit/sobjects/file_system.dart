@@ -7,6 +7,7 @@ import 'package:arceus/serekit/sobject.dart';
 
 part 'file_system.g.dart';
 
+@SGen("archive")
 class SArchive extends SObject {
   static Set<String> markedForDeletion = {};
 
@@ -33,8 +34,8 @@ class SArchive extends SObject {
   /// Adds a file to the archive.
   /// [filepath] should be relative to the archive. For instance: "C://path/to/folder/example.txt" will translate to "example.txt".
   Future<void> addFile(String filepath, Stream<List<int>> data) async {
-    final file =
-        await SFileFactory().create(kit, {"path": filepath, "data": data});
+    final file = await getSFactory<SFile>()
+        .create(kit, {"path": filepath, "data": data});
     addSFile(file);
   }
 
@@ -110,10 +111,19 @@ class SArchive extends SObject {
       await sink.close();
     }
   }
+
+  static void create(XmlBuilder builder, Map<String, dynamic> attributes) {
+    if (!attributes.containsKey("hash") || attributes["hash"] == null) {
+      throw ArgumentError.notNull("hash");
+    }
+    final hash = attributes["hash"];
+    builder.attribute("hash", hash);
+  }
 }
 
 /// A file in an [SArchive].
 /// Contains the path of the file, and its data in the form of compressed base64.
+@SGen("file")
 class SFile extends SObject {
   SFile(super._kit, super._node);
 
@@ -138,10 +148,27 @@ class SFile extends SObject {
 
   /// Returns the data of the file as a string.
   String get textSync => utf8.decode(bytesSync);
+
+  static Future<void> create(
+      XmlBuilder builder, Map<String, dynamic> attributes) async {
+    if (!attributes.containsKey("path") || attributes["path"] == null) {
+      throw ArgumentError.notNull("path");
+    } else if (!attributes.containsKey("data") || attributes["data"] == null) {
+      throw ArgumentError.notNull("data");
+    }
+    final path = attributes["path"] as String;
+    final bytes = (attributes["data"] as Stream<List<int>>)
+        .transform(gzip.encoder)
+        .transform(base64.encoder);
+    final data = await bytes.reduce((a, b) => a + b);
+    builder.attribute("path", path.fixPath());
+    builder.text(data);
+  }
 }
 
 /// A reference to an [SArchive].
 /// Contains the hash of the archive.
+@SGen("rarchive")
 class SRArchive extends SReference<SArchive> {
   SRArchive(super.kit, super.node);
 
@@ -152,5 +179,13 @@ class SRArchive extends SReference<SArchive> {
   @override
   FutureOr<SArchive?> getRef() async {
     return kit.getArchive(hash);
+  }
+
+  static void create(XmlBuilder builder, Map<String, dynamic> attributes) {
+    if (!attributes.containsKey("hash") || attributes["hash"] == null) {
+      throw ArgumentError.notNull("hash");
+    }
+    final hash = attributes["hash"];
+    builder.attribute("hash", hash);
   }
 }

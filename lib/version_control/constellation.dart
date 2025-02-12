@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:arceus/extensions.dart';
 import 'package:arceus/serekit/sobject.dart';
@@ -9,6 +8,7 @@ import 'package:arceus/widget_system.dart';
 
 part 'constellation.g.dart';
 
+@SGen("const")
 class Constellation extends SObject {
   Constellation(super._kit, super._node);
 
@@ -30,7 +30,7 @@ class Constellation extends SObject {
   /// This is used when creating a new constellation.
   Future<Star> createRootStar() async {
     final archive = await kit.archiveFolder(path);
-    final rootStar = await StarFactory().create(kit, {
+    final rootStar = await getSFactory<Star>().create(kit, {
       "name": "Initial Star",
       "archiveHash": archive.hash,
       "hash": newStarHash()
@@ -189,5 +189,23 @@ class Constellation extends SObject {
 
   Future<bool> checkForChanges() {
     return getCurrentStar().checkForChanges();
+  }
+
+  static create(XmlBuilder builder, Map<String, dynamic> attributes) {
+    if (!attributes.containsKey("name") || attributes["name"] == null) {
+      attributes["name"] = "Constellation";
+    }
+    if (!attributes.containsKey("path") || attributes["path"] == null) {
+      throw ArgumentError.notNull("path");
+    }
+    builder.attribute("name", attributes["name"]);
+    builder.attribute("path", attributes["path"]);
+  }
+}
+
+extension ConstellationExtension on SKit {
+  Future<Constellation?> getConstellation() async {
+    final header = await getKitHeader();
+    return header.getChild<Constellation>();
   }
 }

@@ -5,7 +5,7 @@ part of 'serekit.dart';
 /// The set of all [SFactory] objects.
 /// This is used to load [SObject]s from xml.
 final Set<SFactory> _sobjectFactories = {
-  ConstFactory(),
+  ConstellationFactory(),
   StarFactory(),
   SHeaderFactory(),
   SArchiveFactory(),
@@ -18,10 +18,12 @@ final Set<SFactory> _sobjectFactories = {
 
 /// Get the factory for the given [SObject] subclass.
 /// Returns null if not found.
-SFactory<T> getSFactory<T extends SObject>(String? tag) {
-  final factory = _sobjectFactories
-      .whereType<SFactory<T>?>()
-      .firstWhere((e) => e!.tag == tag, orElse: () => null);
+SFactory<T> getSFactory<T extends SObject>([String? tag]) {
+  final factories = _sobjectFactories.whereType<SFactory<T>?>();
+  SFactory<T>? factory = factories.first;
+  if (tag != null) {
+    factory = factories.firstWhere((e) => e!.tag == tag, orElse: () => null);
+  }
   if (factory == null) {
     throw Exception(
         "No factory found for $T with tag $tag. Please make sure you added the factory for this tag in serekit.g.dart!");

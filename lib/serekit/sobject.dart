@@ -5,6 +5,7 @@ import 'package:xml/xml.dart';
 
 export 'package:xml/xml.dart';
 export 'package:arceus/serekit/serekit.dart';
+export 'package:arceus/build_runner/annotations.dart';
 
 /// A object that wraps around a [XmlNode] and provides a simple API to access its attributes, children, and more.
 /// SObjects must have a [SFactory] object inside the [_sobjectFactories] (inside serekit.g.dart) set in order to be parsed from xml.
@@ -177,35 +178,6 @@ abstract class SFactory<T extends SObject> {
   /// Will be checked if unique in [_sobjectFactories].
   String get tag;
 
-  /// The attributes that are required for creation of the object.
-  /// The values are functions for not only checking if a value is in the correct format,
-  /// but also if they are the correct type.
-  /// If an attribute is not required, it should not be included in [optionalAttributes].
-  ///
-  /// Example:
-  /// ```dart
-  /// get requiredAttributes => {
-  ///   "name": (value) => value is String && value.length <= 20,
-  ///   "age": (value) => value is int,
-  ///   ...
-  /// };
-  /// ```
-  Map<String, FutureOr<bool> Function(dynamic)> get requiredAttributes => {};
-
-  /// The attributes that are optional for creation of the object.
-  /// The values are functions for checking if a value is in the correct format and is the correct type.
-  /// If an attribute is not optional, it should be included in [requiredAttributes].
-  ///
-  /// Example:
-  /// ```dart
-  /// get optionalAttributes => {
-  ///   "name": (value) => value is String && value.length <= 20,
-  ///   "age": (value) => value is int,
-  ///   ...
-  /// };
-  /// ```
-  Map<String, FutureOr<bool> Function(dynamic)> get optionalAttributes => {};
-
   /// Loads the [SObject] from the xml node.
   /// The [SKit] and the [XmlNode] are passed for accessing the underlying xml data,
   /// and the file it came from.
@@ -215,27 +187,6 @@ abstract class SFactory<T extends SObject> {
   /// Returns the new object as a futureor of the type [T].
   FutureOr<T> create(SKit kit,
       [Map<String, dynamic> attributes = const {}]) async {
-    if (requiredAttributes.isNotEmpty) {
-      for (var attribute in requiredAttributes.keys) {
-        if (!attributes.containsKey(attribute)) {
-          throw ArgumentError(
-              "Missing '$attribute'. Attributes needed: ${requiredAttributes.keys.join(", ")}");
-        }
-        final check =
-            await requiredAttributes[attribute]!(attributes[attribute]);
-        if (!check) {
-          throw Exception("$attribute failed check!");
-        }
-      }
-    }
-    if (optionalAttributes.isNotEmpty) {
-      for (var attribute in optionalAttributes.keys) {
-        if (attributes.containsKey(attribute) &&
-            !await optionalAttributes[attribute]!(attributes[attribute])) {
-          throw ArgumentError("Invalid optional value for '$attribute'.");
-        }
-      }
-    }
     final builder = XmlBuilder();
     await creator(builder, attributes);
     final frag = builder.buildDocument();

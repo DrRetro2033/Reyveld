@@ -7,6 +7,7 @@ import 'package:version/version.dart';
 
 part 'addon.g.dart';
 
+@SGen("addon")
 class Addon extends SObject {
   Addon(super.kit, super.node);
 
@@ -16,6 +17,10 @@ class Addon extends SObject {
 
   /// Returns the script archive from the addon.
   FutureOr<SArchive?> get archive => getChild<SRArchive>()!.getRef();
+
+  static create(XmlBuilder builder, Map<String, dynamic> attributes) {
+    return;
+  }
 }
 
 enum FeatureSets {

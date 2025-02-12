@@ -9,39 +9,46 @@
 
 # What is Arceus?
 
-Arceus designed from the ground up to be the ultimate save manager and editor for every game under the sun! Not just Pokémon!
+Arceus is a command line application that gives every day users the power and flexiblity of software like Git, without the complexly and headaches of using such software. Arceus should be usable for every game, program, and project under the sun! Not just Pokémon!
 
 # Why does it exist?
 
-Arceus was created to be an easier and feature rich save manager that combines elements of both save management and editing into one program, with a sprinkle of version control as well.
+Arceus was created to be simple way for regular users to be able to quickly and efficiently backup savedata with more advanced tools. However, it has evolved into a more generalized toolkit for working with files.
 
 ## Branch Off Into Different Timelines 🌌
-![Branch Demo](images/render1734887464583.gif)
-With Arceus, you can create branches of your save, so multiple versions of one save can exist simultaneously.
 
-## Rollback to Older Saves 🕔
+```
+arceus new const "Pokémon X"
+```
 
-Arceus allows you to rollback saves to earlier versions, preserving your previous save-data in case you make a mistake.
+With Arceus, you can create branches of a folder, so multiple versions can exist simultaneously. So no matter the mistake, Arceus can help you get back on track.
+
+## Rollback to Older Versions 🕔
+
+```
+arceus -c "Pokémon X" jump back
+```
+
+Arceus allows you to rollback saves to earlier versions, preserving your previous changes in case you want to return.
 
 ## Keep track of YOUR saves 👥
 
-Multiple people can play the same game, even if it’s not designed for switching between different players. Just create an user profile!
+```
+arceus -c "Pokémon X" login
+```
+
+Got someone else who wants to join in the fun? Don't worry, Arceus has got you covered. With profiles, multiple people can use the same constellation! So if your family happens to wanna do something on your device (i.e. PC, Steam Deck, Mac, etc.), you can sleep soundly knowing your progress is safe.
 
 ## Share your journey 🗺️
 
-Share your journey with others by packing up your progress into a single file.
+SKits allow you to package your constellation up, and send it off to anyone who also has Arceus.
 
 ## Go Beyond with Add-Ons 📦
 
 Arceus integrates Squirrel, enabling anyone to add new functionality to Arceus. Add-ons make it easy to read and write to files, integrate game launchers like Steam, and so much more!
+
 > [!NOTE]
 > In the future, I plan to add built-in functionality for easier transfer tool creation, similar to Pokémon Bank. For now, you’ll need to build your own transfer tools.
-
-## Built-In Hex Editor #️⃣
-
-Arceus includes a CLI hex editor you can use to edit saves, view changes, and test plugins!
-
-![alt text](images/image.png)
 
 ## Cross Platform 🖥️📱
 
@@ -49,15 +56,37 @@ Arceus can run on any modern device!
 
 ## Developer Friendly 🤝
 
-Any developer can use Arceus in their projects, even you! Just remember to give credit if you incorporate it into your project.
+Anyone can use Arceus in their projects, even you! Just remember to give credit if you incorporate it into your project.
+
 > [!NOTE]
 > If you want an example of what you can do with Arceus, check out my other project [MudkiPC](https://github.com/Pokemon-Manager/MudkiPC).
+
+---
+
+# SKits
+
+Arceus uses a brand new file format called SKit. SKit uses XML and GZip to store everything Arceus could ever need, replacing the use of ZIP files and JSON.
+
+## Blazingly Fast ⚡
+
+SKits are quick to read from disk, with everything essential already at the top of the file.
+
+## Multi-Purpose 🫙
+
+Arceus has already switched to saving settings, stars, constellations, users, addons, and more into SKits.
+
+## Tiny Size 🐁
+
+Using GZip to compress its data down, SKit does not bloat your storage or memory, loading nothing but the bare essentials.
+
+---
 
 ## With more to come...
 
 Arceus is growing and evolving, so please, feel free to suggest features that you would love to see!
 
 # Want to Try?
+
 Click the badge below to download the latest artifact.
 
 [![Build](https://github.com/DrRetro2033/Arceus/actions/workflows/build.yml/badge.svg)](https://github.com/DrRetro2033/Arceus/actions/workflows/build.yml)
@@ -65,43 +94,46 @@ Click the badge below to download the latest artifact.
 ![How to download artifacts.](images/download_archive.GIF)
 
 > [!WARNING]
-> Please keep in mind that Arceus is still in alpha, and it is not 
+> Please keep in mind that Arceus is still in alpha, and it is not
 > optimized for files larger than a few megabytes.
 
 ## Comparison with Other Save Managers:
-| Feature | Arceus | [GameSave Manager](https://www.gamesave-manager.com/) | [Ludusavi](https://github.com/mtkennerly/ludusavi) |
-| --- | --- | --- | --- |
-| Tree Structuring | ✅ | ❌ | ❌ |
-| Multi-User Support | ✅ | ❌ | ❌ |
-| Save Editing | ✅ | ❌ | ❌ |
-| Addon Support | ✅ | ❌ | ❌ |
-| Sharing | ✅ | ❌ | ❌ |
-| Cloud-Sync | ❌ | ✅ | ✅ |
-| Open-Source | ✅ | ❌ | ✅ | 
-| Integration w/ Steam | ❌ | ✅ | ✅ |
-| Integration w/ GOG | ❌ | ✅ | ✅ |
-| Integration w/ Epic | ❌ | ✅ | ✅ |
-| Integration w/ Origin/EA | ❌ | ✅ | ✅ |
 
+| Feature                  | Arceus | [GameSave Manager](https://www.gamesave-manager.com/) | [Ludusavi](https://github.com/mtkennerly/ludusavi) |
+| ------------------------ | ------ | ----------------------------------------------------- | -------------------------------------------------- |
+| Tree Structuring         | ✅     | ❌                                                    | ❌                                                 |
+| Multi-User Support       | ✅     | ❌                                                    | ❌                                                 |
+| Save Editing             | ✅     | ❌                                                    | ❌                                                 |
+| Addon Support            | ✅     | ❌                                                    | ❌                                                 |
+| Sharing                  | ✅     | ❌                                                    | ❌                                                 |
+| Cloud-Sync               | ❌     | ✅                                                    | ✅                                                 |
+| Open-Source              | ✅     | ❌                                                    | ✅                                                 |
+| Integration w/ Steam     | ❌     | ✅                                                    | ✅                                                 |
+| Integration w/ GOG       | ❌     | ✅                                                    | ✅                                                 |
+| Integration w/ Epic      | ❌     | ✅                                                    | ✅                                                 |
+| Integration w/ Origin/EA | ❌     | ✅                                                    | ✅                                                 |
 
 # Planned Features for the Future
 
 ## Frontend GUI 🖱️
+
 Create a GUI frontend for Arceus to make it even simpler to use.
 
 ## Save on Close ❌
+
 Whenever you close a game, Arceus will grow a star from the current, ensuring you can return to a previous save without lifting a finger.
 
 ## Cloud Backups ☁️
+
 Transfer your game saves between devices and keep them safe from data loss.
 
-|Planned | Service |
-| --- | --- |
-| ✅ Yes| Google Drive |
-| ✅ Yes| OneDrive |
-| ⚠️ Maybe| Dropbox |
-| ⚠️ Maybe| Self-hosted |
-| ❌ Unlikely| iCloud |
+| Planned     | Service      |
+| ----------- | ------------ |
+| ✅ Yes      | Google Drive |
+| ✅ Yes      | OneDrive     |
+| ⚠️ Maybe    | Dropbox      |
+| ⚠️ Maybe    | Self-hosted  |
+| ❌ Unlikely | iCloud       |
 
 # Use Cases
 

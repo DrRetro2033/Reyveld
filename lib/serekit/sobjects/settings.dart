@@ -4,6 +4,7 @@ import 'package:arceus/serekit/sobject.dart';
 
 part 'settings.g.dart';
 
+@SGen("settings")
 class ArceusSettings extends SObject {
   ArceusSettings(super.kit, super.node);
 
@@ -38,6 +39,11 @@ class ArceusSettings extends SObject {
       case TimeFormat.h24:
         return "${date.hour}:${date.minute}";
     }
+  }
+
+  static create(XmlBuilder builder, Map<String, dynamic> attributes) {
+    builder.attribute("date-format", DateFormat.dayMonthYear.index);
+    builder.attribute("time-format", TimeFormat.h12.index);
   }
 }
 

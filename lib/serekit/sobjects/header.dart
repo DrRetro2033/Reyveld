@@ -6,6 +6,7 @@ part 'header.g.dart';
 
 /// The header node of a SERE kit file.
 /// This is the top level node of the kit file, and contains information about the kit, and the contents of the kit.
+@SGen("sere")
 class SHeader extends SObject {
   SHeader(super.kit, super._node);
 
@@ -39,5 +40,16 @@ class SHeader extends SObject {
       throw Exception("Cannot add a SArchive or SFile to KitHeader!");
     }
     super.addChild(child);
+  }
+
+  static void create(XmlBuilder builder, Map<String, dynamic> attributes) {
+    if (!attributes.containsKey("type") || attributes["type"] == null) {
+      throw ArgumentError.notNull("type");
+    }
+    final type = attributes["type"] as SKitType;
+    builder.attribute("createdOn", DateTime.now().toIso8601String());
+    builder.attribute("lastModified", DateTime.now().toIso8601String());
+    builder.attribute("version", Updater.currentVersion.toString());
+    builder.attribute("type", type.index.toString());
   }
 }

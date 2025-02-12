@@ -7,14 +7,14 @@ import "package:arceus/uuid.dart";
 import 'package:rxdart/rxdart.dart';
 
 import "package:arceus/extensions.dart";
-import "package:arceus/scripting/addon.dart";
 
 import 'package:arceus/serekit/sobject.dart';
 import 'package:arceus/serekit/sobjects/sobjects.dart';
+import "package:arceus/scripting/addon.dart";
 import "package:arceus/version_control/constellation.dart";
 import "package:arceus/version_control/star.dart";
 
-part 'serekit.g.dart';
+part 'serekit.factories.dart';
 
 enum SKitType { unspecified, constellation, constellationPack, addon, settings }
 
@@ -73,7 +73,7 @@ class SKit {
   /// This is used when loading a kit file.
   FutureOr<SHeader> getKitHeader() async {
     if (_kit == null) {
-      final factory = SHeaderFactory();
+      final factory = getSFactory<SHeader>();
       final eventStream = _eventStream;
       _kit = (await eventStream
               .selectSubtreeEvents((e) => e.name == factory.tag)
@@ -99,7 +99,7 @@ class SKit {
     if (!await _file.exists()) {
       await _file.create(recursive: true);
     }
-    final factory = SHeaderFactory();
+    final factory = getSFactory<SHeader>();
     _kit = await factory.create(this, {"type": type});
     return _kit!;
   }
@@ -109,7 +109,7 @@ class SKit {
   /// Returns a future set of all of the hashes used by the archives in the kit.
   /// This is used when creating a new archive.
   Future<Set<String>> getArchiveHashes() async {
-    final factory = SArchiveFactory();
+    final factory = getSFactory<SArchive>();
     final eventStream = _eventStream;
     return (await eventStream
             .selectSubtreeEvents((e) => e.name == factory.tag)
@@ -127,7 +127,7 @@ class SKit {
   /// This is used when saving an already existing kit file.
   /// Does not stream loaded, or marked for deletion archives.
   Stream<SArchive> _streamUnloadedArchives() {
-    final factory = SArchiveFactory();
+    final factory = getSFactory<SArchive>();
     return _eventStream
         .selectSubtreeEvents((e) {
           // Only loads unloaded and undeleted archives.
@@ -154,7 +154,7 @@ class SKit {
   /// This does not save the archive to the kit file immediately.
   /// It is added to the [_loadedArchives] list, and will be saved when [save] is called.
   Future<SArchive> createEmptyArchive() async {
-    final factory = SArchiveFactory();
+    final factory = getSFactory<SArchive>();
     final archive = await factory.create(this, {"hash": generateUUID()});
     _loadedArchives.add(archive);
     return archive;
@@ -185,7 +185,7 @@ class SKit {
       // if the archive is already loaded, return it.
       return _loadedArchives.firstWhere((e) => e.hash == hash);
     }
-    final factory = SArchiveFactory(); // get the archive factory
+    final factory = getSFactory<SArchive>(); // get the archive factory
     final eventStream = _eventStream; // get the event stream
     final commits = await eventStream
         .selectSubtreeEvents((e) =>

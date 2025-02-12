@@ -9,6 +9,7 @@ part 'star.g.dart';
 /// This class represents a star in a constellation.
 /// A star is a node in the constellation tree, and contains a reference to an archive.
 /// TODO: Add multi-user support, either by making a unique constellation for each user, or by associating the star with a user.
+@SGen("star")
 class Star extends SObject {
   Star(super._kit, super._node);
 
@@ -45,7 +46,7 @@ class Star extends SObject {
   /// Grows a new star from this star.
   /// Returns the new star.
   Future<Star> grow(String name) async {
-    final factory = StarFactory();
+    final factory = getSFactory<Star>();
     final archive = await kit.archiveFolder(constellation.path);
     final star = await factory.create(kit, {
       "name": name,
@@ -100,5 +101,23 @@ class Star extends SObject {
   Future<bool> checkForChanges() async {
     return archive
         .then<bool>((value) => value!.checkForChanges(constellation.path));
+  }
+
+  static create(XmlBuilder builder, Map<String, dynamic> attributes) {
+    if (!attributes.containsKey("name") || attributes["name"] == null) {
+      attributes["name"] = "Star";
+    }
+    if (!attributes.containsKey("hash") || attributes["hash"] == null) {
+      throw ArgumentError.notNull("hash");
+    }
+    if (!attributes.containsKey("archiveHash") ||
+        attributes["archiveHash"] == null) {
+      throw ArgumentError.notNull("archiveHash");
+    }
+    builder.attribute("name", attributes["name"]);
+    builder.attribute("hash", attributes["hash"]);
+    builder.attribute("date", DateTime.now().toIso8601String());
+    getSFactory<SRArchive>()
+        .creator(builder, {"hash": attributes["archiveHash"]});
   }
 }
