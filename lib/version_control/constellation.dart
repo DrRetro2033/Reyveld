@@ -55,7 +55,7 @@ class Constellation extends SObject {
 
   Star getMostRecentStar() {
     final stars = getDescendants<Star>();
-    stars.sort((a, b) => b!.createdOn.compareTo(a!.createdOn));
+    stars.sort((a, b) => a!.createdOn.compareTo(b!.createdOn));
     return stars.last ?? root;
   }
 

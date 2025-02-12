@@ -22,6 +22,7 @@ Available Actions:
   - root: Jump to root star.
   - forward X: Jump forward by X stars.
   - back X: Jump backward by X stars.
+  - 
 """;
 
   @override
@@ -58,6 +59,6 @@ Available Actions:
     final star = constellation.getStarAt(commands);
     await star.makeCurrent();
     await kit.save();
-    spinner.success("Jumped to ${constellation.getCurrentStar().name}!");
+    spinner.success("Jumped to '${constellation.getCurrentStar().name}'!");
   }
 }

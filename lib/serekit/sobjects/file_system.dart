@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:arceus/arceus.dart';
 import 'package:arceus/extensions.dart';
 import 'package:arceus/serekit/sobject.dart';
 
@@ -21,15 +22,17 @@ class SArchive extends SObject {
   DateTime get archivedOn => DateTime.parse(get("date")!);
 
   /// Marks the archive for deletion.
-  /// Adds the archive's hash to the [markedForDeletion] set.
+  /// Adds the archive's hash to the [markedForDeletion] set in the [SArchive] class.
   void markForDeletion() => markedForDeletion.add(hash);
+
+  bool get isDeleted => markedForDeletion.contains(hash);
 
   /// Adds a [SFile] to the archive.
   void addSFile(SFile file) => addChild(file);
 
   /// Adds a file to the archive.
   /// [filepath] should be relative to the archive. For instance: "C://path/to/folder/example.txt" will translate to "example.txt".
-  Future<void> addFile(String filepath, List<int> data) async {
+  Future<void> addFile(String filepath, Stream<List<int>> data) async {
     final file =
         await SFileFactory().create(kit, {"path": filepath, "data": data});
     addSFile(file);
@@ -54,6 +57,7 @@ class SArchive extends SObject {
         final filePath = file.path.relativeTo(path);
         final archiveFile = getFile(filePath);
         if (archiveFile == null) {
+          // does the archive have this file?
           return true;
         }
       }
@@ -63,18 +67,30 @@ class SArchive extends SObject {
     for (final file in files) {
       final filePath = "$path/${file!.path}";
       final extFile = File(filePath);
+      // does the external version of the file exist?
       if (!await extFile.exists()) {
         return true; // file was deleted
       }
       final extFileRandomAccess = await extFile.open();
-      if (await extFileRandomAccess.length() != file.bytesSync.length) {
+      final extLength = await extFileRandomAccess.length();
+      final length = await file.length;
+      if (length != extLength) {
+        Arceus.talker.warning(
+            "Miss matched file length to external: $length ~ $extLength");
         return true;
       }
-      for (int pos = 0; pos < await extFileRandomAccess.length(); pos++) {
-        final byte = await extFileRandomAccess
-            .setPosition(pos)
-            .then<int>((ext) => ext.readByte());
-        if (byte != file.bytesSync[pos]) {
+      if (await file.length == 0) {
+        continue;
+      }
+      await extFileRandomAccess.setPosition(0);
+      await for (List<int> chunk in file.bytes) {
+        if (await extFileRandomAccess.position() + chunk.length >=
+            await extFileRandomAccess.length()) {
+          break;
+        }
+        final extChunk = await extFileRandomAccess.read(chunk.length);
+        if (!chunk.equals(extChunk)) {
+          Arceus.talker.warning("Miss matched chunks: $chunk ~ $extChunk");
           return true;
         }
       }
@@ -88,7 +104,10 @@ class SArchive extends SObject {
       final filePath = "$path/${file!.path}";
       final extFile = File(filePath);
       await extFile.create(recursive: true);
-      await extFile.writeAsBytes(file.bytesSync);
+      final sink = extFile.openWrite();
+      await sink.addStream(file.bytes);
+      await sink.flush();
+      await sink.close();
     }
   }
 }
@@ -103,9 +122,19 @@ class SFile extends SObject {
 
   /// Returns the data of the file as a list of bytes.
   List<int> get bytesSync {
-    final encoded = innerText!;
-    return gzip.decode(base64Decode(encoded));
+    return gzip.decode(base64Decode(innerText!));
   }
+
+  /// Returns a stream of the bytes stored, uncompressing along the way.
+  Stream<List<int>> get bytes =>
+      Stream.fromIterable(base64Decode(innerText!).chunk(32))
+          .transform(gzip.decoder);
+
+  /// Attempts to get the length of the file. If it fails, then it will return a 0;
+  Future<int> get length => bytes
+      .map<int>((chunk) => chunk.length)
+      .reduce((a, b) => a + b)
+      .catchError((e) => 0);
 
   /// Returns the data of the file as a string.
   String get textSync => utf8.decode(bytesSync);

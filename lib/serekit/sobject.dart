@@ -36,9 +36,7 @@ abstract class SObject {
   XmlNode? get parent => _node.parent;
 
   /// Returns the inner text of the xml node.
-  String? get innerText {
-    return _node.innerText;
-  }
+  String? get innerText => _node.innerText;
 
   /// Checks if the xml node has an attribute.
   /// Should be used when checking if an attribute exists, if needed.
@@ -56,6 +54,10 @@ abstract class SObject {
     if (_node.contains(child._node)) {
       child._node.remove();
     }
+  }
+
+  void unparent() {
+    _node.remove();
   }
 
   /// Returns a list of children of the xml node, with the specific type.
@@ -160,7 +162,7 @@ abstract class SObject {
   }
 
   /// Returns the xml node as a xml String.
-  String toXmlString() => "\n${_node.toXmlString(pretty: true)}";
+  String toXmlString() => _node.toXmlString(pretty: true, newLine: "\n");
 }
 
 /// A base factory for creating [SObject]s.

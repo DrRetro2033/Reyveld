@@ -1,8 +1,10 @@
 import "dart:async";
 import "dart:convert";
 import "dart:io";
+import "package:arceus/arceus.dart";
 import 'package:xml/xml_events.dart';
 import "package:arceus/uuid.dart";
+import 'package:rxdart/rxdart.dart';
 
 import "package:arceus/extensions.dart";
 import "package:arceus/scripting/addon.dart";
@@ -127,19 +129,25 @@ class SKit {
   Stream<SArchive> _streamUnloadedArchives() {
     final factory = SArchiveFactory();
     return _eventStream
-        .selectSubtreeEvents(
-            (e) => e.name == factory.tag) // select archives tags
-        .selectSubtreeEvents((e) => !e.attributes.any((e) =>
-            e.name == "hash" &&
-            SArchive.markedForDeletion.contains(
-                e.value))) // select archives that are not marked for deletion
-        .selectSubtreeEvents((e) => !e.attributes.any((e) =>
-            e.name == "hash" &&
-            _loadedArchives.any((a) =>
-                a.hash == e.value))) // select archives that are not loaded
+        .selectSubtreeEvents((e) {
+          // Only loads unloaded and undeleted archives.
+          if (e.localName != factory.tag) {
+            return false;
+          }
+          final hash = e.attributes.firstWhere((x) => x.name == "hash").value;
+          if (SArchive.markedForDeletion.contains(hash) ||
+              _loadedArchives.any((y) => y.hash == hash)) {
+            return false;
+          }
+          return true;
+        })
         .toXmlNodes()
         .expand((e) => e)
         .map((e) => factory.load(this, e));
+  }
+
+  Stream<SArchive> _streamLoadedArchives() {
+    return Stream.fromIterable(_loadedArchives.where((e) => !e.isDeleted));
   }
 
   /// Creates a new empty archive.
@@ -164,8 +172,7 @@ class SKit {
       /// Get all of the files in the current directory recursively,
       /// and add them to the new archive, making them relative to the archive.
       if (file is File) {
-        await archive.addFile(
-            file.path.relativeTo(path), await file.readAsBytes());
+        await archive.addFile(file.path.relativeTo(path), file.openRead());
       }
     }
     return archive;
@@ -238,27 +245,35 @@ class SKit {
     }
     await temp.create(); // create the temp file.
     // Write the new kit header to the temp file.
-    final xml = (await getKitHeader()).toXmlString();
-    await temp.writeAsString(xml);
+    final header = (await getKitHeader()).toXmlString();
+    Arceus.talker.info("Attempting to save SKit:\n $header");
     // Open the temp file for writing.
-    final tempSink = temp.openWrite(mode: FileMode.append);
+    final tempSink = temp.openWrite();
 
-    // Write the unloaded archives to the temp file.
-    await tempSink.addStream(_streamUnloadedArchives()
-        .map((e) => e.toXmlString())
-        .transform(utf8.encoder));
+    // Write the new XML to temp file.
+    final stream = Rx.merge<String>([
+      Stream.fromIterable([header]),
+      _streamUnloadedArchives().map((e) => e.toXmlString()),
+      _streamLoadedArchives().map((e) => e.toXmlString())
+    ])
+        .toXmlEvents()
+        .selectSubtreeEvents((event) {
+          if (event.parent == null &&
+              !["sere", "archive"].contains(event.localName)) {
+            return false;
+          }
+          return true;
+        })
+        .toXmlString()
+        .map<List<int>>((e) => e.codeUnits);
+    await tempSink.addStream(stream.transform(gzip.encoder));
     await tempSink.flush();
-    // Write the loaded archives to the temp file.
-    await tempSink.addStream(
-        Stream.fromIterable(_loadedArchives.map((e) => e.toXmlString()))
-            .transform(utf8.encoder));
-
     // Close the sink for the temp file.
     await tempSink.close();
 
     // Replace the old data in the file with the temp file's data.
     final sink = _file.openWrite();
-    await sink.addStream(temp.openRead().transform(gzip.encoder));
+    await sink.addStream(temp.openRead());
 
     // Close the sink.
     await sink.flush();

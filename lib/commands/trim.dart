@@ -1,9 +1,12 @@
 import 'dart:io';
 
 import 'package:arceus/extensions.dart';
+import 'package:arceus/serekit/serekit.dart';
+import 'package:arceus/version_control/constellation.dart';
 import 'package:args/command_runner.dart';
 import 'package:arceus/arceus.dart';
 import 'package:cli_spin/cli_spin.dart';
+import 'package:interact/interact.dart';
 
 class TrimCommand extends Command {
   @override
@@ -14,6 +17,7 @@ class TrimCommand extends Command {
 
   TrimCommand() {
     addSubcommand(TrimConstCommand());
+    addSubcommand(TrimStarCommand());
   }
 }
 
@@ -47,5 +51,50 @@ class TrimConstCommand extends Command {
     await kit.delete();
     spinner.success("Deleted $constellationName!");
     return;
+  }
+}
+
+class TrimStarCommand extends Command {
+  @override
+  String get name => "star";
+
+  @override
+  // TODO: implement description
+  String get description => "Trim a star from a constellation";
+
+  TrimStarCommand() {
+    argParser.addOption("const",
+        abbr: 'c',
+        mandatory: true,
+        help: "The constellation you wish to trim.");
+  }
+
+  @override
+  Future<void> run() async {
+    String constName = findOption("const");
+    final kit = SKit("${Arceus.constFolderPath}/$constName.skit");
+    CliSpin spinner =
+        CliSpin(text: "Checking for changes...", spinner: CliSpinners.moon)
+            .start();
+    final constellation = await kit.getConstellation();
+    if (!await constellation!.checkForChanges()) {
+      spinner.warn("There are no changes in the constellation.");
+      final confirm = Confirm(
+              prompt: "Are you sure you want to create a new star?",
+              defaultValue: false)
+          .interact();
+      if (!confirm) {
+        return;
+      }
+    }
+    final star = constellation.getCurrentStar();
+    spinner = CliSpin(text: "Trimming...", spinner: CliSpinners.moon).start();
+    if (star.isRoot) {
+      spinner.fail("Cannot trim root star!");
+      return;
+    }
+    await star.trim();
+    await kit.save();
+    spinner.success("Deleted '${star.name}'!");
   }
 }

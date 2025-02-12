@@ -29,7 +29,7 @@ class SFileFactory extends SFactory<SFile> {
   @override
   get requiredAttributes => {
         "path": (value) => value is String,
-        "data": (value) => value is List<int>
+        "data": (value) => value is Stream<List<int>>
       };
 
   @override
@@ -37,11 +37,15 @@ class SFileFactory extends SFactory<SFile> {
 
   @override
   get creator =>
-      (XmlBuilder builder, [Map<String, dynamic> attributes = const {}]) {
+      (XmlBuilder builder, [Map<String, dynamic> attributes = const {}]) async {
         final path = attributes["path"] as String;
+        final bytes = (attributes["data"] as Stream<List<int>>)
+            .transform(gzip.encoder)
+            .transform(base64.encoder);
+        final data = await bytes.reduce((a, b) => a + b);
         builder.element("file", nest: () async {
           builder.attribute("path", path.fixPath());
-          builder.text(base64Encode(gzip.encode(attributes["data"])));
+          builder.text(data);
         });
       };
 }

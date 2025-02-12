@@ -34,7 +34,7 @@ class Star extends SObject {
   Constellation get constellation => getAncestors<Constellation>().first!;
 
   /// Returns true if the star is the root star.
-  bool get isRoot => constellation.getChild<Star>() == this;
+  bool get isRoot => getParent<Constellation>() != null;
 
   /// Returns true if the star is the current star.
   bool get isCurrent => constellation.currentHash == hash;
@@ -55,6 +55,18 @@ class Star extends SObject {
     addChild(star);
     star.makeCurrent();
     return star;
+  }
+
+  /// Trims a star from the constellation.
+  /// Will throw an exception if the star is the root star.
+  /// The parent star will become current, the archive will be marked for deletion, and the star will be unparented.
+  Future<void> trim() async {
+    if (isRoot) {
+      throw Exception("Cannot trim root star!");
+    }
+    await getParent<Star>()!.makeCurrent();
+    await archive.then((e) => e!.markForDeletion());
+    unparent();
   }
 
   /// Makes this star the current star.

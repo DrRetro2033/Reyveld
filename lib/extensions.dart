@@ -112,6 +112,23 @@ extension DifferenceChecking on List<int> {
   }
 }
 
+extension ListChunking on List<int> {
+  List<List<int>> chunk(int chunkSize) {
+    List<List<int>> chunks = [];
+    for (int i = 0; i < length; i += chunkSize) {
+      if (i + chunkSize >= length) {
+        chunks.add(sublist(i));
+        break;
+      }
+      chunks.add(sublist(
+        i,
+        i + chunkSize,
+      ));
+    }
+    return chunks;
+  }
+}
+
 extension CommandGlobalCommands on Command {
   String findOption<T>(String name) {
     String? value = argResults!.option(name) ?? globalResults!.option(name);
