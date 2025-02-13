@@ -14,13 +14,6 @@ class SArchiveFactory extends SFactory<SArchive> {
 
   @override
   String get tag => "archive";
-
-  @override
-  get creator => (builder, [attributes = const {}]) {
-        builder.element(tag, nest: () {
-          SArchive.create(builder, attributes);
-        });
-      };
 }
 
 class SFileFactory extends SFactory<SFile> {
@@ -31,13 +24,6 @@ class SFileFactory extends SFactory<SFile> {
 
   @override
   String get tag => "file";
-
-  @override
-  get creator => (builder, [attributes = const {}]) {
-        builder.element(tag, nest: () {
-          SFile.create(builder, attributes);
-        });
-      };
 }
 
 class SRArchiveFactory extends SFactory<SRArchive> {
@@ -48,11 +34,4 @@ class SRArchiveFactory extends SFactory<SRArchive> {
 
   @override
   String get tag => "rarchive";
-
-  @override
-  get creator => (builder, [attributes = const {}]) {
-        builder.element(tag, nest: () {
-          SRArchive.create(builder, attributes);
-        });
-      };
 }

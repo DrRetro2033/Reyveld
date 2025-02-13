@@ -7,6 +7,11 @@ export 'package:xml/xml.dart';
 export 'package:arceus/serekit/serekit.dart';
 export 'package:arceus/build_runner/annotations.dart';
 
+/// This file consists of three core elements for both creating and loading [SObject]s:
+/// - The [SObject] itself.
+/// - The [SFactory] of the [SObject] used for loading (read description for more info).
+/// - The [SCreator] of the [SObject] used for creating (read description for more info).
+
 /// A object that wraps around a [XmlNode] and provides a simple API to access its attributes, children, and more.
 /// SObjects must have a [SFactory] object inside the [_sobjectFactories] (inside serekit.g.dart) set in order to be parsed from xml.
 abstract class SObject {
@@ -74,11 +79,6 @@ abstract class SObject {
 
   /// Returns a child of the xml node, with the specific type.
   /// If [filter] is provided, it will only return the first child that matches the filter.
-  /// Any and all [SReference]s will be resolved to their actual objects.
-  /// So if a [SArchive] is needed, then if this method finds a [SRArchive], it will resolve it to a [SArchive].
-  /// ```dart
-  /// getChild<SArchive>(); // A [SRArchive] will be resolved to a SArchive and returned.
-  /// ```
   T? getChild<T extends SObject>({bool Function(T)? filter}) {
     for (var child in _node.childElements) {
       final factory = getSFactory(child.name.local);
@@ -183,24 +183,6 @@ abstract class SFactory<T extends SObject> {
   /// and the file it came from.
   T load(SKit kit, XmlNode node);
 
-  /// Creates a [SObject] from scratch, with the given attributes.
-  /// Returns the new object as a futureor of the type [T].
-  FutureOr<T> create(SKit kit,
-      [Map<String, dynamic> attributes = const {}]) async {
-    final builder = XmlBuilder();
-    await creator(builder, attributes);
-    final frag = builder.buildDocument();
-    return load(kit, frag.rootElement);
-  }
-
-  /// The function that creates the xml node.
-  /// A [XmlBuilder] and an map of attributes is passed in for creating the xml node.
-  /// The creator can be synchronous or asynchronous, it doesn't matter. What does matter
-  /// is if there are essential attributes that need to be given before creating the xml node.
-  /// If there are essential attributes, they should be in the [requiredAttributes] map.
-  FutureOr<void> Function(XmlBuilder builder, [Map<String, dynamic> attributes])
-      get creator;
-
   @override
   operator ==(other) {
     if (identical(this, other)) return true;
@@ -218,4 +200,62 @@ abstract class SFactory<T extends SObject> {
 abstract class SReference<T extends SObject> extends SObject {
   SReference(super.kit, super._node);
   FutureOr<T?> getRef();
+}
+
+/// A base creator for creating [SObject]s.
+/// Creation was at first delegated to [SFactory], however
+/// it was moved to its own base class for more stricter
+/// control over the creation process.
+///
+/// All subclasses should implement the [creator] method,
+/// which is able to be asynchronous. To create a [SObject],
+/// call the [create] method.
+///
+/// Example:
+/// ```dart
+/// class MySCreator extends SCreator<MySObject> {
+///
+///   /// This is an example of required parameters that must be given to the [SCreator].
+///   final String name;
+///
+///   /// This is an example of optional parameters that can be given to the [SCreator].
+///   final DateTime? date;
+///
+///   MySCreator(this.name, {this.date = null});
+///
+///   @override
+///   get creator => (builder) {
+///     builder.attribute("name", name);
+///     builder.attribute("date", (date ?? DateTime.now()).toIso8601String());
+///   }
+/// }
+/// ```
+abstract class SCreator<T extends SObject> {
+  SCreator();
+
+  FutureOr<T> create(SKit kit) async {
+    final builder = XmlBuilder();
+
+    /// Does something before creation asyncronously
+    await beforeCreate(kit);
+
+    /// Create the element and send the build to the [creator] method afterwards.
+    builder.element(getSFactory<T>().tag, nest: () {
+      creator(builder);
+    });
+
+    final frag = builder.buildDocument(); // build the document
+
+    /// load the [SObject]
+    return getSFactory<T>().load(kit, frag.rootElement);
+  }
+
+  FutureOr<void> Function(SKit kit) get beforeCreate => (kit) async {
+        return;
+      };
+
+  /// Creator must never be asynchronous, as the xml package does not play nicely with it.
+  /// It must be synchronous. However, if you need to use asyncronous code,
+  /// use [beforeCreate] to do stuff before creating the [SObject].
+  void Function(XmlBuilder builder) get creator;
 }

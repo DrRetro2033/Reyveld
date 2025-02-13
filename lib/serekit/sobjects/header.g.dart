@@ -14,11 +14,4 @@ class SHeaderFactory extends SFactory<SHeader> {
 
   @override
   String get tag => "sere";
-
-  @override
-  get creator => (builder, [attributes = const {}]) {
-        builder.element(tag, nest: () {
-          SHeader.create(builder, attributes);
-        });
-      };
 }

@@ -14,11 +14,4 @@ class ArceusSettingsFactory extends SFactory<ArceusSettings> {
 
   @override
   String get tag => "settings";
-
-  @override
-  get creator => (builder, [attributes = const {}]) {
-        builder.element(tag, nest: () {
-          ArceusSettings.create(builder, attributes);
-        });
-      };
 }

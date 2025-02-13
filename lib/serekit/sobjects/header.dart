@@ -41,15 +41,18 @@ class SHeader extends SObject {
     }
     super.addChild(child);
   }
+}
 
-  static void create(XmlBuilder builder, Map<String, dynamic> attributes) {
-    if (!attributes.containsKey("type") || attributes["type"] == null) {
-      throw ArgumentError.notNull("type");
-    }
-    final type = attributes["type"] as SKitType;
-    builder.attribute("createdOn", DateTime.now().toIso8601String());
-    builder.attribute("lastModified", DateTime.now().toIso8601String());
-    builder.attribute("version", Updater.currentVersion.toString());
-    builder.attribute("type", type.index.toString());
-  }
+class SHeaderCreator extends SCreator<SHeader> {
+  final SKitType type;
+
+  SHeaderCreator(this.type);
+
+  @override
+  get creator => (builder) => () {
+        builder.attribute("createdOn", DateTime.now().toIso8601String());
+        builder.attribute("lastModified", DateTime.now().toIso8601String());
+        builder.attribute("version", Updater.currentVersion.toString());
+        builder.attribute("type", type.index.toString());
+      };
 }

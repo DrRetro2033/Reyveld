@@ -99,8 +99,7 @@ class SKit {
     if (!await _file.exists()) {
       await _file.create(recursive: true);
     }
-    final factory = getSFactory<SHeader>();
-    _kit = await factory.create(this, {"type": type});
+    _kit = await SHeaderCreator(type).create(this);
     return _kit!;
   }
 
@@ -154,8 +153,9 @@ class SKit {
   /// This does not save the archive to the kit file immediately.
   /// It is added to the [_loadedArchives] list, and will be saved when [save] is called.
   Future<SArchive> createEmptyArchive() async {
-    final factory = getSFactory<SArchive>();
-    final archive = await factory.create(this, {"hash": generateUUID()});
+    final archive =
+        await SArchiveCreator(generateUniqueHash(await getArchiveHashes()))
+            .create(this);
     _loadedArchives.add(archive);
     return archive;
   }

@@ -40,11 +40,14 @@ class ArceusSettings extends SObject {
         return "${date.hour}:${date.minute}";
     }
   }
+}
 
-  static create(XmlBuilder builder, Map<String, dynamic> attributes) {
-    builder.attribute("date-format", DateFormat.dayMonthYear.index);
-    builder.attribute("time-format", TimeFormat.h12.index);
-  }
+class ArceusSettingsCreator extends SCreator<ArceusSettings> {
+  @override
+  get creator => (builder) {
+        builder.attribute("date-format", DateFormat.dayMonthYear.index);
+        builder.attribute("time-format", TimeFormat.h12.index);
+      };
 }
 
 enum DateFormat { dayMonthYear, monthDayYear }

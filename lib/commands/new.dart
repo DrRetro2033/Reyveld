@@ -48,8 +48,11 @@ class NewConstellationCommand extends Command with GetRest {
     final kit = SKit("${Arceus.constFolderPath}/$name.skit");
     final header = await kit.create(type: SKitType.constellation);
     spinner.text = "Creating constellation...";
-    final constellation = await getSFactory<Constellation>().create(
-        kit, {"name": name, "path": (argResults?["path"] as String).fixPath()});
+    final constellation = await ConstellationCreator(
+            name, (argResults?["path"] as String).fixPath())
+        .create(kit);
+    // final constellation = await getSFactory<Constellation>().create(
+    //     kit, {"name": name, "path": (argResults?["path"] as String).fixPath()});
     spinner.text = "Creating initial star...";
     await constellation.createRootStar();
     header.addChild(constellation);

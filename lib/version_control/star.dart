@@ -46,13 +46,10 @@ class Star extends SObject {
   /// Grows a new star from this star.
   /// Returns the new star.
   Future<Star> grow(String name) async {
-    final factory = getSFactory<Star>();
     final archive = await kit.archiveFolder(constellation.path);
-    final star = await factory.create(kit, {
-      "name": name,
-      "archiveHash": archive.hash,
-      "hash": constellation.newStarHash()
-    });
+    final star =
+        await StarCreator(name, constellation.newStarHash(), archive.hash)
+            .create(kit);
     addChild(star);
     star.makeCurrent();
     return star;
@@ -102,22 +99,25 @@ class Star extends SObject {
     return archive
         .then<bool>((value) => value!.checkForChanges(constellation.path));
   }
+}
 
-  static create(XmlBuilder builder, Map<String, dynamic> attributes) {
-    if (!attributes.containsKey("name") || attributes["name"] == null) {
-      attributes["name"] = "Star";
-    }
-    if (!attributes.containsKey("hash") || attributes["hash"] == null) {
-      throw ArgumentError.notNull("hash");
-    }
-    if (!attributes.containsKey("archiveHash") ||
-        attributes["archiveHash"] == null) {
-      throw ArgumentError.notNull("archiveHash");
-    }
-    builder.attribute("name", attributes["name"]);
-    builder.attribute("hash", attributes["hash"]);
-    builder.attribute("date", DateTime.now().toIso8601String());
-    getSFactory<SRArchive>()
-        .creator(builder, {"hash": attributes["archiveHash"]});
-  }
+class StarCreator extends SCreator<Star> {
+  final String name;
+  final String hash;
+  final String archiveHash;
+  late SRArchive archive;
+
+  StarCreator(this.name, this.hash, this.archiveHash);
+
+  @override
+  get beforeCreate => (kit) async {
+        archive = await SRArchiveCreator(archiveHash).create(kit);
+      };
+  @override
+  get creator => (builder) {
+        builder.attribute("name", name);
+        builder.attribute("hash", hash);
+        builder.attribute("date", DateTime.now().toIso8601String());
+        builder.xml(archive.toXmlString());
+      };
 }

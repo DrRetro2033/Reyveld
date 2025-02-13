@@ -6,6 +6,7 @@ import 'package:arceus/extensions.dart';
 import 'package:arceus/serekit/sobject.dart';
 
 part 'file_system.g.dart';
+part 'file_system.creators.dart';
 
 @SGen("archive")
 class SArchive extends SObject {
@@ -34,8 +35,7 @@ class SArchive extends SObject {
   /// Adds a file to the archive.
   /// [filepath] should be relative to the archive. For instance: "C://path/to/folder/example.txt" will translate to "example.txt".
   Future<void> addFile(String filepath, Stream<List<int>> data) async {
-    final file = await getSFactory<SFile>()
-        .create(kit, {"path": filepath, "data": data});
+    final file = await SFileCreator(filepath, data).create(kit);
     addSFile(file);
   }
 

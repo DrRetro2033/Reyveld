@@ -30,11 +30,9 @@ class Constellation extends SObject {
   /// This is used when creating a new constellation.
   Future<Star> createRootStar() async {
     final archive = await kit.archiveFolder(path);
-    final rootStar = await getSFactory<Star>().create(kit, {
-      "name": "Initial Star",
-      "archiveHash": archive.hash,
-      "hash": newStarHash()
-    });
+    final rootStar =
+        await StarCreator("Initial Star", newStarHash(), archive.hash)
+            .create(kit);
     addChild(rootStar);
     currentHash = rootStar.hash;
     return rootStar;
@@ -190,17 +188,6 @@ class Constellation extends SObject {
   Future<bool> checkForChanges() {
     return getCurrentStar().checkForChanges();
   }
-
-  static create(XmlBuilder builder, Map<String, dynamic> attributes) {
-    if (!attributes.containsKey("name") || attributes["name"] == null) {
-      attributes["name"] = "Constellation";
-    }
-    if (!attributes.containsKey("path") || attributes["path"] == null) {
-      throw ArgumentError.notNull("path");
-    }
-    builder.attribute("name", attributes["name"]);
-    builder.attribute("path", attributes["path"]);
-  }
 }
 
 extension ConstellationExtension on SKit {
@@ -208,4 +195,17 @@ extension ConstellationExtension on SKit {
     final header = await getKitHeader();
     return header.getChild<Constellation>();
   }
+}
+
+class ConstellationCreator extends SCreator<Constellation> {
+  final String name;
+  final String path;
+
+  ConstellationCreator(this.name, this.path);
+
+  @override
+  get creator => (builder) {
+        builder.attribute("name", name);
+        builder.attribute("path", path);
+      };
 }

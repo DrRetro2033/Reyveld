@@ -14,11 +14,4 @@ class DescriptionFactory extends SFactory<Description> {
 
   @override
   String get tag => "descr";
-
-  @override
-  get creator => (builder, [attributes = const {}]) {
-        builder.element(tag, nest: () {
-          Description.create(builder, attributes);
-        });
-      };
 }

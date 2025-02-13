@@ -14,11 +14,4 @@ class StarFactory extends SFactory<Star> {
 
   @override
   String get tag => "star";
-
-  @override
-  get creator => (builder, [attributes = const {}]) {
-        builder.element(tag, nest: () {
-          Star.create(builder, attributes);
-        });
-      };
 }

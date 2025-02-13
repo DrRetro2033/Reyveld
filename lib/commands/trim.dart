@@ -77,10 +77,10 @@ class TrimStarCommand extends Command {
         CliSpin(text: "Checking for changes...", spinner: CliSpinners.moon)
             .start();
     final constellation = await kit.getConstellation();
-    if (!await constellation!.checkForChanges()) {
-      spinner.warn("There are no changes in the constellation.");
+    if (await constellation!.checkForChanges()) {
+      spinner.warn("There are changes in the constellation.");
       final confirm = Confirm(
-              prompt: "Are you sure you want to create a new star?",
+              prompt: "Are you sure you want to trim the current star?",
               defaultValue: false)
           .interact();
       if (!confirm) {

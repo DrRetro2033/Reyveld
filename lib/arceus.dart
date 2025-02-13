@@ -93,7 +93,7 @@ class Arceus {
     final skit = SKit("${Arceus.appDataPath}/settings.skit");
     if (!await skit.exists()) {
       final header = await skit.create(type: SKitType.settings);
-      final settings = await getSFactory<ArceusSettings>().create(skit);
+      final settings = await ArceusSettingsCreator().create(skit);
       header.addChild(settings);
       await skit.save();
     }

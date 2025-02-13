@@ -14,11 +14,4 @@ class ConstellationFactory extends SFactory<Constellation> {
 
   @override
   String get tag => "const";
-
-  @override
-  get creator => (builder, [attributes = const {}]) {
-        builder.element(tag, nest: () {
-          Constellation.create(builder, attributes);
-        });
-      };
 }

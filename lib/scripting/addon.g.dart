@@ -14,11 +14,4 @@ class AddonFactory extends SFactory<Addon> {
 
   @override
   String get tag => "addon";
-
-  @override
-  get creator => (builder, [attributes = const {}]) {
-        builder.element(tag, nest: () {
-          Addon.create(builder, attributes);
-        });
-      };
 }
