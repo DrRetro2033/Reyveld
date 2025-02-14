@@ -208,8 +208,7 @@ abstract class SReference<T extends SObject> extends SObject {
 /// control over the creation process.
 ///
 /// All subclasses should implement the [creator] method,
-/// which is able to be asynchronous. To create a [SObject],
-/// call the [create] method.
+/// To create a [SObject], you should call the [create] method.
 ///
 /// Example:
 /// ```dart
@@ -225,6 +224,8 @@ abstract class SReference<T extends SObject> extends SObject {
 ///
 ///   @override
 ///   get creator => (builder) {
+///     /// No need to add element here, it will be added by the creator function
+///     /// as it is a nested builder.
 ///     builder.attribute("name", name);
 ///     builder.attribute("date", (date ?? DateTime.now()).toIso8601String());
 ///   }

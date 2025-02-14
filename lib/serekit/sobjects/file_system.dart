@@ -111,14 +111,6 @@ class SArchive extends SObject {
       await sink.close();
     }
   }
-
-  static void create(XmlBuilder builder, Map<String, dynamic> attributes) {
-    if (!attributes.containsKey("hash") || attributes["hash"] == null) {
-      throw ArgumentError.notNull("hash");
-    }
-    final hash = attributes["hash"];
-    builder.attribute("hash", hash);
-  }
 }
 
 /// A file in an [SArchive].
@@ -148,22 +140,6 @@ class SFile extends SObject {
 
   /// Returns the data of the file as a string.
   String get textSync => utf8.decode(bytesSync);
-
-  static Future<void> create(
-      XmlBuilder builder, Map<String, dynamic> attributes) async {
-    if (!attributes.containsKey("path") || attributes["path"] == null) {
-      throw ArgumentError.notNull("path");
-    } else if (!attributes.containsKey("data") || attributes["data"] == null) {
-      throw ArgumentError.notNull("data");
-    }
-    final path = attributes["path"] as String;
-    final bytes = (attributes["data"] as Stream<List<int>>)
-        .transform(gzip.encoder)
-        .transform(base64.encoder);
-    final data = await bytes.reduce((a, b) => a + b);
-    builder.attribute("path", path.fixPath());
-    builder.text(data);
-  }
 }
 
 /// A reference to an [SArchive].
@@ -179,13 +155,5 @@ class SRArchive extends SReference<SArchive> {
   @override
   FutureOr<SArchive?> getRef() async {
     return kit.getArchive(hash);
-  }
-
-  static void create(XmlBuilder builder, Map<String, dynamic> attributes) {
-    if (!attributes.containsKey("hash") || attributes["hash"] == null) {
-      throw ArgumentError.notNull("hash");
-    }
-    final hash = attributes["hash"];
-    builder.attribute("hash", hash);
   }
 }

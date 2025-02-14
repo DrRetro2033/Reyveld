@@ -19,6 +19,7 @@ class SettingsCommand extends Command {
     ]; // options for the exiting settings
     final options = [
       "Date Format",
+      "Date Size",
       "Time Format"
     ]; // available options to change
     while (true) {
@@ -41,6 +42,20 @@ class SettingsCommand extends Command {
               continue;
           }
         case 1:
+          final newSize = Select(
+                  prompt: "Date Size",
+                  options: ["Regular", "Condenced", "Cancel"],
+                  initialIndex: settings!.dateSize.index)
+              .interact();
+          switch (newSize) {
+            case 0:
+              settings!.dateSize = DateSize.regular;
+            case 1:
+              settings!.dateSize = DateSize.condenced;
+            case 2:
+              continue;
+          }
+        case 2:
           final newFormat = Select(
                   prompt: "Time Format",
                   options: ["12-hour", "24-hour", "Cancel"],

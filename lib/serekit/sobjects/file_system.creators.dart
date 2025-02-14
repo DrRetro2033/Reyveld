@@ -27,7 +27,7 @@ class SFileCreator extends SCreator<SFile> {
   @override
   get creator => (builder) {
         builder.attribute("path", path.fixPath());
-        builder.text(data);
+        builder.cdata(data);
       };
 }
 

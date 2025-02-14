@@ -64,7 +64,7 @@ class SKit {
   /// Returns a stream of [XmlEvent]s from the file.
   /// This is used to parse the file data and get the xml events.
   Stream<List<XmlEvent>> get _eventStream => _byteStream
-      .transform(utf8.decoder)
+      .transform<String>(utf8.decoder)
       .toXmlEvents()
       .normalizeEvents()
       .withParentEvents();

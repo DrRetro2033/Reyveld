@@ -5,7 +5,7 @@ import 'package:arceus/updater.dart';
 part 'header.g.dart';
 
 /// The header node of a SERE kit file.
-/// This is the top level node of the kit file, and contains information about the kit, and the contents of the kit.
+/// This is the top level node of the kit file, and contains information about the kit, like constellation structures, users, addon info, etc.
 @SGen("sere")
 class SHeader extends SObject {
   SHeader(super.kit, super._node);

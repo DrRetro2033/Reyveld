@@ -10,7 +10,7 @@ class ShowCommand extends Command {
   String get name => "show";
 
   @override
-  String get description => "Display a entity in Arceus in a readable format.";
+  String get description => "Display an entity in Arceus in a readable format.";
 
   ShowCommand() {
     addSubcommand(ShowConstellationCommand());
