@@ -47,19 +47,7 @@ class SKit {
   /// Returns the stream of [_file], decompressing if possible.
   /// If decompression fails, it will fallback on the raw data of the file.
   /// Do not use directly, and use [_eventStream] instead.
-  Stream<List<int>> get _byteStream async* {
-    final stream = _file.openRead();
-    await for (final chunk in stream) {
-      try {
-        // Attempt to decompress using gzip
-        final decompressedData = gzip.decode(chunk);
-        yield decompressedData;
-      } catch (e) {
-        // If decompression fails, assume it's raw data
-        yield chunk;
-      }
-    }
-  }
+  Stream<List<int>> get _byteStream => _file.openRead().transform(gzip.decoder);
 
   /// Returns a stream of [XmlEvent]s from the file.
   /// This is used to parse the file data and get the xml events.
