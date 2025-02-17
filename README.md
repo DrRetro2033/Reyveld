@@ -9,19 +9,16 @@
 
 # What is Arceus?
 
-Arceus is a command line application that gives every day users the power and flexiblity of software like Git, without the complexly and headaches of using such software. Arceus should be usable for every game, program, and project under the sun! Not just Pokémon!
-
-# Why does it exist?
-
-Arceus was created to be simple way for regular users to be able to quickly and efficiently backup savedata with more advanced tools. However, it has evolved into a more generalized toolkit for working with files.
+Arceus is a command line application that gives everyday users the power and flexiblity of software like Git, without the complexly and headaches of using such software. Arceus should be usable for every game, program, and project under the sun! Not just Pokémon!
 
 ## Branch Off Into Different Timelines 🌌
 
 ```
 arceus new const "Pokémon X"
+arceus -c "Pokémon X" new star "Route 2"
 ```
 
-With Arceus, you can create branches of a folder, so multiple versions can exist simultaneously. So no matter the mistake, Arceus can help you get back on track.
+With Arceus, you can create branches of a folder, so multiple versions can exist simultaneously. So secondary playthroughs can branch off from a initial run, without need to restart from the beginning!
 
 ## Rollback to Older Versions 🕔
 
@@ -29,7 +26,7 @@ With Arceus, you can create branches of a folder, so multiple versions can exist
 arceus -c "Pokémon X" jump back
 ```
 
-Arceus allows you to rollback saves to earlier versions, preserving your previous changes in case you want to return.
+Arceus allows you to rollback saves to earlier versions, preserving your previous actions. So no matter the mistake, Arceus can help you get back on track.
 
 ## Keep track of YOUR saves 👥
 
@@ -37,11 +34,11 @@ Arceus allows you to rollback saves to earlier versions, preserving your previou
 arceus -c "Pokémon X" login
 ```
 
-Got someone else who wants to join in the fun? Don't worry, Arceus has got you covered. With profiles, multiple people can use the same constellation! So if your family happens to wanna do something on your device (i.e. PC, Steam Deck, Mac, etc.), you can sleep soundly knowing your progress is safe.
+Got someone else who wants to join in the fun? Don't worry, Arceus has got you covered. With profiles, multiple people can use the same constellation! So if your family happens to want to do something on your device (i.e. PC, Steam Deck, Mac, etc.), you can sleep soundly knowing your progress is safe.
 
 ## Share your journey 🗺️
 
-SKits allow you to package your constellation up, and send it off to anyone who also has Arceus.
+SKits allow you to package your constellations up, and send it off to anyone who also has Arceus.
 
 ## Go Beyond with Add-Ons 📦
 
@@ -52,38 +49,68 @@ Arceus integrates Squirrel, enabling anyone to add new functionality to Arceus. 
 
 ## Cross Platform 🖥️📱
 
-Arceus can run on any modern device!
+Arceus can run on any modern device that can run Dart code!
 
 ## Developer Friendly 🤝
 
-Anyone can use Arceus in their projects, even you! Just remember to give credit if you incorporate it into your project.
+Anyone can use Arceus in their projects, yes even you! Just remember to give credit if you incorporate it into your project.
 
 > [!NOTE]
 > If you want an example of what you can do with Arceus, check out my other project [MudkiPC](https://github.com/Pokemon-Manager/MudkiPC).
 
----
+# Use Cases
+
+## For Achievement Hunting 🏆
+
+Jump to specific points in a game to make collecting achievements easier, without occupying multiple save slots or using quicksaves.
+
+## For Speedrunning 🏃‍➡️
+
+Arceus makes it easier to practice routes, find exploits, make a starting point, and keep your personal saves away from your speedrunning attempts.
+
+## For Mods 🛠️
+
+Keep your modded saves away from your main game saves, and recover from a corrupted save.
+
+## For Artists 🎨
+
+Arceus is not just useful for gamers, artists can join the fun as well! Simply create a constellation inside a folder, and add the files you would like to track! It's that simple! Arceus will work with anything; [Krita](https://krita.org/en/), [Blender](https://www.blender.org/), [Godot](https://godotengine.org/), etc...
+
+## For Save Editors 📝
+
+The main use case for Arceus is for developers wanting to make a save editor. Arceus can be used in save editors to make it easier to focus on what actually matters, the features.
+
+## For Game Development 💻
+
+Easily roll back to any point in your game for testing, provide items for debugging, or intentionally corrupt a save to test edge cases—without writing debug menus! You could even use Arceus as a backend for saving and loading data in any engine.
+
+## For Reverse Engineering 📋
+
+Binary files can be challenging to analyze, but Arceus is designed to detect the smallest changes in a file’s history.
 
 # SKits
 
-Arceus uses a brand new file format called SKit. SKit uses XML and GZip to store everything Arceus could ever need, replacing the use of ZIP files and JSON.
+Arceus uses a brand new file format called SKit. SKit uses both XML and GZip to store everything Arceus could ever need, replacing the use of ZIP files and JSON.
 
 ## Blazingly Fast ⚡
 
 SKits are quick to read from disk, with everything essential already at the top of the file.
 
-## Multi-Purpose 🫙
+## Multi-Purpose Containers 🫙
 
 Arceus has already switched to saving settings, stars, constellations, users, addons, and more into SKits.
 
 ## Tiny Size 🐁
 
-Using GZip to compress its data down, SKit does not bloat your storage or memory, loading nothing but the bare essentials.
+Using GZip to compress its data down, SKit does not bloat your storage or memory, loading nothing but the bare essentials when reading.
 
 ---
 
-## With more to come...
+# With more to come...
 
-Arceus is growing and evolving, so please, feel free to suggest features that you would love to see!
+Arceus is still evolving, so please, feel free to suggest features that you would love to see!
+
+---
 
 # Want to Try?
 
@@ -97,7 +124,13 @@ Click the badge below to download the latest artifact.
 > Please keep in mind that Arceus is still in alpha, and it is not
 > optimized for files larger than a few megabytes.
 
-## Comparison with Other Save Managers:
+# Consider Sponsoring ❤️
+
+Consider sponsoring me on GitHub to help support this project! If you can’t, no worries— spreading the word about Arceus is equally appreciated. Thank you!
+
+---
+
+# Comparison with Other Save Managers:
 
 | Feature                  | Arceus | [GameSave Manager](https://www.gamesave-manager.com/) | [Ludusavi](https://github.com/mtkennerly/ludusavi) |
 | ------------------------ | ------ | ----------------------------------------------------- | -------------------------------------------------- |
@@ -135,40 +168,10 @@ Transfer your game saves between devices and keep them safe from data loss.
 | ⚠️ Maybe    | Self-hosted  |
 | ❌ Unlikely | iCloud       |
 
-# Use Cases
+# Why does it exist?
 
-## For Save Editors 📝
-
-The main use case for Arceus is for developers wanting to make a save editor. Arceus can be used in save editors to make it easier to focus on what actually matters, the features.
-
-## For Game Development 💻
-
-Easily roll back to any point in your game for testing, provide items for debugging, or intentionally corrupt a save to test edge cases—without writing debug menus! You could even use Arceus as a backend for saving and loading data in any engine.
-
-## For Artists 🎨
-
-Arceus is not just useful for gamers, artists can join the fun as well! Simply create a constellation inside a folder, and add the files you would like to track! It's that simple! Arceus will work with anything; [Krita](https://krita.org/en/), [Blender](https://www.blender.org/), [Godot](https://godotengine.org/), etc...
-
-## For Achievement Hunting 🏆
-
-Jump to specific points in a game to collect achievements without occupying multiple save slots or using quicksaves.
-
-## For Speedrunning 🏃‍➡️
-
-Arceus makes it easier to practice routes, find exploits, and keep your personal saves away from your speedrunning attempts.
-
-## For Mods 🛠️
-
-Keep your modded saves away from your main game saves, and recover from a mod corrupting your save.
-
-## For Reverse Engineering 📋
-
-Binary files can be challenging to analyze, but Arceus is designed to detect the smallest changes in a file’s history.
+Arceus was created to be simple way for regular users to be able to quickly and efficiently backup savedata with more advanced tools. However, it has evolved into a more generalized toolkit for working with files.
 
 # Why is it called Arceus?
 
 The program is named Arceus because Arceus is the "god" of Pokémon and has the ability to affect time and space. It’s also named in connection to my other project, [MudkiPC](https://github.com/Pokemon-Manager/MudkiPC), which is Pokémon-related.
-
-# Consider Sponsoring ❤️
-
-Consider sponsoring me on GitHub to help support this project! If you can’t, no worries—spreading the word about Arceus is equally appreciated. Thank you!
