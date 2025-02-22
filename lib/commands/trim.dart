@@ -72,7 +72,8 @@ class TrimStarCommand extends Command {
   @override
   Future<void> run() async {
     String constName = findOption("const").fixFilename();
-    final kit = SKit("${Arceus.constFolderPath}/$constName.skit");
+    final kit = await SKit.open(
+        "${Arceus.constFolderPath}/$constName.skit", SKitType.constellation);
     CliSpin spinner =
         CliSpin(text: "Checking for changes...", spinner: CliSpinners.moon)
             .start();

@@ -90,19 +90,14 @@ class Arceus {
   }
 
   static Future<SKit> getSettingKit() async {
-    final skit = SKit("${Arceus.appDataPath}/settings.skit");
-    if (!await skit.exists()) {
-      final header = await skit.create(type: SKitType.settings);
-      final settings = await ArceusSettingsCreator().create(skit);
+    return await SKit.open(
+        "${Arceus.appDataPath}/settings.skit", SKitType.settings,
+        ifNotFound: (kit) async {
+      final header = await kit.create(type: SKitType.settings);
+      final settings = await ArceusSettingsCreator().create(kit);
       header.addChild(settings);
-      await skit.save();
-    }
-    if (await skit.isType(SKitType.settings)) {
-      return skit;
-    } else {
-      throw Exception(
-          "Settings file is not a settings file! Please delete it, and try again.");
-    }
+      await kit.save();
+    });
   }
 }
 

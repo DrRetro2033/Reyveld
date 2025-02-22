@@ -25,11 +25,26 @@ enum SKitType { unspecified, constellation, constellationPack, addon, settings }
 ///
 /// Every other [SObject] is optional and can be left out.
 class SKit {
+  static Future<SKit> open(String path, SKitType type,
+      {Future<void> Function(SKit)? ifNotFound}) async {
+    final kit = SKit(path);
+    if (!await kit.exists()) {
+      if (ifNotFound != null) {
+        await ifNotFound(kit);
+        return kit;
+      }
+      throw Exception("Kit file does not exist!");
+    }
+    if (!await kit.isType(type)) {
+      throw Exception("Kit file is not of the correct type!");
+    }
+    return kit;
+  }
+
   /// The path to the kit file.
   final String path;
 
-  SKit(String path, {SKitType typing = SKitType.unspecified})
-      : path = path.fixPath();
+  SKit(String path) : path = path.fixPath();
 
   /// Returns the [File] of the kit file.
   File get _file => File(path);

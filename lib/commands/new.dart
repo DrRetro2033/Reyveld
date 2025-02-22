@@ -77,14 +77,8 @@ class NewStarCommand extends Command with GetRest {
   @override
   Future<void> run() async {
     String constName = findOption("const").fixFilename();
-    final kit = SKit("${Arceus.constFolderPath}/$constName.skit");
-    if (!await kit.exists()) {
-      throw Exception("Constellation does not exist.");
-    }
-    if (!await kit.isType(SKitType.constellation)) {
-      throw Exception(
-          "SKit specified is not a constellation skit! ($constName)");
-    }
+    final kit = await SKit.open(
+        "${Arceus.constFolderPath}/$constName.skit", SKitType.constellation);
     String name = getRest("Enter a name for the new star.");
     CliSpin spinner =
         CliSpin(text: "Checking for changes...", spinner: CliSpinners.moon)

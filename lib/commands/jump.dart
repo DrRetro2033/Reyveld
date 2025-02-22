@@ -40,7 +40,8 @@ Available Actions:
     CliSpin spinner =
         CliSpin(text: "Checking for changes...", spinner: CliSpinners.moon)
             .start();
-    final kit = SKit("${Arceus.constFolderPath}/$constName.skit");
+    final kit = await SKit.open(
+        "${Arceus.constFolderPath}/$constName.skit", SKitType.constellation);
     final constellation = await kit.getConstellation();
     if (await constellation!.checkForChanges()) {
       spinner.warn("There are changes in the tracked folder. ");
