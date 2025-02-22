@@ -2,14 +2,17 @@
 <h2 align="center">The modern save manager and editor.</h2>
 <h3 align="center"><a href="https://drretros-organization.gitbook.io/arceus/">Documentation</a></h3>
 
-> [!WARNING]
-> This is still in alpha.
+> [!CAUTION]
+> Arceus is still in a very early state, and might cause corruptions. Please do not use Arceus for important files,
+> as it could break them permanently. You are responsible for your own files, so make backups and be cautious when using early versions of this program.
+>
+> Thank you for reading!
 
 ![Arceus](https://archives.bulbagarden.net/media/upload/thumb/9/9e/0493Arceus.png/900px-0493Arceus.png)
 
 # What is Arceus?
 
-Arceus is a command line application that gives everyday users the power and flexiblity of software like Git, without the complexly and headaches of using such software. Arceus should be usable for every game, program, and project under the sun! Not just Pokémon!
+Arceus is a command line application that gives everyday users the power and flexiblity of version control, without the complexly and headaches of using Git or other version control systems. Arceus should be usable for every game, program, and project under the sun! Not just Pokémon!
 
 ## Branch Off Into Different Timelines 🌌
 
@@ -18,7 +21,7 @@ arceus new const "Pokémon X"
 arceus -c "Pokémon X" new star "Route 2"
 ```
 
-With Arceus, you can create branches of a folder, so multiple versions can exist simultaneously. So secondary playthroughs can branch off from a initial run, without need to restart from the beginning!
+With Arceus, you can create branches of a folder, so multiple versions can exist simultaneously. So secondary playthroughs (or projects) can branch off from a initial instance, without need to restart from the beginning!
 
 ## Rollback to Older Versions 🕔
 
