@@ -8,7 +8,7 @@
 >
 > Thank you for reading!
 
-![Arceus](https://archives.bulbagarden.net/media/upload/thumb/9/9e/0493Arceus.png/900px-0493Arceus.png)
+<!-- ![Arceus](https://archives.bulbagarden.net/media/upload/thumb/9/9e/0493Arceus.png/900px-0493Arceus.png) -->
 
 # What is Arceus?
 
