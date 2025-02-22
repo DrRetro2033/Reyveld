@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:arceus/serekit/serekit.dart';
+import 'package:arceus/uuid.dart';
 import 'package:xml/xml.dart';
 
 export 'package:xml/xml.dart';
@@ -166,6 +167,33 @@ abstract class SObject {
   String toXmlString() => _node.toXmlString(pretty: true, newLine: "\n");
 }
 
+/// A base class for all root objects.
+/// Root objects are objects that are at the root of the skit file.
+abstract class SRoot extends SObject {
+  SRoot(super.kit, super.node);
+
+  bool delete = false;
+
+  String get hash => get("hash")!;
+  set hash(String value) => set("hash", value);
+
+  @override
+  operator ==(other) {
+    if (identical(this, other)) return true;
+    if (other is! SRoot) return false;
+    if (other.runtimeType != runtimeType) return false;
+    if (other.hash != hash) return false;
+    return true;
+  }
+
+  @override
+  int get hashCode => hash.hashCode;
+
+  void markForDeletion() {
+    delete = true;
+  }
+}
+
 /// A base factory for creating [SObject]s.
 /// Subclasses should be created as follows:
 /// ```dart
@@ -240,8 +268,40 @@ abstract class SCreator<T extends SObject> {
     /// Does something before creation asyncronously
     await beforeCreate(kit);
 
-    /// Create the element and send the build to the [creator] method afterwards.
     builder.element(getSFactory<T>().tag, nest: () {
+      creator(builder);
+    });
+
+    final frag = builder.buildDocument(); // build the document
+
+    /// load the [SObject]
+    return getSFactory<T>().load(kit, frag.rootElement);
+  }
+
+  FutureOr<void> Function(SKit kit) get beforeCreate => (kit) async {
+        return;
+      };
+
+  /// Creator must never be asynchronous, as the xml package does not play nicely with it.
+  /// It must be synchronous. However, if you need to use asyncronous code,
+  /// use [beforeCreate] to do stuff before creating the [SObject].
+  void Function(XmlBuilder builder) get creator;
+}
+
+abstract class SRootCreator<T extends SRoot> {
+  SRootCreator();
+  FutureOr<T> create(SKit kit) async {
+    final builder = XmlBuilder();
+
+    /// Does something before creation asyncronously
+    await beforeCreate(kit);
+
+    final usedHashes = await kit.usedRootHashes<T>();
+
+    final hash = generateUniqueHash(usedHashes);
+
+    builder.element(getSFactory<T>().tag, nest: () {
+      builder.attribute("hash", hash);
       creator(builder);
     });
 

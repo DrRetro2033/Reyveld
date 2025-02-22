@@ -45,14 +45,12 @@ class NewConstellationCommand extends Command with GetRest {
     final spinner =
         CliSpin(text: "Creating SERE kit...", spinner: CliSpinners.moon)
             .start();
-    final kit = SKit("${Arceus.constFolderPath}/$name.skit");
+    final kit = SKit("${Arceus.constFolderPath}/${name.fixFilename()}.skit");
     final header = await kit.create(type: SKitType.constellation);
     spinner.text = "Creating constellation...";
     final constellation = await ConstellationCreator(
             name, (argResults?["path"] as String).fixPath())
         .create(kit);
-    // final constellation = await getSFactory<Constellation>().create(
-    //     kit, {"name": name, "path": (argResults?["path"] as String).fixPath()});
     spinner.text = "Creating initial star...";
     await constellation.createRootStar();
     header.addChild(constellation);
@@ -78,9 +76,16 @@ class NewStarCommand extends Command with GetRest {
 
   @override
   Future<void> run() async {
-    String constName = findOption("const");
-    String name = getRest("Enter a name for the new star.");
+    String constName = findOption("const").fixFilename();
     final kit = SKit("${Arceus.constFolderPath}/$constName.skit");
+    if (!await kit.exists()) {
+      throw Exception("Constellation does not exist.");
+    }
+    if (!await kit.isType(SKitType.constellation)) {
+      throw Exception(
+          "SKit specified is not a constellation skit! ($constName)");
+    }
+    String name = getRest("Enter a name for the new star.");
     CliSpin spinner =
         CliSpin(text: "Checking for changes...", spinner: CliSpinners.moon)
             .start();

@@ -37,7 +37,7 @@ class TrimConstCommand extends Command {
 
   @override
   Future<void> run() async {
-    String constellationName = findOption("const");
+    String constellationName = findOption("const").fixFilename();
     final kit = File("${Arceus.constFolderPath}/$constellationName.skit");
     if (!await kit.exists()) {
       throw FileSystemException(
@@ -71,7 +71,7 @@ class TrimStarCommand extends Command {
 
   @override
   Future<void> run() async {
-    String constName = findOption("const");
+    String constName = findOption("const").fixFilename();
     final kit = SKit("${Arceus.constFolderPath}/$constName.skit");
     CliSpin spinner =
         CliSpin(text: "Checking for changes...", spinner: CliSpinners.moon)

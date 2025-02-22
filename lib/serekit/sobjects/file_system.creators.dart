@@ -1,14 +1,12 @@
 part of 'file_system.dart';
 
-class SArchiveCreator extends SCreator<SArchive> {
+class SArchiveCreator extends SRootCreator<SArchive> {
   final String hash;
 
   SArchiveCreator(this.hash);
 
   @override
-  get creator => (builder) {
-        builder.attribute("hash", hash);
-      };
+  get creator => (builder) {};
 }
 
 class SFileCreator extends SCreator<SFile> {

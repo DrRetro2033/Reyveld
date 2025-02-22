@@ -20,7 +20,7 @@ Future<void> main(List<String> args) async {
   runner.addCommand(SettingsCommand());
 
   /// Gets the current settings from the settings kit.
-  settings = (await (await Arceus.getSettingKit()).getKitHeader())
+  settings = (await (await Arceus.getSettingKit()).getHeader())!
       .getChild<ArceusSettings>();
 
   await runner.run(args);

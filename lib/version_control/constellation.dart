@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:arceus/extensions.dart';
 import 'package:arceus/serekit/sobject.dart';
+import 'package:arceus/serekit/sobjects/file_system.dart';
 import 'package:arceus/uuid.dart';
 import 'package:arceus/version_control/star.dart';
 import 'package:arceus/widget_system.dart';
@@ -192,8 +193,8 @@ class Constellation extends SObject {
 
 extension ConstellationExtension on SKit {
   Future<Constellation?> getConstellation() async {
-    final header = await getKitHeader();
-    return header.getChild<Constellation>();
+    final header = await getHeader();
+    return header?.getChild<Constellation>();
   }
 }
 

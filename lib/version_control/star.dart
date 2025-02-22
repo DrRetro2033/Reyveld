@@ -26,7 +26,7 @@ class Star extends SObject {
   set hash(String value) => set("hash", value);
 
   /// Returns the archive of the star.
-  Future<SArchive?> get archive async => getChild<SRArchive>()!.getRef();
+  Future<SArchive?> get archive async => await getChild<SRArchive>()?.getRef();
 
   /// Returns the date the star was created.
   DateTime get createdOn => DateTime.parse(get("date")!);
@@ -51,7 +51,7 @@ class Star extends SObject {
         await StarCreator(name, constellation.newStarHash(), archive.hash)
             .create(kit);
     addChild(star);
-    star.makeCurrent();
+    constellation.currentHash = star.hash;
     return star;
   }
 
@@ -70,7 +70,7 @@ class Star extends SObject {
   /// Makes this star the current star.
   Future<void> makeCurrent() async {
     constellation.currentHash = hash;
-    await archive.then((value) => value!.extract(constellation.path));
+    await archive.then((e) async => await e!.extract(constellation.path));
   }
 
   /// Returns the formatted name of the star file for displaying.

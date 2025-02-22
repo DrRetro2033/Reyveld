@@ -2,11 +2,9 @@ import "dart:async";
 import "dart:convert";
 import "dart:io";
 import "package:arceus/arceus.dart";
-import 'package:xml/xml_events.dart';
-import "package:arceus/uuid.dart";
-import 'package:rxdart/rxdart.dart';
-
 import "package:arceus/extensions.dart";
+import "package:rxdart/rxdart.dart";
+import 'package:xml/xml_events.dart';
 
 import 'package:arceus/serekit/sobject.dart';
 import 'package:arceus/serekit/sobjects/sobjects.dart';
@@ -30,19 +28,20 @@ class SKit {
   /// The path to the kit file.
   final String path;
 
-  /// The loaded [SHeader] of the kit file.
-  /// This will be null if the kit file has not been loaded yet by calling [getKitHeader].
-  /// Every subsequent call to [getKitHeader] will return this.
-  SHeader? _kit;
-
-  SKit(this.path);
+  SKit(String path, {SKitType typing = SKitType.unspecified})
+      : path = path.fixPath();
 
   /// Returns the [File] of the kit file.
   File get _file => File(path);
 
+  /// The currently loaded [SHeader] of the kit file.
+  /// This will be null if no header has been got yet by calling [getHeader].
+  /// This is seperate from the [SRoot]s because the header is always at the top of the file, and there is only one header.
+  SHeader? _header;
+
   /// The currently loaded [SArchive]s of the kit file.
   /// This will be empty if no archive has been got yet by calling [getArchive].
-  final List<SArchive> _loadedArchives = [];
+  final Set<SRoot> _loadedRoots = {};
 
   /// Returns the stream of [_file], decompressing if possible.
   /// If decompression fails, it will fallback on the raw data of the file.
@@ -57,23 +56,6 @@ class SKit {
       .normalizeEvents()
       .withParentEvents();
 
-  /// Returns the [SHeader] of the kit file.
-  /// This is used when loading a kit file.
-  FutureOr<SHeader> getKitHeader() async {
-    if (_kit == null) {
-      final factory = getSFactory<SHeader>();
-      final eventStream = _eventStream;
-      _kit = (await eventStream
-              .selectSubtreeEvents((e) => e.name == factory.tag)
-              .toXmlNodes()
-              .expand((e) => e)
-              .map((e) => factory.load(this, e))
-              .toList())
-          .first;
-    }
-    return _kit!;
-  }
-
   /// Creates a new kit file.
   /// If the kit file already exists, it will throw an exception unless [overwrite] is true.
   /// If [type] is unspecified, it will be set to [SKitType.unspecified].
@@ -87,139 +69,120 @@ class SKit {
     if (!await _file.exists()) {
       await _file.create(recursive: true);
     }
-    _kit = await SHeaderCreator(type).create(this);
-    return _kit!;
+    _header = await SHeaderCreator(type).create(this);
+    return _header!;
   }
 
+  /// Returns true if the kit file exists.
   Future<bool> exists() => _file.exists();
 
-  /// Returns a future set of all of the hashes used by the archives in the kit.
-  /// This is used when creating a new archive.
-  Future<Set<String>> getArchiveHashes() async {
-    final factory = getSFactory<SArchive>();
-    final eventStream = _eventStream;
-    return (await eventStream
-            .selectSubtreeEvents((e) => e.name == factory.tag)
-            .toXmlNodes()
-            .expand((e) => e)
-            .map((e) => factory.load(this, e).hash)
-            .toSet())
-        .cast<String>();
+  /// Gets the header of the kit file.
+  /// If the header has already been loaded, it will return the cached header.
+  Future<SHeader?> getHeader() async {
+    if (_header == null) {
+      final factory = getSFactory<SHeader>();
+      final eventStream = _eventStream;
+      _header = await (eventStream
+          .selectSubtreeEvents((e) => e.localName == factory.tag)
+          .toXmlNodes()
+          .expand((e) => e)
+          .map((e) => factory.load(this, e))
+          .first);
+    }
+    return _header;
   }
 
-  /// Returns a future that generates an unique hash for an archive.
-  /// This is used when creating a new archive.
+  Future<bool> isType(SKitType type) async {
+    final header = await getHeader();
+    return header!.type == type;
+  }
 
-  /// Returns a stream of [SArchive] objects.
-  /// This is used when saving an already existing kit file.
-  /// Does not stream loaded, or marked for deletion archives.
-  Stream<SArchive> _streamUnloadedArchives() {
-    final factory = getSFactory<SArchive>();
-    return _eventStream
-        .selectSubtreeEvents((e) {
-          // Only loads unloaded and undeleted archives.
-          if (e.localName != factory.tag) {
-            return false;
-          }
-          final hash = e.attributes.firstWhere((x) => x.name == "hash").value;
-          if (SArchive.markedForDeletion.contains(hash) ||
-              _loadedArchives.any((y) => y.hash == hash)) {
-            return false;
-          }
-          return true;
-        })
+  Future<T?> getRoot<T extends SRoot>(
+      {bool Function(T root)? filterRoots,
+      bool Function(XmlStartElementEvent e)? filterEvents,
+      bool addToCache = true}) async {
+    final roots = await getRoots<T>(
+        filterRoots: filterRoots,
+        filterEvents: filterEvents,
+        addToCache: false);
+    final root = roots.singleOrNull;
+    if (addToCache) {
+      _loadedRoots.add(root!);
+    }
+    return root;
+  }
+
+  /// Gets all of the roots of the kit file. of the specified type.
+  /// If the roots have already been loaded, it will return the cached roots.
+  /// If the roots have not been loaded, it will return.
+  /// If [filterRoots] is specified, it will only return the roots that pass the filter.
+  /// If [filterEvents] is specified, it will only return the events that pass the filter.
+  /// If [addToCache] is true, it will add the roots to the cache.
+  /// Returns a future that completes with the roots of the kit file.
+  Future<Set<T?>> getRoots<T extends SRoot>(
+      {bool Function(T root)? filterRoots,
+      bool Function(XmlStartElementEvent)? filterEvents,
+      bool addToCache = true}) async {
+    final roots = _streamRoots()
+        .whereType<T>()
+        .where((e) => filterRoots == null || filterRoots(e));
+    Set<T> rootsList = await roots.toSet();
+    if (addToCache) {
+      _loadedRoots.addAll(rootsList);
+    }
+    return rootsList;
+  }
+
+  /// Adds a root to the kit file.
+  /// This will add the root to the kit file in memory, but will not save the changes to the file.
+  /// To save the changes to the file, use [save].
+  void addRoot(SRoot root) {
+    Arceus.talker.debug(
+        "Adding root to skit file ($path). Root hash: ${root.hash} Type: ${root.runtimeType}");
+    _loadedRoots.add(root);
+  }
+
+  /// Streams the roots of the kit file, streaming them if they have not been loaded yet.
+  /// This is used when saving and reading the kit file. Will not cache anything.
+  /// To cache roots, use [getRoots] or [getRoot].
+  Stream<SRoot> _streamRoots() async* {
+    final eventStream = _eventStream;
+    final rootStream = eventStream
         .toXmlNodes()
         .expand((e) => e)
-        .map((e) => factory.load(this, e));
-  }
-
-  Stream<SArchive> _streamLoadedArchives() {
-    return Stream.fromIterable(_loadedArchives.where((e) => !e.isDeleted));
-  }
-
-  /// Creates a new empty archive.
-  /// This does not save the archive to the kit file immediately.
-  /// It is added to the [_loadedArchives] list, and will be saved when [save] is called.
-  Future<SArchive> createEmptyArchive() async {
-    final archive =
-        await SArchiveCreator(generateUniqueHash(await getArchiveHashes()))
-            .create(this);
-    _loadedArchives.add(archive);
-    return archive;
-  }
-
-  /// Creates a new archive from a folder.
-  /// Adds all of the files in the folder to the archive, making them relative to the archive.
-  Future<SArchive> archiveFolder(String path) async {
-    final dir = Directory(path);
-    if (!await dir.exists()) {
-      throw Exception("Path does not exist.");
-    }
-    final archive = await createEmptyArchive();
-    for (final file in dir.listSync(recursive: true)) {
-      /// Get all of the files in the current directory recursively,
-      /// and add them to the new archive, making them relative to the archive.
-      if (file is File) {
-        await archive.addFile(file.path.relativeTo(path), file.openRead());
+        .map((e) => getSFactory((e as XmlElement).localName).load(this, e))
+        .whereType<SRoot>();
+    final processedRoots = <SRoot>{};
+    await for (final root in rootStream) {
+      processedRoots.add(root);
+      final loaded = _loadedRoots.where((e) => e == root).singleOrNull;
+      if (loaded != null) {
+        if (loaded.delete) {
+          continue;
+        } else {
+          yield loaded;
+        }
+      } else {
+        yield root;
       }
     }
-    return archive;
+    for (final root in _loadedRoots) {
+      if (!processedRoots.contains(root)) {
+        yield root;
+      }
+    }
   }
 
-  /// Returns a future [SArchive] from the kit file.
-  /// If the archive is already loaded, it will return the loaded archive.
-  Future<SArchive?> getArchive(String hash) async {
-    if (_loadedArchives.any((e) => e.hash == hash)) {
-      // if the archive is already loaded, return it.
-      return _loadedArchives.firstWhere((e) => e.hash == hash);
-    }
-    final factory = getSFactory<SArchive>(); // get the archive factory
-    final eventStream = _eventStream; // get the event stream
-    final commits = await eventStream
-        .selectSubtreeEvents((e) =>
-            e.name == factory.tag &&
-            e.attributes.any((element) =>
-                element.name == "hash" &&
-                element.value ==
-                    hash)) // select the archive with the hash given.
-        .toXmlNodes()
-        .expand((e) => e)
-        .map((e) => factory.load(this, e)) // load the archive
-        .toList();
-    if (commits.isEmpty) {
-      return null;
-    }
-    final commit = commits.singleOrNull;
-    _loadedArchives.add(commit!); // add the archive to the loaded archives.
-    return commit;
-  }
-
-  /// Rehashes all of the archives in the kit file. Used when merging kit files.
-  Future<void> rehashArchives([Set<String>? hashesToAvoid]) async {
-    final hashes = await getArchiveHashes();
-    final newHashes = <String>{...hashesToAvoid ?? {}};
-    for (final hash in hashes) {
-      final newHash = generateUniqueHash(newHashes); // generate a unique hash
-      await _changeArchiveHash(hash, newHash); // change the hash
-      newHashes.add(
-          newHash); // add the new hash to the set, so that it is not used again.
-    }
-    await save(); // save the changes
-  }
-
-  /// Changes an archive's hash to a new hash.
-  Future<void> _changeArchiveHash(String oldHash, String newHash) async {
-    final archive = await getArchive(oldHash);
-    archive!
-        .markForDeletion(); // mark the old hash for deletion. This makes sure that the old version of the archive is not saved.
-    archive.hash = newHash; // set the new hash
-    final header = await getKitHeader(); // get the kit header
-    for (final ref
-        in header.getDescendants<SRArchive>(filter: (e) => e.hash == oldHash)) {
-      // get all of the references to the archive in the kit header and change the hash.
-      ref!.hash = newHash;
-    }
-  }
+  /// Returns the hashes used in the SKit file.
+  /// Will only return the hashes of the specified type, and not all of the hashes of every type in the kit file.
+  /// Each hash is unique to the type of [SRoot] that it is.
+  /// So for instance, if you have a [SArchive] with the same hash as SUser, then they are still considered unique.
+  ///
+  Future<Set<String>> usedRootHashes<T extends SRoot>([String? tag]) async =>
+      (await getRoots<T>(
+              addToCache: false, filterEvents: (e) => e.localName == tag))
+          .map((e) => e!.hash)
+          .toSet();
 
   /// Saves the kit file.
   /// This will save the kit header and all of the archives to the kit file.
@@ -233,28 +196,19 @@ class SKit {
     }
     await temp.create(); // create the temp file.
     // Write the new kit header to the temp file.
-    final header = (await getKitHeader()).toXmlString();
-    Arceus.talker.info("Attempting to save SKit:\n $header");
+    Arceus.talker.info("Attempting to save SKit:\n $path");
     // Open the temp file for writing.
     final tempSink = temp.openWrite();
 
     // Write the new XML to temp file.
     final stream = Rx.merge<String>([
-      Stream.fromIterable([header]),
-      _streamUnloadedArchives().map((e) => e.toXmlString()),
-      _streamLoadedArchives().map((e) => e.toXmlString())
-    ])
-        .toXmlEvents()
-        .selectSubtreeEvents((event) {
-          if (event.parent == null &&
-              !["sere", "archive"].contains(event.localName)) {
-            return false;
-          }
-          return true;
-        })
-        .toXmlString()
-        .map<List<int>>((e) => e.codeUnits);
-    await tempSink.addStream(stream.transform(gzip.encoder));
+      Stream.fromFuture(getHeader().then((e) => e!.toXmlString())),
+      _streamRoots().map((event) => event.toXmlString())
+    ]);
+    // final stream = _streamRoots()
+    //     .map((event) => event.toXmlString());
+    await tempSink.addStream(
+        stream.map<List<int>>((e) => e.codeUnits).transform(gzip.encoder));
     await tempSink.flush();
     // Close the sink for the temp file.
     await tempSink.close();
@@ -271,12 +225,12 @@ class SKit {
     await temp.delete();
 
     discardChanges(); // Clear everything from memory.
+    Arceus.talker.log("Successfully saved SKit! ($path)");
   }
 
   /// Discards all of the changes to the kit file.
   /// This will unload all of the loaded archives, and clear the current kit header.
   void discardChanges() {
-    _loadedArchives.clear();
-    _kit = null;
+    _loadedRoots.clear();
   }
 }

@@ -49,7 +49,7 @@ class SHeaderCreator extends SCreator<SHeader> {
   SHeaderCreator(this.type);
 
   @override
-  get creator => (builder) => () {
+  get creator => (builder) {
         builder.attribute("createdOn", DateTime.now().toIso8601String());
         builder.attribute("lastModified", DateTime.now().toIso8601String());
         builder.attribute("version", Updater.currentVersion.toString());

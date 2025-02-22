@@ -35,7 +35,7 @@ Available Actions:
 
   @override
   Future<void> run() async {
-    final constName = findOption("const");
+    final constName = findOption("const").fixFilename();
     final commands = getRest("Enter the star to jump to.");
     CliSpin spinner =
         CliSpin(text: "Checking for changes...", spinner: CliSpinners.moon)

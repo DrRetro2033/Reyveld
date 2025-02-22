@@ -31,8 +31,15 @@ class ShowConstellationCommand extends Command {
 
   @override
   Future<void> run() async {
-    final constName = findOption("const");
+    final constName = findOption("const").fixFilename();
     final kit = SKit("${Arceus.constFolderPath}/$constName.skit");
+    if (!await kit.exists()) {
+      throw Exception("Constellation does not exist.");
+    }
+    if (!await kit.isType(SKitType.constellation)) {
+      throw Exception(
+          "SKit specified is not a constellation skit! ($constName)");
+    }
     final spinner =
         CliSpin(text: "Loading...", spinner: CliSpinners.moon).start();
     final constellation = await kit.getConstellation();

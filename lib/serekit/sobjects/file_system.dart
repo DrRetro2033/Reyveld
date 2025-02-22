@@ -4,30 +4,17 @@ import 'dart:io';
 import 'package:arceus/arceus.dart';
 import 'package:arceus/extensions.dart';
 import 'package:arceus/serekit/sobject.dart';
+import 'package:arceus/uuid.dart';
 
 part 'file_system.g.dart';
 part 'file_system.creators.dart';
 
 @SGen("archive")
-class SArchive extends SObject {
-  static Set<String> markedForDeletion = {};
-
+class SArchive extends SRoot {
   SArchive(super._kit, super._node);
-
-  /// Returns the hash of the archive.
-  String get hash => get("hash")!;
-
-  /// Sets the hash of the archive.
-  set hash(String? hash) => set("hash", hash);
 
   /// Returns the date the archive was archived/created on.
   DateTime get archivedOn => DateTime.parse(get("date")!);
-
-  /// Marks the archive for deletion.
-  /// Adds the archive's hash to the [markedForDeletion] set in the [SArchive] class.
-  void markForDeletion() => markedForDeletion.add(hash);
-
-  bool get isDeleted => markedForDeletion.contains(hash);
 
   /// Adds a [SFile] to the archive.
   void addSFile(SFile file) => addChild(file);
@@ -56,9 +43,12 @@ class SArchive extends SObject {
       // file was added
       if (file is File) {
         final filePath = file.path.relativeTo(path);
+        if (filePath.endsWith(".tmp")) {
+          return false;
+        }
         final archiveFile = getFile(filePath);
         if (archiveFile == null) {
-          // does the archive have this file?
+          // does the archive not have this file?
           return true;
         }
       }
@@ -99,10 +89,10 @@ class SArchive extends SObject {
     return false;
   }
 
-  Future<void> extract(String path) async {
+  Future<void> extract(String path, {bool temp = false}) async {
     final files = getFiles();
     for (final file in files) {
-      final filePath = "$path/${file!.path}";
+      final filePath = "$path/${file!.path}${temp ? ".tmp" : ""}";
       final extFile = File(filePath);
       await extFile.create(recursive: true);
       final sink = extFile.openWrite();
@@ -110,6 +100,42 @@ class SArchive extends SObject {
       await sink.flush();
       await sink.close();
     }
+  }
+}
+
+extension SArchiveExtensions on SKit {
+  /// Returns an archive from the kit file with the specified hash.
+  Future<SArchive?> getArchive(String hash) async {
+    return await getRoot<SArchive>(filterRoots: (e) => e.hash == hash);
+  }
+
+  /// Creates a new archive from a folder.
+  /// Adds all of the files in the folder to the archive, making them relative to the archive.
+  Future<SArchive> archiveFolder(String path) async {
+    final dir = Directory(path);
+    if (!await dir.exists()) {
+      throw Exception("Path does not exist.");
+    }
+    final archive = await createEmptyArchive();
+    for (final file in dir.listSync(recursive: true)) {
+      /// Get all of the files in the current directory recursively,
+      /// and add them to the new archive, making them relative to the archive.
+      if (file is File) {
+        await archive.addFile(file.path.relativeTo(path), file.openRead());
+      }
+    }
+    return archive;
+  }
+
+  /// Creates a new empty archive.
+  /// This does not save the archive to the kit file immediately.
+  /// It is added to the [_loadedArchives] list, and will be saved when [save] is called.
+  Future<SArchive> createEmptyArchive() async {
+    final archive = await SArchiveCreator(
+            generateUniqueHash(await usedRootHashes<SArchive>()))
+        .create(this);
+    addRoot(archive);
+    return archive;
   }
 }
 
@@ -122,7 +148,7 @@ class SFile extends SObject {
   /// Returns the path of the file.
   String get path => get("path")!;
 
-  /// Returns the data of the file as a list of bytes.
+  /// Returns the data of the file as a list of bytes. (NOT RECOMMENDED TO USE. USE [bytes] INSTEAD)
   List<int> get bytesSync {
     return gzip.decode(base64Decode(innerText!));
   }
@@ -138,7 +164,7 @@ class SFile extends SObject {
       .reduce((a, b) => a + b)
       .catchError((e) => 0);
 
-  /// Returns the data of the file as a string.
+  /// Returns the data of the file as a string. (will be used for scripting in the future.)
   String get textSync => utf8.decode(bytesSync);
 }
 
@@ -154,6 +180,6 @@ class SRArchive extends SReference<SArchive> {
 
   @override
   FutureOr<SArchive?> getRef() async {
-    return kit.getArchive(hash);
+    return await kit.getArchive(hash);
   }
 }

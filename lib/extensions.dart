@@ -28,6 +28,15 @@ extension Pathing on String {
     return path;
   }
 
+  String fixFilename() {
+    final regex = RegExp(r"\w*");
+    return regex
+        .allMatches(this)
+        .where((e) => e.group(0) != null && e.group(0)!.isNotEmpty)
+        .map((e) => e.group(0))
+        .join(" ");
+  }
+
   String relativeTo(String relativeTo) {
     final formattedPath = fixPath();
     final formattedRelativeTo = relativeTo.fixPath();

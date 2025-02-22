@@ -97,7 +97,12 @@ class Arceus {
       header.addChild(settings);
       await skit.save();
     }
-    return skit;
+    if (await skit.isType(SKitType.settings)) {
+      return skit;
+    } else {
+      throw Exception(
+          "Settings file is not a settings file! Please delete it, and try again.");
+    }
   }
 }
 
