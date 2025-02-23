@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:arceus/arceus.dart';
 import 'package:arceus/extensions.dart';
 import 'package:arceus/serekit/sobject.dart';
-import 'package:arceus/uuid.dart';
 
 part 'file_system.g.dart';
 part 'file_system.creators.dart';
@@ -89,16 +88,14 @@ class SArchive extends SRoot {
     return false;
   }
 
-  Future<void> extract(String path, {bool temp = false}) async {
+  /// Extracts the archive to the specified path.
+  /// If [temp] is true, then the files will be extracted as temporary files with a `.tmp` extension.
+  /// Returns a stream that emits the path of the file currently being extracted.
+  Stream<String> extract(String path, {bool temp = false}) async* {
     final files = getFiles();
     for (final file in files) {
-      final filePath = "$path/${file!.path}${temp ? ".tmp" : ""}";
-      final extFile = File(filePath);
-      await extFile.create(recursive: true);
-      final sink = extFile.openWrite();
-      await sink.addStream(file.bytes);
-      await sink.flush();
-      await sink.close();
+      yield file!.path;
+      await file.extract(path, temp: temp);
     }
   }
 }
@@ -107,35 +104,6 @@ extension SArchiveExtensions on SKit {
   /// Returns an archive from the kit file with the specified hash.
   Future<SArchive?> getArchive(String hash) async {
     return await getRoot<SArchive>(filterRoots: (e) => e.hash == hash);
-  }
-
-  /// Creates a new archive from a folder.
-  /// Adds all of the files in the folder to the archive, making them relative to the archive.
-  Future<SArchive> archiveFolder(String path) async {
-    final dir = Directory(path);
-    if (!await dir.exists()) {
-      throw Exception("Path does not exist.");
-    }
-    final archive = await createEmptyArchive();
-    for (final file in dir.listSync(recursive: true)) {
-      /// Get all of the files in the current directory recursively,
-      /// and add them to the new archive, making them relative to the archive.
-      if (file is File) {
-        await archive.addFile(file.path.relativeTo(path), file.openRead());
-      }
-    }
-    return archive;
-  }
-
-  /// Creates a new empty archive.
-  /// This does not save the archive to the kit file immediately.
-  /// It is added to the [_loadedArchives] list, and will be saved when [save] is called.
-  Future<SArchive> createEmptyArchive() async {
-    final archive = await SArchiveCreator(
-            generateUniqueHash(await usedRootHashes<SArchive>()))
-        .create(this);
-    addRoot(archive);
-    return archive;
   }
 }
 
@@ -166,6 +134,16 @@ class SFile extends SObject {
 
   /// Returns the data of the file as a string. (will be used for scripting in the future.)
   String get textSync => utf8.decode(bytesSync);
+
+  Future<void> extract(String folderPath, {bool temp = false}) async {
+    final filePath = "$folderPath/$path${temp ? ".tmp" : ""}";
+    final extFile = File(filePath);
+    await extFile.create(recursive: true);
+    final sink = extFile.openWrite();
+    await sink.addStream(bytes);
+    await sink.flush();
+    await sink.close();
+  }
 }
 
 /// A reference to an [SArchive].

@@ -30,7 +30,7 @@ class Constellation extends SObject {
   /// Creates the root [Star] of the constellation.
   /// This is used when creating a new constellation.
   Future<Star> createRootStar() async {
-    final archive = await kit.archiveFolder(path);
+    final archive = await SArchiveCreator.archiveFolder(kit, path);
     final rootStar =
         await StarCreator("Initial Star", newStarHash(), archive.hash)
             .create(kit);

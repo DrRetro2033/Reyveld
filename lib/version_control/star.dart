@@ -46,7 +46,8 @@ class Star extends SObject {
   /// Grows a new star from this star.
   /// Returns the new star.
   Future<Star> grow(String name) async {
-    final archive = await kit.archiveFolder(constellation.path);
+    final archive =
+        await SArchiveCreator.archiveFolder(kit, constellation.path);
     final star =
         await StarCreator(name, constellation.newStarHash(), archive.hash)
             .create(kit);
@@ -68,9 +69,9 @@ class Star extends SObject {
   }
 
   /// Makes this star the current star.
-  Future<void> makeCurrent() async {
+  Future<Stream<String>> makeCurrent() async {
     constellation.currentHash = hash;
-    await archive.then((e) async => await e!.extract(constellation.path));
+    return await archive.then((e) async => e!.extract(constellation.path));
   }
 
   /// Returns the formatted name of the star file for displaying.

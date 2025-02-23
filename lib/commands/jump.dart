@@ -58,7 +58,12 @@ Available Actions:
             text: "Attempting jump to $commands...", spinner: CliSpinners.moon)
         .start();
     final star = constellation.getStarAt(commands);
-    await star.makeCurrent();
+    final extractStream = await star.makeCurrent();
+    await extractStream.forEach((filename) {
+      spinner.text = "Extracting $filename...";
+      Arceus.talker.log("Extracting $filename...");
+    });
+    spinner.text = "Saving changes...";
     await kit.save();
     spinner.success("Jumped to '${constellation.getCurrentStar().name}'!");
   }
