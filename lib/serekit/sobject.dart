@@ -190,6 +190,7 @@ abstract class SRoot extends SObject {
   int get hashCode => hash.hashCode;
 
   void markForDeletion() {
+    kit.unloadRoot(this);
     delete = true;
   }
 }
@@ -225,7 +226,7 @@ abstract class SFactory<T extends SObject> {
 
 /// A reference to another [SObject].
 /// This is used when an object needs to reference another object that could be anywhere in the xml file.
-abstract class SReference<T extends SObject> extends SObject {
+abstract class SReference<T extends SRoot> extends SObject {
   SReference(super.kit, super._node);
   FutureOr<T?> getRef();
 }

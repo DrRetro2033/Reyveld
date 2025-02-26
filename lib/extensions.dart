@@ -121,20 +121,19 @@ extension DifferenceChecking on List<int> {
   }
 }
 
-extension ListChunking on List<int> {
-  List<List<int>> chunk(int chunkSize) {
-    List<List<int>> chunks = [];
-    for (int i = 0; i < length; i += chunkSize) {
-      if (i + chunkSize >= length) {
-        chunks.add(sublist(i));
-        break;
+extension ChunkStream on Stream<int> {
+  Stream<List<int>> chunk(int chunkSize) async* {
+    List<int> buffer = [];
+    await for (int byte in this) {
+      buffer.add(byte);
+      if (buffer.length == chunkSize) {
+        yield buffer;
+        buffer = [];
       }
-      chunks.add(sublist(
-        i,
-        i + chunkSize,
-      ));
     }
-    return chunks;
+    if (buffer.isNotEmpty) {
+      yield buffer;
+    }
   }
 }
 

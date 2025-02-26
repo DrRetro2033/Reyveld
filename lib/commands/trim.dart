@@ -59,7 +59,6 @@ class TrimStarCommand extends Command {
   String get name => "star";
 
   @override
-  // TODO: implement description
   String get description => "Trim a star from a constellation";
 
   TrimStarCommand() {
@@ -81,7 +80,8 @@ class TrimStarCommand extends Command {
     if (await constellation!.checkForChanges()) {
       spinner.warn("There are changes in the constellation.");
       final confirm = Confirm(
-              prompt: "Are you sure you want to trim the current star?",
+              prompt:
+                  "Are you sure you want to trim ${constellation.getCurrentStar().name}?",
               defaultValue: false)
           .interact();
       if (!confirm) {

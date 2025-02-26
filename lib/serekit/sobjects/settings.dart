@@ -27,6 +27,9 @@ class ArceusSettings extends SObject {
 
   set dateSize(DateSize value) => set("date-size", value.index.toString());
 
+  bool get debugMode => (get("debug") ?? "1") == "1";
+  set debugMode(bool value) => set("debug", value ? "1" : "0");
+
   /// Saves the SKit.
   Future<void> save() async => await kit.save();
 
@@ -83,6 +86,8 @@ class ArceusSettingsCreator extends SCreator<ArceusSettings> {
   get creator => (builder) {
         builder.attribute("date-format", DateFormat.dayMonthYear.index);
         builder.attribute("time-format", TimeFormat.h12.index);
+        builder.attribute("date-size", DateSize.regular.index);
+        builder.attribute("debug", "1");
       };
 }
 

@@ -37,11 +37,11 @@ Arceus allows you to rollback saves to earlier versions, preserving your previou
 arceus -c "Pokémon X" login
 ```
 
-Got someone else who wants to join in the fun? Don't worry, Arceus has got you covered. With profiles, multiple people can use the same constellation! So if your family happens to want to do something on your device (i.e. PC, Steam Deck, Mac, etc.), you can sleep soundly knowing your progress is safe.
+Got someone else who wants to join in the fun? Don't worry, Arceus has got you covered. With profiles, multiple people can use the same constellation! So if your family or friends to want to do something on your device (i.e. PC, Steam Deck, Mac, etc.), you can sleep soundly knowing your progress is safe.
 
 ## Share your journey 🗺️
 
-SKits allow you to package your constellations up, and send it off to anyone who also has Arceus.
+Package your history up, and send it off to anyone who also has Arceus, so 100% saves are actually 100%!
 
 ## Go Beyond with Add-Ons 📦
 

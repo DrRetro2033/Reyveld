@@ -22,8 +22,19 @@ Future<void> main(List<String> args) async {
   /// Gets the current settings from the settings kit.
   settings = (await (await Arceus.getSettingKit()).getHeader())!
       .getChild<ArceusSettings>();
+  try {
+    await runner.run(args);
+  } catch (e, st) {
+    print(
+        """Whoops! It looks like something went wrong with Arceus! For more details, open the following log file:
+${Arceus.mostRecentLog.path}
 
-  await runner.run(args);
+If the error persists, please open an issue on GitHub and provide the log above. 
+Your feedback is much appreciated!
+""");
+    Arceus.talker.critical("Crash Handler", e, st);
+  }
+
   exit(0);
 }
 

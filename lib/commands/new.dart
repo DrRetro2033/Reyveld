@@ -40,12 +40,18 @@ class NewConstellationCommand extends Command with GetRest {
   Future<void> run() async {
     String name = getRest("Enter a name for the constellation.");
     if (!await Directory(argResults?["path"]).exists()) {
-      throw Exception("Path does not exist.");
+      throw Exception("${argResults?["path"]} does not exist.");
     }
-    final spinner =
-        CliSpin(text: "Creating SERE kit...", spinner: CliSpinners.moon)
-            .start();
     final kit = SKit("${Arceus.constFolderPath}/${name.fixFilename()}.skit");
+    final spinner = CliSpin(
+            text: "Checking if constellation exists...",
+            spinner: CliSpinners.moon)
+        .start();
+    if (await kit.exists()) {
+      spinner.fail(
+          "Constellation already exists! Either delete it or choose a different name.");
+      return;
+    }
     final header = await kit.create(type: SKitType.constellation);
     spinner.text = "Creating constellation...";
     final constellation = await ConstellationCreator(

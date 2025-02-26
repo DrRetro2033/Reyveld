@@ -65,6 +65,10 @@ class Star extends SObject {
     }
     await getParent<Star>()!.makeCurrent();
     await archive.then((e) => e!.markForDeletion());
+    for (final archiveReference in getDescendants<SRArchive>()) {
+      kit.addDeletionRequest(
+          SDeletionRequest<SArchive>(archiveReference!.hash));
+    }
     unparent();
   }
 

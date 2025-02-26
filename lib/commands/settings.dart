@@ -20,7 +20,8 @@ class SettingsCommand extends Command {
     final options = [
       "Date Format",
       "Date Size",
-      "Time Format"
+      "Time Format",
+      "Debug Mode"
     ]; // available options to change
     while (true) {
       final selection =
@@ -69,6 +70,11 @@ class SettingsCommand extends Command {
             case 2:
               continue;
           }
+        case 3:
+          final newMode =
+              Confirm(prompt: "Debug Mode", defaultValue: settings!.debugMode)
+                  .interact();
+          settings!.debugMode = newMode;
         default:
           if (selection >= options.length) {
             final exitSelected = selection - options.length;

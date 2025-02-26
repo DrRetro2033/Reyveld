@@ -9,7 +9,6 @@ final Set<SFactory> _sobjectFactories = {
   StarFactory(),
   SHeaderFactory(),
   SArchiveFactory(),
-  SRArchiveFactory(),
   SFileFactory(),
   ArceusSettingsFactory(),
   DescriptionFactory(),

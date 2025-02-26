@@ -22,6 +22,7 @@ dependencies:
   shelf: ^1.4.2 # Used for creating the HTTP server. TODO: Do we need this, or would it be easier to make custom server?
   shelf_router: ^1.1.4 # Used for routing HTTP requests.
   http: ^1.3.0 # Used for interfacing with github to check for updates.
+  async: ^2.13.0
 
 dev_dependencies:
   lints: ^4.0.0

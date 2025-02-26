@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:arceus/main.dart';
 import 'package:arceus/serekit/serekit.dart';
 import 'package:arceus/serekit/sobjects/settings.dart';
 import 'package:arceus/updater.dart';
@@ -25,7 +26,8 @@ class Arceus {
           formatter: ArceusLogFormatter(),
           output: ArceusLogger(
                   "$appDataPath/logs/arceus-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log")
-              .output),
+              .output,
+          filter: ArceusLoggerFilter()),
     );
     return _logger!;
   }
@@ -131,6 +133,7 @@ class ArceusLogger {
     logFile.writeAsStringSync("""
 
 Run at ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, "0")}:${DateTime.now().second.toString().padLeft(2, "0")}.${DateTime.now().millisecond.toString().padLeft(3, "0")}
+Version ${Updater.currentVersion.toString()}
 ───────────────────────────────────────────────────────────────
 """, mode: FileMode.append);
   }
@@ -144,6 +147,19 @@ class ArceusLogFormatter extends LoggerFormatter {
   @override
   String fmt(LogDetails details, TalkerLoggerSettings settings) {
     return "${details.message}";
+  }
+}
+
+class ArceusLoggerFilter extends LoggerFilter {
+  @override
+  bool shouldLog(dynamic msg, LogLevel level) {
+    if (level == LogLevel.debug) {
+      if (settings!.debugMode) {
+        return true;
+      }
+      return false;
+    }
+    return true;
   }
 }
 

@@ -58,6 +58,11 @@ class SKit {
   /// This will be empty if no archive has been got yet by calling [getArchive].
   final Set<SRoot> _loadedRoots = {};
 
+  /// This is used to store the deletion requests for any root in the file.
+  /// This is used when loading a [SRoot] is not needed.
+  /// To add a deletion request, use [addDeletionRequest].
+  final Set<SDeletionRequest> _deletionRequests = {};
+
   /// Returns the stream of [_file], decompressing if possible.
   /// If decompression fails, it will fallback on the raw data of the file.
   /// Do not use directly, and use [_eventStream] instead.
@@ -153,9 +158,11 @@ class SKit {
   /// To save the changes to the file, use [save].
   void addRoot(SRoot root) {
     Arceus.talker.debug(
-        "Adding root to skit file ($path). Root hash: ${root.hash} Type: ${root.runtimeType}");
+        "New ${root.runtimeType} added to ${path.getFilename(withExtension: false)}! ($path)");
     _loadedRoots.add(root);
   }
+
+  void unloadRoot(SRoot root) => _loadedRoots.remove(root);
 
   /// Streams the roots of the kit file, streaming them if they have not been loaded yet.
   /// This is used when saving and reading the kit file. Will not cache anything.
@@ -171,15 +178,11 @@ class SKit {
     await for (final root in rootStream) {
       processedRoots.add(root);
       final loaded = _loadedRoots.where((e) => e == root).singleOrNull;
-      if (loaded != null) {
-        if (loaded.delete) {
-          continue;
-        } else {
-          yield loaded;
-        }
-      } else {
-        yield root;
+      SRoot sending = loaded ?? root;
+      if (_deletionRequests.any((e) => e.isFor(sending)) || sending.delete) {
+        continue;
       }
+      yield sending;
     }
     for (final root in _loadedRoots) {
       if (!processedRoots.contains(root)) {
@@ -199,11 +202,17 @@ class SKit {
           .map((e) => e!.hash)
           .toSet();
 
+  void addDeletionRequest(SDeletionRequest request) {
+    _deletionRequests.add(request);
+  }
+
   /// Saves the kit file.
   /// This will save the kit header and all of the archives to the kit file.
   /// The header is saved to the top of the file, and the archives are saved to the bottom of the file.
   /// This will save all of the changes to the file.
   Future<void> save() async {
+    final stopwatch = Stopwatch();
+    stopwatch.start();
     final temp = File("$path.tmp"); // initialize the temp file object.
     if (await temp.exists()) {
       // if the temp file exists, delete it.
@@ -211,7 +220,7 @@ class SKit {
     }
     await temp.create(); // create the temp file.
     // Write the new kit header to the temp file.
-    Arceus.talker.info("Attempting to save SKit:\n $path");
+    Arceus.talker.debug("Attempting to save SKit. ($path)");
     // Open the temp file for writing.
     final tempSink = temp.openWrite();
 
@@ -240,7 +249,9 @@ class SKit {
     await temp.delete();
 
     discardChanges(); // Clear everything from memory.
-    Arceus.talker.log("Successfully saved SKit! ($path)");
+    stopwatch.stop();
+    Arceus.talker.info(
+        "Successfully saved SKit in ${stopwatch.elapsedMilliseconds}ms! ($path)");
   }
 
   /// Discards all of the changes to the kit file.
@@ -248,4 +259,24 @@ class SKit {
   void discardChanges() {
     _loadedRoots.clear();
   }
+}
+
+class SDeletionRequest<T extends SRoot> {
+  final String hash;
+
+  SDeletionRequest(this.hash);
+
+  bool isFor(SRoot root) {
+    if (root is T) {
+      return root.hash == hash;
+    }
+    return false;
+  }
+
+  @override
+  operator ==(Object other) =>
+      other is SDeletionRequest<T> && other.hash == hash;
+
+  @override
+  int get hashCode => hash.hashCode;
 }
