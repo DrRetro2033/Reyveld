@@ -16,6 +16,7 @@ class TestCommand extends Command {
 
   TestCommand() {
     addSubcommand(TestSquirrelCommand());
+    addSubcommand(TestCrashHandlerCommand());
   }
 }
 
@@ -62,5 +63,18 @@ function testImport(t) {
     print(result);
     runner.dispose();
     return;
+  }
+}
+
+class TestCrashHandlerCommand extends Command {
+  @override
+  String get name => "crash";
+
+  @override
+  String get description => "Crashes the program to test the crash handler.";
+
+  @override
+  Future<void> run() async {
+    throw Exception("Test Crash.");
   }
 }

@@ -25,8 +25,9 @@ Future<void> main(List<String> args) async {
   try {
     await runner.run(args);
   } catch (e, st) {
-    print(
-        """Whoops! It looks like something went wrong with Arceus! For more details, open the following log file:
+    print("""
+
+Whoops! It looks like something went wrong! For more details, open the following log file:
 ${Arceus.mostRecentLog.path}
 
 If the error persists, please open an issue on GitHub and provide the log above. 

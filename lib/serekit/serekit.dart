@@ -61,7 +61,7 @@ class SKit {
   /// This is used to store the deletion requests for any root in the file.
   /// This is used when loading a [SRoot] is not needed.
   /// To add a deletion request, use [addDeletionRequest].
-  final Set<SDeletionRequest> _deletionRequests = {};
+  final Set<SIndent> _indents = {};
 
   /// Returns the stream of [_file], decompressing if possible.
   /// If decompression fails, it will fallback on the raw data of the file.
@@ -179,7 +179,8 @@ class SKit {
       processedRoots.add(root);
       final loaded = _loadedRoots.where((e) => e == root).singleOrNull;
       SRoot sending = loaded ?? root;
-      if (_deletionRequests.any((e) => e.isFor(sending)) || sending.delete) {
+      if (_indents.any((e) => e.isFor(sending) && e.isDeleted) ||
+          sending.delete) {
         continue;
       }
       yield sending;
@@ -202,9 +203,7 @@ class SKit {
           .map((e) => e!.hash)
           .toSet();
 
-  void addDeletionRequest(SDeletionRequest request) {
-    _deletionRequests.add(request);
-  }
+  void addIndent(SIndent indent) => _indents.add(indent);
 
   /// Saves the kit file.
   /// This will save the kit header and all of the archives to the kit file.
@@ -259,24 +258,4 @@ class SKit {
   void discardChanges() {
     _loadedRoots.clear();
   }
-}
-
-class SDeletionRequest<T extends SRoot> {
-  final String hash;
-
-  SDeletionRequest(this.hash);
-
-  bool isFor(SRoot root) {
-    if (root is T) {
-      return root.hash == hash;
-    }
-    return false;
-  }
-
-  @override
-  operator ==(Object other) =>
-      other is SDeletionRequest<T> && other.hash == hash;
-
-  @override
-  int get hashCode => hash.hashCode;
 }

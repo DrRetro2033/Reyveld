@@ -203,14 +203,9 @@ class SFile extends SObject {
 }
 
 /// A reference to an [SArchive].
-/// Contains the hash of an archive.
 @SGen("rarchive")
-class SRArchive extends SReference<SArchive> {
+class SRArchive extends SIndent<SArchive> {
   SRArchive(super.kit, super.node);
-
-  String get hash => get("hash")!;
-
-  set hash(String? hash) => set("hash", hash);
 
   @override
   Future<SArchive?> getRef() async {

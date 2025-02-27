@@ -47,12 +47,4 @@ class SFileCreator extends SCreator<SFile> {
       };
 }
 
-class SRArchiveCreator extends SCreator<SRArchive> {
-  final String archiveHash;
-
-  SRArchiveCreator(this.archiveHash);
-  @override
-  get creator => (builder) {
-        builder.attribute("hash", archiveHash);
-      };
-}
+typedef SRArchiveCreator = SIndentCreator<SRArchive>;

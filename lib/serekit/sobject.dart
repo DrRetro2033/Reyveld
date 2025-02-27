@@ -8,6 +8,9 @@ export 'package:xml/xml.dart';
 export 'package:arceus/serekit/serekit.dart';
 export 'package:arceus/build_runner/annotations.dart';
 
+part 'sroot.dart';
+part 'sindent.dart';
+
 /// This file consists of three core elements for both creating and loading [SObject]s:
 /// - The [SObject] itself.
 /// - The [SFactory] of the [SObject] used for loading (read description for more info).
@@ -53,6 +56,9 @@ abstract class SObject {
   /// Removes the child from its current parent to safely move it to the new parent.
   void addChild(SObject child) {
     if (child.parent != null) child._node.remove();
+    if (child is SRoot) {
+      throw Exception("Cannot add a SRoot to a SObject!");
+    }
     _node.children.add(child._node);
   }
 
@@ -63,11 +69,12 @@ abstract class SObject {
     }
   }
 
+  /// Removes the [SObject] from its current parent.
   void unparent() {
     _node.remove();
   }
 
-  /// Returns a list of children of the xml node, with the specific type.
+  /// Returns a list of children of the [SObject], with the specific type.
   List<T?> getChildren<T extends SObject>() {
     List<T?> children = [];
     for (var child in _node.childElements) {
@@ -78,7 +85,7 @@ abstract class SObject {
     return children;
   }
 
-  /// Returns a child of the xml node, with the specific type.
+  /// Returns a child of the [SObject], with the specific type.
   /// If [filter] is provided, it will only return the first child that matches the filter.
   T? getChild<T extends SObject>({bool Function(T)? filter}) {
     for (var child in _node.childElements) {
@@ -95,7 +102,7 @@ abstract class SObject {
     return null;
   }
 
-  /// Returns the parent of the xml node, if it has one.
+  /// Returns the parent of the [SObject], if it has one.
   /// If [filter] is provided, it will only return the parent that matches the filter.
   T? getParent<T extends SObject>({bool Function(T)? filter}) {
     if (_node.parentElement == null) return null;
@@ -106,7 +113,7 @@ abstract class SObject {
     return obj;
   }
 
-  /// Returns a list of descendants of the xml node, with the specific type.
+  /// Returns a list of descendants of the [SObject], with the specific type.
   List<T?> getDescendants<T extends SObject>({bool Function(T)? filter}) {
     List<T?> descendants = [];
     for (var child in _node.descendantElements) {
@@ -123,7 +130,7 @@ abstract class SObject {
     return descendants;
   }
 
-  /// Returns the closest ancestor of the xml node, if it has one.
+  /// Returns the closest ancestor of the [SObject], if it has one.
   List<T?> getAncestors<T extends SObject>({bool Function(T)? filter}) {
     final ancest = <T>[];
     Iterable<XmlElement> ancestors = _node.ancestorElements;
@@ -139,7 +146,7 @@ abstract class SObject {
     return ancest;
   }
 
-  /// Returns the sibling of the xml node above it, if it has one.
+  /// Returns the sibling of the [SObject] above it, if it has one.
   T? getSiblingAbove<T extends SObject>({bool Function(T)? filter}) {
     if (_node.previousElementSibling == null) return null;
     final factory = getSFactory(_node.previousElementSibling!.name.local);
@@ -149,7 +156,7 @@ abstract class SObject {
     return obj;
   }
 
-  /// Returns the sibling of the xml node below it, if it has one.
+  /// Returns the sibling of the [SObject] below it, if it has one.
   T? getSiblingBelow<T extends SObject>({bool Function(T)? filter}) {
     if (_node.nextElementSibling == null) return null;
     final factory = getSFactory(_node.nextElementSibling!.name.local);
@@ -159,40 +166,13 @@ abstract class SObject {
     return obj;
   }
 
+  /// Returns the depth of the [SObject] relative to its root.
   int getDepth() {
     return _node.depth;
   }
 
-  /// Returns the xml node as a xml String.
+  /// Returns the [SObject] as a xml String.
   String toXmlString() => _node.toXmlString(pretty: true, newLine: "\n");
-}
-
-/// A base class for all root objects.
-/// Root objects are objects that are at the root of the skit file.
-abstract class SRoot extends SObject {
-  SRoot(super.kit, super.node);
-
-  bool delete = false;
-
-  String get hash => get("hash")!;
-  set hash(String value) => set("hash", value);
-
-  @override
-  operator ==(other) {
-    if (identical(this, other)) return true;
-    if (other is! SRoot) return false;
-    if (other.runtimeType != runtimeType) return false;
-    if (other.hash != hash) return false;
-    return true;
-  }
-
-  @override
-  int get hashCode => hash.hashCode;
-
-  void markForDeletion() {
-    kit.unloadRoot(this);
-    delete = true;
-  }
 }
 
 /// A base factory for creating [SObject]s.
@@ -204,7 +184,7 @@ abstract class SRoot extends SObject {
 /// ```
 abstract class SFactory<T extends SObject> {
   /// The tag of the associated xml node.
-  /// Will be checked if unique in [_sobjectFactories].
+  /// Will be checked if unique in [_sobjectFactories] in serekit.factories.dart.
   String get tag;
 
   /// Loads the [SObject] from the xml node.
@@ -222,13 +202,6 @@ abstract class SFactory<T extends SObject> {
 
   @override
   int get hashCode => tag.hashCode;
-}
-
-/// A reference to another [SObject].
-/// This is used when an object needs to reference another object that could be anywhere in the xml file.
-abstract class SReference<T extends SRoot> extends SObject {
-  SReference(super.kit, super._node);
-  FutureOr<T?> getRef();
 }
 
 /// A base creator for creating [SObject]s.
@@ -270,39 +243,6 @@ abstract class SCreator<T extends SObject> {
     await beforeCreate(kit);
 
     builder.element(getSFactory<T>().tag, nest: () {
-      creator(builder);
-    });
-
-    final frag = builder.buildDocument(); // build the document
-
-    /// load the [SObject]
-    return getSFactory<T>().load(kit, frag.rootElement);
-  }
-
-  FutureOr<void> Function(SKit kit) get beforeCreate => (kit) async {
-        return;
-      };
-
-  /// Creator must never be asynchronous, as the xml package does not play nicely with it.
-  /// It must be synchronous. However, if you need to use asyncronous code,
-  /// use [beforeCreate] to do stuff before creating the [SObject].
-  void Function(XmlBuilder builder) get creator;
-}
-
-abstract class SRootCreator<T extends SRoot> {
-  SRootCreator();
-  FutureOr<T> create(SKit kit) async {
-    final builder = XmlBuilder();
-
-    /// Does something before creation asyncronously
-    await beforeCreate(kit);
-
-    final usedHashes = await kit.usedRootHashes<T>();
-
-    final hash = generateUniqueHash(usedHashes);
-
-    builder.element(getSFactory<T>().tag, nest: () {
-      builder.attribute("hash", hash);
       creator(builder);
     });
 

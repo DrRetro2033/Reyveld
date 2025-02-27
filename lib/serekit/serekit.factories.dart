@@ -10,6 +10,7 @@ final Set<SFactory> _sobjectFactories = {
   SHeaderFactory(),
   SArchiveFactory(),
   SFileFactory(),
+  SRArchiveFactory(),
   ArceusSettingsFactory(),
   DescriptionFactory(),
   AddonFactory(),
@@ -19,13 +20,13 @@ final Set<SFactory> _sobjectFactories = {
 /// Returns null if not found.
 SFactory<T> getSFactory<T extends SObject>([String? tag]) {
   final factories = _sobjectFactories.whereType<SFactory<T>?>();
-  SFactory<T>? factory = factories.first;
+  SFactory<T>? factory = factories.firstOrNull;
   if (tag != null) {
     factory = factories.firstWhere((e) => e!.tag == tag, orElse: () => null);
   }
   if (factory == null) {
     throw Exception(
-        "No factory found for $T with tag $tag. Please make sure you added the factory for this tag in serekit.g.dart!");
+        "No factory found for $T with tag '$tag'! Please make sure you added the factory for this tag in serekit.factories.dart.");
   }
   return factory;
 }
