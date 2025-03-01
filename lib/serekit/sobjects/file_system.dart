@@ -150,14 +150,15 @@ class SFile extends SObject {
   }
 
   /// Returns a stream of the bytes stored, uncompressing along the way.
-  Stream<List<int>> get bytes => Stream.fromIterable(base64Decode(innerText!))
-      .chunk(chunkSize)
-      .transform(gzip.decoder)
-      .expand((e) => e)
-      .chunk(chunkSize);
+  FutureOr<Stream<List<int>>> get bytes =>
+      Stream.fromIterable(base64Decode(innerText!))
+          .chunk(chunkSize)
+          .transform(gzip.decoder)
+          .expand((e) => e)
+          .chunk(chunkSize);
 
   /// Attempts to get the length of the file. If it fails, then it will return a 0;
-  Future<int> get length => bytes
+  Future<int> get length async => (await bytes)
       .map<int>((chunk) => chunk.length)
       .reduce((a, b) => a + b)
       .catchError((e) => 0);
@@ -166,9 +167,8 @@ class SFile extends SObject {
   String get textSync => utf8.decode(bytesSync);
 
   Stream<List<int>> streamDiff(Stream<List<int>> other) async* {
-    var queueA = StreamQueue(bytes);
+    var queueA = StreamQueue(await bytes);
     var queueB = StreamQueue(other);
-    int chunkNum = 0;
     while (await queueA.hasNext || await queueB.hasNext) {
       List<int?> valueA =
           await ((await queueA.hasNext) ? await queueA.next : Future.value([]));
@@ -180,14 +180,9 @@ class SFile extends SObject {
       for (int i = 0; i < chunkSize; i++) {
         int byte1 = i < valueA.length ? valueA.elementAt(i)! : 0;
         int byte2 = i < valueB.length ? valueB.elementAt(i)! : 0;
-        if (byte1 - byte2 != 0) {
-          Arceus.talker.log(
-              "Diff in chunk $chunkNum: ${byte1 - byte2} ($byte1, $byte2) (${valueA.length} ~ ${valueB.length})");
-        }
         diff.add((byte1 - byte2) % 255);
       }
       yield diff;
-      chunkNum++;
     }
   }
 
@@ -196,7 +191,7 @@ class SFile extends SObject {
     final extFile = File(filePath);
     await extFile.create(recursive: true);
     final sink = extFile.openWrite();
-    await sink.addStream(bytes);
+    await sink.addStream(await bytes);
     await sink.flush();
     await sink.close();
   }
@@ -211,4 +206,17 @@ class SRArchive extends SIndent<SArchive> {
   Future<SArchive?> getRef() async {
     return await kit.getArchive(hash);
   }
+}
+
+@SGen("rfile")
+class SRFile extends SFile {
+  String get archiveHash => get("archive")!;
+  String get filePath => get("path")!;
+
+  @override
+  Future<Stream<List<int>>> get bytes => kit
+      .getArchive(archiveHash)
+      .then((value) async => await value!.getFile(filePath)!.bytes);
+
+  SRFile(super.kit, super.node);
 }

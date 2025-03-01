@@ -154,7 +154,7 @@ class ArceusLoggerFilter extends LoggerFilter {
   @override
   bool shouldLog(dynamic msg, LogLevel level) {
     if (level == LogLevel.debug) {
-      if (settings!.debugMode) {
+      if (settings?.debugMode ?? true) {
         return true;
       }
       return false;

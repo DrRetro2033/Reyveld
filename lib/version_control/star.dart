@@ -46,10 +46,11 @@ class Star extends SObject {
   /// Grows a new star from this star.
   /// Returns the new star.
   Future<Star> grow(String name) async {
-    final archive =
-        await SArchiveCreator.archiveFolder(kit, constellation.path);
+    final newArchive = await SArchiveCreator.archiveFolder(
+        kit, constellation.path,
+        ref: await archive);
     final star =
-        await StarCreator(name, constellation.newStarHash(), archive.hash)
+        await StarCreator(name, constellation.newStarHash(), newArchive.hash)
             .create(kit);
     addChild(star);
     constellation.currentHash = star.hash;
@@ -79,7 +80,6 @@ class Star extends SObject {
 
   /// Returns the formatted name of the star file for displaying.
   /// This is used when printing details about a star file to the terminal.
-  /// TODO: Add support for tags.
   String getDisplayName() {
     // int tagsToDisplay = 2;
     List<Badge> badges = [];

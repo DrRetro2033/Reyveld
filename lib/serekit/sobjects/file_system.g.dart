@@ -35,3 +35,13 @@ class SRArchiveFactory extends SFactory<SRArchive> {
   @override
   String get tag => "rarchive";
 }
+
+class SRFileFactory extends SFactory<SRFile> {
+  SRFileFactory();
+
+  @override
+  SRFile load(SKit kit, XmlNode node) => SRFile(kit, node);
+
+  @override
+  String get tag => "rfile";
+}

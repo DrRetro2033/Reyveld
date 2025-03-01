@@ -11,6 +11,7 @@ final Set<SFactory> _sobjectFactories = {
   SArchiveFactory(),
   SFileFactory(),
   SRArchiveFactory(),
+  SRFileFactory(),
   ArceusSettingsFactory(),
   DescriptionFactory(),
   AddonFactory(),
