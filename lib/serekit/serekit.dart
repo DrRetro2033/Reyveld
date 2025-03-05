@@ -143,7 +143,7 @@ class SKit {
       {bool Function(T root)? filterRoots,
       bool Function(XmlStartElementEvent)? filterEvents,
       bool addToCache = true}) async {
-    final roots = _streamRoots()
+    final roots = _streamRoots(filterEvents: filterEvents)
         .whereType<T>()
         .where((e) => filterRoots == null || filterRoots(e));
     Set<T> rootsList = await roots.toSet();
@@ -167,9 +167,11 @@ class SKit {
   /// Streams the roots of the kit file, streaming them if they have not been loaded yet.
   /// This is used when saving and reading the kit file. Will not cache anything.
   /// To cache roots, use [getRoots] or [getRoot].
-  Stream<SRoot> _streamRoots() async* {
+  Stream<SRoot> _streamRoots(
+      {bool Function(XmlStartElementEvent)? filterEvents}) async* {
     final eventStream = _eventStream;
     final rootStream = eventStream
+        .selectSubtreeEvents((e) => filterEvents == null || filterEvents(e))
         .toXmlNodes()
         .expand((e) => e)
         .map((e) => getSFactory((e as XmlElement).localName).load(this, e))
@@ -257,5 +259,19 @@ class SKit {
   /// This will unload all of the loaded archives, and clear the current kit header.
   void discardChanges() {
     _loadedRoots.clear();
+  }
+
+  Future<void> printDetails() async {
+    final header = await getHeader();
+    header!.printDetails(advanced: true);
+
+    for (final factory in sobjectFactories) {
+      final hashes = await usedRootHashes(factory.tag);
+      if (hashes.isEmpty) continue;
+      print("${factory.tag}:");
+      for (final usedHash in hashes) {
+        print("  $usedHash");
+      }
+    }
   }
 }

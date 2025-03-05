@@ -12,6 +12,7 @@ ArceusSettings? settings;
 Future<void> main(List<String> args) async {
   final runner = CommandRunner("arceus", "Arceus CLI program");
   runner.argParser.addOption("const", abbr: "c", hide: true);
+  runner.argParser.addOption("skit", abbr: "s", hide: true);
   runner.addCommand(NewCommand());
   runner.addCommand(ShowCommand());
   runner.addCommand(JumpCommand());

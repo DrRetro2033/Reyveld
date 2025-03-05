@@ -146,3 +146,73 @@ extension CommandGlobalCommands on Command {
     return value;
   }
 }
+
+enum DateSize { regular, condenced }
+
+enum DateFormat { dayMonthYear, monthDayYear }
+
+enum TimeFormat { h12, h24 }
+
+enum Months {
+  January,
+  February,
+  March,
+  April,
+  May,
+  June,
+  July,
+  August,
+  September,
+  October,
+  November,
+  December
+}
+
+extension FormatDateAndTime on DateTime {
+  String formatTime(TimeFormat timeFormat) {
+    switch (timeFormat) {
+      case TimeFormat.h12:
+        return "${hour % 12 == 0 ? 12 : hour % 12}:${minute.toString().padLeft(2, '0')} ${hour >= 12 ? 'PM' : 'AM'}";
+      case TimeFormat.h24:
+        return "$hour:${minute.toString().padLeft(2, '0')}";
+    }
+  }
+
+  String formatDate(DateSize dateSize, DateFormat dateFormat) {
+    switch (dateSize) {
+      case DateSize.regular:
+
+        /// Regular
+        final newDay = _formatDay(day);
+        final newMonth = Months.values[month - 1].name;
+        switch (dateFormat) {
+          case DateFormat.dayMonthYear:
+            return "$newDay $newMonth, $year";
+          case DateFormat.monthDayYear:
+            return "$newMonth $newDay, $year";
+        }
+      case DateSize.condenced:
+
+        /// Condenced
+        switch (dateFormat) {
+          case DateFormat.dayMonthYear:
+            return "$day/$month/$year";
+          case DateFormat.monthDayYear:
+            return "$month/$day/$year";
+        }
+    }
+  }
+
+  String _formatDay(int day) {
+    if (day == 1) {
+      return "1st";
+    }
+    if (day == 2) {
+      return "2nd";
+    }
+    if (day == 3) {
+      return "3rd";
+    }
+    return "${day}th";
+  }
+}

@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:arceus/extensions.dart';
 import 'package:arceus/serekit/sobject.dart';
 
 part 'settings.g.dart';
@@ -33,52 +34,8 @@ class ArceusSettings extends SObject {
   /// Saves the SKit.
   Future<void> save() async => await kit.save();
 
-  String formatDate(DateTime date) {
-    switch (dateSize) {
-      case DateSize.regular:
-
-        /// Regular
-        final day = _formatDay(date.day);
-        final month = Months.values[date.month - 1].name;
-        switch (dateFormat) {
-          case DateFormat.dayMonthYear:
-            return "$day $month, ${date.year}";
-          case DateFormat.monthDayYear:
-            return "$month $day, ${date.year}";
-        }
-      case DateSize.condenced:
-
-        /// Condenced
-        switch (dateFormat) {
-          case DateFormat.dayMonthYear:
-            return "${date.day}/${date.month}/${date.year}";
-          case DateFormat.monthDayYear:
-            return "${date.month}/${date.day}/${date.year}";
-        }
-    }
-  }
-
-  String _formatDay(int day) {
-    if (day == 1) {
-      return "1st";
-    }
-    if (day == 2) {
-      return "2nd";
-    }
-    if (day == 3) {
-      return "3rd";
-    }
-    return "${day}th";
-  }
-
-  String formatTime(DateTime date) {
-    switch (timeFormat) {
-      case TimeFormat.h12:
-        return "${date.hour % 12 == 0 ? 12 : date.hour % 12}:${date.minute.toString().padLeft(2, '0')} ${date.hour >= 12 ? 'PM' : 'AM'}";
-      case TimeFormat.h24:
-        return "${date.hour}:${date.minute}";
-    }
-  }
+  @override
+  String get displayName => "Settings ⚙️";
 }
 
 class ArceusSettingsCreator extends SCreator<ArceusSettings> {
@@ -89,25 +46,4 @@ class ArceusSettingsCreator extends SCreator<ArceusSettings> {
         builder.attribute("date-size", DateSize.regular.index);
         builder.attribute("debug", "1");
       };
-}
-
-enum DateSize { regular, condenced }
-
-enum DateFormat { dayMonthYear, monthDayYear }
-
-enum TimeFormat { h12, h24 }
-
-enum Months {
-  January,
-  February,
-  March,
-  April,
-  May,
-  June,
-  July,
-  August,
-  September,
-  October,
-  November,
-  December
 }

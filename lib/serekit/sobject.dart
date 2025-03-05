@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:arceus/arceus.dart';
 import 'package:arceus/serekit/serekit.dart';
 import 'package:arceus/uuid.dart';
+import 'package:arceus/widget_system.dart';
 import 'package:xml/xml.dart';
 
 export 'package:xml/xml.dart';
@@ -173,6 +175,69 @@ abstract class SObject {
 
   /// Returns the [SObject] as a xml String.
   String toXmlString() => _node.toXmlString(pretty: true, newLine: "\n");
+
+  String get displayName;
+
+  /// This is used to either condence the tree, or not, when printing.
+  /// If condenceBranch is true, then if a branch has only one child, it will be printed in one column, instead of infinitely nested.
+  /// If condenceBranch is false, then the tree will be printed as normal.
+  /// Defaults to false.
+  bool get condenceBranch => false;
+
+  /// Prints a tree representation of the [SObject] and its children.
+  /// If [advanced] is true, then the tree will include the attributes of the [SObject] and its children.
+  /// If [advanced] is false, then the tree will only include the names of the [SObject] and its children.
+  /// Defaults to false.
+  void printDetails<T extends SObject>({bool advanced = false}) {
+    print(TreeWidget(_getTreeForPrint<T>(this, {}, advanced: advanced)));
+  }
+
+  /// Returns the tree of the star and its children, for printing.
+  /// This is called recursively, to give a reasonable formatting to the tree, by making single children branches be in one column, instead of infinitely nested.
+  Map<String, dynamic> _getTreeForPrint<T extends SObject>(
+      SObject obj, Map<String, dynamic> tree,
+      {bool advanced = false}) {
+    try {
+      final objName = "${advanced ? "🟢 " : ""}${obj.displayName}";
+      tree[objName] = <String, dynamic>{};
+      if (advanced) {
+        final attrubutes =
+            obj._getAttrubutesForPrint().map((k, v) => MapEntry("🔵 $k", v));
+        tree[objName].addAll(attrubutes);
+      }
+      Arceus.talker.log(obj.getChildren<T>().length.toString());
+      if (obj.getChildren<T>().length == 1 &&
+          obj.condenceBranch &&
+          obj.getChild<T>()!.condenceBranch) {
+        tree = _getTreeForPrint<T>(
+          obj.getChild<T>()!,
+          tree,
+          advanced: advanced,
+        );
+      } else {
+        for (final child in obj.getChildren<T>()) {
+          tree[objName].addAll(_getTreeForPrint<T>(
+            child!,
+            tree[objName],
+            advanced: advanced,
+          ));
+        }
+      }
+      return tree;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Returns a map of attributes for the [SObject].
+  /// The keys are the local names of the attributes, and the values are the corresponding attribute values.
+  Map<String, dynamic> _getAttrubutesForPrint() {
+    Map<String, dynamic> attributes = {};
+    for (var attribute in _node.attributes) {
+      attributes[attribute.name.local] = attribute.value;
+    }
+    return attributes;
+  }
 }
 
 /// A base factory for creating [SObject]s.

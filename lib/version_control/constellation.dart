@@ -5,12 +5,13 @@ import 'package:arceus/serekit/sobject.dart';
 import 'package:arceus/serekit/sobjects/file_system.dart';
 import 'package:arceus/uuid.dart';
 import 'package:arceus/version_control/star.dart';
-import 'package:arceus/widget_system.dart';
 
 part 'constellation.g.dart';
 
 @SGen("const")
 class Constellation extends SObject {
+  @override
+  String get displayName => name;
   Constellation(super._kit, super._node);
 
   String get name => get("name") ?? "Constellation";
@@ -75,31 +76,6 @@ class Constellation extends SObject {
   String newStarHash() {
     final hashes = getStarHashes();
     return generateUniqueHash(hashes);
-  }
-
-  /// Prints the tree of the stars in the constellation, with each level of indentation showing the parents of the stars.
-  void printTree() {
-    print(TreeWidget(_getTreeForPrint(root, {})));
-  }
-
-  /// Returns the tree of the star and its children, for printing.
-  /// This is called recursively, to give a reasonable formatting to the tree, by making single children branches be in one column, instead of infinitely nested.
-  Map<String, dynamic> _getTreeForPrint(Star star, Map<String, dynamic> tree,
-      {bool branch = false}) {
-    final starName = star.getDisplayName();
-    tree[starName] = <String, dynamic>{};
-    if (star.getChildren<Star>().length == 1) {
-      if (branch) {
-        tree[starName].addAll(_getTreeForPrint(star.getChild<Star>()!, {}));
-        return tree;
-      }
-      return _getTreeForPrint(star.getChild<Star>()!, tree);
-    } else {
-      for (final child in star.getChildren<Star>()) {
-        tree[starName].addAll(_getTreeForPrint(child!, {}, branch: true));
-      }
-    }
-    return tree;
   }
 
   Star getStarAt(String commandString) {

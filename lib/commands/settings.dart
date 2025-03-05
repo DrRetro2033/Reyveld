@@ -1,5 +1,5 @@
+import 'package:arceus/extensions.dart';
 import 'package:arceus/main.dart';
-import 'package:arceus/serekit/sobjects/settings.dart';
 import 'package:args/command_runner.dart';
 import 'package:cli_spin/cli_spin.dart';
 import 'package:interact/interact.dart';

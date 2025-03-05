@@ -7,13 +7,15 @@ part 'description.g.dart';
 /// This [SObject] is used for descriptions that could be a whole paragraph.
 
 @SGen("descr")
-class Description extends SObject {
-  Description(super.kit, super._node);
+class SDescription extends SObject {
+  @override
+  String get displayName => "Description";
+  SDescription(super.kit, super._node);
 
   String get body => String.fromCharCodes(base64Decode(get("text") ?? ""));
 }
 
-class DescriptionCreator extends SCreator<Description> {
+class DescriptionCreator extends SCreator<SDescription> {
   final String text;
 
   DescriptionCreator(this.text);
