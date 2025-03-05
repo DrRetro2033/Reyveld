@@ -6,11 +6,11 @@ part of 'description.dart';
 // SGenGenerator
 // **************************************************************************
 
-class DescriptionFactory extends SFactory<Description> {
+class DescriptionFactory extends SFactory<SDescription> {
   DescriptionFactory();
 
   @override
-  Description load(SKit kit, XmlNode node) => Description(kit, node);
+  SDescription load(SKit kit, XmlNode node) => SDescription(kit, node);
 
   @override
   String get tag => "descr";
