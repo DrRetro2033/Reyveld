@@ -1,6 +1,6 @@
 import 'package:arceus/arceus.dart';
 import 'package:arceus/main.dart';
-import 'package:arceus/serekit/serekit.dart';
+import 'package:arceus/skit/skit.dart';
 import 'package:arceus/version_control/constellation.dart';
 import 'package:args/command_runner.dart';
 
@@ -22,7 +22,10 @@ Available Actions:
   - root: Jump to root star.
   - forward X: Jump forward by X stars.
   - back X: Jump backward by X stars.
-  - 
+  - above X: Jump up by X levels.
+  - below X: Jump down by X levels.
+  - next X: Jump to the next X child.
+  - depth X: Jump to the star at depth X.
 """;
 
   @override
@@ -42,6 +45,10 @@ Available Actions:
             .start();
     final kit = await SKit.open(
         "${Arceus.constFolderPath}/$constName.skit", SKitType.constellation);
+    if (!await kit.exists()) {
+      spinner.fail("Constellation does not exist.");
+      return;
+    }
     final constellation = await kit.getConstellation();
     if (await constellation!.checkForChanges()) {
       spinner.warn("There are changes in the tracked folder. ");

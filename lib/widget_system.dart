@@ -188,16 +188,3 @@ class TextWidget extends Widget {
     stdout.write(text.padRight(size.width));
   }
 }
-
-class WidgetSystem {
-  final Widget rootWidget;
-
-  WidgetSystem(this.rootWidget);
-
-  void render() {
-    Cli.clearTerminal();
-    int width = stdout.terminalColumns;
-    int height = stdout.terminalLines;
-    rootWidget.render(Size(width, height));
-  }
-}

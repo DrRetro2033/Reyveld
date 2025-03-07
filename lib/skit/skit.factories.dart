@@ -1,4 +1,4 @@
-part of 'serekit.dart';
+part of 'skit.dart';
 
 // This file contains all of the [SFactory]s for every [SObject] subclass.
 

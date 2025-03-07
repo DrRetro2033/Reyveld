@@ -6,13 +6,13 @@ import "package:arceus/extensions.dart";
 import "package:rxdart/rxdart.dart";
 import 'package:xml/xml_events.dart';
 
-import 'package:arceus/serekit/sobject.dart';
-import 'package:arceus/serekit/sobjects/sobjects.dart';
+import 'package:arceus/skit/sobject.dart';
+import 'package:arceus/skit/sobjects/sobjects.dart';
 import "package:arceus/scripting/addon.dart";
 import "package:arceus/version_control/constellation.dart";
 import "package:arceus/version_control/star.dart";
 
-part 'serekit.factories.dart';
+part 'skit.factories.dart';
 
 enum SKitType { unspecified, constellation, constellationPack, addon, settings }
 
@@ -33,7 +33,6 @@ class SKit {
         await ifNotFound(kit);
         return kit;
       }
-      throw Exception("Kit file does not exist!");
     }
     if (!await kit.isType(type)) {
       throw Exception("Kit file is not of the correct type!");

@@ -1,7 +1,9 @@
 part of 'sobject.dart';
 
 /// A base class for all root objects.
-/// Root objects are objects that are at the root of the skit file.
+/// Root objects are objects that are at the root of the skit file, except for the header.
+///
+/// To reference a root object in the header, use the [SIndent] object.
 abstract class SRoot extends SObject {
   SRoot(super.kit, super.node);
 

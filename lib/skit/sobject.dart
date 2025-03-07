@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:arceus/arceus.dart';
-import 'package:arceus/serekit/serekit.dart';
+import 'package:arceus/skit/skit.dart';
 import 'package:arceus/uuid.dart';
 import 'package:arceus/widget_system.dart';
 import 'package:xml/xml.dart';
 
 export 'package:xml/xml.dart';
-export 'package:arceus/serekit/serekit.dart';
+export 'package:arceus/skit/skit.dart';
 export 'package:arceus/build_runner/annotations.dart';
 
 part 'sroot.dart';
@@ -240,7 +240,7 @@ abstract class SObject {
   }
 }
 
-/// A base factory for creating [SObject]s.
+/// A base factory for parsing [SObject]s from xml.
 /// Subclasses should be created as follows:
 /// ```dart
 /// class MySFactory extends SFactory<MySObject> {
@@ -274,7 +274,7 @@ abstract class SFactory<T extends SObject> {
 /// it was moved to its own base class for more stricter
 /// control over the creation process.
 ///
-/// All subclasses should implement the [creator] method,
+/// All subclasses should implement the [creator] method.
 /// To create a [SObject], you should call the [create] method.
 ///
 /// Example:

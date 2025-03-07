@@ -4,7 +4,7 @@ import 'dart:io';
 import 'dart:isolate';
 import 'package:arceus/arceus.dart';
 import 'package:arceus/extensions.dart';
-import 'package:arceus/serekit/sobject.dart';
+import 'package:arceus/skit/sobject.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:async/async.dart';
 
@@ -43,9 +43,10 @@ class SArchive extends SRoot {
   List<SFile?> getFiles() => getChildren<SFile>();
 
   /// Checks for changes between the archive and the path provided.
+  ///
   /// This method uses isolates to check for changes in parallel to speed up the process.
   /// Returns true if there are changes, false if there are none.
-  /// Changes that are checked include new files, deleted files, and changes in files.
+  /// This check includes new files, deleted files, and changes in files.
   Future<bool> checkForChanges(String path) async {
     final stopwatch = Stopwatch();
     Arceus.talker.debug("Attempting to check for changes at $path");
@@ -171,6 +172,7 @@ class SFile extends SObject {
   /// Returns the data of the file as a string. (will be used for scripting in the future.)
   String get textSync => utf8.decode(bytesSync);
 
+  /// Returns a stream of the difference between this file and a data stream.
   Stream<List<int>> streamDiff(Stream<List<int>> other) async* {
     var queueA = StreamQueue(await bytes);
     var queueB = StreamQueue(other);
@@ -191,6 +193,8 @@ class SFile extends SObject {
     }
   }
 
+  /// Extracts the file to the specified folder.
+  /// If [temp] is true, then the file will be extracted as a temporary file with a `.tmp` extension.
   Future<void> extract(String folderPath, {bool temp = false}) async {
     final filePath = "$folderPath/$path${temp ? ".tmp" : ""}";
     final extFile = File(filePath);
