@@ -422,6 +422,9 @@ class SquirrelBindings {
   late final _sq_push =
       _sq_pushPtr.asFunction<void Function(HSQUIRRELVM, int)>();
 
+  /// Pops n elements from the stack.
+  ///
+  /// The function pops [nelemstopop] values from the stack and discards them.
   void sq_pop(
     HSQUIRRELVM v,
     int nelemstopop,
@@ -450,6 +453,15 @@ class SquirrelBindings {
   late final _sq_poptop =
       _sq_poptopPtr.asFunction<void Function(HSQUIRRELVM)>();
 
+  /// Removes an element from the Squirrel stack at the specified index.
+  ///
+  /// This function calls the native `_sq_remove` function to remove the element
+  /// at the provided index `idx` from the stack associated with the virtual
+  /// machine `v`.
+  ///
+  /// - Parameters:
+  ///   - v: The target Squirrel virtual machine.
+  ///   - idx: The index of the element to remove from the stack.
   void sq_remove(
     HSQUIRRELVM v,
     int idx,
@@ -1509,6 +1521,18 @@ class SquirrelBindings {
   late final _sq_pushconsttable =
       _sq_pushconsttablePtr.asFunction<void Function(HSQUIRRELVM)>();
 
+  /// Sets the root table for the given Squirrel virtual machine instance.
+  ///
+  /// This function pops a table from the stack and sets it as the root table
+  /// for the provided virtual machine. It returns a result indicating whether
+  /// the operation was successful. The root table is a critical component of
+  /// the VM's execution context, serving as the global scope.
+  ///
+  /// Parameters:
+  /// - `v`: The target Squirrel virtual machine.
+  ///
+  /// Returns:
+  /// - An integer representing the success or failure of the operation.
   int sq_setroottable(
     HSQUIRRELVM v,
   ) {
@@ -1537,6 +1561,10 @@ class SquirrelBindings {
   late final _sq_setconsttable =
       _sq_setconsttablePtr.asFunction<int Function(HSQUIRRELVM)>();
 
+  /// Invokes the _newslot metamethod in the table delegate.
+  /// It only works on tables and classes.
+  /// Pops a key and a value from the stack and performs a set operation
+  /// on the table or class that is at position idx in the stack.
   int sq_newslot(
     HSQUIRRELVM v,
     int idx,
@@ -2576,7 +2604,7 @@ final class tagSQObject extends ffi.Struct {
   @ffi.UnsignedInt()
   external int _typeAsInt;
 
-  tagSQObjectType get _type => tagSQObjectType.fromValue(_typeAsInt);
+  // tagSQObjectType get _type => tagSQObjectType.fromValue(_typeAsInt);
 
   external SQObjectValue _unVal;
 }
@@ -2710,43 +2738,43 @@ const int SQOBJECT_CANBEFALSE = 16777216;
 
 const int SQ_MATCHTYPEMASKSTRING = -99999;
 
-const int _RT_MASK = 16777215;
+// const int _RT_MASK = 16777215;
 
-const int _RT_NULL = 1;
+// const int _RT_NULL = 1;
 
-const int _RT_INTEGER = 2;
+// const int _RT_INTEGER = 2;
 
-const int _RT_FLOAT = 4;
+// const int _RT_FLOAT = 4;
 
-const int _RT_BOOL = 8;
+// const int _RT_BOOL = 8;
 
-const int _RT_STRING = 16;
+// const int _RT_STRING = 16;
 
-const int _RT_TABLE = 32;
+// const int _RT_TABLE = 32;
 
-const int _RT_ARRAY = 64;
+// const int _RT_ARRAY = 64;
 
-const int _RT_USERDATA = 128;
+// const int _RT_USERDATA = 128;
 
-const int _RT_CLOSURE = 256;
+// const int _RT_CLOSURE = 256;
 
-const int _RT_NATIVECLOSURE = 512;
+// const int _RT_NATIVECLOSURE = 512;
 
-const int _RT_GENERATOR = 1024;
+// const int _RT_GENERATOR = 1024;
 
-const int _RT_USERPOINTER = 2048;
+// const int _RT_USERPOINTER = 2048;
 
-const int _RT_THREAD = 4096;
+// const int _RT_THREAD = 4096;
 
-const int _RT_FUNCPROTO = 8192;
+// const int _RT_FUNCPROTO = 8192;
 
-const int _RT_CLASS = 16384;
+// const int _RT_CLASS = 16384;
 
-const int _RT_INSTANCE = 32768;
+// const int _RT_INSTANCE = 32768;
 
-const int _RT_WEAKREF = 65536;
+// const int _RT_WEAKREF = 65536;
 
-const int _RT_OUTER = 131072;
+// const int _RT_OUTER = 131072;
 
 const int SQ_OK = 0;
 

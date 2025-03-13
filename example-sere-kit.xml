@@ -1,0 +1,36 @@
+
+<!-- This file is an example of an uncompressed SERE kit file for testing and rough blueprint of the file layout. -->
+
+<!-- 
+The 'sere' tag acts as the header for the file.
+It contains small data such as a constellation, a star tree, addon info, users, and more.
+All archives and files must always be seperate to this, and only loaded when needed.
+-->
+<sere> 
+    <!-- The 'const' tag is an abbrivation of 'Constellation', and contains the name of the constellation, the current star, and more. -->
+    <const name="Test Constellation">
+        <!-- The 'star' tag represents a star in a constellation. It contains the star name, its children, its commit hash (aka. archive hash), and more.  -->
+        <star name="Initial Star" comit="00000000000000000000000000000000">
+        </star>
+    </const>
+</sere>
+
+<!-- 
+The 'archive' tag represents a group of files stored in the sere kit. 
+Each archive gets an unique hash so it can be referenced.
+Hashes can range from 0, all the way to 3.4028237e+38, 
+which should be more than enough to store multiple archives in one sere kit.
+ -->
+<archive hash="00000000000000000000000000000000">
+<!-- 
+The 'file' tag contains the relative path of the file in the archive, and its data is stored in compressed base64.
+
+It path should be relative to the archive, so for instance:
+"C://path/to/folder/example.txt" will translate to "example.txt".
+
+If a file is in a subfolder, you can represent that by adding the subfolder to the path:
+"C://path/to/folder/subfolder/example.txt" will translate to "subfolder/example.txt".
+
+-->
+    <file path="example-path"></file>
+</archive>

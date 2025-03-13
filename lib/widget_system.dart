@@ -172,9 +172,9 @@ class MapLevel extends Level {
       }
     }
     final tree = buffer.toString().split('\n');
-    tree.removeWhere((x) => x.replaceAll(' ', "").isEmpty);
+    tree.removeWhere((x) => x.replaceAll(' ', '').isEmpty);
     String result = tree.join('\n');
-    return "$result\n";
+    return result;
   }
 }
 
@@ -186,18 +186,5 @@ class TextWidget extends Widget {
   @override
   void render(Size size) {
     stdout.write(text.padRight(size.width));
-  }
-}
-
-class WidgetSystem {
-  final Widget rootWidget;
-
-  WidgetSystem(this.rootWidget);
-
-  void render() {
-    Cli.clearTerminal();
-    int width = stdout.terminalColumns;
-    int height = stdout.terminalLines;
-    rootWidget.render(Size(width, height));
   }
 }
