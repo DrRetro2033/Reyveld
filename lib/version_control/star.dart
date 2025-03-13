@@ -1,7 +1,7 @@
 import 'package:arceus/extensions.dart';
 import 'package:arceus/main.dart';
-import 'package:arceus/serekit/sobject.dart';
-import 'package:arceus/serekit/sobjects/file_system.dart';
+import 'package:arceus/skit/sobject.dart';
+import 'package:arceus/skit/sobjects/file_system.dart';
 import 'package:arceus/version_control/constellation.dart';
 import 'package:arceus/widget_system.dart';
 

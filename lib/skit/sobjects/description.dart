@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:arceus/serekit/sobject.dart';
+import 'package:arceus/skit/sobject.dart';
 
 part 'description.g.dart';
 

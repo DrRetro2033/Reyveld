@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:arceus/arceus.dart';
-import 'package:arceus/serekit/sobjects/settings.dart';
+import 'package:arceus/skit/sobjects/settings.dart';
 import 'package:args/command_runner.dart';
 import 'package:interact/interact.dart';
 import 'package:arceus/commands/commands.dart';

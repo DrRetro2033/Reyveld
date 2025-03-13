@@ -1,5 +1,5 @@
 import 'package:arceus/arceus.dart';
-import 'package:arceus/serekit/skit.dart';
+import 'package:arceus/skit/skit.dart';
 import 'package:arceus/version_control/constellation.dart';
 import 'package:arceus/version_control/star.dart';
 import 'package:args/command_runner.dart';

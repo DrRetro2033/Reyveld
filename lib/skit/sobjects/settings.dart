@@ -3,7 +3,7 @@
 import 'dart:async';
 
 import 'package:arceus/extensions.dart';
-import 'package:arceus/serekit/sobject.dart';
+import 'package:arceus/skit/sobject.dart';
 
 part 'settings.g.dart';
 

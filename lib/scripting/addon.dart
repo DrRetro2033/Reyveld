@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:arceus/serekit/sobject.dart';
-import 'package:arceus/serekit/sobjects/description.dart';
-import 'package:arceus/serekit/sobjects/file_system.dart';
+import 'package:arceus/skit/sobject.dart';
+import 'package:arceus/skit/sobjects/description.dart';
+import 'package:arceus/skit/sobjects/file_system.dart';
 import 'package:version/version.dart';
 
 part 'addon.g.dart';

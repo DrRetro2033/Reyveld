@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:arceus/extensions.dart';
-import 'package:arceus/serekit/sobject.dart';
-import 'package:arceus/serekit/sobjects/file_system.dart';
+import 'package:arceus/skit/sobject.dart';
+import 'package:arceus/skit/sobjects/file_system.dart';
 import 'package:arceus/uuid.dart';
 import 'package:arceus/version_control/star.dart';
 
