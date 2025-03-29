@@ -14,7 +14,6 @@ final Set<SFactory> sobjectFactories = {
   SRFileFactory(),
   ArceusSettingsFactory(),
   DescriptionFactory(),
-  AddonFactory(),
 };
 
 /// Get the factory for the given [SObject] subclass.

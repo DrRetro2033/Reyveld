@@ -8,34 +8,25 @@
 >
 > Thank you for reading!
 
+> [!WARNING]
+> Please keep in mind that Arceus is still in alpha, and it is not
+> optimized for files larger than a few megabytes.
+
 <!-- ![Arceus](https://archives.bulbagarden.net/media/upload/thumb/9/9e/0493Arceus.png/900px-0493Arceus.png) -->
 
 # What is Arceus?
 
-Arceus is a command line application that gives everyday users the power and flexiblity of version control, without the complexly and headaches of using Git or other version control systems. Arceus should be usable for every game, program, and project under the sun! Not just Pokémon!
+Arceus is a API that gives everyday users the power and flexiblity of version control, without the complexly and headaches of using Git or other version control systems. Arceus should be usable for every game, program, and project under the sun! Not just Pokémon!
 
 ## Branch Off Into Different Timelines 🌌
-
-```
-arceus new const "Pokémon X"
-arceus -c "Pokémon X" new star "Route 2"
-```
 
 With Arceus, you can create branches of a folder, so multiple versions can exist simultaneously. So secondary playthroughs (or projects) can branch off from a initial instance, without need to restart from the beginning!
 
 ## Rollback to Older Versions 🕔
 
-```
-arceus -c "Pokémon X" jump back
-```
-
 Arceus allows you to rollback saves to earlier versions, preserving your previous actions. So no matter the mistake, Arceus can help you get back on track.
 
 ## Keep track of YOUR saves 👥
-
-```
-arceus -c "Pokémon X" login
-```
 
 Got someone else who wants to join in the fun? Don't worry, Arceus has got you covered. With profiles, multiple people can use the same constellation! So if your family or friends to want to do something on your device (i.e. PC, Steam Deck, Mac, etc.), you can sleep soundly knowing your progress is safe.
 
@@ -91,6 +82,7 @@ Easily roll back to any point in your game for testing, provide items for debugg
 
 Binary files can be challenging to analyze, but Arceus is designed to detect the smallest changes in a file’s history.
 
+---
 # SKits
 
 Arceus uses a brand new file format called SKit. SKit uses both XML and GZip to store everything Arceus could ever need, replacing the use of ZIP files and JSON.
@@ -101,11 +93,11 @@ SKits are quick to read from disk, with everything essential already at the top 
 
 ## Multi-Purpose Containers 🫙
 
-Arceus has already switched to saving settings, stars, constellations, users, addons, and more into SKits.
+Arceus has already switched to saving archives, stars, constellations, users, addons, and more into SKits.
 
 ## Tiny Size 🐁
 
-Using GZip to compress its data down, SKit does not bloat your storage or memory, loading nothing but the bare essentials when reading.
+Using GZip to compress its data down, SKit does not bloat your storage or memory, loading nothing but the bare essentials when reading. It also should never allow duplicate files to exist.
 
 ---
 
@@ -122,10 +114,6 @@ Click the badge below to download the latest artifact.
 [![Build](https://github.com/DrRetro2033/Arceus/actions/workflows/build.yml/badge.svg)](https://github.com/DrRetro2033/Arceus/actions/workflows/build.yml)
 
 ![How to download artifacts.](images/download_archive.GIF)
-
-> [!WARNING]
-> Please keep in mind that Arceus is still in alpha, and it is not
-> optimized for files larger than a few megabytes.
 
 # Consider Sponsoring ❤️
 
@@ -148,6 +136,7 @@ Consider sponsoring me on GitHub to help support this project! If you can’t, n
 | Integration w/ GOG       | ❌     | ✅                                                    | ✅                                                 |
 | Integration w/ Epic      | ❌     | ✅                                                    | ✅                                                 |
 | Integration w/ Origin/EA | ❌     | ✅                                                    | ✅                                                 |
+| Developer API            | ✅     | ❌                                                    | ❌                                                 |
 
 # Planned Features for the Future
 
@@ -173,7 +162,7 @@ Transfer your game saves between devices and keep them safe from data loss.
 
 # Why does it exist?
 
-Arceus was created to be simple way for regular users to be able to quickly and efficiently backup savedata with more advanced tools. However, it has evolved into a more generalized toolkit for working with files.
+Arceus was created to be simple way for regular users to be able to quickly and efficiently backup savedata with more advanced tools. However, it has evolved into a more generalized toolkit for working with binary files.
 
 # Why is it called Arceus?
 

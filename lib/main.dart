@@ -2,55 +2,116 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:arceus/arceus.dart';
-import 'package:arceus/skit/sobjects/settings.dart';
-import 'package:args/command_runner.dart';
-import 'package:interact/interact.dart';
-import 'package:arceus/commands/commands.dart';
-
-ArceusSettings? settings;
+import 'package:arceus/command.dart';
+import 'package:arceus/commands/test.dart';
+import 'package:arceus/extensions.dart';
+import 'package:version/version.dart';
+import 'package:http/http.dart' as http;
 
 Future<void> main(List<String> args) async {
-  final runner = CommandRunner("arceus", "Arceus CLI program");
-  runner.argParser.addOption("const", abbr: "c", hide: true);
-  runner.argParser.addOption("skit", abbr: "s", hide: true);
-  runner.addCommand(NewCommand());
-  runner.addCommand(ShowCommand());
-  runner.addCommand(JumpCommand());
-  runner.addCommand(TestCommand());
-  runner.addCommand(TrimCommand());
-  runner.addCommand(SettingsCommand());
-
-  /// Gets the current settings from the settings kit.
-  settings = (await (await Arceus.getSettingKit()).getHeader())!
-      .getChild<ArceusSettings>();
-  try {
-    await runner.run(args);
-  } catch (e, st) {
-    print("""
-
-Whoops! It looks like something went wrong! For more details, open the following log file:
-${Arceus.mostRecentLog.path}
-
-If the error persists, please open an issue on GitHub and provide the log above. 
-Your feedback is much appreciated!
-""");
-    Arceus.talker.critical("Crash Handler", e, st);
+  File lockFile = File(
+      "${Arceus.appDataPath}/locks/${Arceus.currentVersion.toString()}.lock");
+  if (await isAlreadyRunning(lockFile)) {
+    print('Already running');
+    exit(0);
   }
 
+  final runner = Runner();
+  runner.add(TestCommand());
+
+  final server = await HttpServer.bind(InternetAddress.anyIPv4, 7274);
+  print('Server Started');
+
+  await for (HttpRequest request in server) {
+    try {
+      // This is a check to make sure that the request is for a specific version
+      // of Arceus. If the request is for a different version, it will check the current locks in the folder
+      // and will ignore the request if the other version and respond with moved permanently.
+      // If the other version is not running, it will return a 404 error.
+      if (request.uri.pathSegments.join('/') ==
+          "${Arceus.currentVersion}/heatbeat") {
+        request.response.statusCode = HttpStatus.ok;
+        Arceus.talker.info("Checking heatbeat.");
+        await request.response.close();
+      } else if (request.uri.pathSegments.firstOrNull !=
+          Arceus.currentVersion.toString()) {
+        await for (final file
+            in Directory("${Arceus.appDataPath}/locks").list()) {
+          if (file is File) {
+            final otherVersion =
+                Version.parse(file.path.getFilename(withExtension: false));
+            if (otherVersion.toString() ==
+                request.uri.pathSegments.firstOrNull) {
+              final uri = Uri.http(
+                  "127.0.0.1:7274", "${otherVersion.toString()}/heatbeat");
+              final response = await http.get(uri);
+              if (response.statusCode == 200) {
+                request.response.statusCode = HttpStatus.movedPermanently;
+                await request.response.close();
+              }
+              continue;
+            }
+          }
+        }
+        request.response.statusCode = HttpStatus.notFound;
+        await request.response.close();
+        Arceus.talker.error("Version not found.");
+      } else if (WebSocketTransformer.isUpgradeRequest(request)) {
+        final socket = await WebSocketTransformer.upgrade(request);
+        print('Client connected');
+        Arceus.talker.info("Client connected.");
+        socket.listen((data) async {
+          Arceus.talker.info('Received: $data');
+          try {
+            await runner.run(socket, data);
+          } catch (e, st) {
+            print(
+                "There was a crash on a request, please check the log folder (${Arceus.appDataPath}/logs) for more information.");
+            Arceus.talker.critical("Crash Handler", e, st);
+            socket.add("ERROR:$e");
+          }
+        }, onDone: () {
+          print('Client disconnected');
+          Arceus.talker.info("Client disconnected.");
+          socket.close();
+          server.close();
+          return;
+        }, onError: (error, stack) {
+          Arceus.talker.error("Error", error, stack);
+        }, cancelOnError: false);
+      } else {
+        request.response
+          ..statusCode = HttpStatus.forbidden
+          ..close();
+      }
+    } catch (e, st) {
+      print(
+          "There was a crash on this request, please check the log folder (${Arceus.appDataPath}/logs) for more information.");
+      Arceus.talker.critical("Crash Handler", e, st);
+    }
+  }
+  await lockFile.delete();
   exit(0);
 }
 
-mixin GetRest on Command {
-  String getRest(String fallbackPrompt) {
-    String? value;
-    if (!hasRest) {
-      value =
-          Input(prompt: fallbackPrompt, validator: (value) => value.isNotEmpty)
-              .interact();
+/// This function checks if the version of this Arceus executable is already running.
+/// If it is, it will return true, otherwise it will return false.
+Future<bool> isAlreadyRunning(File lockFile) async {
+  /// If the file does exist, double check to see if the version has a heartbeat.
+  if (await lockFile.exists()) {
+    final uri = Uri.http(
+        "127.0.0.1:7274", "${Arceus.currentVersion.toString()}/heatbeat");
+    try {
+      var response = await http.get(uri);
+      if (response.statusCode == 200) return true;
+      return false;
+    } catch (e) {
+      Arceus.talker
+          .info("Failed to check heartbeat. Assuming it's not running.");
+      return false;
     }
-    value ??= argResults?.rest.join(" ") ?? "";
-    return value;
+  } else {
+    await lockFile.create(recursive: true);
+    return false;
   }
-
-  bool get hasRest => argResults?.rest.isNotEmpty ?? false;
 }

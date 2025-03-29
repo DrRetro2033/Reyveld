@@ -1,9 +1,6 @@
-import 'package:arceus/extensions.dart';
-import 'package:arceus/main.dart';
 import 'package:arceus/skit/sobject.dart';
 import 'package:arceus/skit/sobjects/file_system.dart';
 import 'package:arceus/version_control/constellation.dart';
-import 'package:arceus/widget_system.dart';
 
 part 'star.g.dart';
 
@@ -12,9 +9,6 @@ part 'star.g.dart';
 /// TODO: Add multi-user support, either by making a unique constellation for each user, or by associating the star with a user.
 @SGen("star")
 class Star extends SObject {
-  @override
-  String get displayName => _getDisplayName();
-
   @override
   bool get condenceBranch => true;
 
@@ -83,29 +77,6 @@ class Star extends SObject {
   Future<Stream<String>> makeCurrent() async {
     constellation.currentHash = hash;
     return await archive.then((e) async => e!.extract(constellation.path));
-  }
-
-  /// Returns the formatted name of the star file for displaying.
-  /// This is used when printing details about a star file to the terminal.
-  String _getDisplayName() {
-    // int tagsToDisplay = 2;
-    List<Badge> badges = [];
-    // for (String tag in tags) {
-    //   if (tagsToDisplay == 0) {
-    //     break;
-    //   }
-    //   badges.add(Badge("🏷️$tag"));
-    //   tagsToDisplay--;
-    // }
-    Badge dateBadge = Badge(
-        '📅${createdOn.formatDate(settings!.dateSize, settings!.dateFormat)}',
-        badgeColor: "grey",
-        textColor: "white");
-    Badge timeBadge = Badge('🕒${createdOn.formatTime(settings!.timeFormat)}',
-        badgeColor: "grey", textColor: "white");
-    final displayName =
-        "$name $dateBadge$timeBadge${badges.isNotEmpty ? badges.join(" ") : ""}";
-    return "${!isRoot && isSingleChild ? "↪ " : ""}$displayName${isCurrent ? "✨" : ""}";
   }
 
   Future<bool> checkForChanges() async {

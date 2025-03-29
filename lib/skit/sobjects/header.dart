@@ -1,15 +1,12 @@
+import 'package:arceus/arceus.dart';
 import 'package:arceus/skit/sobject.dart';
 import 'package:arceus/skit/sobjects/file_system.dart';
-import 'package:arceus/updater.dart';
-
 part 'header.g.dart';
 
 /// The header node of a SERE kit file.
 /// This is the top level node of the kit file, and contains information about the kit, like constellation structures, users, addon info, etc.
 @SGen("sere")
 class SHeader extends SObject {
-  @override
-  String get displayName => "Header";
   SHeader(super.kit, super._node);
 
   DateTime get createdOn =>
@@ -26,7 +23,7 @@ class SHeader extends SObject {
     set("lastModified", value.toIso8601String());
   }
 
-  String get version => get("version") ?? Updater.currentVersion.toString();
+  String get version => get("version") ?? Arceus.currentVersion.toString();
 
   SKitType get type => SKitType.values[int.parse(get("type") ?? "0")];
 
@@ -54,7 +51,7 @@ class SHeaderCreator extends SCreator<SHeader> {
   get creator => (builder) {
         builder.attribute("createdOn", DateTime.now().toIso8601String());
         builder.attribute("lastModified", DateTime.now().toIso8601String());
-        builder.attribute("version", Updater.currentVersion.toString());
+        builder.attribute("version", Arceus.currentVersion.toString());
         builder.attribute("type", type.index.toString());
       };
 }

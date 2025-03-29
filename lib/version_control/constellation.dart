@@ -10,8 +10,6 @@ part 'constellation.g.dart';
 
 @SGen("const")
 class Constellation extends SObject {
-  @override
-  String get displayName => name;
   Constellation(super._kit, super._node);
 
   String get name => get("name") ?? "Constellation";

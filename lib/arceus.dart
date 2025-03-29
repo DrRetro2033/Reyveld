@@ -1,8 +1,6 @@
 import 'dart:io';
-import 'package:arceus/main.dart';
 import 'package:arceus/skit/skit.dart';
 import 'package:arceus/skit/sobjects/settings.dart';
-import 'package:arceus/updater.dart';
 import 'package:arceus/extensions.dart';
 import 'package:version/version.dart';
 import 'package:talker/talker.dart';
@@ -11,6 +9,7 @@ import 'package:talker/talker.dart';
 /// ## A class that represents the Arceus application.
 /// Contain global functions for Arceus, for example, settings, paths, etc.
 class Arceus {
+  static Version get currentVersion => Version(1, 0, 0);
   static late String _currentPath;
   static String get currentPath => _currentPath;
   static set currentPath(String path) => _currentPath = path.fixPath();
@@ -25,27 +24,18 @@ class Arceus {
       logger: TalkerLogger(
           formatter: ArceusLogFormatter(),
           output: ArceusLogger(
-                  "$appDataPath/logs/arceus-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log")
-              .output,
-          filter: ArceusLoggerFilter()),
+                  "$appDataPath/logs/arceus-$currentVersion-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log")
+              .output),
     );
     return _logger!;
   }
 
   static File get mostRecentLog => File(
-      "$appDataPath/logs/arceus-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log");
+      "$appDataPath/logs/arceus-$currentVersion-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log");
 
   /// # `static` `String` _appDataPath
   /// ## The path to the application data directory.
   static String get appDataPath => _getAppDataPath();
-
-  /// # `static` `String` globalAddonPath
-  /// ## The path to the global addons directory.
-  static String get globalAddonPath => "$appDataPath/addons";
-
-  static String get constFolderPath => "$appDataPath/constellations";
-
-  // static UserIndex userIndex = UserIndex("$appDataPath/userindex");
 
   /// # `static` `String` _getAppDataPath
   /// ## Returns the path to the application data directory.
@@ -67,20 +57,6 @@ class Arceus {
 
   static String getLibraryPath() {
     return "${_getAppDataPath()}/lib";
-  }
-
-  static void skipUpdate(String version) {
-    final file = File("$appDataPath/skipupdate");
-    file.createSync();
-    file.writeAsStringSync(version);
-  }
-
-  static Version getSkippedVersion() {
-    final file = File("$appDataPath/skipupdate");
-    if (!file.existsSync()) {
-      return Updater.currentVersion;
-    }
-    return Version.parse(file.readAsStringSync());
   }
 
   static Future<void> openURL(String url) async {
@@ -123,7 +99,7 @@ class ArceusLogger {
   Locale                ${Platform.localeName}
   
 [App Info]
-  Version               ${Updater.currentVersion.toString()}
+  Version               ${Arceus.currentVersion.toString()}
 
 [Log]
   Date                  ${DateTime.now().year}/${DateTime.now().month}/${DateTime.now().day}
@@ -133,7 +109,7 @@ class ArceusLogger {
     logFile.writeAsStringSync("""
 
 Run at ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, "0")}:${DateTime.now().second.toString().padLeft(2, "0")}.${DateTime.now().millisecond.toString().padLeft(3, "0")}
-Version ${Updater.currentVersion.toString()}
+Version ${Arceus.currentVersion.toString()}
 ───────────────────────────────────────────────────────────────
 """, mode: FileMode.append);
   }
@@ -147,19 +123,6 @@ class ArceusLogFormatter extends LoggerFormatter {
   @override
   String fmt(LogDetails details, TalkerLoggerSettings settings) {
     return "${details.message}";
-  }
-}
-
-class ArceusLoggerFilter extends LoggerFilter {
-  @override
-  bool shouldLog(dynamic msg, LogLevel level) {
-    if (level == LogLevel.debug) {
-      if (settings?.debugMode ?? true) {
-        return true;
-      }
-      return false;
-    }
-    return true;
   }
 }
 

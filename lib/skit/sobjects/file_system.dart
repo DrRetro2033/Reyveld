@@ -13,9 +13,6 @@ part 'file_system.creators.dart';
 
 @SGen("archive")
 class SArchive extends SRoot {
-  @override
-  String get displayName => "Archive";
-
   SArchive(super._kit, super._node);
 
   /// Returns the date the archive was archived/created on.
@@ -142,8 +139,6 @@ extension SArchiveExtensions on SKit {
 /// Contains the path of the file, and its data in the form of compressed base64.
 @SGen("file")
 class SFile extends SObject {
-  @override
-  String get displayName => path;
   static const chunkSize = 65536;
   SFile(super._kit, super._node);
 
@@ -209,8 +204,6 @@ class SFile extends SObject {
 /// A reference to an [SArchive].
 @SGen("rarchive")
 class SRArchive extends SIndent<SArchive> {
-  @override
-  String get displayName => "Archive Reference";
   SRArchive(super.kit, super.node);
 
   @override

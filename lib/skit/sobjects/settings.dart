@@ -33,9 +33,6 @@ class ArceusSettings extends SObject {
 
   /// Saves the SKit.
   Future<void> save() async => await kit.save();
-
-  @override
-  String get displayName => "Settings ⚙️";
 }
 
 class ArceusSettingsCreator extends SCreator<ArceusSettings> {

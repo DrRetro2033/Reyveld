@@ -8,8 +8,6 @@ part 'description.g.dart';
 
 @SGen("descr")
 class SDescription extends SObject {
-  @override
-  String get displayName => "Description";
   SDescription(super.kit, super._node);
 
   String get body => String.fromCharCodes(base64Decode(get("text") ?? ""));

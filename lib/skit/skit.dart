@@ -8,7 +8,6 @@ import 'package:xml/xml_events.dart';
 
 import 'package:arceus/skit/sobject.dart';
 import 'package:arceus/skit/sobjects/sobjects.dart';
-import "package:arceus/scripting/addon.dart";
 import "package:arceus/version_control/constellation.dart";
 import "package:arceus/version_control/star.dart";
 
@@ -163,8 +162,8 @@ class SKit {
 
   void unloadRoot(SRoot root) => _loadedRoots.remove(root);
 
-  /// Streams the roots of the kit file, streaming them if they have not been loaded yet.
-  /// This is used when saving and reading the kit file. Will not cache anything.
+  /// Streams the roots of the kit file, getting their cached version if possible.
+  /// This is used when saving or reading the kit file. Will not cache anything, but will stream the roots.
   /// To cache roots, use [getRoots] or [getRoot].
   Stream<SRoot> _streamRoots(
       {bool Function(XmlStartElementEvent)? filterEvents}) async* {
@@ -258,19 +257,5 @@ class SKit {
   /// This will unload all of the loaded archives, and clear the current kit header.
   void discardChanges() {
     _loadedRoots.clear();
-  }
-
-  Future<void> printDetails() async {
-    final header = await getHeader();
-    header!.printDetails(advanced: true);
-
-    for (final factory in sobjectFactories) {
-      final hashes = await usedRootHashes(factory.tag);
-      if (hashes.isEmpty) continue;
-      print("${factory.tag}:");
-      for (final usedHash in hashes) {
-        print("  $usedHash");
-      }
-    }
   }
 }
