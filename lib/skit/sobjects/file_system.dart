@@ -15,6 +15,9 @@ part 'file_system.creators.dart';
 class SArchive extends SRoot {
   SArchive(super._kit, super._node);
 
+  @override
+  get luaClassName => "SArchive";
+
   /// Returns the date the archive was archived/created on.
   DateTime get archivedOn => DateTime.parse(get("date")!);
 
@@ -142,6 +145,9 @@ class SFile extends SObject {
   static const chunkSize = 65536;
   SFile(super._kit, super._node);
 
+  @override
+  get luaClassName => "SFile";
+
   /// Returns the path of the file.
   String get path => get("path")!;
 
@@ -204,6 +210,9 @@ class SFile extends SObject {
 /// A reference to an [SArchive].
 @SGen("rarchive")
 class SRArchive extends SIndent<SArchive> {
+  @override
+  get luaClassName => "SRArchive";
+
   SRArchive(super.kit, super.node);
 
   @override

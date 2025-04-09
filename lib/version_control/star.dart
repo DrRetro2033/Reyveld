@@ -10,6 +10,25 @@ part 'star.g.dart';
 @SGen("star")
 class Star extends SObject {
   @override
+  get luaClassName => "Star";
+
+  @override
+  get exports => {
+        "name": (Lua state) async {
+          if (await state.isFromStack<String>(idx: 1)) {
+            name = await state.getFromStack<String>(idx: 1);
+          } else {
+            return name;
+          }
+        },
+        "hash": hash,
+        "getArchive": (Lua state) async => await archive,
+        "isRoot": isRoot,
+        "isCurrent": (Lua state) => isCurrent,
+        "isSingleChild": (Lua state) => isSingleChild,
+      };
+
+  @override
   bool get condenceBranch => true;
 
   Star(super._kit, super._node);

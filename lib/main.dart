@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:arceus/arceus.dart';
-import 'package:arceus/command.dart';
-import 'package:arceus/commands/test.dart';
 import 'package:arceus/extensions.dart';
+import 'package:arceus/scripting/lua.dart';
+import 'package:arceus/skit/skit.dart';
 import 'package:version/version.dart';
 import 'package:http/http.dart' as http;
 
@@ -15,9 +16,6 @@ Future<void> main(List<String> args) async {
     print('Already running');
     exit(0);
   }
-
-  final runner = Runner();
-  runner.add(TestCommand());
 
   final server = await HttpServer.bind(InternetAddress.anyIPv4, 7274);
   print('Server Started');
@@ -63,7 +61,12 @@ Future<void> main(List<String> args) async {
         socket.listen((data) async {
           Arceus.talker.info('Received: $data');
           try {
-            await runner.run(socket, data);
+            Isolate.spawn<String>((code) async {
+              final vm = Lua();
+              await vm.init();
+              vm.addScript(code);
+              await vm.run();
+            }, data);
           } catch (e, st) {
             print(
                 "There was a crash on a request, please check the log folder (${Arceus.appDataPath}/logs) for more information.");

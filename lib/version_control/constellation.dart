@@ -12,6 +12,13 @@ part 'constellation.g.dart';
 class Constellation extends SObject {
   Constellation(super._kit, super._node);
 
+  @override
+  get luaClassName => "Constellation";
+
+  @override
+  get exports =>
+      {"name": name, "path": path, "currentHash": currentHash, "root": root};
+
   String get name => get("name") ?? "Constellation";
 
   String get path => get("path")!.fixPath();

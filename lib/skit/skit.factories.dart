@@ -12,12 +12,11 @@ final Set<SFactory> sobjectFactories = {
   SFileFactory(),
   SRArchiveFactory(),
   SRFileFactory(),
-  ArceusSettingsFactory(),
   DescriptionFactory(),
 };
 
 /// Get the factory for the given [SObject] subclass.
-/// Returns null if not found.
+/// Throws an exception if no factory is found.
 SFactory<T> getSFactory<T extends SObject>([String? tag]) {
   final factories = sobjectFactories.whereType<SFactory<T>?>();
   SFactory<T>? factory = factories.firstOrNull;

@@ -1,8 +1,11 @@
+library skit;
+
 import "dart:async";
 import "dart:convert";
 import "dart:io";
 import "package:arceus/arceus.dart";
 import "package:arceus/extensions.dart";
+import "package:arceus/scripting/object.dart";
 import "package:rxdart/rxdart.dart";
 import 'package:xml/xml_events.dart';
 
@@ -11,9 +14,16 @@ import 'package:arceus/skit/sobjects/sobjects.dart';
 import "package:arceus/version_control/constellation.dart";
 import "package:arceus/version_control/star.dart";
 
+export "package:arceus/skit/sobject.dart";
+
 part 'skit.factories.dart';
 
-enum SKitType { unspecified, constellation, constellationPack, addon, settings }
+enum SKitType {
+  unspecified,
+  constellation,
+  constellationPack,
+  extension,
+}
 
 /// Represents a compressed XML file.
 /// [SKit] is an abrivation for SERE kit, which is a reference to titanfall 2.
@@ -23,9 +33,12 @@ enum SKitType { unspecified, constellation, constellationPack, addon, settings }
 /// while the [SArchive]s can contain much larger sets of data (e.g. save data, scripts, images, etc).
 ///
 /// Every other [SObject] is optional and can be left out.
-class SKit {
-  static Future<SKit> open(String path, SKitType type,
-      {Future<void> Function(SKit)? ifNotFound}) async {
+class SKit with LuaObject {
+  @override
+  get luaClassName => "SKit";
+
+  static Future<SKit> open(String path,
+      {Future<void> Function(SKit)? ifNotFound, SKitType? type}) async {
     final kit = SKit(path);
     if (!await kit.exists()) {
       if (ifNotFound != null) {
@@ -33,7 +46,7 @@ class SKit {
         return kit;
       }
     }
-    if (!await kit.isType(type)) {
+    if (type != null && !await kit.isType(type)) {
       throw Exception("Kit file is not of the correct type!");
     }
     return kit;
@@ -257,5 +270,79 @@ class SKit {
   /// This will unload all of the loaded archives, and clear the current kit header.
   void discardChanges() {
     _loadedRoots.clear();
+  }
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      "path": path,
+      "create": (Lua state) async {
+        final override = await state.getFromStack<bool?>(idx: 1) ?? false;
+        return await create(overwrite: override);
+      },
+      "exists": (Lua state) => exists(),
+      "getHeader": (Lua state) async {
+        return await getHeader();
+      },
+      "isType": (Lua state) async {
+        return await isType(
+            SKitType.values[await state.getFromStack<int?>(idx: 1) ?? 0]);
+      },
+      "save": (Lua state) async => await save(),
+      "getRoot": (Lua state) async {
+        final table = await state.getFromStack<Map<String, dynamic>>(idx: 1);
+        final type = table.containsKey("type") ? table["type"] : null;
+        final hash = table.containsKey("hash") ? table["hash"] : null;
+        final attributes = table.containsKey("attrb")
+            ? table["attrb"] as Map<String, dynamic>
+            : <String, dynamic>{};
+        return await getRoot<SRoot>(
+            filterEvents: (e) => e.localName == type,
+            filterRoots: (root) {
+              if (hash != null) {
+                if (root.hash != hash) {
+                  return false;
+                }
+              }
+              for (final entry in attributes.entries) {
+                if (root.get(entry.key) != entry.value) {
+                  return false;
+                }
+              }
+              return true;
+            });
+      },
+      "getRoots": (Lua state) async {
+        final table = await state.getFromStack<Map<String, dynamic>>(idx: 1);
+        final type = table.containsKey("type") ? table["type"] : null;
+        final hash = table.containsKey("hash") ? table["hash"] : null;
+        final attributes = table.containsKey("attrb")
+            ? table["attrb"] as Map<String, dynamic>
+            : <String, dynamic>{};
+        return await getRoots<SRoot>(
+            filterEvents: (e) => e.localName == type,
+            filterRoots: (root) {
+              if (hash != null) {
+                if (root.hash != hash) {
+                  return false;
+                }
+              }
+              for (final entry in attributes.entries) {
+                if (root.get(entry.key) != entry.value) {
+                  return false;
+                }
+              }
+              return true;
+            });
+      },
+      "addRoot": (Lua state) async {
+        final root = await state.getFromStack<SRoot>(idx: 1);
+        addRoot(root);
+      },
+      "createdOn": (Lua state) async {
+        final header = await getHeader();
+        return header!.createdOn.toIso8601String();
+      },
+    };
   }
 }

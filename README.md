@@ -16,7 +16,7 @@
 
 # What is Arceus?
 
-Arceus is a API that gives everyday users the power and flexiblity of version control, without the complexly and headaches of using Git or other version control systems. Arceus should be usable for every game, program, and project under the sun! Not just Pokémon!
+Arceus is a API that gives developers to create tools for everyday users, giving them the power and flexiblity of version control and hex editing, without any headaches. Arceus should be usable for every game, program, and project under the sun! Not just Pokémon!
 
 ## Branch Off Into Different Timelines 🌌
 
@@ -24,22 +24,11 @@ With Arceus, you can create branches of a folder, so multiple versions can exist
 
 ## Rollback to Older Versions 🕔
 
-Arceus allows you to rollback saves to earlier versions, preserving your previous actions. So no matter the mistake, Arceus can help you get back on track.
+Rollback to earlier versions of a folder or file, preserving any previous actions. So no matter the mistake, Arceus can help you get back on track.
 
-## Keep track of YOUR saves 👥
+## Simple and Easy Scripting 📜
 
-Got someone else who wants to join in the fun? Don't worry, Arceus has got you covered. With profiles, multiple people can use the same constellation! So if your family or friends to want to do something on your device (i.e. PC, Steam Deck, Mac, etc.), you can sleep soundly knowing your progress is safe.
-
-## Share your journey 🗺️
-
-Package your history up, and send it off to anyone who also has Arceus, so 100% saves are actually 100%!
-
-## Go Beyond with Add-Ons 📦
-
-Arceus integrates Squirrel, enabling anyone to add new functionality to Arceus. Add-ons make it easy to read and write to files, integrate game launchers like Steam, and so much more!
-
-> [!NOTE]
-> In the future, I plan to add built-in functionality for easier transfer tool creation, similar to Pokémon Bank. For now, you’ll need to build your own transfer tools.
+Arceus integrates Lua 5.3, enabling anyone to write custom logic for Arceus.
 
 ## Cross Platform 🖥️📱
 
@@ -93,11 +82,11 @@ SKits are quick to read from disk, with everything essential already at the top 
 
 ## Multi-Purpose Containers 🫙
 
-Arceus has already switched to saving archives, stars, constellations, users, addons, and more into SKits.
+Arceus has already switched to saving archives, stars, constellations, users, code, and more into SKits.
 
 ## Tiny Size 🐁
 
-Using GZip to compress its data down, SKit does not bloat your storage or memory, loading nothing but the bare essentials when reading. It also should never allow duplicate files to exist.
+Using GZip to compress its data down, SKit does not bloat your storage or memory, loading nothing but the bare essentials when reading.
 
 ---
 
@@ -128,7 +117,6 @@ Consider sponsoring me on GitHub to help support this project! If you can’t, n
 | Tree Structuring         | ✅     | ❌                                                    | ❌                                                 |
 | Multi-User Support       | ✅     | ❌                                                    | ❌                                                 |
 | Save Editing             | ✅     | ❌                                                    | ❌                                                 |
-| Addon Support            | ✅     | ❌                                                    | ❌                                                 |
 | Sharing                  | ✅     | ❌                                                    | ❌                                                 |
 | Cloud-Sync               | ❌     | ✅                                                    | ✅                                                 |
 | Open-Source              | ✅     | ❌                                                    | ✅                                                 |
@@ -136,7 +124,8 @@ Consider sponsoring me on GitHub to help support this project! If you can’t, n
 | Integration w/ GOG       | ❌     | ✅                                                    | ✅                                                 |
 | Integration w/ Epic      | ❌     | ✅                                                    | ✅                                                 |
 | Integration w/ Origin/EA | ❌     | ✅                                                    | ✅                                                 |
-| Developer API            | ✅     | ❌                                                    | ❌                                                 |
+| Developer API            | 🚧     | ❌                                                    | ❌                                                 |
+
 
 # Planned Features for the Future
 

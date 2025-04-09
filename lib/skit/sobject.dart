@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:arceus/scripting/lua.dart';
+import 'package:arceus/scripting/object.dart';
 import 'package:arceus/skit/skit.dart';
 import 'package:arceus/uuid.dart';
 import 'package:xml/xml.dart';
@@ -6,6 +9,7 @@ import 'package:xml/xml.dart';
 export 'package:xml/xml.dart';
 export 'package:arceus/skit/skit.dart';
 export 'package:arceus/build_runner/annotations.dart';
+export 'package:arceus/scripting/lua.dart';
 
 part 'sroot.dart';
 part 'sindent.dart';
@@ -17,9 +21,10 @@ part 'sindent.dart';
 
 /// A object that wraps around a [XmlNode] and provides a simple API to access its attributes, children, and more.
 /// SObjects must have a [SFactory] object inside the [_sobjectFactories] (inside serekit.g.dart) set in order to be parsed from xml.
-abstract class SObject {
+abstract class SObject with LuaObject {
   final XmlNode _node;
   final SKit kit;
+  Map<String, dynamic> get exports => {};
 
   SObject(this.kit, this._node);
 
@@ -29,7 +34,7 @@ abstract class SObject {
   /// set name(String value) => set("name", value);
   /// ```
   void set(String key, dynamic value) {
-    _node.setAttribute(key, value.toString());
+    _node.setAttribute(key, base64Encode(value.toString().codeUnits));
   }
 
   /// Gets a attribute of the xml node.
@@ -38,7 +43,12 @@ abstract class SObject {
   /// String get name => get("name");
   /// ```
   String? get(String key) {
-    return _node.getAttribute(key);
+    if (_node.getAttribute(key) == null) return null;
+    try {
+      return String.fromCharCodes(base64Decode(_node.getAttribute(key)!));
+    } catch (e) {
+      return _node.getAttribute(key)!;
+    }
   }
 
   /// Returns the parent of the xml node, if it has one.
@@ -178,6 +188,59 @@ abstract class SObject {
   /// If condenceBranch is false, then the tree will be printed as normal.
   /// Defaults to false.
   bool get condenceBranch => false;
+
+  @override
+  Map<String, dynamic> toMap() => {
+        "addChild": (Lua state) async {
+          final child = await state.getFromStack<SObject>(idx: 1);
+          addChild(child);
+        },
+        "removeChild": (Lua state) async {
+          final child = await state.getFromStack<SObject>(idx: 1);
+          removeChild(child);
+        },
+        "getChild": (Lua state) async {
+          final table = await state.getFromStack<Map<String, dynamic>>(idx: 1);
+          final type = table.containsKey("class") ? table["class"] : null;
+          final attributes = table.containsKey("attrb")
+              ? table["attrb"] as Map<String, dynamic>
+              : <String, dynamic>{};
+          return getChild<SObject>(
+            filter: (e) {
+              if (type != null) {
+                if (e.luaClassName != type) {
+                  return false;
+                }
+              }
+              for (final key in attributes.keys) {
+                if (e.get(key) != attributes[key]) {
+                  return false;
+                }
+              }
+              return true;
+            },
+          );
+        },
+        "getChildren": (Lua state) async {
+          return getChildren<SObject>();
+        },
+        "getParent": (Lua state) async {
+          return getParent<SObject>();
+        },
+        "getDescendants": (Lua state) async {
+          return getDescendants<SObject>();
+        },
+        "getAncestors": (Lua state) async {
+          return getAncestors<SObject>();
+        },
+        "getSiblingAbove": (Lua state) async {
+          return getSiblingAbove<SObject>();
+        },
+        "getSiblingBelow": (Lua state) async {
+          return getSiblingBelow<SObject>();
+        },
+        ...exports
+      };
 }
 
 /// A base factory for parsing [SObject]s from xml.

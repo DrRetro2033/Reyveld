@@ -9,51 +9,16 @@ dependencies:
   uuid: any # Used for generating unique hashes.
   hashlib: ^1.21.0 # TODO: Use this in Squirrel.
   talker: ^4.5.1 # Used for logging. Seriously, this logger is really good. Go check it out.
-  ffi: ^2.1.3 #  Used for interfacing with the Squirrel library.
   version: ^3.0.2 # Used for versioning of Arceus.
   xml: ^6.5.0 # The xml package is used as the building blocks of SKit.
   yaml: ^3.1.3 # This is used for parsing addon configuration files.
   rxdart: ^0.28.0 # Used specifically for merging streams (the header, unloaded & loaded archives) when saving a skit.
   http: ^1.3.0 # Used for interfacing with github to check for updates.
-
+  lua_dardo_async: any # Used for running lua scripts.
+  async: ^2.13.0
 dev_dependencies:
   lints: ^4.0.0
   test: ^1.24.0
-  ffigen: ^16.0.0 # Used for generating bindings for the Squirrel library.
   build_runner: any # Used for building SFactories for SObjects.
   source_gen: any # Used for generating SFactories.
   analyzer: any # Used to find SGen annotations, used for building SFactories.
-
-ffigen:
-  # Run with `flutter pub run ffigen --config ffigen.yaml`.
-  name: GravityBindings
-  description: |
-    Bindings for `src/squirrel3/include/squirrel.h`.
-
-    Regenerate bindings with `flutter pub run ffigen --config ffigen.yaml`.
-  output: "lib/scripting/bindings.dart"
-  compiler-opts:
-  - '-Isrc/gravity/src/utils/'
-  - '-Isrc/gravity/src/shared/'
-  - '-Isrc/gravity/src/runtime/'
-  - '-Isrc/gravity/src/compiler/'
-  headers:
-    entry-points:
-      - "src/gravity/src/runtime/gravity_vm.h"
-      - "src/gravity/src/runtime/gravity_core.h"
-      - "src/gravity/src/compiler/gravity_compiler.h"
-  preamble: |
-    // ignore_for_file: camel_case_types
-    // ignore_for_file: non_constant_identifier_names
-  comments:
-    style: any
-    length: full
-  functions:
-    exclude:
-      - "_(.*)"
-  enums:
-    exclude:
-      - "_(.*)"
-  globals:
-    exclude:
-      - "_(.*)"

@@ -9,6 +9,33 @@ part 'header.g.dart';
 class SHeader extends SObject {
   SHeader(super.kit, super._node);
 
+  @override
+  get luaClassName => "SHeader";
+
+  @override
+  get exports => {
+        "createdOn": (Lua state) async {
+          if (await state.isFromStack(idx: 1)) {
+            final value = await state.getFromStack<String>(idx: 1);
+            createdOn = DateTime.parse(value);
+          } else {
+            return createdOn.toIso8601String();
+          }
+        },
+        "lastModified": (Lua state) async {
+          if (await state.isFromStack(idx: 1)) {
+            final value = await state.getFromStack<String>(idx: 1);
+            lastModified = DateTime.parse(value);
+          } else {
+            return lastModified.toIso8601String();
+          }
+        },
+        "version": (Lua state) {
+          return version;
+        },
+        "type": type.index,
+      };
+
   DateTime get createdOn =>
       DateTime.parse(get("createdOn") ?? DateTime.now().toIso8601String());
   set createdOn(DateTime value) {
