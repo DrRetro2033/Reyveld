@@ -9,33 +9,6 @@ part 'header.g.dart';
 class SHeader extends SObject {
   SHeader(super.kit, super._node);
 
-  @override
-  get luaClassName => "SHeader";
-
-  @override
-  get exports => {
-        "createdOn": (Lua state) async {
-          if (await state.isFromStack(idx: 1)) {
-            final value = await state.getFromStack<String>(idx: 1);
-            createdOn = DateTime.parse(value);
-          } else {
-            return createdOn.toIso8601String();
-          }
-        },
-        "lastModified": (Lua state) async {
-          if (await state.isFromStack(idx: 1)) {
-            final value = await state.getFromStack<String>(idx: 1);
-            lastModified = DateTime.parse(value);
-          } else {
-            return lastModified.toIso8601String();
-          }
-        },
-        "version": (Lua state) {
-          return version;
-        },
-        "type": type.index,
-      };
-
   DateTime get createdOn =>
       DateTime.parse(get("createdOn") ?? DateTime.now().toIso8601String());
   set createdOn(DateTime value) {
@@ -67,6 +40,41 @@ class SHeader extends SObject {
     }
     super.addChild(child);
   }
+}
+
+class SHeaderInterface extends SObjectInterface<SHeader> {
+  @override
+  get className => "SHeader";
+
+  @override
+  get description => """
+The header node of a SERE kit file.
+This is the top level node of the kit file, and contains information about the kit, like constellation structures, addon info, etc.
+""";
+
+  @override
+  get exports => {
+        "createdOn": (lua) async {
+          if (await lua.state.isString(1)) {
+            final value = await lua.getFromTop<String>();
+            object?.createdOn = DateTime.parse(value);
+          } else {
+            return object?.createdOn.toIso8601String();
+          }
+        },
+        "lastModified": (lua) async {
+          if (await lua.state.isString(1)) {
+            final value = await lua.getFromTop<String>();
+            object?.lastModified = DateTime.parse(value);
+          } else {
+            return object?.lastModified.toIso8601String();
+          }
+        },
+        "version": (state) {
+          return object?.version;
+        },
+        "type": (_) => object?.type.index,
+      };
 }
 
 class SHeaderCreator extends SCreator<SHeader> {

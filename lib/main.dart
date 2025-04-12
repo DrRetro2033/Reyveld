@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:isolate';
 
 import 'package:arceus/arceus.dart';
 import 'package:arceus/extensions.dart';
@@ -53,7 +52,8 @@ Future<void> main(List<String> args) async {
         }
         request.response.statusCode = HttpStatus.notFound;
         await request.response.close();
-        Arceus.talker.error("Version not found.");
+        Arceus.talker.error(
+            "Version not found. ${request.uri.pathSegments.firstOrNull} not found.");
       } else if (WebSocketTransformer.isUpgradeRequest(request)) {
         final socket = await WebSocketTransformer.upgrade(request);
         print('Client connected');
@@ -61,12 +61,10 @@ Future<void> main(List<String> args) async {
         socket.listen((data) async {
           Arceus.talker.info('Received: $data');
           try {
-            Isolate.spawn<String>((code) async {
-              final vm = Lua();
-              await vm.init();
-              vm.addScript(code);
-              await vm.run();
-            }, data);
+            final vm = Lua();
+            await vm.init();
+            vm.addScript(data);
+            await vm.run();
           } catch (e, st) {
             print(
                 "There was a crash on a request, please check the log folder (${Arceus.appDataPath}/logs) for more information.");

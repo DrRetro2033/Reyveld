@@ -5,14 +5,15 @@ import "dart:convert";
 import "dart:io";
 import "package:arceus/arceus.dart";
 import "package:arceus/extensions.dart";
-import "package:arceus/scripting/object.dart";
 import "package:rxdart/rxdart.dart";
 import 'package:xml/xml_events.dart';
 
-import 'package:arceus/skit/sobject.dart';
+import 'package:arceus/skit/sobject.dart' hide SInterface;
 import 'package:arceus/skit/sobjects/sobjects.dart';
-import "package:arceus/version_control/constellation.dart";
-import "package:arceus/version_control/star.dart";
+import "package:arceus/version_control/constellation.dart"
+    show ConstellationFactory;
+import "package:arceus/version_control/star.dart" show StarFactory;
+import 'package:arceus/scripting/sinterface.dart' show SInterface;
 
 export "package:arceus/skit/sobject.dart";
 
@@ -21,8 +22,6 @@ part 'skit.factories.dart';
 enum SKitType {
   unspecified,
   constellation,
-  constellationPack,
-  extension,
 }
 
 /// Represents a compressed XML file.
@@ -33,18 +32,11 @@ enum SKitType {
 /// while the [SArchive]s can contain much larger sets of data (e.g. save data, scripts, images, etc).
 ///
 /// Every other [SObject] is optional and can be left out.
-class SKit with LuaObject {
-  @override
-  get luaClassName => "SKit";
-
-  static Future<SKit> open(String path,
-      {Future<void> Function(SKit)? ifNotFound, SKitType? type}) async {
+class SKit {
+  static Future<SKit> open(String path, {SKitType? type}) async {
     final kit = SKit(path);
     if (!await kit.exists()) {
-      if (ifNotFound != null) {
-        await ifNotFound(kit);
-        return kit;
-      }
+      throw Exception("Kit file does not exist!");
     }
     if (type != null && !await kit.isType(type)) {
       throw Exception("Kit file is not of the correct type!");
@@ -271,78 +263,64 @@ class SKit with LuaObject {
   void discardChanges() {
     _loadedRoots.clear();
   }
+}
+
+class SKitInterface extends SInterface<SKit> {
+  @override
+  get className => "SKit";
 
   @override
-  Map<String, dynamic> toMap() {
-    return {
-      "path": path,
-      "create": (Lua state) async {
-        final override = await state.getFromStack<bool?>(idx: 1) ?? false;
-        return await create(overwrite: override);
-      },
-      "exists": (Lua state) => exists(),
-      "getHeader": (Lua state) async {
-        return await getHeader();
-      },
-      "isType": (Lua state) async {
-        return await isType(
-            SKitType.values[await state.getFromStack<int?>(idx: 1) ?? 0]);
-      },
-      "save": (Lua state) async => await save(),
-      "getRoot": (Lua state) async {
-        final table = await state.getFromStack<Map<String, dynamic>>(idx: 1);
-        final type = table.containsKey("type") ? table["type"] : null;
-        final hash = table.containsKey("hash") ? table["hash"] : null;
-        final attributes = table.containsKey("attrb")
-            ? table["attrb"] as Map<String, dynamic>
-            : <String, dynamic>{};
-        return await getRoot<SRoot>(
-            filterEvents: (e) => e.localName == type,
-            filterRoots: (root) {
-              if (hash != null) {
-                if (root.hash != hash) {
-                  return false;
-                }
-              }
-              for (final entry in attributes.entries) {
-                if (root.get(entry.key) != entry.value) {
-                  return false;
-                }
-              }
-              return true;
-            });
-      },
-      "getRoots": (Lua state) async {
-        final table = await state.getFromStack<Map<String, dynamic>>(idx: 1);
-        final type = table.containsKey("type") ? table["type"] : null;
-        final hash = table.containsKey("hash") ? table["hash"] : null;
-        final attributes = table.containsKey("attrb")
-            ? table["attrb"] as Map<String, dynamic>
-            : <String, dynamic>{};
-        return await getRoots<SRoot>(
-            filterEvents: (e) => e.localName == type,
-            filterRoots: (root) {
-              if (hash != null) {
-                if (root.hash != hash) {
-                  return false;
-                }
-              }
-              for (final entry in attributes.entries) {
-                if (root.get(entry.key) != entry.value) {
-                  return false;
-                }
-              }
-              return true;
-            });
-      },
-      "addRoot": (Lua state) async {
-        final root = await state.getFromStack<SRoot>(idx: 1);
-        addRoot(root);
-      },
-      "createdOn": (Lua state) async {
-        final header = await getHeader();
-        return header!.createdOn.toIso8601String();
-      },
-    };
-  }
+  get description => """""";
+
+  @override
+  get exports => {
+        "path": (_) => object!.path,
+        "getHeader": (state) async {
+          return await object!.getHeader();
+        },
+        "isType": (state) async {
+          return await object!
+              .isType(SKitType.values[await state.getFromTop<int?>() ?? 0]);
+        },
+        "save": (state) async => await object!.save(),
+        "addRoot": (state) async {
+          final root = await state.getFromTop<SRoot>();
+          object!.addRoot(root);
+        },
+        "createdOn": (state) async {
+          final header = await object!.getHeader();
+          return header!.createdOn.toIso8601String();
+        },
+      };
+
+  @override
+  get statics => {
+        "open": (state) async {
+          final path = await state.getFromTop<String>();
+          return await SKit.open(path);
+        },
+        "exists": (state) async {
+          final path = await state.getFromTop<String>();
+          return await SKit(path).exists();
+        },
+        "create": (lua) async {
+          bool? overwrite;
+          SKitType? type;
+          if (lua.state.getTop() == 2 && lua.state.isTable(2)) {
+            final table = await lua.getFromTop<Map<String, dynamic>>();
+            overwrite =
+                table.containsKey("override") ? table["override"] : null;
+            type = table.containsKey("type")
+                ? SKitType.values.firstWhere((e) => e.index == table["type"])
+                : null;
+          }
+          final path = await lua.getFromTop<String>();
+
+          final skit = SKit(path);
+          await skit.create(
+              overwrite: overwrite ?? false,
+              type: type ?? SKitType.unspecified);
+          return skit;
+        },
+      };
 }

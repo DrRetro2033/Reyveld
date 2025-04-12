@@ -11,14 +11,6 @@ part 'constellation.g.dart';
 @SGen("const")
 class Constellation extends SObject {
   Constellation(super._kit, super._node);
-
-  @override
-  get luaClassName => "Constellation";
-
-  @override
-  get exports =>
-      {"name": name, "path": path, "currentHash": currentHash, "root": root};
-
   String get name => get("name") ?? "Constellation";
 
   String get path => get("path")!.fixPath();
@@ -170,6 +162,10 @@ class Constellation extends SObject {
   Future<bool> checkForChanges() {
     return getCurrentStar().checkForChanges();
   }
+
+  Future<void> updateToCurrent() async {
+    return await getCurrentStar().archive.then((e) async => e!.extract(path));
+  }
 }
 
 extension ConstellationExtension on SKit {
@@ -177,6 +173,41 @@ extension ConstellationExtension on SKit {
     final header = await getHeader();
     return header?.getChild<Constellation>();
   }
+}
+
+class ConstellationInterface extends SObjectInterface<Constellation> {
+  @override
+  get className => "Constellation";
+
+  @override
+  get description => """
+A collection of [Star]s, with a [root] star and a [current] star.
+""";
+
+  @override
+  get exports => {
+        "name": (_) => object?.name,
+        "path": (_) => object?.path,
+        "getCurrent": (_) => object?.getCurrentStar(),
+        "getRoot": (_) => object?.root,
+        "getAt": (state) async {
+          final commandString = await state.getFromTop<String>();
+          return object?.getStarAt(commandString);
+        }
+      };
+
+  @override
+  get statics => {
+        "new": (state) async {
+          final path = await state.getFromTop<String>();
+          final name = await state.getFromTop<String>();
+          final kit = await state.getFromTop<SKit>();
+          final constellation =
+              await ConstellationCreator(name, path).create(kit);
+          await constellation.createRootStar();
+          return constellation;
+        }
+      };
 }
 
 class ConstellationCreator extends SCreator<Constellation> {

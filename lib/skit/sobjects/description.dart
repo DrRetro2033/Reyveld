@@ -9,10 +9,6 @@ part 'description.g.dart';
 @SGen("descr")
 class SDescription extends SObject {
   SDescription(super.kit, super._node);
-
-  @override
-  get luaClassName => "SDescription";
-
   String get body => String.fromCharCodes(base64Decode(get("text") ?? ""));
 }
 

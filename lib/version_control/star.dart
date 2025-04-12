@@ -9,28 +9,6 @@ part 'star.g.dart';
 /// TODO: Add multi-user support, either by making a unique constellation for each user, or by associating the star with a user.
 @SGen("star")
 class Star extends SObject {
-  @override
-  get luaClassName => "Star";
-
-  @override
-  get exports => {
-        "name": (Lua state) async {
-          if (await state.isFromStack<String>(idx: 1)) {
-            name = await state.getFromStack<String>(idx: 1);
-          } else {
-            return name;
-          }
-        },
-        "hash": hash,
-        "getArchive": (Lua state) async => await archive,
-        "isRoot": isRoot,
-        "isCurrent": (Lua state) => isCurrent,
-        "isSingleChild": (Lua state) => isSingleChild,
-      };
-
-  @override
-  bool get condenceBranch => true;
-
   Star(super._kit, super._node);
 
   /// Returns the name of the star.
@@ -84,7 +62,8 @@ class Star extends SObject {
     if (isRoot) {
       throw Exception("Cannot trim root star!");
     }
-    await getParent<Star>()!.makeCurrent();
+    getParent<Star>()!.makeCurrent();
+    await constellation.updateToCurrent();
     await archive.then((e) => e!.markForDeletion());
     for (final archiveReference in getDescendants<SRArchive>()) {
       archiveReference!.markForDeletion();
@@ -93,9 +72,8 @@ class Star extends SObject {
   }
 
   /// Makes this star the current star.
-  Future<Stream<String>> makeCurrent() async {
+  void makeCurrent() async {
     constellation.currentHash = hash;
-    return await archive.then((e) async => e!.extract(constellation.path));
   }
 
   Future<bool> checkForChanges() async {
@@ -122,5 +100,44 @@ class StarCreator extends SCreator<Star> {
         builder.attribute("hash", hash);
         builder.attribute("date", DateTime.now().toIso8601String());
         builder.xml(archive.toXmlString());
+      };
+}
+
+class StarInterface extends SObjectInterface<Star> {
+  @override
+  String get className => "Star";
+
+  @override
+  get description => """
+This class represents a star in a constellation.
+A star is a point in time that represents a snapshot of an folder.
+""";
+
+  @override
+  get exports => {
+        "name": (lua) async {
+          if (lua.state.isString(1)) {
+            object!.name = await lua.getFromTop<String>();
+          } else {
+            return object!.name;
+          }
+        },
+        "makeCurrent": (lua) async {
+          bool updateFolder = false;
+          if (lua.state.isBoolean(1)) {
+            updateFolder = await lua.getFromTop<bool>();
+          }
+          object!.makeCurrent();
+          if (updateFolder) {
+            await object!.constellation.updateToCurrent();
+          }
+        },
+        "getArchive": (lua) async => await object!.archive,
+        "trim": (state) async => await object!.trim(),
+        "grow": (state) async =>
+            await object!.grow(await state.getFromTop<String>()),
+        "isRoot": (_) => object!.isRoot,
+        "isCurrent": (_) => object!.isCurrent,
+        "isSingleChild": (_) => object!.isSingleChild,
       };
 }
