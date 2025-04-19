@@ -233,8 +233,7 @@ class SKit {
       Stream.fromFuture(getHeader().then((e) => e!.toXmlString())),
       _streamRoots().map((event) => event.toXmlString())
     ]);
-    // final stream = _streamRoots()
-    //     .map((event) => event.toXmlString());
+
     await tempSink.addStream(
         stream.map<List<int>>((e) => e.codeUnits).transform(gzip.encoder));
     await tempSink.flush();
@@ -291,6 +290,7 @@ class SKitInterface extends SInterface<SKit> {
           final header = await object!.getHeader();
           return header!.createdOn.toIso8601String();
         },
+        "discard": (_) => object!.discardChanges(),
       };
 
   @override

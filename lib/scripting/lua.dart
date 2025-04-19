@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:arceus/arceus.dart';
 import 'package:arceus/skit/sobjects/sobjects.dart';
@@ -14,7 +13,7 @@ import '../skit/skit.dart';
 class Lua {
   final LuaState state;
 
-  Lua([LuaState? state]) : state = state ?? LuaState.newState();
+  Lua() : state = LuaState.newState();
 
   final Set<LuaScript> _scripts = {};
 
@@ -29,11 +28,21 @@ class Lua {
       };
 
   Future<void> init() async {
+    await _init(state);
+  }
+
+  Future<void> _init(LuaState state) async {
     await state.openLibs();
     await addGlobal("SKitType", {
       "unspecified": SKitType.unspecified.index,
       "constellation": SKitType.constellation.index,
     });
+
+    await addGlobal("addScript", (Lua state) async {
+      await addScript(await state.getFromTop<String>(),
+          name: await state.getFromTop<String>());
+    });
+
     for (final interface_ in interfaces) {
       if (interface_.statics.isNotEmpty) {
         await addGlobal(interface_.className, interface_.statics);
@@ -154,15 +163,34 @@ class Lua {
     return resultTable;
   }
 
-  void addScript(String script, {String name = "run.lua"}) =>
-      _scripts.add(LuaScript(name, script));
-
-  String _compile() {
-    return _scripts.map((e) => e.code).join("\n");
+  Future<void> addScript(String script, {String name = "run.lua"}) async {
+    Arceus.talker.debug("Attempting to add script: $name \n$script");
+    final testState = LuaState.newState();
+    await _init(testState);
+    final successful = await testState.doString(_compile(script));
+    if (!successful) {
+      try {
+        state.error();
+      } catch (e) {
+        Arceus.talker.critical("Could not add script: $e");
+      }
+      return;
+    }
+    if (!_scripts.any((e) => e.name == name)) {
+      _scripts.removeWhere((e) => e.name == name);
+    }
+    _scripts.add(LuaScript(name, script));
   }
 
-  Future<dynamic> run() async {
-    await state.doString(_compile());
+  String _compile([String? extra]) {
+    return [..._scripts.map((e) => e.code), extra].join("\n");
+  }
+
+  Future<dynamic> run([String? extra]) async {
+    final successful = await state.doString(_compile(extra).trim());
+    if (!successful) {
+      state.error();
+    }
     final result = await getFromTop();
     Arceus.talker.debug("Lua result: $result");
     return result;
@@ -177,17 +205,21 @@ class Lua {
     return null;
   }
 
-  static Future<void> logInterface() async {
-    final log = File(
-        "${Arceus.appDataPath}/interfaces/interface-${Arceus.currentVersion.toString()}.md");
-    await log.create(recursive: true);
-    log.writeAsString("");
-    for (final interface_ in interfaces) {
-      await log.writeAsString('${interface_.interface_.trim()}\n',
-          mode: FileMode.append);
-      await log.writeAsString('\n', mode: FileMode.append);
-    }
-  }
+  // static Future<void> logInterface() async {
+  //   final interfaceFolder =
+  //       "${Arceus.appDataPath}/interfaces/${Arceus.currentVersion.toString()}";
+  //   for (final interface_ in interfaces) {
+  //     final md = File("$interfaceFolder/${interface_.className}.md");
+  //     if (await md.exists()) {
+  //       await md.delete();
+  //     }
+  //     await md.create(recursive: true);
+  //     String doc = interface_
+  //         .getInterface(interfaces.map((e) => e.className).toList())
+  //         .trim();
+  //     await md.writeAsString(doc);
+  //   }
+  // }
 }
 
 class LuaScript {
@@ -195,4 +227,10 @@ class LuaScript {
   final String code;
 
   LuaScript(this.name, this.code);
+
+  @override
+  int get hashCode => name.hashCode;
+
+  @override
+  bool operator ==(Object other) => other is LuaScript && other.name == name;
 }

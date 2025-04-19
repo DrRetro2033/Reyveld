@@ -55,7 +55,7 @@ This is the top level node of the kit file, and contains information about the k
   @override
   get exports => {
         "createdOn": (lua) async {
-          if (await lua.state.isString(1)) {
+          if (lua.state.isString(1)) {
             final value = await lua.getFromTop<String>();
             object?.createdOn = DateTime.parse(value);
           } else {
@@ -63,7 +63,7 @@ This is the top level node of the kit file, and contains information about the k
           }
         },
         "lastModified": (lua) async {
-          if (await lua.state.isString(1)) {
+          if (lua.state.isString(1)) {
             final value = await lua.getFromTop<String>();
             object?.lastModified = DateTime.parse(value);
           } else {

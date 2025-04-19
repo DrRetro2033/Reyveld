@@ -181,7 +181,7 @@ class ConstellationInterface extends SObjectInterface<Constellation> {
 
   @override
   get description => """
-A collection of [Star]s, with a [root] star and a [current] star.
+A collection of Stars, with a root star, and a current star.
 """;
 
   @override
