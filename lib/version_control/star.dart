@@ -122,6 +122,7 @@ A star is a point in time that represents a snapshot of an folder.
             return object!.name;
           }
         },
+        "constellation": (_) => object!.constellation,
         "makeCurrent": (lua) async {
           bool updateFolder = false;
           if (lua.state.isBoolean(1)) {
@@ -139,5 +140,54 @@ A star is a point in time that represents a snapshot of an folder.
         "isRoot": (_) => object!.isRoot,
         "isCurrent": (_) => object!.isCurrent,
         "isSingleChild": (_) => object!.isSingleChild,
+        "forward": (state) async {
+          int x = await state.getFromTop<int?>() ?? 1;
+          Star star = object!;
+          while (x > 0) {
+            star = star.getChild<Star>() ?? star;
+            x--;
+          }
+          return star;
+        },
+        "backward": (state) async {
+          int x = await state.getFromTop<int?>() ?? 1;
+          Star star = object!;
+          while (x > 0) {
+            star = star.getParent<Star>() ?? star;
+            x--;
+          }
+          return star;
+        },
+        "above": (state) async {
+          int x = await state.getFromTop<int?>() ?? 1;
+          Star star = object!;
+          while (x > 0) {
+            star = star.getSiblingAbove<Star>() ?? star;
+            x--;
+          }
+          return star;
+        },
+        "below": (state) async {
+          int x = await state.getFromTop<int?>() ?? 1;
+          Star star = object!;
+          while (x > 0) {
+            star = star.getSiblingBelow<Star>() ?? star;
+            x--;
+          }
+          return star;
+        },
+        "next": (state) async {
+          int x = await state.getFromTop<int?>() ?? 1;
+          List<Star?> stars = object!.getChildren<Star>();
+          Star star = stars[(x - 1) % stars.length] ?? object!;
+          return star;
+        },
+        "depth": (state) async {
+          int x = await state.getFromTop<int?>() ?? 1;
+          return object!.constellation.root
+                  .getDescendants<Star>(filter: (e) => e.getDepth() == x)[0] ??
+              object!.constellation.root.getDescendants<Star>().last ??
+              object!.constellation.root;
+        }
       };
 }

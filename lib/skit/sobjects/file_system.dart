@@ -147,10 +147,13 @@ class SFile extends SObject {
   String get path => get("path")!;
 
   /// Returns a stream of the bytes stored, uncompressing along the way.
-  FutureOr<Stream<List<int>>> get bytes =>
-      Stream.fromIterable(base64Decode(innerText!))
-          .chunk(chunkSize)
-          .transform(gzip.decoder);
+  FutureOr<Stream<List<int>>> get bytes => Stream.fromIterable(
+          base64Decode(innerText!))
+      .chunk(chunkSize)
+      .transform(gzip.decoder)
+      .expand((e) =>
+          e) // Rechunks the stream to make sure each chunk is sized correctly.
+      .chunk(chunkSize);
 
   Future<Stream<int>> get singleBytes async => (await bytes).expand((e) => e);
 

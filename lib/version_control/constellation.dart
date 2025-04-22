@@ -75,90 +75,6 @@ class Constellation extends SObject {
     return generateUniqueHash(hashes);
   }
 
-  Star getStarAt(String commandString) {
-    List<String> commands = commandString.split(",");
-    Star current = getCurrentStar();
-    for (String command in commands) {
-      command = command.trim(); // Remove any whitespace.
-      if (command == "recent") {
-        // Jump to most recent star.
-        current = getMostRecentStar();
-      } else if (command == "root") {
-        // Jump to root star.
-        current = root;
-      } else if (command.startsWith("forward")) {
-        // Jump forward by X stars.
-        final x = command.replaceFirst("forward", "");
-        int i = int.tryParse(x) ?? 1;
-        Star star = current;
-        while (i > 0) {
-          star = star.getChild<Star>() ?? current;
-          i--;
-        }
-        current = star;
-      } else if (command.startsWith("back")) {
-        // Jump back by X stars.
-        final x = command.replaceFirst("back", "");
-        int? i = int.tryParse(x.trim()) ?? 1;
-        Star star = current;
-        while (i! > 0) {
-          star = star.getParent<Star>() ?? root;
-          i--;
-        }
-        current = star;
-      } else if (command.startsWith("above")) {
-        // Jump above
-        final x = command.replaceFirst("above", "");
-        int i = int.tryParse(x) ?? 1;
-        while (i > 0) {
-          Star? x = current;
-          Star? sibling;
-          while (sibling == null) {
-            if (x == null) {
-              break;
-            }
-            sibling = x.getSiblingAbove<Star>();
-            x = x.getParent<Star>();
-          }
-          current = sibling ?? current;
-          i--;
-        }
-      } else if (command.startsWith("below")) {
-        // Jump below
-        final x = command.replaceFirst("below", "");
-        int i = int.tryParse(x) ?? 1;
-        while (i > 0) {
-          Star? x = current;
-          Star? sibling;
-          while (sibling == null) {
-            if (x == null) {
-              break;
-            }
-            sibling = x.getSiblingBelow<Star>();
-            x = x.getSiblingBelow<Star>();
-          }
-          current = sibling ?? current;
-          i--;
-        }
-      } else if (command.startsWith("next")) {
-        // Jump to next child
-        final x = command.replaceFirst("next", "");
-        int? i = int.tryParse(x) ?? 1;
-        final children = current.getChildren<Star>();
-        current = children[i % children.length] ?? current;
-      } else if (command.startsWith("depth")) {
-        // Jump to depth
-        final x = command.replaceFirst("depth", "");
-        int? i = int.tryParse(x) ?? 1;
-        current =
-            current.getDescendants<Star>(filter: (e) => e.getDepth() == i)[0] ??
-                current.getDescendants<Star>().last ??
-                current;
-      }
-    }
-    return current;
-  }
-
   Future<bool> checkForChanges() {
     return getCurrentStar().checkForChanges();
   }
@@ -188,25 +104,9 @@ A collection of Stars, with a root star, and a current star.
   get exports => {
         "name": (_) => object?.name,
         "path": (_) => object?.path,
-        "getCurrent": (_) => object?.getCurrentStar(),
-        "getRoot": (_) => object?.root,
-        "getAt": (state) async {
-          final commandString = await state.getFromTop<String>();
-          return object?.getStarAt(commandString);
-        }
-      };
-
-  @override
-  get statics => {
-        "new": (state) async {
-          final path = await state.getFromTop<String>();
-          final name = await state.getFromTop<String>();
-          final kit = await state.getFromTop<SKit>();
-          final constellation =
-              await ConstellationCreator(name, path).create(kit);
-          await constellation.createRootStar();
-          return constellation;
-        }
+        "current": (_) => object?.getCurrentStar(),
+        "root": (_) => object?.root,
+        "recent": (_) => object?.getMostRecentStar(),
       };
 }
 

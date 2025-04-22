@@ -42,7 +42,7 @@ abstract class SInterface<T> {
     }
     return """
 # $className:${description.isEmpty ? "" : "\n$formatedDescription"}
-## Instance mehtods:${toMap().map((key, value) => MapEntry(key, value.runtimeType)).entries.map((e) => '\n### ${e.key}: Returns ${_formatReturns(e.value.toString(), classes)}').join('')}
+## Instance methods:${toMap().map((key, value) => MapEntry(key, value.runtimeType)).entries.map((e) => '\n### ${e.key}: Returns ${_formatReturns(e.value.toString(), classes)}').join('')}
 
 ${statics.isNotEmpty ? "## Static methods:" : ""}${statics.entries.map((e) => '\n### ${e.key}: Returns ${_formatReturns(e.value.runtimeType.toString(), classes)}').join('')}
 """;

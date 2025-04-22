@@ -4,7 +4,7 @@ import 'package:test/scaffolding.dart';
 
 Future<void> main() async {
   test("Lua Test", () async {
-    Lua.logInterface();
+    // Lua.logInterface();
     final lua = Lua();
     await lua.init();
     lua.addScript("""

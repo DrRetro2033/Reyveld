@@ -42,41 +42,6 @@ class SHeader extends SObject {
   }
 }
 
-class SHeaderInterface extends SObjectInterface<SHeader> {
-  @override
-  get className => "SHeader";
-
-  @override
-  get description => """
-The header node of a SERE kit file.
-This is the top level node of the kit file, and contains information about the kit, like constellation structures, addon info, etc.
-""";
-
-  @override
-  get exports => {
-        "createdOn": (lua) async {
-          if (lua.state.isString(1)) {
-            final value = await lua.getFromTop<String>();
-            object?.createdOn = DateTime.parse(value);
-          } else {
-            return object?.createdOn.toIso8601String();
-          }
-        },
-        "lastModified": (lua) async {
-          if (lua.state.isString(1)) {
-            final value = await lua.getFromTop<String>();
-            object?.lastModified = DateTime.parse(value);
-          } else {
-            return object?.lastModified.toIso8601String();
-          }
-        },
-        "version": (state) {
-          return object?.version;
-        },
-        "type": (_) => object?.type.index,
-      };
-}
-
 class SHeaderCreator extends SCreator<SHeader> {
   final SKitType type;
 

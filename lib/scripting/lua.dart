@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:arceus/arceus.dart';
+import 'package:arceus/scripting/list.dart';
 import 'package:arceus/skit/sobjects/sobjects.dart';
 import 'package:arceus/uuid.dart';
 import 'package:arceus/version_control/constellation.dart';
@@ -21,10 +22,11 @@ class Lua {
 
   static Set<SInterface> get interfaces => {
         SKitInterface(),
-        SHeaderInterface(),
         ConstellationInterface(),
         StarInterface(),
         SArchiveInterface(),
+        SFileInterface(),
+        SRFileInterface(),
       };
 
   Future<void> init() async {
@@ -78,12 +80,10 @@ class Lua {
         await state.setTable(state.getTop() - 2);
       }
     } else if (value is List<dynamic>) {
-      state.newTable();
-      for (int i = 0; i < value.length; i++) {
-        await _pushToStack(i.toString());
-        await _pushToStack(value[i]);
-        await state.setTable(state.getTop() - 2);
-      }
+      final interface_ = ListInterface()..object = value;
+      final hash = _createUniqueObjectHash();
+      _objects[hash] = interface_;
+      await _pushToStack(interface_.toLua(this, hash));
     } else if (value is Object && getInterface(value) != null) {
       final interface_ = getInterface(value)!..object = value;
       final hash = _createUniqueObjectHash();

@@ -11,7 +11,7 @@ import 'package:xml/xml_events.dart';
 import 'package:arceus/skit/sobject.dart' hide SInterface;
 import 'package:arceus/skit/sobjects/sobjects.dart';
 import "package:arceus/version_control/constellation.dart"
-    show ConstellationFactory;
+    show Constellation, ConstellationCreator, ConstellationFactory;
 import "package:arceus/version_control/star.dart" show StarFactory;
 import 'package:arceus/scripting/sinterface.dart' show SInterface;
 
@@ -200,8 +200,7 @@ class SKit {
   /// Returns the hashes used in the SKit file.
   /// Will only return the hashes of the specified type, and not all of the hashes of every type in the kit file.
   /// Each hash is unique to the type of [SRoot] that it is.
-  /// So for instance, if you have a [SArchive] with the same hash as SUser, then they are still considered unique.
-  ///
+  /// So for instance, if you have a [SArchive] with the same hash as [SUser], then they are still considered unique.
   Future<Set<String>> usedRootHashes<T extends SRoot>([String? tag]) async =>
       (await getRoots<T>(
               addToCache: false, filterEvents: (e) => e.localName == tag))
@@ -274,22 +273,30 @@ class SKitInterface extends SInterface<SKit> {
   @override
   get exports => {
         "path": (_) => object!.path,
-        "getHeader": (state) async {
-          return await object!.getHeader();
-        },
         "isType": (state) async {
           return await object!
               .isType(SKitType.values[await state.getFromTop<int?>() ?? 0]);
-        },
-        "save": (state) async => await object!.save(),
-        "addRoot": (state) async {
-          final root = await state.getFromTop<SRoot>();
-          object!.addRoot(root);
         },
         "createdOn": (state) async {
           final header = await object!.getHeader();
           return header!.createdOn.toIso8601String();
         },
+        "modifiedOn": (state) async {
+          final header = await object!.getHeader();
+          return header!.lastModified.toIso8601String();
+        },
+        "getConstellation": (_) async =>
+            await object!.getHeader().then((e) => e!.getChild<Constellation>()),
+        "newConstellation": (state) async {
+          final path = await state.getFromTop<String>();
+          final name = await state.getFromTop<String>();
+          final constellation =
+              await ConstellationCreator(name, path).create(object!);
+          await constellation.createRootStar();
+          object!.getHeader().then((e) => e!.addChild(constellation));
+          return constellation;
+        },
+        "save": (state) async => await object!.save(),
         "discard": (_) => object!.discardChanges(),
       };
 

@@ -16,19 +16,36 @@
 
 # What is Arceus?
 
-Arceus is a API that gives developers to create tools for everyday users, giving them the power and flexiblity of version control and hex editing, without any headaches. Arceus should be usable for every game, program, and project under the sun! Not just Pokémon!
+Arceus is a WebSocket based server that uses Lua 5.3 to give developers the power of version control, hex editing, and more packed into a tiny package.
+
+```lua
+local skit = SKit.create("...", {
+    type = SKitType.constellation
+})
+skit.newConstellation("...",
+    "...")
+skit.save()
+```
 
 ## Branch Off Into Different Timelines 🌌
 
 With Arceus, you can create branches of a folder, so multiple versions can exist simultaneously. So secondary playthroughs (or projects) can branch off from a initial instance, without need to restart from the beginning!
 
+```lua
+local skit = SKit.open("...")
+skit.getConstellation().current().grow("Hello World!")
+skit.save()
+```
+
 ## Rollback to Older Versions 🕔
 
 Rollback to earlier versions of a folder or file, preserving any previous actions. So no matter the mistake, Arceus can help you get back on track.
 
-## Simple and Easy Scripting 📜
-
-Arceus integrates Lua 5.3, enabling anyone to write custom logic for Arceus.
+```lua
+local skit = SKit.open("...")
+skit.getConstellation().current().back(2).makeCurrent()
+skit.save()
+```
 
 ## Cross Platform 🖥️📱
 
@@ -53,11 +70,15 @@ Arceus makes it easier to practice routes, find exploits, make a starting point,
 
 ## For Mods 🛠️
 
-Keep your modded saves away from your main game saves, and recover from a corrupted save.
+Keep your modded saves away from your main game saves, and recover from a corrupted save with ease.
+
+## For Video Recording 🎥
+
+Ever needed to replay a specific point of a game to get better footage? Well Arceus will make it easy to do so.
 
 ## For Artists 🎨
 
-Arceus is not just useful for gamers, artists can join the fun as well! Simply create a constellation inside a folder, and add the files you would like to track! It's that simple! Arceus will work with anything; [Krita](https://krita.org/en/), [Blender](https://www.blender.org/), [Godot](https://godotengine.org/), etc...
+Arceus is not just useful for gamers, artists can join the fun as well! Simply create a constellation inside a folder, and add the files you would like to track! It's that simple! Arceus will work with anything; [Krita](https://krita.org/en/), [Blender](https://www.blender.org/), [Kdenlive](https://kdenlive.org/en/), etc...
 
 ## For Save Editors 📝
 
@@ -65,7 +86,7 @@ The main use case for Arceus is for developers wanting to make a save editor. Ar
 
 ## For Game Development 💻
 
-Easily roll back to any point in your game for testing, provide items for debugging, or intentionally corrupt a save to test edge cases—without writing debug menus! You could even use Arceus as a backend for saving and loading data in any engine.
+Easily rollback to any point in your game for testing, provide items for debugging, or intentionally corrupt a save to test edge cases—without writing debug menus! You could even use Arceus as a backend for saving and loading data!
 
 ## For Reverse Engineering 📋
 
