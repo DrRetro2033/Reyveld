@@ -115,79 +115,165 @@ A star is a point in time that represents a snapshot of an folder.
 
   @override
   get exports => {
-        "name": (lua) async {
-          if (lua.state.isString(1)) {
-            object!.name = await lua.getFromTop<String>();
-          } else {
-            return object!.name;
+        "name": (
+          "Gets or sets the name of the star.",
+          {"name": ("The new name of the star.", String, false)},
+          String,
+          (lua) async {
+            if (lua.state.isString(1)) {
+              object!.name = await lua.getFromTop<String>();
+            } else {
+              return object!.name;
+            }
           }
-        },
-        "constellation": (_) => object!.constellation,
-        "makeCurrent": (lua) async {
-          bool updateFolder = false;
-          if (lua.state.isBoolean(1)) {
-            updateFolder = await lua.getFromTop<bool>();
+        ),
+        "constellation": (
+          "Gets the constellation of the star.",
+          {},
+          Constellation,
+          (_) => object!.constellation
+        ),
+        "makeCurrent": (
+          "Sets the star as the current star.",
+          {
+            "updateFolder": (
+              "If true, the folder will be updated to the current star.",
+              bool,
+              false
+            )
+          },
+          null,
+          (lua) async {
+            bool updateFolder = false;
+            if (lua.state.isBoolean(1)) {
+              updateFolder = await lua.getFromTop<bool>();
+            }
+            object!.makeCurrent();
+            if (updateFolder) {
+              await object!.constellation.updateToCurrent();
+            }
           }
-          object!.makeCurrent();
-          if (updateFolder) {
-            await object!.constellation.updateToCurrent();
+        ),
+        "getArchive": (
+          "Gets the archive of the star.",
+          {},
+          SArchive,
+          (lua) async => await object!.archive
+        ),
+        "trim": (
+          "Trims this star and all of its descendants.",
+          {},
+          null,
+          (state) async => await object!.trim()
+        ),
+        "grow": (
+          "Grows a new star from this star.",
+          {"name": ("The name of the new star.", String, true)},
+          Star,
+          (state) async => await object!.grow(await state.getFromTop<String>())
+        ),
+        "isRoot": (
+          "Checks if the star is the root star.",
+          {},
+          bool,
+          (_) => object!.isRoot
+        ),
+        "isCurrent": (
+          "Checks if the star is the current star.",
+          {},
+          bool,
+          (_) => object!.isCurrent
+        ),
+        "isSingleChild": (
+          "Checks if the star is a single child.",
+          {},
+          bool,
+          (_) => object!.isSingleChild
+        ),
+        "forward": (
+          "Gets the star forward to this star X times.",
+          {
+            "x": (
+              "The number of stars to move forward. Defaults to 1.",
+              int,
+              false
+            )
+          },
+          Star,
+          (state) async {
+            int x = await state.getFromTop<int?>() ?? 1;
+            Star star = object!;
+            while (x > 0) {
+              star = star.getChild<Star>() ?? star;
+              x--;
+            }
+            return star;
           }
-        },
-        "getArchive": (lua) async => await object!.archive,
-        "trim": (state) async => await object!.trim(),
-        "grow": (state) async =>
-            await object!.grow(await state.getFromTop<String>()),
-        "isRoot": (_) => object!.isRoot,
-        "isCurrent": (_) => object!.isCurrent,
-        "isSingleChild": (_) => object!.isSingleChild,
-        "forward": (state) async {
-          int x = await state.getFromTop<int?>() ?? 1;
-          Star star = object!;
-          while (x > 0) {
-            star = star.getChild<Star>() ?? star;
-            x--;
+        ),
+        "backward": (
+          "Gets the star backward to this star X times.",
+          {
+            "x": (
+              "The number of stars to move backward. Defaults to 1.",
+              int,
+              false
+            )
+          },
+          Star,
+          (state) async {
+            int x = await state.getFromTop<int?>() ?? 1;
+            Star star = object!;
+            while (x > 0) {
+              star = star.getParent<Star>() ?? star;
+              x--;
+            }
+            return star;
           }
-          return star;
-        },
-        "backward": (state) async {
-          int x = await state.getFromTop<int?>() ?? 1;
-          Star star = object!;
-          while (x > 0) {
-            star = star.getParent<Star>() ?? star;
-            x--;
+        ),
+        "above": (
+          "Gets the star above this star X times.",
+          {"x": ("The number of stars to move up. Defaults to 1.", int, false)},
+          Star,
+          (state) async {
+            int x = await state.getFromTop<int?>() ?? 1;
+            Star star = object!;
+            while (x > 0) {
+              star = star.getSiblingAbove<Star>() ?? star;
+              x--;
+            }
+            return star;
           }
-          return star;
-        },
-        "above": (state) async {
-          int x = await state.getFromTop<int?>() ?? 1;
-          Star star = object!;
-          while (x > 0) {
-            star = star.getSiblingAbove<Star>() ?? star;
-            x--;
+        ),
+        "below": (
+          "Gets the star below this star X times.",
+          {
+            "x": (
+              "The number of stars to move down. Defaults to 1.",
+              int,
+              false
+            )
+          },
+          Star,
+          (state) async {
+            int x = await state.getFromTop<int?>() ?? 1;
+            Star star = object!;
+            while (x > 0) {
+              star = star.getSiblingBelow<Star>() ?? star;
+              x--;
+            }
+            return star;
           }
-          return star;
-        },
-        "below": (state) async {
-          int x = await state.getFromTop<int?>() ?? 1;
-          Star star = object!;
-          while (x > 0) {
-            star = star.getSiblingBelow<Star>() ?? star;
-            x--;
+        ),
+        "next": (
+          "Gets the Xth child of the star.",
+          {"x": ("The Xth of the child to get.", int, true)},
+          Star,
+          (state) async {
+            int x = await state.getFromTop<int>();
+            List<Star?> stars = object!.getChildren<Star>();
+            Star star = stars[(x - 1) % stars.length] ?? object!;
+            return star;
           }
-          return star;
-        },
-        "next": (state) async {
-          int x = await state.getFromTop<int?>() ?? 1;
-          List<Star?> stars = object!.getChildren<Star>();
-          Star star = stars[(x - 1) % stars.length] ?? object!;
-          return star;
-        },
-        "depth": (state) async {
-          int x = await state.getFromTop<int?>() ?? 1;
-          return object!.constellation.root
-                  .getDescendants<Star>(filter: (e) => e.getDepth() == x)[0] ??
-              object!.constellation.root.getDescendants<Star>().last ??
-              object!.constellation.root;
-        }
+        ),
       };
 }

@@ -233,6 +233,10 @@ abstract class SFactory<T extends SObject> {
 ///     builder.attribute("date", (date ?? DateTime.now()).toIso8601String());
 ///   }
 /// }
+///
+/// Future<SObject> createObj(SKit kit) async {
+///   return await MySCreator("Hello").create(kit);
+/// }
 /// ```
 abstract class SCreator<T extends SObject> {
   SCreator();

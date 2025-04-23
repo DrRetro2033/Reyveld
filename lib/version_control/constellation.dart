@@ -102,11 +102,36 @@ A collection of Stars, with a root star, and a current star.
 
   @override
   get exports => {
-        "name": (_) => object?.name,
-        "path": (_) => object?.path,
-        "current": (_) => object?.getCurrentStar(),
-        "root": (_) => object?.root,
-        "recent": (_) => object?.getMostRecentStar(),
+        "name": (
+          "Gets the name of the constellation.",
+          {},
+          String,
+          (_) => object?.name
+        ),
+        "path": (
+          "Gets the path of the constellation.",
+          {},
+          String,
+          (_) => object?.path
+        ),
+        "current": (
+          "Gets the current star of the constellation.",
+          {},
+          Star,
+          (_) => object?.getCurrentStar()
+        ),
+        "root": (
+          "Gets the root star of the constellation.",
+          {},
+          Star,
+          (_) => object?.root
+        ),
+        "recent": (
+          "Gets the most recent star of the constellation.",
+          {},
+          Star,
+          (_) => object?.getMostRecentStar()
+        ),
       };
 }
 

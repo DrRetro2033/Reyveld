@@ -94,12 +94,17 @@ class Lua {
         await _pushToStack(await value(this));
         return 1;
       });
+    } else if (value is LuaEntrypoint) {
+      state.pushDartFunction((state) async {
+        await _pushToStack(await value.$4(this));
+        return 1;
+      });
     } else {
       Arceus.talker.error("Could not push to stack: $value");
     }
   }
 
-  Future<T> getFromTop<T>({bool pop = true}) async {
+  Future<T> getFromTop<T>({bool pop = true, bool optional = false}) async {
     dynamic result;
     try {
       if (state.isString(state.getTop())) {
@@ -141,6 +146,11 @@ class Lua {
     } catch (e, st) {
       Arceus.talker.error(e, st);
     }
+
+    if (optional && result is! T) {
+      return Future.value(null as T?);
+    }
+
     if (pop) {
       if (state.getTop() != 0) {
         state.pop(1);
@@ -191,7 +201,7 @@ class Lua {
     if (!successful) {
       state.error();
     }
-    final result = await getFromTop();
+    final result = await getFromTop(optional: true);
     Arceus.talker.debug("Lua result: $result");
     return result;
   }
@@ -205,21 +215,11 @@ class Lua {
     return null;
   }
 
-  // static Future<void> logInterface() async {
-  //   final interfaceFolder =
-  //       "${Arceus.appDataPath}/interfaces/${Arceus.currentVersion.toString()}";
-  //   for (final interface_ in interfaces) {
-  //     final md = File("$interfaceFolder/${interface_.className}.md");
-  //     if (await md.exists()) {
-  //       await md.delete();
-  //     }
-  //     await md.create(recursive: true);
-  //     String doc = interface_
-  //         .getInterface(interfaces.map((e) => e.className).toList())
-  //         .trim();
-  //     await md.writeAsString(doc);
-  //   }
-  // }
+  static Future<void> generateDocs() async {
+    for (final interface_ in interfaces) {
+      await interface_.generateDocs();
+    }
+  }
 }
 
 class LuaScript {

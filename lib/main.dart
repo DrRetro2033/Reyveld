@@ -17,7 +17,6 @@ Future<void> main(List<String> args) async {
   await lockFile.create(recursive: true);
 
   final server = await HttpServer.bind(InternetAddress.anyIPv4, 7274);
-  // Lua.logInterface();
   print('Server Started');
 
   Map<String, Lua> sessions = {};
@@ -25,11 +24,6 @@ Future<void> main(List<String> args) async {
   await for (HttpRequest request in server) {
     final requestUrl = request.uri.pathSegments.sublist(1).join('/');
     try {
-      if (request.session.isNew) {
-        sessions[request.session.id] = Lua();
-        await sessions[request.session.id]!.init();
-      }
-
       /// Check if the requested version is the same as this program's version.
       if (request.uri.pathSegments.firstOrNull !=
           Arceus.currentVersion.toString()) {
@@ -50,12 +44,22 @@ Future<void> main(List<String> args) async {
         }
       }
 
+      if (request.session.isNew) {
+        sessions[request.session.id] = Lua();
+        await sessions[request.session.id]!.init();
+      }
+
       /// If the requested version is the same as this program's version, continue as normal.
       switch (requestUrl) {
         case "heatbeat":
           request.response.statusCode = HttpStatus.ok;
           Arceus.talker
               .info("Heatbeat checked at ${DateTime.now().toIso8601String()}.");
+          await request.response.close();
+        case "docs":
+          request.response.statusCode = HttpStatus.ok;
+          await Lua.generateDocs();
+          Arceus.talker.info("Generated docs.");
           await request.response.close();
         default:
           if (WebSocketTransformer.isUpgradeRequest(request)) {

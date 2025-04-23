@@ -9,18 +9,53 @@ class ListInterface extends SInterface<List> {
 
   @override
   get exports => {
-        "add": (state) {
-          final value = state.getFromTop();
-          object!.add(value);
-        },
-        "remove": (state) {
-          final value = state.getFromTop();
-          object!.remove(value);
-        },
-        "pop": (state) => object!.removeLast(),
-        "length": (state) => object!.length,
-        "first": (state) => object!.first,
-        "last": (state) => object!.last,
-        "contains": (state) => object!.contains(state.getFromTop()),
+        "add": (
+          "Adds an object to the list.",
+          {"object": ("The object to add.", Object, true)},
+          null,
+          (state) {
+            final value = state.getFromTop();
+            object!.add(value);
+          }
+        ),
+        "remove": (
+          "Removes an object from the list.",
+          {"object": ("The object to remove.", Object, true)},
+          null,
+          (state) {
+            final value = state.getFromTop();
+            object!.remove(value);
+          }
+        ),
+        "pop": (
+          "Removes the last object from the list and returns it.",
+          {},
+          null,
+          (state) => object!.removeLast()
+        ),
+        "length": (
+          "Returns the length of the list.",
+          {},
+          int,
+          (state) => object!.length
+        ),
+        "first": (
+          "Returns the first object in the list.",
+          {},
+          Object,
+          (state) => object!.first
+        ),
+        "last": (
+          "Returns the last object in the list.",
+          {},
+          Object,
+          (state) => object!.last
+        ),
+        "contains": (
+          "Returns true if the list contains the object.",
+          {"object": ("The object to check for.", Object, true)},
+          bool,
+          (state) => object!.contains(state.getFromTop())
+        ),
       };
 }
