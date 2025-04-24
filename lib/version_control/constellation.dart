@@ -29,6 +29,7 @@ class Constellation extends SObject {
   /// This is used when creating a new constellation.
   Future<Star> createRootStar() async {
     final archive = await SArchiveCreator.archiveFolder(kit, path);
+    kit.addRoot(archive);
     final rootStar =
         await StarCreator("Initial Star", newStarHash(), archive.hash)
             .create(kit);
@@ -82,6 +83,15 @@ class Constellation extends SObject {
   Future<void> updateToCurrent() async {
     return await getCurrentStar().archive.then((e) async => e!.extract(path));
   }
+
+  Future<SArchive> getUnsavedChanges() async {
+    final archive = await SArchiveCreator.archiveFolder(kit, path);
+    if (!await archive
+        .isDifferent(await getCurrentStar().archive.then((e) async => e!))) {
+      return await getCurrentStar().archive.then((e) async => e!);
+    }
+    return archive;
+  }
 }
 
 extension ConstellationExtension on SKit {
@@ -132,6 +142,12 @@ A collection of Stars, with a root star, and a current star.
           Star,
           (_) => object?.getMostRecentStar()
         ),
+        "unsaved": (
+          "Gets an archive that contains all of the unsaved changes in the constellation.",
+          {},
+          SArchive,
+          (_) => object?.getUnsavedChanges()
+        )
       };
 }
 

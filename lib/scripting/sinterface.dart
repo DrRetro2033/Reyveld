@@ -3,11 +3,20 @@ import 'dart:io';
 import 'package:arceus/arceus.dart';
 import 'package:arceus/skit/sobject.dart';
 
+/// This is a typedef for a lua entrypoint.
+/// A entrypoint is a function with a description, arguments, and return type.
+/// The arguments are a list of tuples of (description, type, isOptional).
 typedef LuaEntrypoint = (
-  String,
-  Map<String, (String, Type, bool)>,
-  Type?,
-  dynamic Function(Lua)
+  String, // description
+  Map<
+      String,
+      (
+        String,
+        Type,
+        bool
+      )>, // arguments <name, (description, type, isOptional)>
+  Type?, // return type or null
+  dynamic Function(Lua) // function
 );
 
 /// This acts as an interface between Lua and SKits.
@@ -73,6 +82,7 @@ ${statics.entries.map((e) => _luaMethod(e)).join("\n")}
     final text = StringBuffer();
     text.writeln("---@class $className");
     for (final line in description.split("\n")) {
+      if (line.isEmpty) continue;
       text.writeln("---$line");
     }
     text.writeln("local $className = {}");
@@ -93,7 +103,10 @@ ${statics.entries.map((e) => _luaMethod(e)).join("\n")}
     if (export.value.$3 != null) {
       method.writeln("---@return ${_convertDartToLua(export.value.$3!)}");
     }
-    method.writeln("---${export.value.$1}");
+    for (final line in export.value.$1.split("\n")) {
+      if (line.isEmpty) continue;
+      method.writeln("---$line");
+    }
     method.writeln(
         "function $className.${export.key}(${export.value.$2.keys.join(", ")}) end");
     return method.toString();

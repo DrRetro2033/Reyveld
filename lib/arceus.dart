@@ -2,12 +2,13 @@ import 'dart:io';
 import 'package:arceus/extensions.dart';
 import 'package:version/version.dart';
 import 'package:talker/talker.dart';
+import 'package:arceus/version.dart' as version;
 
 /// # `class` Arceus
 /// ## A class that represents the Arceus application.
 /// Contain global functions for Arceus, for example, settings, paths, etc.
 class Arceus {
-  static Version get currentVersion => Version(1, 0, 0);
+  static Version get currentVersion => version.currentVersion;
   static late String _currentPath;
   static String get currentPath => _currentPath;
   static set currentPath(String path) => _currentPath = path.fixPath();
@@ -22,14 +23,14 @@ class Arceus {
       logger: TalkerLogger(
           formatter: ArceusLogFormatter(),
           output: ArceusLogger(
-                  "$appDataPath/logs/arceus-$currentVersion-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log")
+                  "$appDataPath/logs/$currentVersion/arceus-$currentVersion-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log")
               .output),
     );
     return _logger!;
   }
 
   static File get mostRecentLog => File(
-      "$appDataPath/logs/arceus-$currentVersion-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log");
+      "$appDataPath/logs/$currentVersion/arceus-$currentVersion-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log");
 
   /// # `static` `String` _appDataPath
   /// ## The path to the application data directory.

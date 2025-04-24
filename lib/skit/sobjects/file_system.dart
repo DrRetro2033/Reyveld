@@ -127,6 +127,22 @@ class SArchive extends SRoot {
       await file.extract(path, temp: temp);
     }
   }
+
+  Future<bool> isDifferent(SArchive other) async {
+    final files = getFiles();
+    final otherFiles = other.getFiles();
+    if (getFiles().map((e) => e!.path) !=
+        other.getFiles().map((e) => e!.path)) {
+      return true;
+    }
+    for (int i = 0; i < files.length; i++) {
+      final file = files[i]!;
+      final otherFile = otherFiles[i]!;
+      final diffStream = file.streamDiff(await otherFile.bytes);
+      if (await diffStream.any((e) => e.any((e) => e != 0))) return true;
+    }
+    return false;
+  }
 }
 
 extension SArchiveExtensions on SKit {

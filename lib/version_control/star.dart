@@ -47,6 +47,7 @@ class Star extends SObject {
     final newArchive = await SArchiveCreator.archiveFolder(
         kit, constellation.path,
         ref: await archive);
+    kit.addRoot(newArchive);
     final star =
         await StarCreator(name, constellation.newStarHash(), newArchive.hash)
             .create(kit);
