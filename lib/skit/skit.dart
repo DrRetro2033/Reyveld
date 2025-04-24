@@ -1,3 +1,5 @@
+library skit;
+
 import "dart:async";
 import "dart:convert";
 import "dart:io";
@@ -6,15 +8,21 @@ import "package:arceus/extensions.dart";
 import "package:rxdart/rxdart.dart";
 import 'package:xml/xml_events.dart';
 
-import 'package:arceus/skit/sobject.dart';
+import 'package:arceus/skit/sobject.dart' hide SInterface;
 import 'package:arceus/skit/sobjects/sobjects.dart';
-import "package:arceus/scripting/addon.dart";
-import "package:arceus/version_control/constellation.dart";
-import "package:arceus/version_control/star.dart";
+import "package:arceus/version_control/constellation.dart"
+    show Constellation, ConstellationCreator, ConstellationFactory;
+import "package:arceus/version_control/star.dart" show StarFactory;
+import 'package:arceus/scripting/sinterface.dart' show SInterface;
+
+export "package:arceus/skit/sobject.dart";
 
 part 'skit.factories.dart';
 
-enum SKitType { unspecified, constellation, constellationPack, addon, settings }
+enum SKitType {
+  unspecified,
+  constellation,
+}
 
 /// Represents a compressed XML file.
 /// [SKit] is an abrivation for SERE kit, which is a reference to titanfall 2.
@@ -25,16 +33,12 @@ enum SKitType { unspecified, constellation, constellationPack, addon, settings }
 ///
 /// Every other [SObject] is optional and can be left out.
 class SKit {
-  static Future<SKit> open(String path, SKitType type,
-      {Future<void> Function(SKit)? ifNotFound}) async {
+  static Future<SKit> open(String path, {SKitType? type}) async {
     final kit = SKit(path);
     if (!await kit.exists()) {
-      if (ifNotFound != null) {
-        await ifNotFound(kit);
-        return kit;
-      }
+      throw Exception("Kit file does not exist!");
     }
-    if (!await kit.isType(type)) {
+    if (type != null && !await kit.isType(type)) {
       throw Exception("Kit file is not of the correct type!");
     }
     return kit;
@@ -163,8 +167,8 @@ class SKit {
 
   void unloadRoot(SRoot root) => _loadedRoots.remove(root);
 
-  /// Streams the roots of the kit file, streaming them if they have not been loaded yet.
-  /// This is used when saving and reading the kit file. Will not cache anything.
+  /// Streams the roots of the kit file, getting their cached version if possible.
+  /// This is used when saving or reading the kit file. Will not cache anything, but will stream the roots.
   /// To cache roots, use [getRoots] or [getRoot].
   Stream<SRoot> _streamRoots(
       {bool Function(XmlStartElementEvent)? filterEvents}) async* {
@@ -196,8 +200,7 @@ class SKit {
   /// Returns the hashes used in the SKit file.
   /// Will only return the hashes of the specified type, and not all of the hashes of every type in the kit file.
   /// Each hash is unique to the type of [SRoot] that it is.
-  /// So for instance, if you have a [SArchive] with the same hash as SUser, then they are still considered unique.
-  ///
+  /// So for instance, if you have a [SArchive] with the same hash as [SUser], then they are still considered unique.
   Future<Set<String>> usedRootHashes<T extends SRoot>([String? tag]) async =>
       (await getRoots<T>(
               addToCache: false, filterEvents: (e) => e.localName == tag))
@@ -229,8 +232,7 @@ class SKit {
       Stream.fromFuture(getHeader().then((e) => e!.toXmlString())),
       _streamRoots().map((event) => event.toXmlString())
     ]);
-    // final stream = _streamRoots()
-    //     .map((event) => event.toXmlString());
+
     await tempSink.addStream(
         stream.map<List<int>>((e) => e.codeUnits).transform(gzip.encoder));
     await tempSink.flush();
@@ -259,18 +261,143 @@ class SKit {
   void discardChanges() {
     _loadedRoots.clear();
   }
+}
 
-  Future<void> printDetails() async {
-    final header = await getHeader();
-    header!.printDetails(advanced: true);
+class SKitInterface extends SInterface<SKit> {
+  @override
+  get className => "SKit";
 
-    for (final factory in sobjectFactories) {
-      final hashes = await usedRootHashes(factory.tag);
-      if (hashes.isEmpty) continue;
-      print("${factory.tag}:");
-      for (final usedHash in hashes) {
-        print("  $usedHash");
-      }
-    }
-  }
+  @override
+  get description => """""";
+
+  @override
+  get extras => """
+---@enum SKitType
+SKitType = {
+  ${SKitType.values.map((e) => "${e.name} = ${e.index},").join("\n  ")}
+}
+""";
+
+  @override
+  get exports => {
+        "path": (
+          "Returns the path of the SKit file.",
+          {},
+          String,
+          (_) => object!.path
+        ),
+        "isType": (
+          "Returns whether the SKit is of the specified type.",
+          {"type": ("The type to check for.", int, true)},
+          bool,
+          (state) async {
+            return await object!
+                .isType(SKitType.values[await state.getFromTop<int>()]);
+          }
+        ),
+        "createdOn": (
+          "Returns the creation date of the SKit.",
+          {},
+          String,
+          (state) async {
+            final header = await object!.getHeader();
+            return header!.createdOn.toIso8601String();
+          }
+        ),
+        "modifiedOn": (
+          "Returns the last modified date of the SKit.",
+          {},
+          String,
+          (state) async {
+            final header = await object!.getHeader();
+            return header!.lastModified.toIso8601String();
+          }
+        ),
+        "getConstellation": (
+          "Returns the constellation of the SKit.",
+          {},
+          Constellation,
+          (_) async => await object!
+              .getHeader()
+              .then((e) => e!.getChild<Constellation>())
+        ),
+        "newConstellation": (
+          "Creates a new constellation in the SKit.",
+          {
+            "name": ("The name of the constellation.", String, true),
+            "path": ("The path of the constellation.", String, true),
+          },
+          Constellation,
+          (state) async {
+            final path = await state.getFromTop<String>();
+            final name = await state.getFromTop<String>();
+            final constellation =
+                await ConstellationCreator(name, path).create(object!);
+            await constellation.createRootStar();
+            object!.getHeader().then((e) => e!.addChild(constellation));
+            return constellation;
+          }
+        ),
+        "save": (
+          "Saves changes to the SKit.",
+          {},
+          null,
+          (state) async => await object!.save()
+        ),
+        "discard": (
+          "Discards changes to the SKit.",
+          {},
+          null,
+          (_) => object!.discardChanges()
+        ),
+      };
+
+  @override
+  get statics => {
+        "open": (
+          "Opens an SKit file.",
+          {"path": ("The path to the SKit file.", String, true)},
+          SKit,
+          (state) async {
+            final path = await state.getFromTop<String>();
+            return await SKit.open(path);
+          }
+        ),
+        "exists": (
+          "Checks if an SKit exists.",
+          {"path": ("The path to the SKit file.", String, true)},
+          bool,
+          (state) async {
+            final path = await state.getFromTop<String>();
+            return await SKit(path).exists();
+          }
+        ),
+        "create": (
+          "Creates a new SKit file.",
+          {
+            "path": ("The path to the SKit file.", String, true),
+            "overrides": ("Some more options.", Map, false),
+          },
+          SKit,
+          (lua) async {
+            bool? overwrite;
+            SKitType? type;
+            if (lua.state.getTop() == 2 && lua.state.isTable(2)) {
+              final table = await lua.getFromTop<Map<String, dynamic>>();
+              overwrite =
+                  table.containsKey("override") ? table["override"] : null;
+              type = table.containsKey("type")
+                  ? SKitType.values.firstWhere((e) => e.index == table["type"])
+                  : null;
+            }
+            final path = await lua.getFromTop<String>();
+
+            final skit = SKit(path);
+            await skit.create(
+                overwrite: overwrite ?? false,
+                type: type ?? SKitType.unspecified);
+            return skit;
+          }
+        ),
+      };
 }

@@ -1,9 +1,6 @@
-import 'package:arceus/extensions.dart';
-import 'package:arceus/main.dart';
 import 'package:arceus/skit/sobject.dart';
 import 'package:arceus/skit/sobjects/file_system.dart';
 import 'package:arceus/version_control/constellation.dart';
-import 'package:arceus/widget_system.dart';
 
 part 'star.g.dart';
 
@@ -12,12 +9,6 @@ part 'star.g.dart';
 /// TODO: Add multi-user support, either by making a unique constellation for each user, or by associating the star with a user.
 @SGen("star")
 class Star extends SObject {
-  @override
-  String get displayName => _getDisplayName();
-
-  @override
-  bool get condenceBranch => true;
-
   Star(super._kit, super._node);
 
   /// Returns the name of the star.
@@ -56,6 +47,7 @@ class Star extends SObject {
     final newArchive = await SArchiveCreator.archiveFolder(
         kit, constellation.path,
         ref: await archive);
+    kit.addRoot(newArchive);
     final star =
         await StarCreator(name, constellation.newStarHash(), newArchive.hash)
             .create(kit);
@@ -71,7 +63,8 @@ class Star extends SObject {
     if (isRoot) {
       throw Exception("Cannot trim root star!");
     }
-    await getParent<Star>()!.makeCurrent();
+    getParent<Star>()!.makeCurrent();
+    await constellation.updateToCurrent();
     await archive.then((e) => e!.markForDeletion());
     for (final archiveReference in getDescendants<SRArchive>()) {
       archiveReference!.markForDeletion();
@@ -80,32 +73,8 @@ class Star extends SObject {
   }
 
   /// Makes this star the current star.
-  Future<Stream<String>> makeCurrent() async {
+  void makeCurrent() async {
     constellation.currentHash = hash;
-    return await archive.then((e) async => e!.extract(constellation.path));
-  }
-
-  /// Returns the formatted name of the star file for displaying.
-  /// This is used when printing details about a star file to the terminal.
-  String _getDisplayName() {
-    // int tagsToDisplay = 2;
-    List<Badge> badges = [];
-    // for (String tag in tags) {
-    //   if (tagsToDisplay == 0) {
-    //     break;
-    //   }
-    //   badges.add(Badge("🏷️$tag"));
-    //   tagsToDisplay--;
-    // }
-    Badge dateBadge = Badge(
-        '📅${createdOn.formatDate(settings!.dateSize, settings!.dateFormat)}',
-        badgeColor: "grey",
-        textColor: "white");
-    Badge timeBadge = Badge('🕒${createdOn.formatTime(settings!.timeFormat)}',
-        badgeColor: "grey", textColor: "white");
-    final displayName =
-        "$name $dateBadge$timeBadge${badges.isNotEmpty ? badges.join(" ") : ""}";
-    return "${!isRoot && isSingleChild ? "↪ " : ""}$displayName${isCurrent ? "✨" : ""}";
   }
 
   Future<bool> checkForChanges() async {
@@ -132,5 +101,180 @@ class StarCreator extends SCreator<Star> {
         builder.attribute("hash", hash);
         builder.attribute("date", DateTime.now().toIso8601String());
         builder.xml(archive.toXmlString());
+      };
+}
+
+class StarInterface extends SObjectInterface<Star> {
+  @override
+  String get className => "Star";
+
+  @override
+  get description => """
+This class represents a star in a constellation.
+A star is a point in time that represents a snapshot of an folder.
+""";
+
+  @override
+  get exports => {
+        "name": (
+          "Gets or sets the name of the star.",
+          {"name": ("The new name of the star.", String, false)},
+          String,
+          (lua) async {
+            if (lua.state.isString(1)) {
+              object!.name = await lua.getFromTop<String>();
+            } else {
+              return object!.name;
+            }
+          }
+        ),
+        "constellation": (
+          "Gets the constellation of the star.",
+          {},
+          Constellation,
+          (_) => object!.constellation
+        ),
+        "makeCurrent": (
+          "Sets the star as the current star.",
+          {
+            "updateFolder": (
+              "If true, the folder will be updated to the current star.",
+              bool,
+              false
+            )
+          },
+          null,
+          (lua) async {
+            bool updateFolder = false;
+            if (lua.state.isBoolean(1)) {
+              updateFolder = await lua.getFromTop<bool>();
+            }
+            object!.makeCurrent();
+            if (updateFolder) {
+              await object!.constellation.updateToCurrent();
+            }
+          }
+        ),
+        "getArchive": (
+          "Gets the archive of the star.",
+          {},
+          SArchive,
+          (lua) async => await object!.archive
+        ),
+        "trim": (
+          "Trims this star and all of its descendants.",
+          {},
+          null,
+          (state) async => await object!.trim()
+        ),
+        "grow": (
+          "Grows a new star from this star.",
+          {"name": ("The name of the new star.", String, true)},
+          Star,
+          (state) async => await object!.grow(await state.getFromTop<String>())
+        ),
+        "isRoot": (
+          "Checks if the star is the root star.",
+          {},
+          bool,
+          (_) => object!.isRoot
+        ),
+        "isCurrent": (
+          "Checks if the star is the current star.",
+          {},
+          bool,
+          (_) => object!.isCurrent
+        ),
+        "isSingleChild": (
+          "Checks if the star is a single child.",
+          {},
+          bool,
+          (_) => object!.isSingleChild
+        ),
+        "forward": (
+          "Gets the star forward to this star X times.",
+          {
+            "x": (
+              "The number of stars to move forward. Defaults to 1.",
+              int,
+              false
+            )
+          },
+          Star,
+          (state) async {
+            int x = await state.getFromTop<int?>() ?? 1;
+            Star star = object!;
+            while (x > 0) {
+              star = star.getChild<Star>() ?? star;
+              x--;
+            }
+            return star;
+          }
+        ),
+        "backward": (
+          "Gets the star backward to this star X times.",
+          {
+            "x": (
+              "The number of stars to move backward. Defaults to 1.",
+              int,
+              false
+            )
+          },
+          Star,
+          (state) async {
+            int x = await state.getFromTop<int?>() ?? 1;
+            Star star = object!;
+            while (x > 0) {
+              star = star.getParent<Star>() ?? star;
+              x--;
+            }
+            return star;
+          }
+        ),
+        "above": (
+          "Gets the star above this star X times.",
+          {"x": ("The number of stars to move up. Defaults to 1.", int, false)},
+          Star,
+          (state) async {
+            int x = await state.getFromTop<int?>() ?? 1;
+            Star star = object!;
+            while (x > 0) {
+              star = star.getSiblingAbove<Star>() ?? star;
+              x--;
+            }
+            return star;
+          }
+        ),
+        "below": (
+          "Gets the star below this star X times.",
+          {
+            "x": (
+              "The number of stars to move down. Defaults to 1.",
+              int,
+              false
+            )
+          },
+          Star,
+          (state) async {
+            int x = await state.getFromTop<int?>() ?? 1;
+            Star star = object!;
+            while (x > 0) {
+              star = star.getSiblingBelow<Star>() ?? star;
+              x--;
+            }
+            return star;
+          }
+        ),
+        "next": (
+          "Gets the Xth child of the star.",
+          {"x": ("The Xth of the child to get.", int, true)},
+          Star,
+          (state) async {
+            int x = await state.getFromTop<int>();
+            List<Star?> stars = object!.getChildren<Star>();
+            Star star = stars[(x - 1) % stars.length] ?? object!;
+            return star;
+          }
+        ),
       };
 }

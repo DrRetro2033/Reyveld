@@ -31,7 +31,6 @@ class SArchiveCreator extends SRootCreator<SArchive> {
         await archive.addFile(file.path.relativeTo(path), file.openRead());
       }
     }
-    kit.addRoot(archive);
     return archive;
   }
 

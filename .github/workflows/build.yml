@@ -16,8 +16,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-      - name: Setup Submodules
-        run: git submodule init && git submodule update
       - name: Setup Dart SDK
         uses: dart-lang/setup-dart@v1.6.5
       - name: Fetch Dependencies
@@ -27,28 +25,6 @@ jobs:
           mkdir ./scripts/installers/${{ matrix.platform }}/lib"
       - name: Build Executable
         run: dart compile exe --define=DEBUG=false ./lib/main.dart --target-os ${{ matrix.platform }} -o build/releases/${{ matrix.platform }}/${{ matrix.output}}
-      - name: Restore Libraries
-        id: libraries-restore
-        uses: actions/cache/restore@v4
-        with:
-          path: build/releases/${{ matrix.platform }}/lib
-          key: ${{ runner.os}}-libs-${{ hashFiles('./src/') }}
-      - name: Build Squirrel
-        if: steps.libraries-restore.outputs.cache-hit != 'true'
-        uses: threeal/cmake-action@v2.1.0
-        with:
-          source-dir: ./src/squirrel3/
-          build-dir: ./src/squirrel3/
-      - name: Moving Libraries
-        if: steps.libraries-restore.outputs.cache-hit != 'true'
-        run: ${{ matrix.add-libraries-command }}
-      - name: Cache Libraries
-        id: cache-libs
-        if: steps.libraries-restore.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: build/releases/${{ matrix.platform }}/lib
-          key: ${{steps.libraries-restore.outputs.cache-primary-key}}
       - name: Moving Installers
         run: ${{ matrix.add-install-command }}
       - name: Upload Artifact
@@ -64,12 +40,10 @@ jobs:
           - os: ubuntu-latest
             platform: linux
             output: arceus.elf
-            add-libraries-command: "cp --force ./src/squirrel3/lib/libsquirrel.so ./scripts/installers/linux/lib/squirrel.so"
             add-install-command: "cp -r ./scripts/installers/linux/ ./build/releases/"
           - os: windows-latest
             platform: windows
             output: arceus.exe
-            add-libraries-command: "Copy-Item -Path ./src/squirrel3/bin/Debug/squirrel.dll -Destination ./scripts/installers/windows/lib/squirrel.dll -Force"
             add-install-command: "Copy-Item -Recurse -Path ./scripts/installers/windows/ -Destination ./build/releases/ -Force"
           # - os: macos-latest
           #   platform: macos

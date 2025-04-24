@@ -10,12 +10,10 @@ import 'package:async/async.dart';
 
 part 'file_system.g.dart';
 part 'file_system.creators.dart';
+part 'file_system.interfaces.dart';
 
 @SGen("archive")
 class SArchive extends SRoot {
-  @override
-  String get displayName => "Archive";
-
   SArchive(super._kit, super._node);
 
   /// Returns the date the archive was archived/created on.
@@ -129,6 +127,22 @@ class SArchive extends SRoot {
       await file.extract(path, temp: temp);
     }
   }
+
+  Future<bool> isDifferent(SArchive other) async {
+    final files = getFiles();
+    final otherFiles = other.getFiles();
+    if (getFiles().map((e) => e!.path) !=
+        other.getFiles().map((e) => e!.path)) {
+      return true;
+    }
+    for (int i = 0; i < files.length; i++) {
+      final file = files[i]!;
+      final otherFile = otherFiles[i]!;
+      final diffStream = file.streamDiff(await otherFile.bytes);
+      if (await diffStream.any((e) => e.any((e) => e != 0))) return true;
+    }
+    return false;
+  }
 }
 
 extension SArchiveExtensions on SKit {
@@ -142,35 +156,28 @@ extension SArchiveExtensions on SKit {
 /// Contains the path of the file, and its data in the form of compressed base64.
 @SGen("file")
 class SFile extends SObject {
-  @override
-  String get displayName => path;
   static const chunkSize = 65536;
   SFile(super._kit, super._node);
 
   /// Returns the path of the file.
   String get path => get("path")!;
 
-  /// Returns the data of the file as a list of bytes. (NOT RECOMMENDED TO USE. USE [bytes] INSTEAD)
-  List<int> get bytesSync {
-    return gzip.decode(base64Decode(innerText!));
-  }
-
   /// Returns a stream of the bytes stored, uncompressing along the way.
-  FutureOr<Stream<List<int>>> get bytes =>
-      Stream.fromIterable(base64Decode(innerText!))
-          .chunk(chunkSize)
-          .transform(gzip.decoder)
-          .expand((e) => e)
-          .chunk(chunkSize);
+  FutureOr<Stream<List<int>>> get bytes => Stream.fromIterable(
+          base64Decode(innerText!))
+      .chunk(chunkSize)
+      .transform(gzip.decoder)
+      .expand((e) =>
+          e) // Rechunks the stream to make sure each chunk is sized correctly.
+      .chunk(chunkSize);
+
+  Future<Stream<int>> get singleBytes async => (await bytes).expand((e) => e);
 
   /// Attempts to get the length of the file. If it fails, then it will return a 0;
   Future<int> get length async => (await bytes)
       .map<int>((chunk) => chunk.length)
       .reduce((a, b) => a + b)
       .catchError((e) => 0);
-
-  /// Returns the data of the file as a string. (will be used for scripting in the future.)
-  String get textSync => utf8.decode(bytesSync);
 
   /// Returns a stream of the difference between this file and a data stream.
   Stream<List<int>> streamDiff(Stream<List<int>> other) async* {
@@ -193,6 +200,52 @@ class SFile extends SObject {
     }
   }
 
+  Future<Stream<int>> getRange(int start, int end) async =>
+      (await singleBytes).skip(start).take(end);
+
+  Future<int> getU8(int index) async {
+    return getRange(index, index + 1).then((e) => e.first);
+  }
+
+  Future<int> get8(int index) async {
+    final u = await getU8(index);
+    final uf = (u & ~1);
+    return u & 1 == 0 ? uf : -uf;
+  }
+
+  Future<int> getU16(int index) async {
+    return getRange(index, index + 2)
+        .then((e) => e.fold(0, (a, b) => a << 8 | b));
+  }
+
+  Future<int> get16(int index) async {
+    final u = await getU16(index);
+    final uf = u >>> 1;
+    return u & 1 == 0 ? uf : -uf;
+  }
+
+  Future<int> getU32(int index) async {
+    return getRange(index, index + 4)
+        .then((e) => e.fold(0, (a, b) => a << 8 | b));
+  }
+
+  Future<int> get32(int index) async {
+    final u = await getU32(index);
+    final uf = u >>> 1;
+    return u & 1 == 0 ? uf : -uf;
+  }
+
+  Future<int> getU64(int index) async {
+    return getRange(index, index + 8)
+        .then((e) => e.fold(0, (a, b) => a << 8 | b));
+  }
+
+  Future<int> get64(int index) async {
+    final u = await getU64(index);
+    final uf = u >>> 1;
+    return u & 1 == 0 ? uf : -uf;
+  }
+
   /// Extracts the file to the specified folder.
   /// If [temp] is true, then the file will be extracted as a temporary file with a `.tmp` extension.
   Future<void> extract(String folderPath, {bool temp = false}) async {
@@ -209,8 +262,6 @@ class SFile extends SObject {
 /// A reference to an [SArchive].
 @SGen("rarchive")
 class SRArchive extends SIndent<SArchive> {
-  @override
-  String get displayName => "Archive Reference";
   SRArchive(super.kit, super.node);
 
   @override

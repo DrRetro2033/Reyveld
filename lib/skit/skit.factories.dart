@@ -12,13 +12,11 @@ final Set<SFactory> sobjectFactories = {
   SFileFactory(),
   SRArchiveFactory(),
   SRFileFactory(),
-  ArceusSettingsFactory(),
   DescriptionFactory(),
-  AddonFactory(),
 };
 
 /// Get the factory for the given [SObject] subclass.
-/// Returns null if not found.
+/// Throws an exception if no factory is found.
 SFactory<T> getSFactory<T extends SObject>([String? tag]) {
   final factories = sobjectFactories.whereType<SFactory<T>?>();
   SFactory<T>? factory = factories.firstOrNull;
@@ -26,8 +24,17 @@ SFactory<T> getSFactory<T extends SObject>([String? tag]) {
     factory = factories.firstWhere((e) => e!.tag == tag, orElse: () => null);
   }
   if (factory == null) {
-    throw Exception(
-        "No factory found for $T with tag '$tag'! Please make sure you added the factory for this tag in serekit.factories.dart.");
+    Arceus.talker.critical(
+        "No factory found for $T with tag '$tag'! Falling back to generic SFactory. Please make sure you added a factory for this tag in serekit.factories.dart for correct behavior.");
+    factory = GenericFactory() as SFactory<T>;
   }
   return factory;
+}
+
+class GenericFactory extends SFactory<SObject> {
+  @override
+  SObject load(SKit kit, XmlNode node) => SObject(kit, node);
+
+  @override
+  String get tag => "";
 }

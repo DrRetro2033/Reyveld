@@ -10,10 +10,7 @@ part 'constellation.g.dart';
 
 @SGen("const")
 class Constellation extends SObject {
-  @override
-  String get displayName => name;
   Constellation(super._kit, super._node);
-
   String get name => get("name") ?? "Constellation";
 
   String get path => get("path")!.fixPath();
@@ -32,6 +29,7 @@ class Constellation extends SObject {
   /// This is used when creating a new constellation.
   Future<Star> createRootStar() async {
     final archive = await SArchiveCreator.archiveFolder(kit, path);
+    kit.addRoot(archive);
     final rootStar =
         await StarCreator("Initial Star", newStarHash(), archive.hash)
             .create(kit);
@@ -78,92 +76,21 @@ class Constellation extends SObject {
     return generateUniqueHash(hashes);
   }
 
-  Star getStarAt(String commandString) {
-    List<String> commands = commandString.split(",");
-    Star current = getCurrentStar();
-    for (String command in commands) {
-      command = command.trim(); // Remove any whitespace.
-      if (command == "recent") {
-        // Jump to most recent star.
-        current = getMostRecentStar();
-      } else if (command == "root") {
-        // Jump to root star.
-        current = root;
-      } else if (command.startsWith("forward")) {
-        // Jump forward by X stars.
-        final x = command.replaceFirst("forward", "");
-        int i = int.tryParse(x) ?? 1;
-        Star star = current;
-        while (i > 0) {
-          star = star.getChild<Star>() ?? current;
-          i--;
-        }
-        current = star;
-      } else if (command.startsWith("back")) {
-        // Jump back by X stars.
-        final x = command.replaceFirst("back", "");
-        int? i = int.tryParse(x.trim()) ?? 1;
-        Star star = current;
-        while (i! > 0) {
-          star = star.getParent<Star>() ?? root;
-          i--;
-        }
-        current = star;
-      } else if (command.startsWith("above")) {
-        // Jump above
-        final x = command.replaceFirst("above", "");
-        int i = int.tryParse(x) ?? 1;
-        while (i > 0) {
-          Star? x = current;
-          Star? sibling;
-          while (sibling == null) {
-            if (x == null) {
-              break;
-            }
-            sibling = x.getSiblingAbove<Star>();
-            x = x.getParent<Star>();
-          }
-          current = sibling ?? current;
-          i--;
-        }
-      } else if (command.startsWith("below")) {
-        // Jump below
-        final x = command.replaceFirst("below", "");
-        int i = int.tryParse(x) ?? 1;
-        while (i > 0) {
-          Star? x = current;
-          Star? sibling;
-          while (sibling == null) {
-            if (x == null) {
-              break;
-            }
-            sibling = x.getSiblingBelow<Star>();
-            x = x.getSiblingBelow<Star>();
-          }
-          current = sibling ?? current;
-          i--;
-        }
-      } else if (command.startsWith("next")) {
-        // Jump to next child
-        final x = command.replaceFirst("next", "");
-        int? i = int.tryParse(x) ?? 1;
-        final children = current.getChildren<Star>();
-        current = children[i % children.length] ?? current;
-      } else if (command.startsWith("depth")) {
-        // Jump to depth
-        final x = command.replaceFirst("depth", "");
-        int? i = int.tryParse(x) ?? 1;
-        current =
-            current.getDescendants<Star>(filter: (e) => e.getDepth() == i)[0] ??
-                current.getDescendants<Star>().last ??
-                current;
-      }
-    }
-    return current;
-  }
-
   Future<bool> checkForChanges() {
     return getCurrentStar().checkForChanges();
+  }
+
+  Future<void> updateToCurrent() async {
+    return await getCurrentStar().archive.then((e) async => e!.extract(path));
+  }
+
+  Future<SArchive> getUnsavedChanges() async {
+    final archive = await SArchiveCreator.archiveFolder(kit, path);
+    if (!await archive
+        .isDifferent(await getCurrentStar().archive.then((e) async => e!))) {
+      return await getCurrentStar().archive.then((e) async => e!);
+    }
+    return archive;
   }
 }
 
@@ -172,6 +99,56 @@ extension ConstellationExtension on SKit {
     final header = await getHeader();
     return header?.getChild<Constellation>();
   }
+}
+
+class ConstellationInterface extends SObjectInterface<Constellation> {
+  @override
+  get className => "Constellation";
+
+  @override
+  get description => """
+A collection of Stars, with a root star, and a current star.
+""";
+
+  @override
+  get exports => {
+        "name": (
+          "Gets the name of the constellation.",
+          {},
+          String,
+          (_) => object?.name
+        ),
+        "path": (
+          "Gets the path of the constellation.",
+          {},
+          String,
+          (_) => object?.path
+        ),
+        "current": (
+          "Gets the current star of the constellation.",
+          {},
+          Star,
+          (_) => object?.getCurrentStar()
+        ),
+        "root": (
+          "Gets the root star of the constellation.",
+          {},
+          Star,
+          (_) => object?.root
+        ),
+        "recent": (
+          "Gets the most recent star of the constellation.",
+          {},
+          Star,
+          (_) => object?.getMostRecentStar()
+        ),
+        "unsaved": (
+          "Gets an archive that contains all of the unsaved changes in the constellation.",
+          {},
+          SArchive,
+          (_) => object?.getUnsavedChanges()
+        )
+      };
 }
 
 class ConstellationCreator extends SCreator<Constellation> {

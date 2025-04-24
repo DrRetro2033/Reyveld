@@ -1,9 +1,4 @@
-import 'dart:ffi';
 import 'dart:io';
-
-import 'package:args/command_runner.dart';
-import 'package:ffi/ffi.dart';
-
 // import 'package:arceus/scripting/addon.dart';
 
 /// # `extension` Compression
@@ -90,20 +85,6 @@ extension Pathing on String {
   }
 }
 
-extension CNativeString on String {
-  Pointer<Char> toCharPointer() {
-    var nativeUtf8 = toNativeUtf8();
-    var pointer = nativeUtf8.cast<Char>();
-    return pointer;
-  }
-}
-
-extension NativeString on Pointer<Char> {
-  String toDartString() {
-    return cast<Utf8>().toDartString();
-  }
-}
-
 /// # `extension` DifferenceChecking
 /// ## Extension for the `ByteData` class.
 /// Used to check if two `ByteData` objects are different.
@@ -134,85 +115,5 @@ extension ChunkStream on Stream<int> {
     if (buffer.isNotEmpty) {
       yield buffer;
     }
-  }
-}
-
-extension CommandGlobalCommands on Command {
-  String findOption<T>(String name) {
-    String? value = argResults!.option(name) ?? globalResults!.option(name);
-    if (value == null) {
-      throw ArgumentError.notNull(name);
-    }
-    return value;
-  }
-}
-
-enum DateSize { regular, condenced }
-
-enum DateFormat { dayMonthYear, monthDayYear }
-
-enum TimeFormat { h12, h24 }
-
-enum Months {
-  January,
-  February,
-  March,
-  April,
-  May,
-  June,
-  July,
-  August,
-  September,
-  October,
-  November,
-  December
-}
-
-extension FormatDateAndTime on DateTime {
-  String formatTime(TimeFormat timeFormat) {
-    switch (timeFormat) {
-      case TimeFormat.h12:
-        return "${hour % 12 == 0 ? 12 : hour % 12}:${minute.toString().padLeft(2, '0')} ${hour >= 12 ? 'PM' : 'AM'}";
-      case TimeFormat.h24:
-        return "$hour:${minute.toString().padLeft(2, '0')}";
-    }
-  }
-
-  String formatDate(DateSize dateSize, DateFormat dateFormat) {
-    switch (dateSize) {
-      case DateSize.regular:
-
-        /// Regular
-        final newDay = _formatDay(day);
-        final newMonth = Months.values[month - 1].name;
-        switch (dateFormat) {
-          case DateFormat.dayMonthYear:
-            return "$newDay $newMonth, $year";
-          case DateFormat.monthDayYear:
-            return "$newMonth $newDay, $year";
-        }
-      case DateSize.condenced:
-
-        /// Condenced
-        switch (dateFormat) {
-          case DateFormat.dayMonthYear:
-            return "$day/$month/$year";
-          case DateFormat.monthDayYear:
-            return "$month/$day/$year";
-        }
-    }
-  }
-
-  String _formatDay(int day) {
-    if (day == 1) {
-      return "1st";
-    }
-    if (day == 2) {
-      return "2nd";
-    }
-    if (day == 3) {
-      return "3rd";
-    }
-    return "${day}th";
   }
 }
