@@ -44,11 +44,6 @@ Future<void> main(List<String> args) async {
         }
       }
 
-      if (request.session.isNew) {
-        sessions[request.session.id] = Lua();
-        await sessions[request.session.id]!.init();
-      }
-
       /// If the requested version is the same as this program's version, continue as normal.
       switch (requestUrl) {
         case "heatbeat":
@@ -63,8 +58,10 @@ Future<void> main(List<String> args) async {
           await request.response.close();
         default:
           if (WebSocketTransformer.isUpgradeRequest(request)) {
+            sessions[request.session.id] = Lua();
+            await sessions[request.session.id]!.init();
             final socket = await WebSocketTransformer.upgrade(request);
-            print('Client connected');
+            print('Client (${request.session.id}) connected.');
             Arceus.talker.info("Client (${request.session.id}) connected.");
             socket.listen((data) async {
               Arceus.talker.info('Received: $data');
@@ -78,10 +75,14 @@ Future<void> main(List<String> args) async {
                 socket.add("ERROR:$e");
               }
             }, onDone: () {
-              print('Client disconnected');
-              Arceus.talker.info("Client disconnected.");
+              print('Client (${request.session.id}) disconnected');
+              Arceus.talker
+                  .info("Client (${request.session.id}) disconnected.");
               socket.close();
-              server.close();
+              sessions.remove(request.session.id);
+              if (sessions.isEmpty) {
+                server.close();
+              }
               return;
             }, onError: (error, stack) {
               Arceus.talker.error("Error", error, stack);

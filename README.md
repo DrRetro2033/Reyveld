@@ -16,7 +16,7 @@
 
 # What is Arceus?
 
-Arceus is a WebSocket based server that uses Lua 5.3 to give developers the power of version control, hex editing, and more packed into a tiny package.
+Arceus is a WebSocket based server that uses Lua 5.3 to give developers the power of version control, hex editing, and more packed into a tiny and simple package.
 
 ```lua
 local skit = SKit.create("...", {
@@ -29,7 +29,7 @@ skit.save()
 
 ## Branch Off Into Different Timelines 🌌
 
-With Arceus, you can create branches of a folder, so multiple versions can exist simultaneously. So secondary playthroughs (or projects) can branch off from a initial instance, without need to restart from the beginning!
+With Arceus, you can create branches of a folder, so multiple versions can exist simultaneously. So secondary playthroughs (or projects) can branch off from an initial instance, without need to restart from the beginning!
 
 ```lua
 local skit = SKit.open("...")
