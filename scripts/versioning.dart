@@ -7,8 +7,6 @@ Future<void> main(List<String> args) async {
   final versionFile = File("$folder/version.txt");
   final appFile = File("$folder/lib/version.dart");
   final version = Version.parse(await versionFile.readAsString());
-  // print(await appFile.exists());
-  // print("Current version is $version");
   if (args.length > 1) {
     final command = args[1];
     Version newVersion = version;
@@ -87,7 +85,3 @@ echo %APP_NAME% installed successfully!
 pause
 """);
 }
-
-// REM Add the install directory to the PATH if it's not already present
-// for %%i in ("%PATH:;=" "%") do if "%%~i"=="%INSTALL_DIR%" goto :end
-// setx PATH "%PATH%;%INSTALL_DIR%"

@@ -23,45 +23,10 @@ extension Pathing on String {
     return path;
   }
 
-  String fixFilename() {
-    final regex = RegExp(r"\w*");
-    return regex
-        .allMatches(this)
-        .where((e) => e.group(0) != null && e.group(0)!.isNotEmpty)
-        .map((e) => e.group(0))
-        .join(" ");
-  }
-
   String relativeTo(String relativeTo) {
     final formattedPath = fixPath();
     final formattedRelativeTo = relativeTo.fixPath();
     return formattedPath.replaceFirst(formattedRelativeTo, "").fixPath();
-  }
-
-  /// # `String` fromHexToCodes()
-  /// ## Converts a hex string to character codes.
-  /// This is used to convert a readable hex string to a character codes, to save space in files.
-  String fromHexToCodes() {
-    if (length % 2 == 0) {
-      String finalString = "";
-      for (int i = 0; i < length; i += 2) {
-        finalString +=
-            String.fromCharCode(int.parse(substring(i, i + 2), radix: 16));
-      }
-      return finalString;
-    }
-    throw Exception("Invalid hex string.");
-  }
-
-  /// # `String` fromCodesToHex()
-  /// ## Converts character codes to a hex string.
-  /// This is used to convert character codes to a readable hex string, to decrypt Strings from `fromHexToCodes()`.
-  String fromCodesToHex() {
-    String finalString = "";
-    for (int i = 0; i < length; ++i) {
-      finalString += codeUnitAt(i).toRadixString(16).padLeft(2, "0");
-    }
-    return finalString;
   }
 
   /// # `String` getFilename()
@@ -74,31 +39,6 @@ extension Pathing on String {
     } else {
       return path.split("/").last.split(".").first;
     }
-  }
-
-  /// # `String` getExtension()
-  /// ## Returns the extension of the string.
-  /// The extension will be the same for both internal and external paths.
-  String getExtension() {
-    String path = fixPath();
-    return path.split(".").sublist(1).join(".");
-  }
-}
-
-/// # `extension` DifferenceChecking
-/// ## Extension for the `ByteData` class.
-/// Used to check if two `ByteData` objects are different.
-extension DifferenceChecking on List<int> {
-  bool equals(List<int> other) {
-    if (other.length != length) {
-      return false;
-    }
-    for (int i = 0; i < length; i++) {
-      if (this[i] != other[i]) {
-        return false;
-      }
-    }
-    return true;
   }
 }
 
