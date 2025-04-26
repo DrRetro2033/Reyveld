@@ -129,6 +129,26 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
           int,
           (state) async => object!.get64(await state.getFromTop<int>())
         ),
+        "getS16": (
+          "Returns a string at the specified index and length.",
+          {
+            "index": ("The index to get the string at.", int, true),
+            "length": ("The length of the string.", int, true),
+            "stopAtNull": (
+              "Whether to stop at the first null character while getting the string.",
+              bool,
+              false
+            ),
+          },
+          String,
+          (state) async {
+            final stopAtNull = await state.getFromTop<bool?>(optional: true);
+            final length = await state.getFromTop<int>();
+            final index = await state.getFromTop<int>();
+            return await object!
+                .getStr16(index, length, stopAtNull: stopAtNull ?? false);
+          }
+        ),
       };
 }
 

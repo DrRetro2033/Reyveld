@@ -201,7 +201,7 @@ class SFile extends SObject {
   }
 
   Future<Stream<int>> getRange(int start, int end) async =>
-      (await singleBytes).skip(start).take(end);
+      (await singleBytes).defaultIfEmpty(0).skip(start).take(end - start);
 
   Future<int> getU8(int index) async {
     return getRange(index, index + 1).then((e) => e.first);
@@ -213,37 +213,54 @@ class SFile extends SObject {
     return u & 1 == 0 ? uf : -uf;
   }
 
+  /// Merges two bytes into one.
+  int _mergeInt(a, b) => (a << 8) | b;
+
+  /// Forms a number from a stream of bytes.
+  /// Reverses the stream before merging.
+  Future<int> _formNumber(Stream<int> stream) async {
+    return stream.toList().then((e) => e.reversed.reduce(_mergeInt));
+  }
+
   Future<int> getU16(int index) async {
-    return getRange(index, index + 2)
-        .then((e) => e.fold(0, (a, b) => a << 8 | b));
+    return _formNumber(await getRange(index, index + 2));
   }
 
   Future<int> get16(int index) async {
     final u = await getU16(index);
-    final uf = u >>> 1;
+    final uf = (u & ~1);
     return u & 1 == 0 ? uf : -uf;
   }
 
   Future<int> getU32(int index) async {
-    return getRange(index, index + 4)
-        .then((e) => e.fold(0, (a, b) => a << 8 | b));
+    return _formNumber(await getRange(index, index + 4));
   }
 
   Future<int> get32(int index) async {
     final u = await getU32(index);
-    final uf = u >>> 1;
+    final uf = (u & ~1);
     return u & 1 == 0 ? uf : -uf;
   }
 
   Future<int> getU64(int index) async {
-    return getRange(index, index + 8)
-        .then((e) => e.fold(0, (a, b) => a << 8 | b));
+    return _formNumber(await getRange(index, index + 8));
   }
 
   Future<int> get64(int index) async {
     final u = await getU64(index);
-    final uf = u >>> 1;
+    final uf = (u & ~1);
     return u & 1 == 0 ? uf : -uf;
+  }
+
+  Future<String> getStr16(int index, int length,
+      {bool stopAtNull = false}) async {
+    final bytes = await getRange(index, index + (length * 2));
+    final buffer = StringBuffer();
+    await for (final char in bytes.chunk(2)) {
+      if (stopAtNull && char[0] == 0 && char[1] == 0) break;
+      buffer.writeCharCode(_mergeInt(char[1], char[0]));
+    }
+    return buffer.toString();
   }
 
   /// Extracts the file to the specified folder.

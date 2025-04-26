@@ -213,7 +213,7 @@ class SKit {
   /// This will save the kit header and all of the archives to the kit file.
   /// The header is saved to the top of the file, and the archives are saved to the bottom of the file.
   /// This will save all of the changes to the file.
-  Future<void> save() async {
+  Future<void> save({String? encryptKey}) async {
     final stopwatch = Stopwatch();
     stopwatch.start();
     final temp = File("$path.tmp"); // initialize the temp file object.
