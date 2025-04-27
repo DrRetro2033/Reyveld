@@ -193,7 +193,14 @@ class Lua {
   }
 
   String _compile([String? extra]) {
-    return [..._scripts.map((e) => e.code), extra].join("\n");
+    final hexExp = RegExp(r"0x([0-9A-f]+)");
+    String compiled = [..._scripts.map((e) => e.code), extra].join("\n");
+    while (hexExp.hasMatch(compiled)) {
+      final match = hexExp.firstMatch(compiled)!;
+      compiled = compiled.replaceRange(match.start, match.end,
+          int.parse(match.group(1)!, radix: 16).toString());
+    }
+    return compiled;
   }
 
   Future<dynamic> run([String? extra]) async {

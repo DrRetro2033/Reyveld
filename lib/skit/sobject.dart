@@ -13,18 +13,20 @@ part 'sindent.dart';
 
 /// This file consists of three core elements for both creating and loading [SObject]s:
 /// - The [SObject] itself.
-/// - The [SFactory] of the [SObject] used for loading (read description for more info).
-/// - The [SCreator] of the [SObject] used for creating (read description for more info).
-
+/// - The [SFactory] of the [SObject] used for loading.
+/// - The [SCreator] of the [SObject] used for creating.
+///
 /// A object that wraps around a [XmlNode] and provides a simple API to access its attributes, children, and more.
-/// SObjects must have a [SFactory] object inside the [_sobjectFactories] (inside serekit.g.dart) set in order to be parsed from xml.
+/// SObjects must have a [SFactory] object inside [_sobjectFactories] (inside serekit.g.dart) in order to be parsed from xml properly.
+/// If there is no [SFactory] object found, then the [GenericFactory] will be used, which is not recommended as it will not have strict,
+/// predetermined behavior.
 class SObject {
   final XmlNode _node;
   final SKit kit;
 
   SObject(this.kit, this._node);
 
-  /// Sets a attribute of the xml node.
+  /// Sets an attribute of the xml node.
   /// Should be used in a setter method:
   /// ```dart
   /// set name(String value) => set("name", value);
@@ -33,7 +35,7 @@ class SObject {
     _node.setAttribute(key, value.toString());
   }
 
-  /// Gets a attribute of the xml node.
+  /// Gets an attribute of the xml node.
   /// Should be used in a getter method:
   /// ```dart
   /// String get name => get("name");

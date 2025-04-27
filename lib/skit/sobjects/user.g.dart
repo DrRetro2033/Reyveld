@@ -1,17 +1,17 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'description.dart';
+part of 'user.dart';
 
 // **************************************************************************
 // SGenGenerator
 // **************************************************************************
 
-class SDescriptionFactory extends SFactory<SDescription> {
-  SDescriptionFactory();
+class SUserFactory extends SFactory<SUser> {
+  SUserFactory();
 
   @override
-  SDescription load(SKit kit, XmlNode node) => SDescription(kit, node);
+  SUser load(SKit kit, XmlNode node) => SUser(kit, node);
 
   @override
-  String get tag => "descr";
+  String get tag => "user";
 }

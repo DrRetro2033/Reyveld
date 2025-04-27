@@ -226,31 +226,19 @@ class SFile extends SObject {
     return _formNumber(await getRange(index, index + 2));
   }
 
-  Future<int> get16(int index) async {
-    final u = await getU16(index);
-    final uf = (u & ~1);
-    return u & 1 == 0 ? uf : -uf;
-  }
+  Future<int> get16(int index) async => (await getU16(index)).toSigned(16);
 
   Future<int> getU32(int index) async {
     return _formNumber(await getRange(index, index + 4));
   }
 
-  Future<int> get32(int index) async {
-    final u = await getU32(index);
-    final uf = (u & ~1);
-    return u & 1 == 0 ? uf : -uf;
-  }
+  Future<int> get32(int index) async => (await getU32(index)).toSigned(32);
 
   Future<int> getU64(int index) async {
     return _formNumber(await getRange(index, index + 8));
   }
 
-  Future<int> get64(int index) async {
-    final u = await getU64(index);
-    final uf = (u & ~1);
-    return u & 1 == 0 ? uf : -uf;
-  }
+  Future<int> get64(int index) async => (await getU64(index)).toSigned(64);
 
   Future<String> getStr16(int index, int length,
       {bool stopAtNull = false}) async {
