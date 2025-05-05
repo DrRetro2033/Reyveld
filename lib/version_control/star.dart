@@ -276,5 +276,15 @@ A star is a point in time that represents a snapshot of an folder.
             return star;
           }
         ),
+        "recent": (
+          "Gets the most recent decendant of the star.",
+          {},
+          Star,
+          (_) {
+            final stars = object!.getDescendants<Star>();
+            stars.sort((a, b) => a!.createdOn.compareTo(b!.createdOn));
+            return stars.last ?? object!;
+          }
+        )
       };
 }

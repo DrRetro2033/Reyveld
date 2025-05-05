@@ -2,6 +2,8 @@ import 'package:arceus/skit/sobject.dart';
 
 part 'user.g.dart';
 
+/// Repersents a user in a kit file.
+/// A user can be created to associate a [SObject] with a specific user, allowing for multi-user support.
 @SGen("user")
 class SUser extends SRoot {
   String get name => get("name") ?? "";

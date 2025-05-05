@@ -5,7 +5,9 @@ class SKitInterface extends SInterface<SKit> {
   get className => "SKit";
 
   @override
-  get description => """""";
+  get description => """
+SKits are the bread and butter of Arceus. They store a SHeader and any number of SRoots in a single file.
+""";
 
   @override
   get extras => """
@@ -48,6 +50,20 @@ SKitType = {
           (state) async {
             final header = await object!.getHeader();
             return header!.lastModified.toIso8601String();
+          }
+        ),
+        "key": (
+          "Sets and Gets the encryption key of the SKit.",
+          {
+            "key": ("The encryption key.", String, false),
+          },
+          String,
+          (state) async {
+            final key = await state.getFromTop<String?>(optional: true);
+            if (key != null) {
+              object!.key = key;
+            }
+            return object!.key;
           }
         ),
         "getConstellation": (
@@ -93,11 +109,19 @@ SKitType = {
   get statics => {
         "open": (
           "Opens an SKit file.",
-          {"path": ("The path to the SKit file.", String, true)},
+          {
+            "path": ("The path to the SKit file.", String, true),
+            "overrides": ("Some more options.", Map, false),
+          },
           SKit,
-          (state) async {
-            final path = await state.getFromTop<String>();
-            return await SKit.open(path);
+          (lua) async {
+            String? encryptKey;
+            if (lua.state.getTop() == 2 && lua.state.isTable(2)) {
+              final table = await lua.getFromTop<Map<String, dynamic>>();
+              encryptKey = table.containsKey("key") ? table["key"] : null;
+            }
+            final path = await lua.getFromTop<String>();
+            return await SKit.open(path, encryptKey: encryptKey ?? "");
           }
         ),
         "exists": (
@@ -119,6 +143,7 @@ SKitType = {
           (lua) async {
             bool? overwrite;
             SKitType? type;
+            String? encryptKey;
             if (lua.state.getTop() == 2 && lua.state.isTable(2)) {
               final table = await lua.getFromTop<Map<String, dynamic>>();
               overwrite =
@@ -126,10 +151,11 @@ SKitType = {
               type = table.containsKey("type")
                   ? SKitType.values.firstWhere((e) => e.index == table["type"])
                   : null;
+              encryptKey = table.containsKey("key") ? table["key"] : null;
             }
             final path = await lua.getFromTop<String>();
 
-            final skit = SKit(path);
+            final skit = SKit(path, encryptKey: encryptKey ?? "");
             await skit.create(
                 overwrite: overwrite ?? false,
                 type: type ?? SKitType.unspecified);

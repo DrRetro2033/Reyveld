@@ -12,6 +12,8 @@ part 'file_system.g.dart';
 part 'file_system.creators.dart';
 part 'file_system.interfaces.dart';
 
+/// Represents an archive in a kit file.
+/// An archive is a collection of [SFile]s.
 @SGen("archive")
 class SArchive extends SRoot {
   SArchive(super._kit, super._node);
@@ -46,7 +48,7 @@ class SArchive extends SRoot {
   /// Returns true if there are changes, false if there are none.
   /// This check includes new files, deleted files, and changes in files.
   Future<bool> checkForChanges(String path) async {
-    final stopwatch = Stopwatch();
+    final stopwatch = Stopwatch(); // track process time.
     Arceus.talker.debug("Attempting to check for changes at $path");
     stopwatch.start();
     final files = getFiles();
@@ -156,6 +158,7 @@ extension SArchiveExtensions on SKit {
 /// Contains the path of the file, and its data in the form of compressed base64.
 @SGen("file")
 class SFile extends SObject {
+  /// The chunk size is used to chunk the bytes properly for decompression.
   static const chunkSize = 65536;
   SFile(super._kit, super._node);
 
@@ -171,6 +174,7 @@ class SFile extends SObject {
           e) // Rechunks the stream to make sure each chunk is sized correctly.
       .chunk(chunkSize);
 
+  /// A single byte version of [bytes].
   Future<Stream<int>> get singleBytes async => (await bytes).expand((e) => e);
 
   /// Attempts to get the length of the file. If it fails, then it will return a 0;
@@ -200,20 +204,19 @@ class SFile extends SObject {
     }
   }
 
+  /// Returns a stream of the bytes at the specified range.
   Future<Stream<int>> getRange(int start, int end) async =>
       (await singleBytes).defaultIfEmpty(0).skip(start).take(end - start);
 
   Future<int> getU8(int index) async {
-    return getRange(index, index + 1).then((e) => e.first);
+    return _formNumber(await getRange(index, index + 1));
   }
 
   Future<int> get8(int index) async {
-    final u = await getU8(index);
-    final uf = (u & ~1);
-    return u & 1 == 0 ? uf : -uf;
+    return (await getU8(index)).toSigned(8);
   }
 
-  /// Merges two bytes into one.
+  /// Merges two bytes into one. This is used to form numbers larger than one byte.
   int _mergeInt(a, b) => (a << 8) | b;
 
   /// Forms a number from a stream of bytes.
@@ -275,6 +278,7 @@ class SRArchive extends SIndent<SArchive> {
   }
 }
 
+/// A reference to an [SFile] in a [SArchive].
 @SGen("rfile")
 class SRFile extends SFile {
   String get archiveHash => get("archive")!;

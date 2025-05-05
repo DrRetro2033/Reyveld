@@ -3,6 +3,7 @@ library skit;
 import "dart:async";
 import "dart:convert";
 import "dart:io";
+import "dart:typed_data";
 import "package:arceus/arceus.dart";
 import "package:arceus/extensions.dart";
 import "package:rxdart/rxdart.dart";
@@ -15,6 +16,7 @@ import "package:arceus/version_control/constellation.dart"
 import "package:arceus/version_control/star.dart" show StarFactory;
 import 'package:arceus/scripting/sinterface.dart' show SInterface;
 
+import 'package:encrypt/encrypt.dart';
 export "package:arceus/skit/sobject.dart";
 
 part 'skit.factories.dart';
@@ -36,8 +38,9 @@ enum SKitType {
 ///
 /// Every other [SObject] is optional and can be left out.
 class SKit {
-  static Future<SKit> open(String path, {SKitType? type}) async {
-    final kit = SKit(path);
+  static Future<SKit> open(String path,
+      {SKitType? type, String encryptKey = "Arceus"}) async {
+    final kit = SKit(path, encryptKey: encryptKey);
     if (!await kit.exists()) {
       throw Exception("Kit file does not exist!");
     }
@@ -50,7 +53,32 @@ class SKit {
   /// The path to the kit file.
   final String path;
 
-  SKit(String path) : path = path.fixPath();
+  /// This is the current key used to encrypt and decrypt the kit file.
+  String _key;
+
+  /// Used to encrypt the kit file with a new key, while keeping the old key to decrypt when saving a SKit with a new key.
+  String? _newKey;
+
+  /// The key used to encrypt and decrypt the kit file.
+  String get key => _newKey ?? _key;
+  set key(String value) => _newKey = value;
+
+  Key get _decryptKey => Key.fromUtf8(_key.padRight(32, ".").substring(0, 32));
+  Key get _encryptKey =>
+      Key.fromUtf8(_newKey?.padRight(32, ".").substring(0, 32) ??
+          _key.padRight(32, ".").substring(0, 32));
+
+  /// The encrypter and decrypter used to encrypt and decrypt the kit file.
+  /// Separated to decrypt with the current key and encrypt with the new key.
+  Encrypter get _decrypter => Encrypter(Fernet(_decryptKey));
+  Encrypter get _encrypter => Encrypter(Fernet(_encryptKey));
+
+  /// How many bytes are added to the kit file when encrypting it.
+  static const int _encryptionExtraSize = 73;
+
+  SKit(String path, {String encryptKey = ""})
+      : path = path.fixPath(),
+        _key = encryptKey;
 
   /// Returns the [File] of the kit file.
   File get _file => File(path);
@@ -65,14 +93,22 @@ class SKit {
   final Set<SRoot> _loadedRoots = {};
 
   /// This is used to store the deletion requests for any root in the file.
-  /// This is used when loading a [SRoot] into memory is not needed.
   /// To add a deletion request, use [addDeletionRequest].
   final Set<SIndent> _indents = {};
 
-  /// Returns the stream of [_file], decompressing if possible.
-  /// If decompression fails, it will fallback on the raw data of the file.
+  /// Returns the stream of [_file].
   /// Do not use directly, and use [_eventStream] instead.
-  Stream<List<int>> get _byteStream => _file.openRead().transform(gzip.decoder);
+  Stream<List<int>> get _byteStream => _file
+          .openRead()
+          .expand((e) => e)
+          .chunk(SFile.chunkSize + _encryptionExtraSize)
+          .map((e) {
+        final decrypted =
+            _decrypter.decryptBytes(Encrypted(Uint8List.fromList(e)));
+        // Arceus.talker
+        //     .debug("Decrypted ${e.length} bytes to ${decrypted.length} bytes.");
+        return decrypted;
+      }).transform(gzip.decoder);
 
   /// Returns a stream of [XmlEvent]s from the file.
   /// This is used to parse the file data and get the xml events.
@@ -220,7 +256,8 @@ class SKit {
   /// The header is saved to the top of the file, and the archives are saved to the bottom of the file.
   /// This will save all of the changes to the file.
   Future<void> save({String? encryptKey}) async {
-    final stopwatch = Stopwatch();
+    final stopwatch =
+        Stopwatch(); // initialize a stopwatch for checking how long it takes to save.
     stopwatch.start();
     final temp = File("$path.tmp"); // initialize the temp file object.
     if (await temp.exists()) {
@@ -239,11 +276,26 @@ class SKit {
       _streamRoots().map((event) => event.toXmlString())
     ]);
 
-    await tempSink.addStream(
-        stream.map<List<int>>((e) => e.codeUnits).transform(gzip.encoder));
+    await tempSink.addStream(stream
+        .map<List<int>>((e) => e.codeUnits)
+        .transform(gzip.encoder)
+        .expand((e) => e)
+        .chunk(SFile.chunkSize) // Using chunk size in SFile, for consistency.
+        .map((e) {
+      final encrypted = _encrypter.encryptBytes(e);
+      // Arceus.talker.debug(
+      //     "Encrypted ${e.length} bytes to ${encrypted.bytes.length} bytes.");
+      return encrypted.bytes;
+    }));
+    // Flush and Close the sink for the temp file.
     await tempSink.flush();
-    // Close the sink for the temp file.
     await tempSink.close();
+
+    // Replace the old key with the new key.
+    if (_newKey != null) {
+      _key = _newKey!;
+      _newKey = null;
+    }
 
     // Replace the old data in the file with the temp file's data.
     final sink = _file.openWrite();
@@ -266,5 +318,6 @@ class SKit {
   /// This will unload all of the loaded archives, and clear the current kit header.
   void discardChanges() {
     _loadedRoots.clear();
+    _indents.clear();
   }
 }

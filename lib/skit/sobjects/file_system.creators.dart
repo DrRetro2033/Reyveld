@@ -1,5 +1,6 @@
 part of 'file_system.dart';
 
+/// Creates [SArchive]s.
 class SArchiveCreator extends SRootCreator<SArchive> {
   SArchiveCreator();
 
@@ -38,6 +39,7 @@ class SArchiveCreator extends SRootCreator<SArchive> {
   get creator => (builder) {};
 }
 
+/// Creates [SFile]s.
 class SFileCreator extends SCreator<SFile> {
   final String path;
   final Stream<List<int>> stream;
@@ -58,6 +60,7 @@ class SFileCreator extends SCreator<SFile> {
       };
 }
 
+/// Creates [SRFile]s.
 class SRFileCreator extends SCreator<SRFile> {
   final String archiveHash;
   final String filePath;
@@ -70,4 +73,5 @@ class SRFileCreator extends SCreator<SRFile> {
       };
 }
 
+/// Creates [SRArchive]s.
 typedef SRArchiveCreator = SIndentCreator<SRArchive>;

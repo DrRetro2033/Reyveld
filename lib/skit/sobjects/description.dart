@@ -4,7 +4,7 @@ import 'package:arceus/skit/sobject.dart';
 
 part 'description.g.dart';
 
-/// This [SObject] is used for descriptions that could be a whole paragraph.
+/// This [SObject] is used for descriptions of things in the kit file.
 
 @SGen("descr")
 class SDescription extends SObject {

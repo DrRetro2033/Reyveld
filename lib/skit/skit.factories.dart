@@ -31,6 +31,7 @@ SFactory<T> getSFactory<T extends SObject>([String? tag]) {
   return factory;
 }
 
+/// This is a fallback factory for [SObject]s that don't have a custom factory.
 class GenericFactory extends SFactory<SObject> {
   @override
   SObject load(SKit kit, XmlNode node) => SObject(kit, node);

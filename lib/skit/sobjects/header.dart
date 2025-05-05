@@ -35,7 +35,7 @@ class SHeader extends SObject {
       /// save memory when accessing information about the kit.
       ///
       /// If you need to add an reference to an SArchive to the kit header,
-      /// use the [SRArchive] object instead.
+      /// use the [SRArchive] or [SRFile] object instead.
       throw Exception("Cannot add a SArchive or SFile to KitHeader!");
     }
     super.addChild(child);

@@ -30,6 +30,7 @@ abstract class SRoot extends SObject {
   }
 }
 
+/// A base creator for creating [SRoot]s.
 abstract class SRootCreator<T extends SRoot> extends SCreator {
   SRootCreator();
   @override

@@ -51,12 +51,6 @@ class Constellation extends SObject {
     return root;
   }
 
-  Star getMostRecentStar() {
-    final stars = getDescendants<Star>();
-    stars.sort((a, b) => a!.createdOn.compareTo(b!.createdOn));
-    return stars.last ?? root;
-  }
-
   /// Returns all of the hashes of the stars in the constellation.
   Set<String> getStarHashes() {
     final stars = getDescendants<Star>();
@@ -80,10 +74,12 @@ class Constellation extends SObject {
     return getCurrentStar().checkForChanges();
   }
 
+  /// Updates the tracked folder to the current star.
   Future<void> updateToCurrent() async {
     return await getCurrentStar().archive.then((e) async => e!.extract(path));
   }
 
+  /// Returns a archive with unsaved changes in the tracked folder.
   Future<SArchive> getUnsavedChanges() async {
     final archive = await SArchiveCreator.archiveFolder(kit, path);
     if (!await archive
@@ -135,12 +131,6 @@ A collection of Stars, with a root star, and a current star.
           {},
           Star,
           (_) => object?.root
-        ),
-        "recent": (
-          "Gets the most recent star of the constellation.",
-          {},
-          Star,
-          (_) => object?.getMostRecentStar()
         ),
         "unsaved": (
           "Gets an archive that contains all of the unsaved changes in the constellation.",
