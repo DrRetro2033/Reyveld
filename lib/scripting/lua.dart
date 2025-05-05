@@ -11,6 +11,7 @@ import 'package:lua_dardo_async/lua.dart';
 
 import '../skit/skit.dart';
 
+/// The main class for running lua scripts.
 class Lua {
   final LuaState state;
 
@@ -29,16 +30,24 @@ class Lua {
         SRFileInterface(),
       };
 
+  static Map<String, List<Enum>> get enums => {
+        "SKitType": SKitType.values,
+      };
+
   Future<void> init() async {
     await _init(state);
   }
 
   Future<void> _init(LuaState state) async {
     await state.openLibs();
-    await addGlobal("SKitType", {
-      "unspecified": SKitType.unspecified.index,
-      "constellation": SKitType.constellation.index,
-    });
+
+    for (final enum_ in enums.entries) {
+      final table = <String, dynamic>{};
+      for (final value in enum_.value) {
+        table[value.name] = value.index;
+      }
+      await addGlobal(enum_.key, table);
+    }
 
     await addGlobal("addScript", (Lua state) async {
       await addScript(await state.getFromTop<String>(),
@@ -58,6 +67,13 @@ class Lua {
     print("");
   }
 
+  /// Adds a global to the Lua state.
+  ///
+  /// [name] is the name of the global.
+  ///
+  /// [table] is the table to add as the global.
+  ///
+  /// This will push the table to the stack and then set the global with the given name.
   Future<void> addGlobal(String name, dynamic table) async {
     await _pushToStack(table);
     await state.setGlobal(name);
@@ -96,7 +112,20 @@ class Lua {
       });
     } else if (value is LuaEntrypoint) {
       state.pushDartFunction((state) async {
-        await _pushToStack(await value.$4(this));
+        List<dynamic> args = [];
+        // printStack();
+        for (final arg in value.$2.entries.toList().reversed) {
+          args.add(await getFromTop(
+              ofType: arg.value.type, optional: !arg.value.isRequired));
+        }
+        // Arceus.talker.debug("Arguments: $args");
+        final finalArgs = args.reversed.toList()..removeWhere((e) => e == null);
+        if (value.$3 == null) {
+          await Function.apply(value.$4, finalArgs);
+        } else {
+          final result = await Function.apply(value.$4, finalArgs);
+          await _pushToStack(result);
+        }
         return 1;
       });
     } else {
@@ -104,7 +133,8 @@ class Lua {
     }
   }
 
-  Future<T> getFromTop<T>({bool pop = true, bool optional = false}) async {
+  Future<T> getFromTop<T>(
+      {bool pop = true, bool optional = false, Type? ofType}) async {
     dynamic result;
     try {
       if (state.isString(state.getTop())) {
@@ -147,8 +177,15 @@ class Lua {
       Arceus.talker.error(e, st);
     }
 
-    if (optional && result is! T) {
-      return Future.value(null as T?);
+    if (result is! T ||
+        (ofType != null &&
+            result.runtimeType.toString().replaceAll("_", "") !=
+                ofType.toString().replaceAll("_", ""))) {
+      if (!optional) {
+        Exception("Expected $T/$ofType but got $result");
+      }
+      Arceus.talker.debug("Expected $T/$ofType and got ${result.runtimeType}");
+      result = Future.value(null as T?);
     }
 
     if (pop) {
@@ -156,13 +193,13 @@ class Lua {
         state.pop(1);
       }
     }
-    return result as T;
+    return result;
   }
 
   String _createUniqueObjectHash() => generateUniqueHash(_objects.keys.toSet());
 
-  Future<Map<String, dynamic>> _getTableFromState() async {
-    Map<String, dynamic> resultTable = {};
+  Future<Map<dynamic, dynamic>> _getTableFromState() async {
+    Map<dynamic, dynamic> resultTable = {};
     state.pushNil();
     while (state.next(state.getTop() - 1)) {
       dynamic value = await getFromTop();

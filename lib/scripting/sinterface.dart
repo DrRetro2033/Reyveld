@@ -8,16 +8,12 @@ import 'package:arceus/skit/sobject.dart';
 /// The arguments are a list of tuples of (description, type, isOptional).
 typedef LuaEntrypoint = (
   String, // description
-  Map<
-      String,
-      (
-        String,
-        Type,
-        bool
-      )>, // arguments <name, (description, type, isOptional)>
+  Map<String, LuaArgument>, // arguments <name, (description, type, isOptional)>
   Type?, // return type or null
-  dynamic Function(Lua) // function
+  Function // function
 );
+
+typedef LuaArgument = (String, {Type type, bool isRequired});
 
 /// This acts as an interface between Lua and SKits.
 abstract class SInterface<T> {
@@ -97,7 +93,7 @@ ${statics.entries.map((e) => _luaMethod(e)).join("\n")}
     if (export.value.$2.isNotEmpty) {
       for (final arg in export.value.$2.entries) {
         method.writeln(
-            "---@param ${arg.key} ${_convertDartToLua(arg.value.$2) + (arg.value.$3 ? "" : "?")} ${arg.value.$1}");
+            "---@param ${arg.key} ${_convertDartToLua(arg.value.type) + (arg.value.isRequired ? "" : "?")} ${arg.value.$1}");
       }
     }
     if (export.value.$3 != null) {
@@ -129,60 +125,4 @@ ${statics.entries.map((e) => _luaMethod(e)).join("\n")}
       return type.toString();
     }
   }
-}
-
-/// The interface for [SObject]
-abstract class SObjectInterface<T extends SObject> extends SInterface<T> {
-  @override
-  Map<String, dynamic> toMap() => {
-        "addChild": (Lua state) async {
-          final child = await state.getFromTop<SObject>();
-          object!.addChild(child);
-        },
-        "removeChild": (Lua state) async {
-          final child = await state.getFromTop<SObject>();
-          object!.removeChild(child);
-        },
-        "getChild": (Lua state) async {
-          final table = await state.getFromTop<Map<String, dynamic>>();
-          final type = table.containsKey("class") ? table["class"] : null;
-          final attributes = table.containsKey("attrb")
-              ? table["attrb"] as Map<String, dynamic>
-              : <String, dynamic>{};
-          return object!.getChild<SObject>(
-            filter: (e) {
-              if (type != null) {
-                if (Lua.getInterface(e)?.className != type) {
-                  return false;
-                }
-              }
-              for (final key in attributes.keys) {
-                if (e.get(key) != attributes[key]) {
-                  return false;
-                }
-              }
-              return true;
-            },
-          );
-        },
-        "getChildren": (_) async {
-          return object!.getChildren<SObject>();
-        },
-        "getParent": (_) async {
-          return object!.getParent<SObject>();
-        },
-        "getDescendants": (_) async {
-          return object!.getDescendants<SObject>();
-        },
-        "getAncestors": (_) async {
-          return object!.getAncestors<SObject>();
-        },
-        "getSiblingAbove": (_) async {
-          return object!.getSiblingAbove<SObject>();
-        },
-        "getSiblingBelow": (_) async {
-          return object!.getSiblingBelow<SObject>();
-        },
-        ...exports
-      };
 }

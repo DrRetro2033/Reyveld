@@ -27,7 +27,7 @@ SKitType = {
         ),
         "isType": (
           "Returns whether the SKit is of the specified type.",
-          {"type": ("The type to check for.", int, true)},
+          {"type": ("The type to check for.", type: int, isRequired: true)},
           bool,
           (state) async {
             return await object!
@@ -55,11 +55,10 @@ SKitType = {
         "key": (
           "Sets and Gets the encryption key of the SKit.",
           {
-            "key": ("The encryption key.", String, false),
+            "key": ("The encryption key.", type: String, isRequired: false),
           },
           String,
-          (state) async {
-            final key = await state.getFromTop<String?>(optional: true);
+          ([String? key]) async {
             if (key != null) {
               object!.key = key;
             }
@@ -70,20 +69,27 @@ SKitType = {
           "Returns the constellation of the SKit.",
           {},
           Constellation,
-          (_) async => await object!
+          () async => await object!
               .getHeader()
               .then((e) => e!.getChild<Constellation>())
         ),
         "newConstellation": (
           "Creates a new constellation in the SKit.",
           {
-            "name": ("The name of the constellation.", String, true),
-            "path": ("The path of the constellation.", String, true),
+            "name": (
+              "The name of the constellation.",
+              type: String,
+              isRequired: true
+            ),
+            "path": (
+              "The path of the constellation.",
+              type: String,
+              isRequired: true
+            ),
           },
           Constellation,
-          (state) async {
-            final path = await state.getFromTop<String>();
-            final name = await state.getFromTop<String>();
+          (String name, String path) async {
+            Arceus.talker.debug(path);
             final constellation =
                 await ConstellationCreator(name, path).create(object!);
             await constellation.createRootStar();
@@ -95,13 +101,13 @@ SKitType = {
           "Saves changes to the SKit.",
           {},
           null,
-          (state) async => await object!.save()
+          () async => await object!.save()
         ),
         "discard": (
           "Discards changes to the SKit.",
           {},
           null,
-          (_) => object!.discardChanges()
+          () => object!.discardChanges()
         ),
       };
 
@@ -110,51 +116,55 @@ SKitType = {
         "open": (
           "Opens an SKit file.",
           {
-            "path": ("The path to the SKit file.", String, true),
-            "overrides": ("Some more options.", Map, false),
+            "path": (
+              "The path to the SKit file.",
+              type: String,
+              isRequired: true
+            ),
+            "overrides": ("Some more options.", type: Map, isRequired: false),
           },
           SKit,
-          (lua) async {
-            String? encryptKey;
-            if (lua.state.getTop() == 2 && lua.state.isTable(2)) {
-              final table = await lua.getFromTop<Map<String, dynamic>>();
-              encryptKey = table.containsKey("key") ? table["key"] : null;
-            }
-            final path = await lua.getFromTop<String>();
+          (String path, [Map overrides = const {}]) async {
+            String? encryptKey =
+                overrides.containsKey("key") ? overrides["key"] : null;
             return await SKit.open(path, encryptKey: encryptKey ?? "");
           }
         ),
         "exists": (
           "Checks if an SKit exists.",
-          {"path": ("The path to the SKit file.", String, true)},
+          {
+            "path": (
+              "The path to the SKit file.",
+              type: String,
+              isRequired: true
+            )
+          },
           bool,
-          (state) async {
-            final path = await state.getFromTop<String>();
+          (String path) async {
             return await SKit(path).exists();
           }
         ),
         "create": (
           "Creates a new SKit file.",
           {
-            "path": ("The path to the SKit file.", String, true),
-            "overrides": ("Some more options.", Map, false),
+            "path": (
+              "The path to the SKit file.",
+              type: String,
+              isRequired: true
+            ),
+            "overrides": ("Some more options.", type: Map, isRequired: false),
           },
           SKit,
-          (lua) async {
-            bool? overwrite;
-            SKitType? type;
-            String? encryptKey;
-            if (lua.state.getTop() == 2 && lua.state.isTable(2)) {
-              final table = await lua.getFromTop<Map<String, dynamic>>();
-              overwrite =
-                  table.containsKey("override") ? table["override"] : null;
-              type = table.containsKey("type")
-                  ? SKitType.values.firstWhere((e) => e.index == table["type"])
-                  : null;
-              encryptKey = table.containsKey("key") ? table["key"] : null;
-            }
-            final path = await lua.getFromTop<String>();
-
+          (String path, [Map overrides = const {}]) async {
+            bool? overwrite = overrides.containsKey("override")
+                ? overrides["override"]
+                : null;
+            SKitType? type = overrides.containsKey("type")
+                ? SKitType.values
+                    .firstWhere((e) => e.index == overrides["type"])
+                : null;
+            String? encryptKey =
+                overrides.containsKey("key") ? overrides["key"] : null;
             final skit = SKit(path, encryptKey: encryptKey ?? "");
             await skit.create(
                 overwrite: overwrite ?? false,

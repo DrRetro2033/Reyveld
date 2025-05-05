@@ -268,3 +268,59 @@ abstract class SCreator<T extends SObject> {
   /// use [beforeCreate] to do stuff before creating the [SObject].
   void Function(XmlBuilder builder) get creator;
 }
+
+/// The interface for [SObject]
+// abstract class SObjectInterface<T extends SObject> extends SInterface<T> {
+//   @override
+//   Map<String, dynamic> toMap() => {
+//         "addChild": (Lua state) async {
+//           final child = await state.getFromTop<SObject>();
+//           object!.addChild(child);
+//         },
+//         "removeChild": (Lua state) async {
+//           final child = await state.getFromTop<SObject>();
+//           object!.removeChild(child);
+//         },
+//         "getChild": (Lua state) async {
+//           final table = await state.getFromTop<Map<String, dynamic>>();
+//           final type = table.containsKey("class") ? table["class"] : null;
+//           final attributes = table.containsKey("attrb")
+//               ? table["attrb"] as Map<String, dynamic>
+//               : <String, dynamic>{};
+//           return object!.getChild<SObject>(
+//             filter: (e) {
+//               if (type != null) {
+//                 if (Lua.getInterface(e)?.className != type) {
+//                   return false;
+//                 }
+//               }
+//               for (final key in attributes.keys) {
+//                 if (e.get(key) != attributes[key]) {
+//                   return false;
+//                 }
+//               }
+//               return true;
+//             },
+//           );
+//         },
+//         "getChildren": () async {
+//           return object!.getChildren<SObject>();
+//         },
+//         "getParent": () async {
+//           return object!.getParent<SObject>();
+//         },
+//         "getDescendants": () async {
+//           return object!.getDescendants<SObject>();
+//         },
+//         "getAncestors": () async {
+//           return object!.getAncestors<SObject>();
+//         },
+//         "getSiblingAbove": () async {
+//           return object!.getSiblingAbove<SObject>();
+//         },
+//         "getSiblingBelow": () async {
+//           return object!.getSiblingBelow<SObject>();
+//         },
+//         ...exports
+//       };
+// }

@@ -97,7 +97,7 @@ extension ConstellationExtension on SKit {
   }
 }
 
-class ConstellationInterface extends SObjectInterface<Constellation> {
+class ConstellationInterface extends SInterface<Constellation> {
   @override
   get className => "Constellation";
 
@@ -112,31 +112,31 @@ A collection of Stars, with a root star, and a current star.
           "Gets the name of the constellation.",
           {},
           String,
-          (_) => object?.name
+          () => object?.name
         ),
         "path": (
           "Gets the path of the constellation.",
           {},
           String,
-          (_) => object?.path
+          () => object?.path
         ),
         "current": (
           "Gets the current star of the constellation.",
           {},
           Star,
-          (_) => object?.getCurrentStar()
+          () => object?.getCurrentStar()
         ),
         "root": (
           "Gets the root star of the constellation.",
           {},
           Star,
-          (_) => object?.root
+          () => object?.root
         ),
         "unsaved": (
           "Gets an archive that contains all of the unsaved changes in the constellation.",
           {},
           SArchive,
-          (_) => object?.getUnsavedChanges()
+          () => object?.getUnsavedChanges()
         )
       };
 }

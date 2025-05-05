@@ -11,7 +11,7 @@ class ListInterface extends SInterface<List> {
   get exports => {
         "add": (
           "Adds an object to the list.",
-          {"object": ("The object to add.", Object, true)},
+          {"object": ("The object to add.", type: Object, isRequired: true)},
           null,
           (state) {
             final value = state.getFromTop();
@@ -20,7 +20,7 @@ class ListInterface extends SInterface<List> {
         ),
         "remove": (
           "Removes an object from the list.",
-          {"object": ("The object to remove.", Object, true)},
+          {"object": ("The object to remove.", type: Object, isRequired: true)},
           null,
           (state) {
             final value = state.getFromTop();
@@ -53,7 +53,13 @@ class ListInterface extends SInterface<List> {
         ),
         "contains": (
           "Returns true if the list contains the object.",
-          {"object": ("The object to check for.", Object, true)},
+          {
+            "object": (
+              "The object to check for.",
+              type: Object,
+              isRequired: true
+            )
+          },
           bool,
           (state) => object!.contains(state.getFromTop())
         ),

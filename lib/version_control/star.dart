@@ -104,7 +104,7 @@ class StarCreator extends SCreator<Star> {
       };
 }
 
-class StarInterface extends SObjectInterface<Star> {
+class StarInterface extends SInterface<Star> {
   @override
   String get className => "Star";
 
@@ -118,37 +118,33 @@ A star is a point in time that represents a snapshot of an folder.
   get exports => {
         "name": (
           "Gets or sets the name of the star.",
-          {"name": ("The new name of the star.", String, false)},
+          {
+            "name": (
+              "The new name of the star.",
+              type: String,
+              isRequired: false
+            )
+          },
           String,
-          (lua) async {
-            if (lua.state.isString(1)) {
-              object!.name = await lua.getFromTop<String>();
-            } else {
-              return object!.name;
-            }
-          }
+          ([String? name]) => object!.name
         ),
         "constellation": (
           "Gets the constellation of the star.",
           {},
           Constellation,
-          (_) => object!.constellation
+          () => object!.constellation
         ),
         "makeCurrent": (
           "Sets the star as the current star.",
           {
             "updateFolder": (
               "If true, the folder will be updated to the current star.",
-              bool,
-              false
+              type: bool,
+              isRequired: false
             )
           },
           null,
-          (lua) async {
-            bool updateFolder = false;
-            if (lua.state.isBoolean(1)) {
-              updateFolder = await lua.getFromTop<bool>();
-            }
+          ([bool updateFolder = true]) async {
             object!.makeCurrent();
             if (updateFolder) {
               await object!.constellation.updateToCurrent();
@@ -159,50 +155,55 @@ A star is a point in time that represents a snapshot of an folder.
           "Gets the archive of the star.",
           {},
           SArchive,
-          (lua) async => await object!.archive
+          () async => await object!.archive
         ),
         "trim": (
           "Trims this star and all of its descendants.",
           {},
           null,
-          (state) async => await object!.trim()
+          () async => await object!.trim()
         ),
         "grow": (
           "Grows a new star from this star.",
-          {"name": ("The name of the new star.", String, true)},
+          {
+            "name": (
+              "The name of the new star.",
+              type: String,
+              isRequired: true
+            )
+          },
           Star,
-          (state) async => await object!.grow(await state.getFromTop<String>())
+          (String name) async => await object!.grow(name)
         ),
         "isRoot": (
           "Checks if the star is the root star.",
           {},
           bool,
-          (_) => object!.isRoot
+          () => object!.isRoot
         ),
         "isCurrent": (
           "Checks if the star is the current star.",
           {},
           bool,
-          (_) => object!.isCurrent
+          () => object!.isCurrent
         ),
         "isSingleChild": (
           "Checks if the star is a single child.",
           {},
           bool,
-          (_) => object!.isSingleChild
+          () => object!.isSingleChild
         ),
         "forward": (
           "Gets the star forward to this star X times.",
           {
             "x": (
               "The number of stars to move forward. Defaults to 1.",
-              int,
-              false
+              type: int,
+              isRequired: false
             )
           },
           Star,
-          (state) async {
-            int x = await state.getFromTop<int?>() ?? 1;
+          ([int x = 1]) async {
             Star star = object!;
             while (x > 0) {
               star = star.getChild<Star>() ?? star;
@@ -216,13 +217,12 @@ A star is a point in time that represents a snapshot of an folder.
           {
             "x": (
               "The number of stars to move backward. Defaults to 1.",
-              int,
-              false
+              type: int,
+              isRequired: false
             )
           },
           Star,
-          (state) async {
-            int x = await state.getFromTop<int?>() ?? 1;
+          ([int x = 1]) async {
             Star star = object!;
             while (x > 0) {
               star = star.getParent<Star>() ?? star;
@@ -233,10 +233,15 @@ A star is a point in time that represents a snapshot of an folder.
         ),
         "above": (
           "Gets the star above this star X times.",
-          {"x": ("The number of stars to move up. Defaults to 1.", int, false)},
+          {
+            "x": (
+              "The number of stars to move up. Defaults to 1.",
+              type: int,
+              isRequired: false
+            )
+          },
           Star,
-          (state) async {
-            int x = await state.getFromTop<int?>() ?? 1;
+          ([int x = 1]) async {
             Star star = object!;
             while (x > 0) {
               star = star.getSiblingAbove<Star>() ?? star;
@@ -250,13 +255,12 @@ A star is a point in time that represents a snapshot of an folder.
           {
             "x": (
               "The number of stars to move down. Defaults to 1.",
-              int,
-              false
+              type: int,
+              isRequired: false
             )
           },
           Star,
-          (state) async {
-            int x = await state.getFromTop<int?>() ?? 1;
+          ([int x = 1]) async {
             Star star = object!;
             while (x > 0) {
               star = star.getSiblingBelow<Star>() ?? star;
@@ -267,10 +271,9 @@ A star is a point in time that represents a snapshot of an folder.
         ),
         "next": (
           "Gets the Xth child of the star.",
-          {"x": ("The Xth of the child to get.", int, true)},
+          {"x": ("The Xth of the child to get.", type: int, isRequired: true)},
           Star,
-          (state) async {
-            int x = await state.getFromTop<int>();
+          (int x) async {
             List<Star?> stars = object!.getChildren<Star>();
             Star star = stars[(x - 1) % stars.length] ?? object!;
             return star;
@@ -280,7 +283,7 @@ A star is a point in time that represents a snapshot of an folder.
           "Gets the most recent decendant of the star.",
           {},
           Star,
-          (_) {
+          () {
             final stars = object!.getDescendants<Star>();
             stars.sort((a, b) => a!.createdOn.compareTo(b!.createdOn));
             return stars.last ?? object!;
