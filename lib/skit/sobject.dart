@@ -270,57 +270,111 @@ abstract class SCreator<T extends SObject> {
 }
 
 /// The interface for [SObject]
-// abstract class SObjectInterface<T extends SObject> extends SInterface<T> {
-//   @override
-//   Map<String, dynamic> toMap() => {
-//         "addChild": (Lua state) async {
-//           final child = await state.getFromTop<SObject>();
-//           object!.addChild(child);
-//         },
-//         "removeChild": (Lua state) async {
-//           final child = await state.getFromTop<SObject>();
-//           object!.removeChild(child);
-//         },
-//         "getChild": (Lua state) async {
-//           final table = await state.getFromTop<Map<String, dynamic>>();
-//           final type = table.containsKey("class") ? table["class"] : null;
-//           final attributes = table.containsKey("attrb")
-//               ? table["attrb"] as Map<String, dynamic>
-//               : <String, dynamic>{};
-//           return object!.getChild<SObject>(
-//             filter: (e) {
-//               if (type != null) {
-//                 if (Lua.getInterface(e)?.className != type) {
-//                   return false;
-//                 }
-//               }
-//               for (final key in attributes.keys) {
-//                 if (e.get(key) != attributes[key]) {
-//                   return false;
-//                 }
-//               }
-//               return true;
-//             },
-//           );
-//         },
-//         "getChildren": () async {
-//           return object!.getChildren<SObject>();
-//         },
-//         "getParent": () async {
-//           return object!.getParent<SObject>();
-//         },
-//         "getDescendants": () async {
-//           return object!.getDescendants<SObject>();
-//         },
-//         "getAncestors": () async {
-//           return object!.getAncestors<SObject>();
-//         },
-//         "getSiblingAbove": () async {
-//           return object!.getSiblingAbove<SObject>();
-//         },
-//         "getSiblingBelow": () async {
-//           return object!.getSiblingBelow<SObject>();
-//         },
-//         ...exports
-//       };
-// }
+class SObjectInterface<T extends SObject> extends SInterface<T> {
+  @override
+  get className => "SObject";
+
+  @override
+  get description => """
+A base class for all objects in the kit.
+""";
+
+  @override
+  get parent => SObjectInterface();
+
+  @override
+  get exports => {
+        "addChild": (
+          "Adds a child SObject to the xml node.",
+          {
+            "child": (
+              "The child SObject to add.",
+              type: SObject,
+              isRequired: true
+            )
+          },
+          null,
+          (SObject child) => object!.addChild(child),
+        ),
+        "removeChild": (
+          "Removes a child SObject from the xml node.",
+          {
+            "child": (
+              "The child SObject to remove.",
+              type: SObject,
+              isRequired: true
+            )
+          },
+          null,
+          (SObject child) => object!.removeChild(child),
+        ),
+        "getChild": (
+          "Returns a child of the SObject, with the specific type.",
+          {
+            "filter": (
+              "A map to filter the children by.",
+              type: Map,
+              isRequired: false
+            )
+          },
+          SObject,
+          (Map<String, dynamic> filter) {
+            final type = filter.containsKey("class") ? filter["class"] : null;
+            final attributes = filter.containsKey("attrb")
+                ? filter["attrb"] as Map<String, dynamic>
+                : <String, dynamic>{};
+            object!.getChild<SObject>(
+              filter: (e) {
+                if (type != null) {
+                  if (Lua.getInterface(e)?.className != type) {
+                    return false;
+                  }
+                }
+                for (final key in attributes.keys) {
+                  if (e.get(key) != attributes[key]) {
+                    return false;
+                  }
+                }
+                return true;
+              },
+            );
+          }
+        ),
+        "getChildren": (
+          "Returns a list of all the children of the SObject.",
+          {},
+          List,
+          () => object!.getChildren<SObject>(),
+        ),
+        "getParent": (
+          "Returns the parent of the SObject.",
+          {},
+          SObject,
+          () => object!.getParent<SObject>(),
+        ),
+        "getDescendants": (
+          "Returns a list of all the descendants of the SObject.",
+          {},
+          List,
+          () => object!.getDescendants<SObject>(),
+        ),
+        "getAncestors": (
+          "Returns a list of all the ancestors of the SObject.",
+          {},
+          List,
+          () => object!.getAncestors<SObject>(),
+        ),
+        "getSiblingAbove": (
+          "Returns the sibling above the SObject.",
+          {},
+          SObject,
+          () => object!.getSiblingAbove<SObject>(),
+        ),
+        "getSiblingBelow": (
+          "Returns the sibling below the SObject.",
+          {},
+          SObject,
+          () => object!.getSiblingBelow<SObject>(),
+        ),
+      };
+}

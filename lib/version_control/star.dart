@@ -104,7 +104,7 @@ class StarCreator extends SCreator<Star> {
       };
 }
 
-class StarInterface extends SInterface<Star> {
+class StarInterface extends SObjectInterface<Star> {
   @override
   String get className => "Star";
 

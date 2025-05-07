@@ -97,7 +97,7 @@ extension ConstellationExtension on SKit {
   }
 }
 
-class ConstellationInterface extends SInterface<Constellation> {
+class ConstellationInterface extends SObjectInterface<Constellation> {
   @override
   get className => "Constellation";
 

@@ -10,12 +10,67 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
 """;
 
   @override
-  get extras => """
----@enum SKitType
-SKitType = {
-  ${SKitType.values.map((e) => "${e.name} = ${e.index},").join("\n  ")}
-}
-""";
+  get statics => {
+        "open": (
+          "Opens an SKit file.",
+          {
+            "path": (
+              "The path to the SKit file.",
+              type: String,
+              isRequired: true
+            ),
+            "overrides": ("Some more options.", type: Map, isRequired: false),
+          },
+          SKit,
+          (String path, [Map overrides = const {}]) async {
+            String? encryptKey =
+                overrides.containsKey("key") ? overrides["key"] : null;
+            return await SKit.open(path, encryptKey: encryptKey ?? "");
+          }
+        ),
+        "exists": (
+          "Checks if an SKit exists.",
+          {
+            "path": (
+              "The path to the SKit file.",
+              type: String,
+              isRequired: true
+            )
+          },
+          bool,
+          (String path) async {
+            return await SKit(path).exists();
+          }
+        ),
+        "create": (
+          "Creates a new SKit file.",
+          {
+            "path": (
+              "The path to the SKit file.",
+              type: String,
+              isRequired: true
+            ),
+            "overrides": ("Some more options.", type: Map, isRequired: false),
+          },
+          SKit,
+          (String path, [Map overrides = const {}]) async {
+            bool? overwrite = overrides.containsKey("override")
+                ? overrides["override"]
+                : null;
+            SKitType? type = overrides.containsKey("type")
+                ? SKitType.values
+                    .firstWhere((e) => e.index == overrides["type"])
+                : null;
+            String? encryptKey =
+                overrides.containsKey("key") ? overrides["key"] : null;
+            final skit = SKit(path, encryptKey: encryptKey ?? "");
+            await skit.create(
+                overwrite: overwrite ?? false,
+                type: type ?? SKitType.unspecified);
+            return skit;
+          }
+        ),
+      };
 
   @override
   get exports => {
@@ -23,22 +78,21 @@ SKitType = {
           "Returns the path of the SKit file.",
           {},
           String,
-          (_) => object!.path
+          () => object!.path
         ),
         "isType": (
           "Returns whether the SKit is of the specified type.",
           {"type": ("The type to check for.", type: int, isRequired: true)},
           bool,
-          (state) async {
-            return await object!
-                .isType(SKitType.values[await state.getFromTop<int>()]);
+          (int type) async {
+            return await object!.isType(SKitType.values[type]);
           }
         ),
         "createdOn": (
           "Returns the creation date of the SKit.",
           {},
           String,
-          (state) async {
+          () async {
             final header = await object!.getHeader();
             return header!.createdOn.toIso8601String();
           }
@@ -47,7 +101,7 @@ SKitType = {
           "Returns the last modified date of the SKit.",
           {},
           String,
-          (state) async {
+          () async {
             final header = await object!.getHeader();
             return header!.lastModified.toIso8601String();
           }
@@ -108,69 +162,6 @@ SKitType = {
           {},
           null,
           () => object!.discardChanges()
-        ),
-      };
-
-  @override
-  get statics => {
-        "open": (
-          "Opens an SKit file.",
-          {
-            "path": (
-              "The path to the SKit file.",
-              type: String,
-              isRequired: true
-            ),
-            "overrides": ("Some more options.", type: Map, isRequired: false),
-          },
-          SKit,
-          (String path, [Map overrides = const {}]) async {
-            String? encryptKey =
-                overrides.containsKey("key") ? overrides["key"] : null;
-            return await SKit.open(path, encryptKey: encryptKey ?? "");
-          }
-        ),
-        "exists": (
-          "Checks if an SKit exists.",
-          {
-            "path": (
-              "The path to the SKit file.",
-              type: String,
-              isRequired: true
-            )
-          },
-          bool,
-          (String path) async {
-            return await SKit(path).exists();
-          }
-        ),
-        "create": (
-          "Creates a new SKit file.",
-          {
-            "path": (
-              "The path to the SKit file.",
-              type: String,
-              isRequired: true
-            ),
-            "overrides": ("Some more options.", type: Map, isRequired: false),
-          },
-          SKit,
-          (String path, [Map overrides = const {}]) async {
-            bool? overwrite = overrides.containsKey("override")
-                ? overrides["override"]
-                : null;
-            SKitType? type = overrides.containsKey("type")
-                ? SKitType.values
-                    .firstWhere((e) => e.index == overrides["type"])
-                : null;
-            String? encryptKey =
-                overrides.containsKey("key") ? overrides["key"] : null;
-            final skit = SKit(path, encryptKey: encryptKey ?? "");
-            await skit.create(
-                overwrite: overwrite ?? false,
-                type: type ?? SKitType.unspecified);
-            return skit;
-          }
         ),
       };
 }

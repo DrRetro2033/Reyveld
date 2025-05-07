@@ -23,11 +23,6 @@ abstract class SInterface<T> {
   /// This is the description of the interface.
   String get description;
 
-  String? get extras => null;
-
-  /// This converts the interface into a Map.
-  Map<String, dynamic> toMap() => {...exports};
-
   /// This converts the interface into a Lua table.
   Map<String, dynamic> toLua(Lua state, String luaHash) {
     return {
@@ -36,17 +31,29 @@ abstract class SInterface<T> {
       "toString": (Lua state) {
         return toString();
       },
-      ...toMap(),
+      ...allExports
     };
   }
 
   T? object;
   Map<String, LuaEntrypoint> get exports => {};
 
+  Map<String, LuaEntrypoint> get allExports {
+    final map = exports;
+    if (parent != null && parent!.runtimeType != runtimeType) {
+      for (final entry in parent!.allExports.entries) {
+        map.putIfAbsent(entry.key, () => entry.value);
+      }
+    }
+    return map;
+  }
+
   /// This is the static methods of the interface.
   /// This will be added to a global Lua table with the same name as the interface.
   /// Used for constructors.
   Map<String, LuaEntrypoint> get statics => {};
+
+  SInterface? get parent => null;
 
   @override
   String toString() => object.toString();
@@ -62,7 +69,6 @@ abstract class SInterface<T> {
     await doc.writeAsString("""
 ---@meta _
 
-${extras ?? ""}
 ${statics.isNotEmpty ? _luaStatics() : ""}
 ${_luaExports()}
 """);
@@ -76,7 +82,8 @@ ${statics.entries.map((e) => _luaMethod(e)).join("\n")}
 
   String _luaExports() {
     final text = StringBuffer();
-    text.writeln("---@class $className");
+    text.writeln(
+        "---@class $className${parent != null && parent!.className != className ? ": ${parent!.className}" : ""}");
     for (final line in description.split("\n")) {
       if (line.isEmpty) continue;
       text.writeln("---$line");
@@ -121,6 +128,8 @@ ${statics.entries.map((e) => _luaMethod(e)).join("\n")}
       return "List";
     } else if (type == Map) {
       return "table";
+    } else if (type == Object) {
+      return "any";
     } else {
       return type.toString();
     }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:arceus/arceus.dart';
 import 'package:arceus/scripting/list.dart';
@@ -22,6 +23,8 @@ class Lua {
   final Map<String, SInterface> _objects = {};
 
   static Set<SInterface> get interfaces => {
+        ListInterface(),
+        SObjectInterface(),
         SKitInterface(),
         ConstellationInterface(),
         StarInterface(),
@@ -95,11 +98,6 @@ class Lua {
         await _pushToStack(value[key]);
         await state.setTable(state.getTop() - 2);
       }
-    } else if (value is List<dynamic>) {
-      final interface_ = ListInterface()..object = value;
-      final hash = _createUniqueObjectHash();
-      _objects[hash] = interface_;
-      await _pushToStack(interface_.toLua(this, hash));
     } else if (value is Object && getInterface(value) != null) {
       final interface_ = getInterface(value)!..object = value;
       final hash = _createUniqueObjectHash();
@@ -112,21 +110,27 @@ class Lua {
       });
     } else if (value is LuaEntrypoint) {
       state.pushDartFunction((state) async {
-        List<dynamic> args = [];
-        // printStack();
-        for (final arg in value.$2.entries.toList().reversed) {
-          args.add(await getFromTop(
-              ofType: arg.value.type, optional: !arg.value.isRequired));
+        try {
+          List<dynamic> args = [];
+          // printStack();
+          for (final arg in value.$2.entries.toList().reversed) {
+            args.add(await getFromTop(
+                ofType: arg.value.type, optional: !arg.value.isRequired));
+          }
+          // Arceus.talker.debug("Arguments: $args");
+          final finalArgs = args.reversed.toList()
+            ..removeWhere((e) => e == null);
+          if (value.$3 == null) {
+            await Function.apply(value.$4, finalArgs);
+          } else {
+            final result = await Function.apply(value.$4, finalArgs);
+            await _pushToStack(result);
+          }
+          return 1;
+        } catch (e, st) {
+          Arceus.talker.error("", e, st);
+          return 0;
         }
-        // Arceus.talker.debug("Arguments: $args");
-        final finalArgs = args.reversed.toList()..removeWhere((e) => e == null);
-        if (value.$3 == null) {
-          await Function.apply(value.$4, finalArgs);
-        } else {
-          final result = await Function.apply(value.$4, finalArgs);
-          await _pushToStack(result);
-        }
-        return 1;
       });
     } else {
       Arceus.talker.error("Could not push to stack: $value");
@@ -229,6 +233,7 @@ class Lua {
     _scripts.add(LuaScript(name, script));
   }
 
+  // Compiles a lua project.
   String _compile([String? extra]) {
     final hexExp = RegExp(r"0x([0-9A-f]+)");
     String compiled = [..._scripts.map((e) => e.code), extra].join("\n");
@@ -240,6 +245,7 @@ class Lua {
     return compiled;
   }
 
+  // Runs a lua script.
   Future<dynamic> run([String? extra]) async {
     final successful = await state.doString(_compile(extra).trim());
     if (!successful) {
@@ -250,6 +256,7 @@ class Lua {
     return result;
   }
 
+  // Gets the interface for an object.
   static SInterface? getInterface(Object object) {
     for (final interface_ in interfaces) {
       if (interface_.isType(object)) {
@@ -259,10 +266,44 @@ class Lua {
     return null;
   }
 
+  // Generates a docs file for all of the interfaces.
   static Future<void> generateDocs() async {
+    final dir = Directory(
+        "${Arceus.appDataPath}/docs/${Arceus.currentVersion.toString()}");
+    if (await dir.exists()) {
+      await dir.delete(recursive: true);
+    }
+    await dir.create(recursive: true);
     for (final interface_ in interfaces) {
       await interface_.generateDocs();
     }
+    _generateEnumDocs();
+  }
+
+  // Generates a docs file for all of the enums.
+  static Future<void> _generateEnumDocs() async {
+    final doc = File(
+        "${Arceus.appDataPath}/docs/${Arceus.currentVersion.toString()}/enums.lua");
+    await doc.create(recursive: true);
+    await doc.writeAsString("""
+---@meta _
+
+${_formatEnums()}
+""");
+  }
+
+  // Formats all of the enums for the docs file.
+  static String _formatEnums() {
+    List<String> formattedEnums = [];
+    for (final enum_ in enums.entries) {
+      formattedEnums.add("""
+---@enum ${enum_.key}
+${enum_.key} = {
+  ${enum_.value.map((e) => "${e.name} = ${e.index},").join("\n  ")}
+}
+""");
+    }
+    return formattedEnums.join("\n\n");
   }
 }
 

@@ -13,43 +13,37 @@ class ListInterface extends SInterface<List> {
           "Adds an object to the list.",
           {"object": ("The object to add.", type: Object, isRequired: true)},
           null,
-          (state) {
-            final value = state.getFromTop();
-            object!.add(value);
-          }
+          (Object value) => object!.add(value)
         ),
         "remove": (
           "Removes an object from the list.",
           {"object": ("The object to remove.", type: Object, isRequired: true)},
           null,
-          (state) {
-            final value = state.getFromTop();
-            object!.remove(value);
-          }
+          (Object value) => object!.remove(value)
         ),
         "pop": (
           "Removes the last object from the list and returns it.",
           {},
           null,
-          (state) => object!.removeLast()
+          () => object!.removeLast()
         ),
         "length": (
           "Returns the length of the list.",
           {},
           int,
-          (state) => object!.length
+          () => object!.length
         ),
         "first": (
           "Returns the first object in the list.",
           {},
           Object,
-          (state) => object!.first
+          () => object!.first
         ),
         "last": (
           "Returns the last object in the list.",
           {},
           Object,
-          (state) => object!.last
+          () => object!.last
         ),
         "contains": (
           "Returns true if the list contains the object.",
@@ -61,7 +55,13 @@ class ListInterface extends SInterface<List> {
             )
           },
           bool,
-          (state) => object!.contains(state.getFromTop())
+          (Object value) => object!.contains(value)
         ),
+        "get": (
+          "Returns the object at the given index.",
+          {"index": ("The index to get.", type: int, isRequired: true)},
+          Object,
+          (int index) => object![index]
+        )
       };
 }

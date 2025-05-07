@@ -29,14 +29,13 @@ enum SKitType {
   constellation,
 }
 
-/// Represents a compressed XML file.
+/// Represents a compressed, encrypted XML file.
 /// [SKit] is an abrivation for SERE kit, which is a reference to titanfall 2.
-/// [SKit]s can contain any data that Arceus would ever need. It can contain data about constellations, stars, users, settings, files, and more.
-/// The two core [SObject]s that is tightly nit into [SKit]s are the [SHeader] and [SArchive].
-/// The [SHeader] contains information about the kit (e.g. name, version, author, constellations, etc),
-/// while the [SArchive]s can contain much larger sets of data (e.g. save data, scripts, images, etc).
+/// [SKit]s can contain any data that Arceus would ever need.
 ///
-/// Every other [SObject] is optional and can be left out.
+/// The two core [SObject]s which is tightly knit into [SKit]s are the [SHeader] and [SRoot]s.
+/// The [SHeader] contains information about the kit (e.g. name of kit, version of arceus, the author of the kit, constellations, etc),
+/// while the [SRoot]s can contain much larger sets of data or can be unrelated to the kit itself (e.g. save data, scripts, images, users, etc).
 class SKit {
   static Future<SKit> open(String path,
       {SKitType? type, String encryptKey = "Arceus"}) async {
@@ -73,7 +72,8 @@ class SKit {
   Encrypter get _decrypter => Encrypter(Fernet(_decryptKey));
   Encrypter get _encrypter => Encrypter(Fernet(_encryptKey));
 
-  /// How many bytes are added to the kit file when encrypting it.
+  /// How many bytes are added to the kit file after encrypting.
+  /// Used to chunk data properly when decrypting.
   static const int _encryptionExtraSize = 73;
 
   SKit(String path, {String encryptKey = ""})
@@ -98,22 +98,24 @@ class SKit {
 
   /// Returns the stream of [_file].
   /// Do not use directly, and use [_eventStream] instead.
-  Stream<List<int>> get _byteStream => _file
+  Stream<List<int>>? get _byteStream => _file.existsSync()
+      ? _file
           .openRead()
           .expand((e) => e)
           .chunk(SFile.chunkSize + _encryptionExtraSize)
           .map((e) {
-        final decrypted =
-            _decrypter.decryptBytes(Encrypted(Uint8List.fromList(e)));
-        // Arceus.talker
-        //     .debug("Decrypted ${e.length} bytes to ${decrypted.length} bytes.");
-        return decrypted;
-      }).transform(gzip.decoder);
+          final decrypted =
+              _decrypter.decryptBytes(Encrypted(Uint8List.fromList(e)));
+          // Arceus.talker
+          //     .debug("Decrypted ${e.length} bytes to ${decrypted.length} bytes.");
+          return decrypted;
+        }).transform(gzip.decoder)
+      : null;
 
   /// Returns a stream of [XmlEvent]s from the file.
   /// This is used to parse the file data and get the xml events.
-  Stream<List<XmlEvent>> get _eventStream => _byteStream
-      .transform<String>(utf8.decoder)
+  Stream<List<XmlEvent>>? get _eventStream => _byteStream
+      ?.transform<String>(utf8.decoder)
       .toXmlEvents()
       .normalizeEvents()
       .withParentEvents();
@@ -126,11 +128,10 @@ class SKit {
       {bool overwrite = false, SKitType type = SKitType.unspecified}) async {
     if (await _file.exists() && !overwrite) {
       throw Exception("Kit file already exists.");
+    } else if (await _file.exists() && overwrite) {
+      await _file.delete();
     }
     discardChanges(); // clear the current kit from memory.
-    if (!await _file.exists()) {
-      await _file.create(recursive: true);
-    }
     _header = await SHeaderCreator(type).create(this);
     return _header!;
   }
@@ -144,7 +145,7 @@ class SKit {
     if (_header == null) {
       final factory = getSFactory<SHeader>();
       final eventStream = _eventStream;
-      _header = await (eventStream
+      _header = await (eventStream!
           .selectSubtreeEvents((e) => e.localName == factory.tag)
           .toXmlNodes()
           .expand((e) => e)
@@ -216,11 +217,13 @@ class SKit {
   Stream<SRoot> _streamRoots(
       {bool Function(XmlStartElementEvent)? filterEvents}) async* {
     final rootStream = _eventStream
-        .selectSubtreeEvents((e) => filterEvents == null || filterEvents(e))
-        .toXmlNodes()
-        .expand((e) => e)
-        .map((e) => getSFactory((e as XmlElement).localName).load(this, e))
-        .whereType<SRoot>();
+            ?.selectSubtreeEvents(
+                (e) => filterEvents == null || filterEvents(e))
+            .toXmlNodes()
+            .expand((e) => e)
+            .map((e) => getSFactory((e as XmlElement).localName).load(this, e))
+            .whereType<SRoot>() ??
+        Stream.empty();
     final processedRoots = <SRoot>{};
     await for (final root in rootStream) {
       processedRoots.add(root);

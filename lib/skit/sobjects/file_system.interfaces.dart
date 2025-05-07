@@ -44,7 +44,7 @@ An archive in a SKit. Contains files.
       };
 }
 
-class SFileInterface extends SInterface<SFile> {
+class SFileInterface extends SObjectInterface<SFile> {
   @override
   get className => "SFile";
 
