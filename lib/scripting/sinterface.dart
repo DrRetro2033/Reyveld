@@ -35,9 +35,17 @@ abstract class SInterface<T> {
     };
   }
 
+  /// This is the object that this interface wraps around.
+  /// This will not be pushed to the stack, and instead
+  /// [statics] and [exports] will be used.
   T? object;
+
+  /// These are the methods of the interface that will be pushed as a table
+  /// to Lua when pushing a object of type [T] to the stack.
   Map<String, LuaEntrypoint> get exports => {};
 
+  /// This is a combination of [exports] and [parent] exports.
+  /// Used in [toLua].
   Map<String, LuaEntrypoint> get allExports {
     final map = exports;
     if (parent != null && parent!.runtimeType != runtimeType) {
@@ -53,15 +61,20 @@ abstract class SInterface<T> {
   /// Used for constructors.
   Map<String, LuaEntrypoint> get statics => {};
 
+  /// This is the parent interface of this interface.
+  /// If this interface does not have a parent, then this will be null.
+  /// Used when pushing a object to the stack, and when generating docs.
   SInterface? get parent => null;
 
   @override
   String toString() => object.toString();
 
+  /// This checks if an object is of type [T].
   bool isType(Object object) {
     return object is T;
   }
 
+  /// This generates the docs for the interface.
   Future<void> generateDocs() async {
     final doc = File(
         "${Arceus.appDataPath}/docs/${Arceus.currentVersion.toString()}/${className.toLowerCase()}.lua");
@@ -74,12 +87,14 @@ ${_luaExports()}
 """);
   }
 
+  /// This generates the static, global table for the interface.
   String _luaStatics() => """
 $className = {}
 
 ${statics.entries.map((e) => _luaMethod(e)).join("\n")}
 """;
 
+  /// This generates the methods for the interface.
   String _luaExports() {
     final text = StringBuffer();
     text.writeln(

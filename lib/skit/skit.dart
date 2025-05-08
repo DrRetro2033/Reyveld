@@ -267,7 +267,6 @@ class SKit {
       // if the temp file exists, delete it.
       await temp.delete(); // delete the temp file.
     }
-    await temp.create(); // create the temp file.
     // Write the new kit header to the temp file.
     Arceus.talker.debug("Attempting to save SKit. ($path)");
     // Open the temp file for writing.
