@@ -6,14 +6,15 @@ import "dart:io";
 import "dart:typed_data";
 import "package:arceus/arceus.dart";
 import "package:arceus/extensions.dart";
+import "package:arceus/uuid.dart";
 import "package:rxdart/rxdart.dart";
 import 'package:xml/xml_events.dart';
 
 import 'package:arceus/skit/sobject.dart' hide SInterface;
 import 'package:arceus/skit/sobjects/sobjects.dart';
-import "package:arceus/version_control/constellation.dart"
-    show Constellation, ConstellationCreator, ConstellationFactory;
-import "package:arceus/version_control/star.dart" show StarFactory;
+import "package:arceus/version_control/constellation/constellation.dart"
+    show ConstellationFactory;
+import "package:arceus/version_control/star/star.dart" show StarFactory;
 import 'package:arceus/scripting/sinterface.dart' show SInterface;
 
 import 'package:encrypt/encrypt.dart';
@@ -132,7 +133,7 @@ class SKit {
       await _file.delete();
     }
     discardChanges(); // clear the current kit from memory.
-    _header = await SHeaderCreator(type).create(this);
+    _header = await SHeaderCreator(type).create();
     return _header!;
   }
 
@@ -149,10 +150,10 @@ class SKit {
           .selectSubtreeEvents((e) => e.localName == factory.tag)
           .toXmlNodes()
           .expand((e) => e)
-          .map((e) => factory.load(this, e))
+          .map((e) => factory.load(e))
           .first);
     }
-    return _header;
+    return _header!..kit = this;
   }
 
   /// Returns true if the kit file is of the specified type.
@@ -203,7 +204,8 @@ class SKit {
   /// Adds a root to the kit file.
   /// This will add the root to the kit file in memory, but will not save the changes to the file.
   /// To save the changes to the file, use [save].
-  void addRoot(SRoot root) {
+  Future<void> addRoot(SRoot root) async {
+    root.hash = generateUniqueHash(await usedRootHashes());
     Arceus.talker.debug(
         "New ${root.runtimeType} added to ${path.getFilename(withExtension: false)}! ($path)");
     _loadedRoots.add(root);
@@ -221,7 +223,8 @@ class SKit {
                 (e) => filterEvents == null || filterEvents(e))
             .toXmlNodes()
             .expand((e) => e)
-            .map((e) => getSFactory((e as XmlElement).localName).load(this, e))
+            .map((e) => getSFactory((e as XmlElement).localName).load(e)
+              ..kit = this) // Set the kit instance to this.
             .whereType<SRoot>() ??
         Stream.empty();
     final processedRoots = <SRoot>{};
@@ -243,14 +246,8 @@ class SKit {
   }
 
   /// Returns the hashes used in the SKit file.
-  /// Will only return the hashes of the specified type, and not all of the hashes of every type in the kit file.
-  /// Each hash is unique to the type of [SRoot] that it is.
-  /// So for instance, if you have a [SArchive] with the same hash as [SUser], then they are still considered unique.
-  Future<Set<String>> usedRootHashes<T extends SRoot>([String? tag]) async =>
-      (await getRoots<T>(
-              addToCache: false, filterEvents: (e) => e.localName == tag))
-          .map((e) => e!.hash)
-          .toSet();
+  Future<Set<String>> usedRootHashes<T extends SRoot>() async =>
+      (await getRoots<T>(addToCache: false)).map((e) => e!.hash).toSet();
 
   void addIndent(SIndent indent) => _indents.add(indent);
 
@@ -269,6 +266,10 @@ class SKit {
     }
     // Write the new kit header to the temp file.
     Arceus.talker.debug("Attempting to save SKit. ($path)");
+
+    // Ensure that the parent directory exists.
+    await temp.ensureParentDirectory();
+
     // Open the temp file for writing.
     final tempSink = temp.openWrite();
 
@@ -314,6 +315,17 @@ class SKit {
     stopwatch.stop();
     Arceus.talker.info(
         "Successfully saved SKit in ${stopwatch.elapsedMilliseconds}ms! ($path)");
+  }
+
+  Future<void> exportToXMLFile(String path) async {
+    final file = File(path);
+
+    // Ensures that the parent directory exists.
+    await file.ensureParentDirectory();
+    final sink = file.openWrite();
+    await sink.addStream(_byteStream!);
+    await sink.flush();
+    await sink.close();
   }
 
   /// Discards all of the changes to the kit file.

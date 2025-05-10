@@ -3,3 +3,9 @@ class SGen {
 
   final String tag;
 }
+
+class LuaClass {
+  const LuaClass(this.description);
+
+  final String description;
+}

@@ -88,6 +88,12 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
             return await object!.isType(SKitType.values[type]);
           }
         ),
+        "header": (
+          "Returns the SHeader of the SKit.",
+          {},
+          SHeader,
+          () async => await object!.getHeader()
+        ),
         "createdOn": (
           "Returns the creation date of the SKit.",
           {},
@@ -119,38 +125,6 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
             return object!.key;
           }
         ),
-        "getConstellation": (
-          "Returns the constellation of the SKit.",
-          {},
-          Constellation,
-          () async => await object!
-              .getHeader()
-              .then((e) => e!.getChild<Constellation>())
-        ),
-        "newConstellation": (
-          "Creates a new constellation in the SKit.",
-          {
-            "name": (
-              "The name of the constellation.",
-              type: String,
-              isRequired: true
-            ),
-            "path": (
-              "The path of the constellation.",
-              type: String,
-              isRequired: true
-            ),
-          },
-          Constellation,
-          (String name, String path) async {
-            Arceus.talker.debug(path);
-            final constellation =
-                await ConstellationCreator(name, path).create(object!);
-            await constellation.createRootStar();
-            object!.getHeader().then((e) => e!.addChild(constellation));
-            return constellation;
-          }
-        ),
         "save": (
           "Saves changes to the SKit.",
           {},
@@ -163,5 +137,11 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
           null,
           () => object!.discardChanges()
         ),
+        "exportAs": (
+          "Exports the SKit as an uncompressed, decrypted xml file.",
+          {"path": ("The path to export to.", type: String, isRequired: true)},
+          null,
+          (String path) async => await object!.exportToXMLFile(path)
+        )
       };
 }

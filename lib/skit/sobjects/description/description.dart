@@ -3,22 +3,12 @@ import 'dart:convert';
 import 'package:arceus/skit/sobject.dart';
 
 part 'description.g.dart';
+part 'description.creator.dart';
 
 /// This [SObject] is used for descriptions of things in the kit file.
 
 @SGen("descr")
 class SDescription extends SObject {
-  SDescription(super.kit, super._node);
+  SDescription(super._node);
   String get body => String.fromCharCodes(base64Decode(get("text") ?? ""));
-}
-
-class DescriptionCreator extends SCreator<SDescription> {
-  final String text;
-
-  DescriptionCreator(this.text);
-
-  @override
-  get creator => (builder) {
-        builder.text(base64Encode(text.codeUnits));
-      };
 }

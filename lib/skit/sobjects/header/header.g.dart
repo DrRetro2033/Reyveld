@@ -1,17 +1,17 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'constellation.dart';
+part of 'header.dart';
 
 // **************************************************************************
 // SGenGenerator
 // **************************************************************************
 
-class ConstellationFactory extends SFactory<Constellation> {
-  ConstellationFactory();
+class SHeaderFactory extends SFactory<SHeader> {
+  SHeaderFactory();
 
   @override
-  Constellation load(SKit kit, XmlNode node) => Constellation(kit, node);
+  SHeader load(XmlNode node) => SHeader(node);
 
   @override
-  String get tag => "const";
+  String get tag => "sere";
 }

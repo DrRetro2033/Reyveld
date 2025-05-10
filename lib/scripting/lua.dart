@@ -5,11 +5,11 @@ import 'package:arceus/arceus.dart';
 import 'package:arceus/scripting/list.dart';
 import 'package:arceus/skit/sobjects/sobjects.dart';
 import 'package:arceus/uuid.dart';
-import 'package:arceus/version_control/constellation.dart';
-import 'package:arceus/version_control/star.dart';
+import 'package:arceus/version_control/constellation/constellation.dart';
+import 'package:arceus/version_control/star/star.dart';
 import 'package:lua_dardo_async/debug.dart';
 import 'package:lua_dardo_async/lua.dart';
-
+import 'dart:mirrors' as mirrors;
 import '../skit/skit.dart';
 
 /// The main class for running lua scripts.
@@ -24,6 +24,7 @@ class Lua {
 
   static Set<SInterface> get interfaces => {
         ListInterface(),
+        SHeaderInterface(),
         SObjectInterface(),
         SKitInterface(),
         ConstellationInterface(),
@@ -52,16 +53,16 @@ class Lua {
       await addGlobal(enum_.key, table);
     }
 
-    await addGlobal("addScript", (Lua state) async {
-      await addScript(await state.getFromTop<String>(),
-          name: await state.getFromTop<String>());
-    });
-
     for (final interface_ in interfaces) {
       if (interface_.statics.isNotEmpty) {
-        await addGlobal(interface_.className, interface_.statics);
+        await addGlobal(interface_.className, interface_.allStatics);
       }
     }
+
+    await addGlobal("addScript", (Lua state) async {
+      await addScript(state.getFromTop<String>()!,
+          name: state.getFromTop<String>()!);
+    });
   }
 
   void printStack([String message = "Default message"]) {
@@ -114,12 +115,12 @@ class Lua {
           List<dynamic> args = [];
           // printStack();
           for (final arg in value.$2.entries.toList().reversed) {
-            args.add(await getFromTop(
+            args.add(getFromTop(
                 ofType: arg.value.type, optional: !arg.value.isRequired));
           }
-          // Arceus.talker.debug("Arguments: $args");
           final finalArgs = args.reversed.toList()
             ..removeWhere((e) => e == null);
+          Arceus.talker.debug("Args: $finalArgs");
           if (value.$3 == null) {
             await Function.apply(value.$4, finalArgs);
           } else {
@@ -137,8 +138,7 @@ class Lua {
     }
   }
 
-  Future<T> getFromTop<T>(
-      {bool pop = true, bool optional = false, Type? ofType}) async {
+  T? getFromTop<T>({bool pop = true, bool optional = false, Type? ofType}) {
     dynamic result;
     try {
       if (state.isString(state.getTop())) {
@@ -157,8 +157,7 @@ class Lua {
       } else if (state.isBoolean(state.getTop())) {
         result = state.toBoolean(state.getTop());
       } else if (state.isTable(state.getTop())) {
-        final table = await _getTableFromState();
-
+        final table = _getTableFromState();
         if (table.containsKey("objHash") &&
             _objects[table["objHash"]] != null) {
           result = _objects[table["objHash"]]!.object;
@@ -181,15 +180,17 @@ class Lua {
       Arceus.talker.error(e, st);
     }
 
-    if (result is! T ||
-        (ofType != null &&
-            result.runtimeType.toString().replaceAll("_", "") !=
-                ofType.toString().replaceAll("_", ""))) {
+    final castable = !mirrors
+        .reflectType(result.runtimeType)
+        .isAssignableTo(mirrors.reflectType(ofType ?? T));
+    Arceus.talker.debug(
+        "Expected $T/$ofType and got ${result.runtimeType}. ($castable)");
+    if (castable) {
       if (!optional) {
         Exception("Expected $T/$ofType but got $result");
+      } else {
+        return null as T;
       }
-      Arceus.talker.debug("Expected $T/$ofType and got ${result.runtimeType}");
-      result = Future.value(null as T?);
     }
 
     if (pop) {
@@ -202,12 +203,12 @@ class Lua {
 
   String _createUniqueObjectHash() => generateUniqueHash(_objects.keys.toSet());
 
-  Future<Map<dynamic, dynamic>> _getTableFromState() async {
+  Map<dynamic, dynamic> _getTableFromState() {
     Map<dynamic, dynamic> resultTable = {};
     state.pushNil();
     while (state.next(state.getTop() - 1)) {
-      dynamic value = await getFromTop();
-      String key = await getFromTop<String>();
+      dynamic value = getFromTop();
+      String key = getFromTop<String>()!;
       resultTable[key] = value;
       _pushToStack(key);
     }
@@ -251,7 +252,7 @@ class Lua {
     if (!successful) {
       state.error();
     }
-    final result = await getFromTop(optional: true);
+    final result = getFromTop(optional: true);
     Arceus.talker.debug("Lua result: $result");
     return result;
   }
@@ -260,6 +261,8 @@ class Lua {
   static SInterface? getInterface(Object object) {
     for (final interface_ in interfaces) {
       if (interface_.isType(object)) {
+        // Arceus.talker
+        //     .debug("Found interface for $object (${interface_.runtimeType})");
         return interface_;
       }
     }

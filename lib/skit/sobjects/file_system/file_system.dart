@@ -16,7 +16,7 @@ part 'file_system.interfaces.dart';
 /// An archive is a collection of [SFile]s.
 @SGen("archive")
 class SArchive extends SRoot {
-  SArchive(super._kit, super._node);
+  SArchive(super._node);
 
   /// Returns the date the archive was archived/created on.
   DateTime get archivedOn => DateTime.parse(get("date")!);
@@ -27,7 +27,7 @@ class SArchive extends SRoot {
   /// Adds a file to the archive.
   /// [filepath] must be relative to the archive. For instance: "C://path/to/folder/example.txt" will translate to "example.txt".
   Future<void> addFile(String filepath, Stream<List<int>> data) async {
-    final file = await SFileCreator(filepath, data).create(kit);
+    final file = await SFileCreator(filepath, data).create();
     addSFile(file);
   }
 
@@ -160,7 +160,7 @@ extension SArchiveExtensions on SKit {
 class SFile extends SObject {
   /// The chunk size is used to chunk the bytes properly for decompression.
   static const chunkSize = 65536;
-  SFile(super._kit, super._node);
+  SFile(super._node);
 
   /// Returns the path of the file.
   String get path => get("path")!;
@@ -270,11 +270,11 @@ class SFile extends SObject {
 /// A reference to an [SArchive].
 @SGen("rarchive")
 class SRArchive extends SIndent<SArchive> {
-  SRArchive(super.kit, super.node);
+  SRArchive(super.node);
 
   @override
   Future<SArchive?> getRef() async {
-    return await kit.getArchive(hash);
+    return await kit!.getArchive(hash);
   }
 }
 
@@ -285,9 +285,9 @@ class SRFile extends SFile {
   String get filePath => get("path")!;
 
   @override
-  Future<Stream<List<int>>> get bytes => kit
+  Future<Stream<List<int>>> get bytes => kit!
       .getArchive(archiveHash)
       .then((value) async => await value!.getFile(filePath)!.bytes);
 
-  SRFile(super.kit, super.node);
+  SRFile(super.node);
 }

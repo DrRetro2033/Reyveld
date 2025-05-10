@@ -5,13 +5,18 @@ part of 'sobject.dart';
 /// The [hash] is unique to the type of [SRoot] that is being referenced.
 abstract class SIndent<T extends SRoot> extends SObject {
   bool _delete = false;
+
+  /// Returns true if the [SIndent] is marked for deletion.
+  /// Cannot be set directly, use [markForDeletion] instead.
   bool get isDeleted => _delete;
 
+  /// The hash of the [SRoot] that is being referenced.
   String get hash => get("hash")!;
-  SIndent(super.kit, super.node);
+  SIndent(super.node);
 
+  /// Returns the [SRoot] that is being referenced by the [SIndent].
   Future<T?> getRef() async {
-    return await kit.getRoot(filterRoots: (e) => e.hash == hash);
+    return await kit?.getRoot(filterRoots: (e) => e.hash == hash);
   }
 
   /// Returns true if the [SIndent] is for the specified [SRoot].
@@ -22,12 +27,12 @@ abstract class SIndent<T extends SRoot> extends SObject {
     return false;
   }
 
-  /// Marks the [SIndent] for deletion.
-  /// The [SIndent] and its refered [SRoot] will be deleted when the kit file is saved.
+  /// Marks the refered [SRoot] for deletion, and unparents the [SIndent].
+  /// If you only want to delete the [SIndent], use [unparent] instead.
   void markForDeletion() {
     unparent();
     _delete = true;
-    kit.addIndent(this);
+    kit!.addIndent(this);
   }
 
   @override
@@ -55,11 +60,11 @@ class SIndentCreator<T extends SIndent> extends SCreator {
   SIndentCreator(this.hash);
 
   @override
-  FutureOr<T> create(SKit kit) async {
+  FutureOr<T> create() async {
     final builder = XmlBuilder();
 
     /// Does something before creation asyncronously
-    await beforeCreate(kit);
+    await beforeCreate();
 
     builder.element(getSFactory<T>().tag, nest: () {
       builder.attribute("hash", hash);
@@ -69,7 +74,7 @@ class SIndentCreator<T extends SIndent> extends SCreator {
     final frag = builder.buildDocument(); // build the document
 
     /// load the [SObject]
-    return getSFactory<T>().load(kit, frag.rootElement);
+    return getSFactory<T>().load(frag.rootElement);
   }
 
   @override

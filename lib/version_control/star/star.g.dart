@@ -1,17 +1,17 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'header.dart';
+part of 'star.dart';
 
 // **************************************************************************
 // SGenGenerator
 // **************************************************************************
 
-class SHeaderFactory extends SFactory<SHeader> {
-  SHeaderFactory();
+class StarFactory extends SFactory<Star> {
+  StarFactory();
 
   @override
-  SHeader load(SKit kit, XmlNode node) => SHeader(kit, node);
+  Star load(XmlNode node) => Star(node);
 
   @override
-  String get tag => "sere";
+  String get tag => "star";
 }

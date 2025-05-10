@@ -1,19 +1,18 @@
 part of 'file_system.dart';
 
 /// Creates [SArchive]s.
-class SArchiveCreator extends SRootCreator<SArchive> {
+class SArchiveCreator extends SCreator<SArchive> {
   SArchiveCreator();
 
   /// Creates a new archive from a folder.
   /// Adds all of the files in the folder to the archive, making them relative to the archive.
   /// Will add the new archive to the kit, and returns it.
-  static Future<SArchive> archiveFolder(SKit kit, String path,
-      {SArchive? ref}) async {
+  static Future<SArchive> archiveFolder(String path, {SArchive? ref}) async {
     final dir = Directory(path);
     if (!await dir.exists()) {
       throw Exception("Path does not exist.");
     }
-    final archive = await SArchiveCreator().create(kit);
+    final archive = await SArchiveCreator().create();
     for (final file in dir.listSync(recursive: true)) {
       /// Get all of the files in the current directory recursively,
       /// and add them to the new archive, making them relative to the archive.
@@ -24,8 +23,7 @@ class SArchiveCreator extends SRootCreator<SArchive> {
               .getFile(filePath)!
               .streamDiff(file.openRead())
               .any((e) => e.any((e) => e != 0))) {
-            archive
-                .addSFile(await SRFileCreator(ref.hash, filePath).create(kit));
+            archive.addSFile(await SRFileCreator(ref.hash, filePath).create());
             continue;
           }
         }
@@ -48,7 +46,7 @@ class SFileCreator extends SCreator<SFile> {
   SFileCreator(this.path, this.stream);
 
   @override
-  get beforeCreate => (kit) async {
+  get beforeCreate => () async {
         final bytes = stream.transform(gzip.encoder).transform(base64.encoder);
         data = await bytes.reduce((a, b) => a + b);
       };

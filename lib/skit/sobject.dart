@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:arceus/skit/skit.dart';
-import 'package:arceus/uuid.dart';
 
 export 'package:xml/xml.dart';
 export 'package:arceus/skit/skit.dart';
@@ -22,9 +21,9 @@ part 'sindent.dart';
 /// predetermined behavior.
 class SObject {
   final XmlNode _node;
-  final SKit kit;
+  SKit? kit;
 
-  SObject(this.kit, this._node);
+  SObject(this._node);
 
   /// Sets an attribute of the xml node.
   /// Should be used in a setter method:
@@ -32,7 +31,11 @@ class SObject {
   /// set name(String value) => set("name", value);
   /// ```
   void set(String key, dynamic value) {
-    _node.setAttribute(key, value.toString());
+    if (value == null) {
+      _node.removeAttribute(key);
+    } else {
+      _node.setAttribute(key, value.toString());
+    }
   }
 
   /// Gets an attribute of the xml node.
@@ -62,6 +65,7 @@ class SObject {
     if (child is SRoot) {
       throw Exception("Cannot add a SRoot to a SObject!");
     }
+    child.kit = kit;
     _node.children.add(child._node);
   }
 
@@ -83,7 +87,7 @@ class SObject {
     for (var child in _node.childElements) {
       final factory = getSFactory(child.name.local);
       if (factory is! SFactory<T>) continue;
-      children.add(factory.load(kit, child));
+      children.add(factory.load(child)..kit = kit);
     }
     return children;
   }
@@ -96,7 +100,7 @@ class SObject {
       if (factory is! SFactory<T>) {
         continue;
       }
-      T obj = factory.load(kit, child);
+      T obj = factory.load(child)..kit = kit;
       if (filter != null && !filter(obj)) {
         continue;
       }
@@ -111,7 +115,7 @@ class SObject {
     if (_node.parentElement == null) return null;
     final factory = getSFactory(_node.parentElement!.name.local);
     if (factory is! SFactory<T>) return null;
-    T obj = factory.load(kit, _node.parentElement!);
+    T obj = factory.load(_node.parentElement!)..kit = kit;
     if (filter != null && !filter(obj)) return null;
     return obj;
   }
@@ -122,7 +126,7 @@ class SObject {
     for (var child in _node.descendantElements) {
       final factory = getSFactory(child.name.local);
       if (factory is! SFactory<T>) continue;
-      T obj = factory.load(kit, child);
+      T obj = factory.load(child)..kit = kit;
       if (filter != null && !filter(obj)) {
         continue;
       }
@@ -140,7 +144,7 @@ class SObject {
     for (var ancestor in ancestors) {
       final factory = getSFactory(ancestor.name.local);
       if (factory is! SFactory<T>) continue;
-      T obj = factory.load(kit, ancestor);
+      T obj = factory.load(ancestor)..kit = kit;
       if (filter != null && !filter(obj)) {
         continue;
       }
@@ -154,7 +158,7 @@ class SObject {
     if (_node.previousElementSibling == null) return null;
     final factory = getSFactory(_node.previousElementSibling!.name.local);
     if (factory is! SFactory<T>) return null;
-    T obj = factory.load(kit, _node.previousElementSibling!);
+    T obj = factory.load(_node.previousElementSibling!)..kit = kit;
     if (filter != null && !filter(obj)) return null;
     return obj;
   }
@@ -164,7 +168,7 @@ class SObject {
     if (_node.nextElementSibling == null) return null;
     final factory = getSFactory(_node.nextElementSibling!.name.local);
     if (factory is! SFactory<T>) return null;
-    T obj = factory.load(kit, _node.nextElementSibling!);
+    T obj = factory.load(_node.nextElementSibling!)..kit = kit;
     if (filter != null && !filter(obj)) return null;
     return obj;
   }
@@ -193,7 +197,7 @@ abstract class SFactory<T extends SObject> {
   /// Loads the [SObject] from the xml node.
   /// The [SKit] and the [XmlNode] are passed for accessing the underlying xml data,
   /// and the file it came from.
-  T load(SKit kit, XmlNode node);
+  T load(XmlNode node);
 
   @override
   operator ==(other) {
@@ -243,23 +247,35 @@ abstract class SFactory<T extends SObject> {
 abstract class SCreator<T extends SObject> {
   SCreator();
 
-  FutureOr<T> create(SKit kit) async {
+  FutureOr<T> create() async {
     final builder = XmlBuilder();
 
     /// Does something before creation asyncronously
-    await beforeCreate(kit);
+    await beforeCreate();
 
+    /// Create the outer element with the correct tag,
+    /// and then call the [creator] function
     builder.element(getSFactory<T>().tag, nest: () {
       creator(builder);
     });
 
-    final frag = builder.buildDocument(); // build the document
+    final frag = builder
+        .buildDocument(); // Builds the document that contains our element.
 
-    /// load the [SObject]
-    return getSFactory<T>().load(kit, frag.rootElement);
+    /// Load the [SObject].
+    final obj = getSFactory<T>().load(frag.rootElement);
+
+    /// Does something after creation asynchronously.
+    await afterCreate(obj);
+
+    return obj;
   }
 
-  FutureOr<void> Function(SKit kit) get beforeCreate => (kit) async {
+  FutureOr<void> Function() get beforeCreate => () async {
+        return;
+      };
+
+  FutureOr<void> Function(T) get afterCreate => (T obj) async {
         return;
       };
 
@@ -270,7 +286,7 @@ abstract class SCreator<T extends SObject> {
 }
 
 /// The interface for [SObject]
-class SObjectInterface<T extends SObject> extends SInterface<T> {
+final class SObjectInterface extends SInterface<SObject> {
   @override
   get className => "SObject";
 
@@ -280,7 +296,20 @@ A base class for all objects in the kit.
 """;
 
   @override
-  get parent => SObjectInterface();
+  get statics => {
+        // "tag": (
+        //   "Get the xml tag of the SObject type.",
+        //   {},
+        //   String,
+        //   () => throw UnimplementedError()
+        // ),
+        // "new": (
+        //   "Creates a new SObject instance of this type.",
+        //   {},
+        //   SObject,
+        //   () => throw UnimplementedError()
+        // )
+      };
 
   @override
   get exports => {

@@ -25,14 +25,7 @@ abstract class SInterface<T> {
 
   /// This converts the interface into a Lua table.
   Map<String, dynamic> toLua(Lua state, String luaHash) {
-    return {
-      "class": className,
-      "objHash": luaHash,
-      "toString": (Lua state) {
-        return toString();
-      },
-      ...allExports
-    };
+    return {"class": className, "objHash": luaHash, ...allExports};
   }
 
   /// This is the object that this interface wraps around.
@@ -48,10 +41,10 @@ abstract class SInterface<T> {
   /// Used in [toLua].
   Map<String, LuaEntrypoint> get allExports {
     final map = exports;
-    if (parent != null && parent!.runtimeType != runtimeType) {
-      for (final entry in parent!.allExports.entries) {
-        map.putIfAbsent(entry.key, () => entry.value);
-      }
+    if (parent == null) return map;
+    final parentInstance = parent!..object = object;
+    for (final entry in parentInstance.allExports.entries) {
+      map.putIfAbsent(entry.key, () => entry.value);
     }
     return map;
   }
@@ -61,6 +54,15 @@ abstract class SInterface<T> {
   /// Used for constructors.
   Map<String, LuaEntrypoint> get statics => {};
 
+  Map<String, LuaEntrypoint> get allStatics {
+    final map = statics;
+    if (parent == null) return map;
+    for (final entry in parent!.allStatics.entries) {
+      map.putIfAbsent(entry.key, () => entry.value);
+    }
+    return map;
+  }
+
   /// This is the parent interface of this interface.
   /// If this interface does not have a parent, then this will be null.
   /// Used when pushing a object to the stack, and when generating docs.
@@ -69,10 +71,9 @@ abstract class SInterface<T> {
   @override
   String toString() => object.toString();
 
-  /// This checks if an object is of type [T].
-  bool isType(Object object) {
-    return object is T;
-  }
+  /// This is used when pushing a object to the stack.
+  /// Used to figure out which interface to use by checking its priority for [object].
+  bool isType(Object object) => object.runtimeType == T;
 
   /// This generates the docs for the interface.
   Future<void> generateDocs() async {
@@ -81,9 +82,10 @@ abstract class SInterface<T> {
     await doc.create(recursive: true);
     await doc.writeAsString("""
 ---@meta _
+${_sources()}
 
-${statics.isNotEmpty ? _luaStatics() : ""}
-${_luaExports()}
+${allStatics.isNotEmpty ? _luaStatics() : ""}
+${exports.isNotEmpty ? _luaExports() : ""}
 """);
   }
 
@@ -91,8 +93,13 @@ ${_luaExports()}
   String _luaStatics() => """
 $className = {}
 
-${statics.entries.map((e) => _luaMethod(e)).join("\n")}
+${allStatics.entries.map((e) => _luaMethod(e)).join("\n")}
 """;
+
+  String _sources() {
+    if (parent == null) return "";
+    return "---@source ${parent!.className.toLowerCase()}.lua";
+  }
 
   /// This generates the methods for the interface.
   String _luaExports() {
@@ -110,6 +117,12 @@ ${statics.entries.map((e) => _luaMethod(e)).join("\n")}
     return text.toString();
   }
 
+  /// This generates a single method in the docs for the interface.
+  /// [export] is a MapEntry of <name, (description, arguments, return type)>.
+  /// This will generate a function with the name [export.key], and the arguments
+  /// and return type from [export.value].
+  /// The description will be from [export.value.$1].
+  /// This will also generate parameter and return type docs from [export.value.$2] and [export.value.$3].
   String _luaMethod(MapEntry<String, LuaEntrypoint> export) {
     StringBuffer method = StringBuffer();
     if (export.value.$2.isNotEmpty) {

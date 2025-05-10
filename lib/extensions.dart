@@ -57,3 +57,12 @@ extension ChunkStream on Stream<int> {
     }
   }
 }
+
+extension CreateParentDirectory on File {
+  Future<void> ensureParentDirectory() async {
+    if (!await parent.exists()) {
+      await parent.create(recursive: true);
+    }
+    return;
+  }
+}

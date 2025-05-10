@@ -31,7 +31,7 @@ class SGenGenerator extends GeneratorForAnnotation<SGen> {
         $factoryClassName();
 
         @override
-        $className load(SKit kit, XmlNode node) => $className(kit, node);
+        $className load(XmlNode node) => $className(node);
 
         @override
         String get tag => "$tagName";

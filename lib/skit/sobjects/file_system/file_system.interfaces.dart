@@ -10,6 +10,9 @@ An archive in a SKit. Contains files.
 """;
 
   @override
+  get parent => SObjectInterface();
+
+  @override
   get exports => {
         "filepaths": (
           "Returns the filepaths of the files in the archive",
@@ -44,7 +47,7 @@ An archive in a SKit. Contains files.
       };
 }
 
-class SFileInterface extends SObjectInterface<SFile> {
+class SFileInterface extends SInterface<SFile> {
   @override
   get className => "SFile";
 
@@ -52,6 +55,9 @@ class SFileInterface extends SObjectInterface<SFile> {
   get description => """
 A file in a SArchive. Contains the path of the file, and its data in the form of compressed base64.
 """;
+
+  @override
+  get parent => SObjectInterface();
 
   @override
   get exports => {

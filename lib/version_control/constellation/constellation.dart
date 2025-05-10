@@ -2,15 +2,17 @@ import 'dart:async';
 
 import 'package:arceus/extensions.dart';
 import 'package:arceus/skit/sobject.dart';
-import 'package:arceus/skit/sobjects/file_system.dart';
+import 'package:arceus/skit/sobjects/file_system/file_system.dart';
 import 'package:arceus/uuid.dart';
-import 'package:arceus/version_control/star.dart';
+import 'package:arceus/version_control/star/star.dart';
 
 part 'constellation.g.dart';
+part 'constellation.interface.dart';
+part 'constellation.creator.dart';
 
 @SGen("const")
 class Constellation extends SObject {
-  Constellation(super._kit, super._node);
+  Constellation(super._node);
   String get name => get("name") ?? "Constellation";
 
   String get path => get("path")!.fixPath();
@@ -28,11 +30,10 @@ class Constellation extends SObject {
   /// Creates the root [Star] of the constellation.
   /// This is used when creating a new constellation.
   Future<Star> createRootStar() async {
-    final archive = await SArchiveCreator.archiveFolder(kit, path);
-    kit.addRoot(archive);
+    final archive = await SArchiveCreator.archiveFolder(path);
+    await kit!.addRoot(archive);
     final rootStar =
-        await StarCreator("Initial Star", newStarHash(), archive.hash)
-            .create(kit);
+        await StarCreator("Initial Star", newStarHash(), archive.hash).create();
     addChild(rootStar);
     currentHash = rootStar.hash;
     return rootStar;
@@ -81,7 +82,7 @@ class Constellation extends SObject {
 
   /// Returns a archive with unsaved changes in the tracked folder.
   Future<SArchive> getUnsavedChanges() async {
-    final archive = await SArchiveCreator.archiveFolder(kit, path);
+    final archive = await SArchiveCreator.archiveFolder(path);
     if (!await archive
         .isDifferent(await getCurrentStar().archive.then((e) async => e!))) {
       return await getCurrentStar().archive.then((e) async => e!);
@@ -95,61 +96,4 @@ extension ConstellationExtension on SKit {
     final header = await getHeader();
     return header?.getChild<Constellation>();
   }
-}
-
-class ConstellationInterface extends SObjectInterface<Constellation> {
-  @override
-  get className => "Constellation";
-
-  @override
-  get description => """
-A collection of Stars, with a root star, and a current star.
-""";
-
-  @override
-  get exports => {
-        "name": (
-          "Gets the name of the constellation.",
-          {},
-          String,
-          () => object?.name
-        ),
-        "path": (
-          "Gets the path of the constellation.",
-          {},
-          String,
-          () => object?.path
-        ),
-        "current": (
-          "Gets the current star of the constellation.",
-          {},
-          Star,
-          () => object?.getCurrentStar()
-        ),
-        "root": (
-          "Gets the root star of the constellation.",
-          {},
-          Star,
-          () => object?.root
-        ),
-        "unsaved": (
-          "Gets an archive that contains all of the unsaved changes in the constellation.",
-          {},
-          SArchive,
-          () => object?.getUnsavedChanges()
-        )
-      };
-}
-
-class ConstellationCreator extends SCreator<Constellation> {
-  final String name;
-  final String path;
-
-  ConstellationCreator(this.name, this.path);
-
-  @override
-  get creator => (builder) {
-        builder.attribute("name", name);
-        builder.attribute("path", path);
-      };
 }

@@ -1,17 +1,17 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'star.dart';
+part of 'constellation.dart';
 
 // **************************************************************************
 // SGenGenerator
 // **************************************************************************
 
-class StarFactory extends SFactory<Star> {
-  StarFactory();
+class ConstellationFactory extends SFactory<Constellation> {
+  ConstellationFactory();
 
   @override
-  Star load(SKit kit, XmlNode node) => Star(kit, node);
+  Constellation load(XmlNode node) => Constellation(node);
 
   @override
-  String get tag => "star";
+  String get tag => "const";
 }
