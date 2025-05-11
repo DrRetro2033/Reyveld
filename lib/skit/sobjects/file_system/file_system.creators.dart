@@ -7,7 +7,8 @@ class SArchiveCreator extends SCreator<SArchive> {
   /// Creates a new archive from a folder.
   /// Adds all of the files in the folder to the archive, making them relative to the archive.
   /// Will add the new archive to the kit, and returns it.
-  static Future<SArchive> archiveFolder(String path, {SArchive? ref}) async {
+  static Future<SArchive> archiveFolder(String path,
+      {SArchive? ref, bool Function(File)? filter}) async {
     final dir = Directory(path);
     if (!await dir.exists()) {
       throw Exception("Path does not exist.");
@@ -17,6 +18,7 @@ class SArchiveCreator extends SCreator<SArchive> {
       /// Get all of the files in the current directory recursively,
       /// and add them to the new archive, making them relative to the archive.
       if (file is File) {
+        if (filter != null && !filter(file)) continue;
         final filePath = file.path.relativeTo(path);
         if (ref != null && ref.hasFile(filePath)) {
           if (!await ref

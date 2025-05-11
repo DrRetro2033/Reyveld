@@ -28,6 +28,7 @@ part 'skit.interface.dart';
 enum SKitType {
   unspecified,
   constellation,
+  library,
 }
 
 /// Represents a compressed, encrypted XML file.

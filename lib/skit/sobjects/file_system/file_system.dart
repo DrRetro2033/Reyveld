@@ -177,6 +177,10 @@ class SFile extends SObject {
   /// A single byte version of [bytes].
   Future<Stream<int>> get singleBytes async => (await bytes).expand((e) => e);
 
+  /// Returns a string version of the data in the file.
+  Future<String> get str async =>
+      (await bytes).map((e) => String.fromCharCodes(e)).join();
+
   /// Attempts to get the length of the file. If it fails, then it will return a 0;
   Future<int> get length async => (await bytes)
       .map<int>((chunk) => chunk.length)
@@ -274,7 +278,7 @@ class SRArchive extends SIndent<SArchive> {
 
   @override
   Future<SArchive?> getRef() async {
-    return await kit!.getArchive(hash);
+    return await kit.getArchive(hash);
   }
 }
 
@@ -285,7 +289,7 @@ class SRFile extends SFile {
   String get filePath => get("path")!;
 
   @override
-  Future<Stream<List<int>>> get bytes => kit!
+  Future<Stream<List<int>>> get bytes => kit
       .getArchive(archiveHash)
       .then((value) async => await value!.getFile(filePath)!.bytes);
 

@@ -16,7 +16,7 @@ abstract class SIndent<T extends SRoot> extends SObject {
 
   /// Returns the [SRoot] that is being referenced by the [SIndent].
   Future<T?> getRef() async {
-    return await kit?.getRoot(filterRoots: (e) => e.hash == hash);
+    return await kit.getRoot(filterRoots: (e) => e.hash == hash);
   }
 
   /// Returns true if the [SIndent] is for the specified [SRoot].
@@ -32,7 +32,7 @@ abstract class SIndent<T extends SRoot> extends SObject {
   void markForDeletion() {
     unparent();
     _delete = true;
-    kit!.addIndent(this);
+    kit.addIndent(this);
   }
 
   @override

@@ -55,7 +55,7 @@ class Arceus {
   }
 
   static String getLibraryPath() {
-    return "${_getAppDataPath()}/lib";
+    return "${_getAppDataPath()}/libraries";
   }
 
   static Future<void> openURL(String url) async {

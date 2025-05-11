@@ -21,7 +21,20 @@ part 'sindent.dart';
 /// predetermined behavior.
 class SObject {
   final XmlNode _node;
-  SKit? kit;
+  SKit? _kit;
+
+  SKit get kit {
+    if (_kit == null) {
+      throw Exception(
+          "SObject has no kit! Please make sure you've added the SObject to a kit before using it.");
+    }
+    return _kit!;
+  }
+
+  set kit(SKit? kit) {
+    // Arceus.talker.info("SObject kit set to: ${kit?.path}");
+    _kit = kit;
+  }
 
   SObject(this._node);
 
@@ -65,7 +78,7 @@ class SObject {
     if (child is SRoot) {
       throw Exception("Cannot add a SRoot to a SObject!");
     }
-    child.kit = kit;
+    child.kit = _kit;
     _node.children.add(child._node);
   }
 
@@ -87,7 +100,7 @@ class SObject {
     for (var child in _node.childElements) {
       final factory = getSFactory(child.name.local);
       if (factory is! SFactory<T>) continue;
-      children.add(factory.load(child)..kit = kit);
+      children.add(factory.load(child)..kit = _kit);
     }
     return children;
   }
@@ -100,7 +113,7 @@ class SObject {
       if (factory is! SFactory<T>) {
         continue;
       }
-      T obj = factory.load(child)..kit = kit;
+      T obj = factory.load(child)..kit = _kit;
       if (filter != null && !filter(obj)) {
         continue;
       }
@@ -115,7 +128,7 @@ class SObject {
     if (_node.parentElement == null) return null;
     final factory = getSFactory(_node.parentElement!.name.local);
     if (factory is! SFactory<T>) return null;
-    T obj = factory.load(_node.parentElement!)..kit = kit;
+    T obj = factory.load(_node.parentElement!)..kit = _kit;
     if (filter != null && !filter(obj)) return null;
     return obj;
   }
@@ -126,7 +139,7 @@ class SObject {
     for (var child in _node.descendantElements) {
       final factory = getSFactory(child.name.local);
       if (factory is! SFactory<T>) continue;
-      T obj = factory.load(child)..kit = kit;
+      T obj = factory.load(child)..kit = _kit;
       if (filter != null && !filter(obj)) {
         continue;
       }
@@ -144,7 +157,7 @@ class SObject {
     for (var ancestor in ancestors) {
       final factory = getSFactory(ancestor.name.local);
       if (factory is! SFactory<T>) continue;
-      T obj = factory.load(ancestor)..kit = kit;
+      T obj = factory.load(ancestor)..kit = _kit;
       if (filter != null && !filter(obj)) {
         continue;
       }
@@ -158,7 +171,7 @@ class SObject {
     if (_node.previousElementSibling == null) return null;
     final factory = getSFactory(_node.previousElementSibling!.name.local);
     if (factory is! SFactory<T>) return null;
-    T obj = factory.load(_node.previousElementSibling!)..kit = kit;
+    T obj = factory.load(_node.previousElementSibling!)..kit = _kit;
     if (filter != null && !filter(obj)) return null;
     return obj;
   }
@@ -168,7 +181,7 @@ class SObject {
     if (_node.nextElementSibling == null) return null;
     final factory = getSFactory(_node.nextElementSibling!.name.local);
     if (factory is! SFactory<T>) return null;
-    T obj = factory.load(_node.nextElementSibling!)..kit = kit;
+    T obj = factory.load(_node.nextElementSibling!)..kit = _kit;
     if (filter != null && !filter(obj)) return null;
     return obj;
   }

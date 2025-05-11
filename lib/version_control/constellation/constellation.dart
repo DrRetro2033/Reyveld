@@ -21,19 +21,26 @@ class Constellation extends SObject {
 
   set currentHash(String value) => set("cur", value);
 
-  Uri get uri => Uri.parse(path);
-
   set path(String value) => set("path", value.fixPath());
 
-  Star get root => getChild<Star>()!;
+  /// Returns the root [Star] of the constellation.
+  Star get root {
+    final root = getChild<Star>();
+    if (root == null) {
+      throw Exception(
+          "Constellation has no root star! Please start the constellation by calling start() in Lua before using it!");
+    }
+    return root;
+  }
 
   /// Creates the root [Star] of the constellation.
   /// This is used when creating a new constellation.
   Future<Star> createRootStar() async {
     final archive = await SArchiveCreator.archiveFolder(path);
-    await kit!.addRoot(archive);
-    final rootStar =
-        await StarCreator("Initial Star", newStarHash(), archive.hash).create();
+    await kit.addRoot(archive);
+    final rootStar = await StarCreator(
+            "Initial Star", newStarHash(), await archive.newIndent())
+        .create();
     addChild(rootStar);
     currentHash = rootStar.hash;
     return rootStar;
@@ -71,6 +78,8 @@ class Constellation extends SObject {
     return generateUniqueHash(hashes);
   }
 
+  /// Checks for changes from the current star, and returns true if
+  /// there are changes, false if there are none.
   Future<bool> checkForChanges() {
     return getCurrentStar().checkForChanges();
   }
@@ -80,7 +89,7 @@ class Constellation extends SObject {
     return await getCurrentStar().archive.then((e) async => e!.extract(path));
   }
 
-  /// Returns a archive with unsaved changes in the tracked folder.
+  /// Returns an archive with unsaved changes in the tracked folder.
   Future<SArchive> getUnsavedChanges() async {
     final archive = await SArchiveCreator.archiveFolder(path);
     if (!await archive
@@ -88,12 +97,5 @@ class Constellation extends SObject {
       return await getCurrentStar().archive.then((e) async => e!);
     }
     return archive;
-  }
-}
-
-extension ConstellationExtension on SKit {
-  Future<Constellation?> getConstellation() async {
-    final header = await getHeader();
-    return header?.getChild<Constellation>();
   }
 }

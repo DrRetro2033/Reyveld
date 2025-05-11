@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:arceus/arceus.dart';
 import 'package:arceus/scripting/list.dart';
+import 'package:arceus/skit/sobjects/library/library.dart';
 import 'package:arceus/skit/sobjects/sobjects.dart';
 import 'package:arceus/uuid.dart';
 import 'package:arceus/version_control/constellation/constellation.dart';
@@ -17,8 +18,6 @@ class Lua {
   final LuaState state;
 
   Lua() : state = LuaState.newState();
-
-  final Set<LuaScript> _scripts = {};
 
   final Map<String, SInterface> _objects = {};
 
@@ -58,14 +57,10 @@ class Lua {
         await addGlobal(interface_.className, interface_.allStatics);
       }
     }
-
-    await addGlobal("addScript", (Lua state) async {
-      await addScript(state.getFromTop<String>()!,
-          name: state.getFromTop<String>()!);
-    });
   }
 
-  void printStack([String message = "Default message"]) {
+  /// Prints the stack with [message].
+  void printStack([String message = ""]) {
     print(message);
     state.printStack();
     print("");
@@ -83,6 +78,7 @@ class Lua {
     await state.setGlobal(name);
   }
 
+  /// Pushes a value to the stack.
   Future<void> _pushToStack(dynamic value) async {
     if (value is String) {
       state.pushString(value);
@@ -138,6 +134,7 @@ class Lua {
     }
   }
 
+  /// Gets a value from the top of the stack.
   T? getFromTop<T>({bool pop = true, bool optional = false, Type? ofType}) {
     dynamic result;
     try {
@@ -201,8 +198,10 @@ class Lua {
     return result;
   }
 
+  /// Creates a unique hash for an object.
   String _createUniqueObjectHash() => generateUniqueHash(_objects.keys.toSet());
 
+  /// Returns a table from the lua state.
   Map<dynamic, dynamic> _getTableFromState() {
     Map<dynamic, dynamic> resultTable = {};
     state.pushNil();
@@ -215,29 +214,21 @@ class Lua {
     return resultTable;
   }
 
-  Future<void> addScript(String script, {String name = "run.lua"}) async {
-    Arceus.talker.debug("Attempting to add script: $name \n$script");
-    final testState = LuaState.newState();
-    await _init(testState);
-    final successful = await testState.doString(_compile(script));
-    if (!successful) {
-      try {
-        state.error();
-      } catch (e) {
-        Arceus.talker.critical("Could not add script: $e");
-      }
-      return;
-    }
-    if (!_scripts.any((e) => e.name == name)) {
-      _scripts.removeWhere((e) => e.name == name);
-    }
-    _scripts.add(LuaScript(name, script));
-  }
-
   // Compiles a lua project.
-  String _compile([String? extra]) {
+  Future<String> _compile(String entrypoint) async {
     final hexExp = RegExp(r"0x([0-9A-f]+)");
-    String compiled = [..._scripts.map((e) => e.code), extra].join("\n");
+    final requireExp = RegExp(r"require ([A-z]+)");
+
+    String compiled = entrypoint;
+
+    while (requireExp.hasMatch(compiled)) {
+      final match = requireExp.firstMatch(compiled)!;
+      // Gets the library from the nane.
+      final lib =
+          LuaLibrary("${Arceus.getLibraryPath()}/${match.group(1)!}.skit");
+      compiled = compiled.replaceRange(match.start, match.end, await lib.code);
+    }
+
     while (hexExp.hasMatch(compiled)) {
       final match = hexExp.firstMatch(compiled)!;
       compiled = compiled.replaceRange(match.start, match.end,
@@ -247,8 +238,9 @@ class Lua {
   }
 
   // Runs a lua script.
-  Future<dynamic> run([String? extra]) async {
-    final successful = await state.doString(_compile(extra).trim());
+  Future<dynamic> run(String entrypoint) async {
+    final successful = await state
+        .doString(await _compile(entrypoint).then((value) => value.trim()));
     if (!successful) {
       state.error();
     }
@@ -310,15 +302,31 @@ ${enum_.key} = {
   }
 }
 
-class LuaScript {
-  final String name;
-  final String code;
+abstract class LuaCode {
+  final String path;
+  Future<String> get code;
 
-  LuaScript(this.name, this.code);
+  LuaCode(this.path);
+}
+
+class LuaScript extends LuaCode {
+  @override
+  get code async {
+    final file = File(path);
+    return await file.readAsString();
+  }
+
+  LuaScript(super.path);
+}
+
+class LuaLibrary extends LuaCode {
+  LuaLibrary(super.path);
 
   @override
-  int get hashCode => name.hashCode;
-
-  @override
-  bool operator ==(Object other) => other is LuaScript && other.name == name;
+  get code async {
+    final skit = await SKit.open(path, type: SKitType.library);
+    final header = await skit.getHeader();
+    return header!.getChild<SLibrary>()!.archive.then((archive) =>
+        archive.getFiles().map((e) async => await e!.str).join("\n"));
+  }
 }

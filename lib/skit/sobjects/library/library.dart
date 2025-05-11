@@ -1,6 +1,10 @@
 import 'package:arceus/skit/sobject.dart';
 import 'package:arceus/skit/sobjects/sobjects.dart';
 
+part 'library.g.dart';
+part 'library.creator.dart';
+part 'library.interface.dart';
+
 /// This class represents an Arceus library.
 /// A library contains a name, an archive reference, a description, and a list of authors.
 ///
@@ -19,4 +23,12 @@ class SLibrary extends SObject {
   String get description => getChild<SDescription>()!.body;
 
   List<SAuthor?> get authors => getChildren<SAuthor>();
+
+  Future<void> package(String path) async {
+    final archive = await SArchiveCreator.archiveFolder(path,
+        filter: (e) => e.path.endsWith(".lua"));
+    await kit.addRoot(archive);
+    addChild(await archive.newIndent<SRArchive>());
+    return;
+  }
 }

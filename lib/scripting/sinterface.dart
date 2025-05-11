@@ -98,7 +98,8 @@ ${allStatics.entries.map((e) => _luaMethod(e)).join("\n")}
 
   String _sources() {
     if (parent == null) return "";
-    return "---@source ${parent!.className.toLowerCase()}.lua";
+    return """---@source ${parent!.className.toLowerCase()}.lua
+  ---@source enums.lua""";
   }
 
   /// This generates the methods for the interface.

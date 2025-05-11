@@ -25,7 +25,10 @@ abstract class SRoot extends SObject {
   int get hashCode => hash.hashCode;
 
   void markForDeletion() {
-    kit!.unloadRoot(this);
+    kit.unloadRoot(this);
     delete = true;
   }
+
+  Future<T> newIndent<T extends SIndent>() async =>
+      await SIndentCreator(hash).create() as T;
 }

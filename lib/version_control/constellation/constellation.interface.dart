@@ -64,7 +64,7 @@ A collection of Stars, with a root star, and a current star.
           "Starts the constellation by creating the root star. Call after adding the constellation to the kit.",
           {},
           Star,
-          () => object?.createRootStar()
+          () async => await object?.createRootStar()
         ),
         "root": (
           "Gets the root star of the constellation.",
@@ -76,7 +76,7 @@ A collection of Stars, with a root star, and a current star.
           "Gets an archive that contains all of the unsaved changes in the constellation.",
           {},
           SArchive,
-          () => object?.getUnsavedChanges()
+          () async => await object?.getUnsavedChanges()
         )
       };
 }
