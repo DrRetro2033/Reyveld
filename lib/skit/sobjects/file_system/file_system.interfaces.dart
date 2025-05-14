@@ -28,7 +28,14 @@ An archive in a SKit. Contains files.
         ),
         "getFile": (
           "Returns the file with the path provided",
-          {"path": ("The path of the file", type: String, isRequired: true)},
+          {
+            "path": (
+              "The path of the file",
+              type: String,
+              cast: (value) => value as String,
+              isRequired: true
+            )
+          },
           SFile,
           (state) async => object!.getFile(await state.getFromTop<String>())
         ),
@@ -38,6 +45,7 @@ An archive in a SKit. Contains files.
             "path": (
               "The path to extract the archive to",
               type: String,
+              cast: (value) => value as String,
               isRequired: true
             ),
           },
@@ -67,6 +75,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             "path": (
               "The path to extract the file to.",
               type: String,
+              cast: (value) => value as String,
               isRequired: true
             ),
           },
@@ -85,6 +94,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             "index": (
               "The index to get the value at.",
               type: int,
+              cast: (value) => value as int,
               isRequired: true
             ),
           },
@@ -97,6 +107,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             "index": (
               "The index to get the value at.",
               type: int,
+              cast: (value) => value as int,
               isRequired: true
             ),
           },
@@ -109,6 +120,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             "index": (
               "The index to get the value at.",
               type: int,
+              cast: (value) => value as int,
               isRequired: true
             ),
           },
@@ -121,6 +133,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             "index": (
               "The index to get the value at.",
               type: int,
+              cast: (value) => value as int,
               isRequired: true
             ),
           },
@@ -133,6 +146,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             "index": (
               "The index to get the value at.",
               type: int,
+              cast: (value) => value as int,
               isRequired: true
             ),
           },
@@ -145,6 +159,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             "index": (
               "The index to get the value at.",
               type: int,
+              cast: (value) => value as int,
               isRequired: true
             ),
           },
@@ -157,6 +172,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             "index": (
               "The index to get the value at.",
               type: int,
+              cast: (value) => value as int,
               isRequired: true
             ),
           },
@@ -169,6 +185,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             "index": (
               "The index to get the value at.",
               type: int,
+              cast: (value) => value as int,
               isRequired: true
             ),
           },
@@ -181,16 +198,19 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             "index": (
               "The index to get the string at.",
               type: int,
+              cast: (value) => value as int,
               isRequired: true
             ),
             "length": (
               "The length of the string.",
               type: int,
+              cast: (value) => value as int,
               isRequired: true
             ),
             "stopAtNull": (
               "Whether to stop at the first null character while getting the string.",
               type: bool,
+              cast: (value) => value as bool,
               isRequired: false
             ),
           },

@@ -9,7 +9,6 @@ import 'package:arceus/version_control/constellation/constellation.dart';
 import 'package:arceus/version_control/star/star.dart';
 import 'package:lua_dardo_async/debug.dart';
 import 'package:lua_dardo_async/lua.dart';
-import 'dart:mirrors' as mirrors;
 import '../skit/skit.dart';
 
 /// The main class for running lua scripts.
@@ -110,8 +109,13 @@ class Lua {
           List<dynamic> args = [];
           // printStack();
           for (final arg in value.$2.entries.toList().reversed) {
-            args.add(getFromTop(
-                ofType: arg.value.type, optional: !arg.value.isRequired));
+            final argValue = getFromTop(optional: !arg.value.isRequired);
+            try {
+              args.add(arg.value.cast(argValue));
+            } catch (e) {
+              throw Exception(
+                  "Expected ${arg.value.type} but got ${argValue.runtimeType}");
+            }
           }
           final finalArgs = args.reversed.toList()
             ..removeWhere((e) => e == null);
@@ -134,7 +138,7 @@ class Lua {
   }
 
   /// Gets a value from the top of the stack.
-  T? getFromTop<T>({bool pop = true, bool optional = false, Type? ofType}) {
+  T? getFromTop<T>({bool pop = true, bool optional = false}) {
     dynamic result;
     try {
       if (state.isString(state.getTop())) {
@@ -174,19 +178,6 @@ class Lua {
       }
     } catch (e, st) {
       Arceus.talker.error(e, st);
-    }
-
-    final castable = !mirrors
-        .reflectType(result.runtimeType)
-        .isAssignableTo(mirrors.reflectType(ofType ?? T));
-    Arceus.talker.debug(
-        "Expected $T/$ofType and got ${result.runtimeType}. ($castable)");
-    if (castable) {
-      if (!optional) {
-        Exception("Expected $T/$ofType but got $result");
-      } else {
-        return null as T;
-      }
     }
 
     if (pop) {

@@ -332,6 +332,7 @@ A base class for all objects in the kit.
             "child": (
               "The child SObject to add.",
               type: SObject,
+              cast: (e) => e as SObject,
               isRequired: true
             )
           },
@@ -344,6 +345,7 @@ A base class for all objects in the kit.
             "child": (
               "The child SObject to remove.",
               type: SObject,
+              cast: (e) => e as SObject,
               isRequired: true
             )
           },
@@ -356,6 +358,7 @@ A base class for all objects in the kit.
             "filter": (
               "A map to filter the children by.",
               type: Map,
+              cast: (e) => e as Map<String, dynamic>,
               isRequired: false
             )
           },

@@ -13,7 +13,12 @@ typedef LuaEntrypoint = (
   Function // function
 );
 
-typedef LuaArgument = (String, {Type type, bool isRequired});
+typedef LuaArgument = (
+  String, {
+  Type type,
+  dynamic Function(dynamic) cast,
+  bool isRequired
+});
 
 /// This acts as an interface between Lua and SKits.
 abstract class SInterface<T> {

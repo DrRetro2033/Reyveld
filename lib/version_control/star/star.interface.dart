@@ -21,6 +21,7 @@ A star is a point in time that represents a snapshot of an folder.
             "name": (
               "The new name of the star.",
               type: String,
+              cast: (value) => value as String,
               isRequired: false
             )
           },
@@ -39,6 +40,7 @@ A star is a point in time that represents a snapshot of an folder.
             "updateFolder": (
               "If true, the folder will be updated to the current star.",
               type: bool,
+              cast: (value) => value as bool,
               isRequired: false
             )
           },
@@ -68,6 +70,7 @@ A star is a point in time that represents a snapshot of an folder.
             "name": (
               "The name of the new star.",
               type: String,
+              cast: (value) => value as String,
               isRequired: true
             )
           },
@@ -98,6 +101,7 @@ A star is a point in time that represents a snapshot of an folder.
             "x": (
               "The number of stars to move forward. Defaults to 1.",
               type: int,
+              cast: (value) => value as int,
               isRequired: false
             )
           },
@@ -117,6 +121,7 @@ A star is a point in time that represents a snapshot of an folder.
             "x": (
               "The number of stars to move backward. Defaults to 1.",
               type: int,
+              cast: (value) => value as int,
               isRequired: false
             )
           },
@@ -136,6 +141,7 @@ A star is a point in time that represents a snapshot of an folder.
             "x": (
               "The number of stars to move up. Defaults to 1.",
               type: int,
+              cast: (value) => value as int,
               isRequired: false
             )
           },
@@ -155,6 +161,7 @@ A star is a point in time that represents a snapshot of an folder.
             "x": (
               "The number of stars to move down. Defaults to 1.",
               type: int,
+              cast: (value) => value as int,
               isRequired: false
             )
           },
@@ -170,7 +177,14 @@ A star is a point in time that represents a snapshot of an folder.
         ),
         "next": (
           "Gets the Xth child of the star.",
-          {"x": ("The Xth of the child to get.", type: int, isRequired: true)},
+          {
+            "x": (
+              "The Xth of the child to get.",
+              type: int,
+              cast: (value) => value as int,
+              isRequired: true
+            )
+          },
           Star,
           (int x) async {
             List<Star?> stars = object!.getChildren<Star>();

@@ -23,14 +23,21 @@ read and write to an image file, or more.
             "name": (
               "The name of the library.",
               isRequired: true,
-              type: String
+              type: String,
+              cast: (name) => name as String
             ),
             "description": (
               "The description of the library.",
               isRequired: true,
-              type: String
+              type: String,
+              cast: (description) => description as String
             ),
-            "authors": ("A list of authors.", isRequired: true, type: List)
+            "authors": (
+              "A list of authors.",
+              isRequired: true,
+              type: List,
+              cast: (authors) => authors as List<SAuthor>
+            )
           },
           SLibrary,
           (String name, String description, List<SAuthor> authors) async =>
@@ -48,7 +55,8 @@ read and write to an image file, or more.
             "path": (
               "The path to the directory.",
               isRequired: true,
-              type: String
+              type: String,
+              cast: (path) => path as String
             ),
           },
           SLibrary,

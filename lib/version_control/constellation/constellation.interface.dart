@@ -26,11 +26,13 @@ A collection of Stars, with a root star, and a current star.
             "name": (
               "The name of the constellation.",
               type: String,
+              cast: (value) => value as String,
               isRequired: true
             ),
             "path": (
               "The path of the constellation.",
               type: String,
+              cast: (value) => value as String,
               isRequired: true
             )
           },

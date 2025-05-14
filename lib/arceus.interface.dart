@@ -14,7 +14,12 @@ Contains global functions for Arceus, for example, settings, paths, etc.
         "installLib": (
           "Install a new library into Arceus.",
           {
-            "path": ("The path to the library.", isRequired: true, type: String)
+            "path": (
+              "The path to the library.",
+              isRequired: true,
+              cast: (value) => value as String,
+              type: String
+            )
           },
           null,
           (String path) async {
@@ -27,7 +32,12 @@ Contains global functions for Arceus, for example, settings, paths, etc.
         "uninstallLib": (
           "Uninstall a library from Arceus.",
           {
-            "name": ("The name of the library.", isRequired: true, type: String)
+            "name": (
+              "The name of the library.",
+              isRequired: true,
+              cast: (value) => value as String,
+              type: String
+            )
           },
           null,
           (String name) async {

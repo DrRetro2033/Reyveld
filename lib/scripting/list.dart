@@ -11,13 +11,27 @@ class ListInterface extends SInterface<List> {
   get exports => {
         "add": (
           "Adds an object to the list.",
-          {"object": ("The object to add.", type: Object, isRequired: true)},
+          {
+            "object": (
+              "The object to add.",
+              type: Object,
+              cast: (value) => value as Object,
+              isRequired: true
+            )
+          },
           null,
           (Object value) => object!.add(value)
         ),
         "remove": (
           "Removes an object from the list.",
-          {"object": ("The object to remove.", type: Object, isRequired: true)},
+          {
+            "object": (
+              "The object to remove.",
+              type: Object,
+              cast: (value) => value as Object,
+              isRequired: true
+            )
+          },
           null,
           (Object value) => object!.remove(value)
         ),
@@ -51,6 +65,7 @@ class ListInterface extends SInterface<List> {
             "object": (
               "The object to check for.",
               type: Object,
+              cast: (value) => value as Object,
               isRequired: true
             )
           },
@@ -59,7 +74,14 @@ class ListInterface extends SInterface<List> {
         ),
         "get": (
           "Returns the object at the given index.",
-          {"index": ("The index to get.", type: int, isRequired: true)},
+          {
+            "index": (
+              "The index to get.",
+              type: int,
+              cast: (value) => value as int,
+              isRequired: true
+            )
+          },
           Object,
           (int index) => object![index]
         )
