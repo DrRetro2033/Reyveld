@@ -5,14 +5,15 @@ class SLibraryInterface extends SInterface<SLibrary> {
   get className => "SLibrary";
 
   @override
-  get description => """
+  get classDescription => """
 This interface represents an Arceus library.
-A library contains a name, an archive reference, a description, and a list of authors.
-
-A library is a collection of SKits that contain Lua code that can be used to reuse code between projects easily.
+A library contains Lua code that can be used to reuse code between projects easily.
 For example, you can create a library that contains code to read and write Pokemon from a file, or
 read and write to an image file, or more.
   """;
+
+  @override
+  get parent => SObjectInterface();
 
   @override
   get statics => {
@@ -42,7 +43,7 @@ read and write to an image file, or more.
   @override
   get exports => {
         "package": (
-          "Package a directory as the library.",
+          "Package a directory into the library.",
           {
             "path": (
               "The path to the directory.",
@@ -54,6 +55,6 @@ read and write to an image file, or more.
           (String path) async {
             await object!.package(path);
           }
-        )
+        ),
       };
 }

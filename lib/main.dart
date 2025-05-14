@@ -7,9 +7,11 @@ import 'package:arceus/skit/skit.dart';
 import 'package:version/version.dart';
 import 'package:http/http.dart' as http;
 
+typedef ArceusSession = (Lua, WebSocket);
+
 Future<void> main(List<String> args) async {
   if (await isRunning(Arceus.currentVersion)) {
-    print('Already running');
+    Arceus.printToConsole('Already running');
     exit(0);
   }
   File lockFile = File(
@@ -17,9 +19,9 @@ Future<void> main(List<String> args) async {
   await lockFile.create(recursive: true);
 
   final server = await HttpServer.bind(InternetAddress.anyIPv4, 7274);
-  print('Server Started');
+  Arceus.printToConsole('Server Started');
 
-  Map<String, Lua> sessions = {};
+  Map<String, ArceusSession> sessions = {};
 
   await for (HttpRequest request in server) {
     final requestUrl = request.uri.pathSegments.sublist(1).join('/');
@@ -56,33 +58,42 @@ Future<void> main(List<String> args) async {
           await Lua.generateDocs();
           Arceus.talker.info("Generated docs.");
           await request.response.close();
-        default:
+        case "close":
+          request.response.statusCode = HttpStatus.ok;
+          await request.response.close();
+          for (final session in sessions.entries) {
+            await session.value.$1.awaitForCompletion();
+            await session.value.$2
+                .close(WebSocketStatus.goingAway, "Server closed.");
+          }
+          await server.close();
+        case "lua":
           if (WebSocketTransformer.isUpgradeRequest(request)) {
-            sessions[request.session.id] = Lua();
-            await sessions[request.session.id]!.init();
             final socket = await WebSocketTransformer.upgrade(request);
-            print('Client (${request.session.id}) connected.');
+            sessions[request.session.id] = (Lua(), socket);
+            await sessions[request.session.id]!.$1.init();
+
+            Arceus.printToConsole('Client (${request.session.id}) connected.');
+
             Arceus.talker.info("Client (${request.session.id}) connected.");
             socket.listen((data) async {
               Arceus.talker.info('Received: $data');
               try {
-                final result = await sessions[request.session.id]!.run(data);
+                final result = await sessions[request.session.id]!.$1.run(data);
                 socket.add("$result");
               } catch (e, st) {
-                print(
+                Arceus.printToConsole(
                     "There was a crash on this request (Session ID: ${request.session.id}), please check the log folder (${Arceus.appDataPath}/logs) for more information.");
                 Arceus.talker.critical("Crash Handler", e, st);
                 socket.add("ERROR:$e");
               }
             }, onDone: () {
-              print('Client (${request.session.id}) disconnected');
+              Arceus.printToConsole(
+                  'Client (${request.session.id}) disconnected');
               Arceus.talker
                   .info("Client (${request.session.id}) disconnected.");
               socket.close();
               sessions.remove(request.session.id);
-              if (sessions.isEmpty) {
-                server.close();
-              }
               return;
             }, onError: (error, stack) {
               Arceus.talker.error("Error", error, stack);
@@ -94,7 +105,7 @@ Future<void> main(List<String> args) async {
           }
       }
     } catch (e, st) {
-      print(
+      Arceus.printToConsole(
           "There was a crash on this request, please check the log folder (${Arceus.appDataPath}/logs) for more information.");
       Arceus.talker.critical("Crash Handler", e, st);
     }

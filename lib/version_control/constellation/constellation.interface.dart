@@ -5,7 +5,7 @@ class ConstellationInterface extends SInterface<Constellation> {
   get className => "Constellation";
 
   @override
-  get description => """
+  get classDescription => """
 A collection of Stars, with a root star, and a current star.
 """;
 

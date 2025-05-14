@@ -20,8 +20,10 @@ abstract class SInterface<T> {
   /// This is the name of the interface.
   String get className;
 
+  String get staticDescription => "";
+
   /// This is the description of the interface.
-  String get description;
+  String get classDescription => "";
 
   /// This converts the interface into a Lua table.
   Map<String, dynamic> toLua(Lua state, String luaHash) {
@@ -91,15 +93,16 @@ ${exports.isNotEmpty ? _luaExports() : ""}
 
   /// This generates the static, global table for the interface.
   String _luaStatics() => """
+${_covertDescriptionToComment(staticDescription)}
 $className = {}
 
 ${allStatics.entries.map((e) => _luaMethod(e)).join("\n")}
 """;
 
   String _sources() {
-    if (parent == null) return "";
-    return """---@source ${parent!.className.toLowerCase()}.lua
-  ---@source enums.lua""";
+    return parent == null
+        ? ""
+        : "---@source ${parent!.className.toLowerCase()}.lua";
   }
 
   /// This generates the methods for the interface.
@@ -107,15 +110,21 @@ ${allStatics.entries.map((e) => _luaMethod(e)).join("\n")}
     final text = StringBuffer();
     text.writeln(
         "---@class $className${parent != null && parent!.className != className ? ": ${parent!.className}" : ""}");
-    for (final line in description.split("\n")) {
-      if (line.isEmpty) continue;
-      text.writeln("---$line");
-    }
+    text.writeln(_covertDescriptionToComment(classDescription));
     text.writeln("local $className = {}");
     for (final export in exports.entries) {
       text.writeln(_luaMethod(export));
     }
     return text.toString();
+  }
+
+  String _covertDescriptionToComment(String description) {
+    final text = StringBuffer();
+    for (final line in description.split("\n")) {
+      if (line.isEmpty) continue;
+      text.writeln("---$line");
+    }
+    return text.toString().trim();
   }
 
   /// This generates a single method in the docs for the interface.

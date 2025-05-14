@@ -5,7 +5,7 @@ class ListInterface extends SInterface<List> {
   get className => "List";
 
   @override
-  get description => "A list of objects.";
+  get classDescription => "A list of objects.";
 
   @override
   get exports => {

@@ -5,7 +5,7 @@ class SKitInterface extends SInterface<SKit> {
   get className => "SKit";
 
   @override
-  get description => """
+  get classDescription => """
 SKits are the bread and butter of Arceus. They store a SHeader and any number of SRoots in a single file.
 """;
 

@@ -5,7 +5,7 @@ class SArchiveInterface extends SInterface<SArchive> {
   get className => "SArchive";
 
   @override
-  get description => """
+  get classDescription => """
 An archive in a SKit. Contains files.
 """;
 
@@ -52,7 +52,7 @@ class SFileInterface extends SInterface<SFile> {
   get className => "SFile";
 
   @override
-  get description => """
+  get classDescription => """
 A file in a SArchive. Contains the path of the file, and its data in the form of compressed base64.
 """;
 

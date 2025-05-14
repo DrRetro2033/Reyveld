@@ -43,10 +43,10 @@ class SKit {
       {SKitType? type, String encryptKey = "Arceus"}) async {
     final kit = SKit(path, encryptKey: encryptKey);
     if (!await kit.exists()) {
-      throw Exception("Kit file does not exist!");
+      throw Exception("SKit file does not exist!");
     }
     if (type != null && !await kit.isType(type)) {
-      throw Exception("Kit file is not of the correct type!");
+      throw Exception("SKit file is not of the correct type!");
     }
     return kit;
   }

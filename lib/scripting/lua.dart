@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:arceus/arceus.dart';
 import 'package:arceus/scripting/list.dart';
-import 'package:arceus/skit/sobjects/library/library.dart';
 import 'package:arceus/skit/sobjects/sobjects.dart';
 import 'package:arceus/uuid.dart';
 import 'package:arceus/version_control/constellation/constellation.dart';
@@ -17,11 +16,14 @@ import '../skit/skit.dart';
 class Lua {
   final LuaState state;
 
+  final Stopwatch stopwatch = Stopwatch();
+
   Lua() : state = LuaState.newState();
 
   final Map<String, SInterface> _objects = {};
 
   static Set<SInterface> get interfaces => {
+        ArceusInterface(),
         ListInterface(),
         SHeaderInterface(),
         SObjectInterface(),
@@ -31,6 +33,7 @@ class Lua {
         SArchiveInterface(),
         SFileInterface(),
         SRFileInterface(),
+        SLibraryInterface(),
       };
 
   static Map<String, List<Enum>> get enums => {
@@ -38,10 +41,6 @@ class Lua {
       };
 
   Future<void> init() async {
-    await _init(state);
-  }
-
-  Future<void> _init(LuaState state) async {
     await state.openLibs();
 
     for (final enum_ in enums.entries) {
@@ -126,7 +125,7 @@ class Lua {
           return 1;
         } catch (e, st) {
           Arceus.talker.error("", e, st);
-          return 0;
+          rethrow;
         }
       });
     } else {
@@ -223,9 +222,8 @@ class Lua {
 
     while (requireExp.hasMatch(compiled)) {
       final match = requireExp.firstMatch(compiled)!;
-      // Gets the library from the nane.
-      final lib =
-          LuaLibrary("${Arceus.getLibraryPath()}/${match.group(1)!}.skit");
+      // Gets the library from the name.
+      final lib = LuaLibrary("${Arceus.libraryPath}/${match.group(1)!}.skit");
       compiled = compiled.replaceRange(match.start, match.end, await lib.code);
     }
 
@@ -237,15 +235,33 @@ class Lua {
     return compiled;
   }
 
+  Future<bool> awaitForCompletion() async {
+    while (stopwatch.isRunning) {
+      await Future.delayed(Duration(milliseconds: 100));
+    }
+    return true;
+  }
+
   // Runs a lua script.
   Future<dynamic> run(String entrypoint) async {
+    /// Resets the stopwatch and starts it, to track process time,
+    /// and to notify if its done.
+    stopwatch.reset();
+    stopwatch.start();
+
+    /// Run the lua code and see if it was successful
     final successful = await state
         .doString(await _compile(entrypoint).then((value) => value.trim()));
+
     if (!successful) {
+      /// If it wasn't successful, print the error and return null
       state.error();
+      return null;
     }
     final result = getFromTop(optional: true);
-    Arceus.talker.debug("Lua result: $result");
+    stopwatch.stop();
+    Arceus.talker
+        .info("Lua result in ${stopwatch.elapsedMilliseconds}ms: $result");
     return result;
   }
 

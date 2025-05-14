@@ -304,7 +304,7 @@ final class SObjectInterface extends SInterface<SObject> {
   get className => "SObject";
 
   @override
-  get description => """
+  get classDescription => """
 A base class for all objects in the kit.
 """;
 

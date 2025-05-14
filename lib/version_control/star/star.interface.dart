@@ -5,7 +5,7 @@ class StarInterface extends SInterface<Star> {
   String get className => "Star";
 
   @override
-  get description => """
+  get classDescription => """
 This class represents a star in a constellation.
 A star is a point in time that represents a snapshot of an folder.
 """;

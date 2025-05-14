@@ -1,30 +1,35 @@
 import 'dart:io';
 import 'package:arceus/extensions.dart';
+import 'package:arceus/skit/skit.dart';
 import 'package:version/version.dart';
 import 'package:talker/talker.dart';
 import 'package:arceus/version.dart' as version;
 
-/// # `class` Arceus
-/// ## A class that represents the Arceus application.
-/// Contain global functions for Arceus, for example, settings, paths, etc.
+part "arceus.interface.dart";
+
+/// Contains global functions for Arceus, for example, settings, paths, etc.
 class Arceus {
   static Version get currentVersion => version.currentVersion;
   static late String _currentPath;
   static String get currentPath => _currentPath;
   static set currentPath(String path) => _currentPath = path.fixPath();
+  static String get libraryPath => "$appDataPath/libraries";
   static late bool isInternal;
   static bool get isDev =>
       const bool.fromEnvironment('DEBUG', defaultValue: true);
 
   static Talker? _logger;
 
+  /// The logger for Arceus.
+  /// If the logger is not initialized, it will be initialized.
   static Talker get talker {
     _logger ??= Talker(
       logger: TalkerLogger(
           formatter: ArceusLogFormatter(),
           output: ArceusLogger(
                   "$appDataPath/logs/$currentVersion/arceus-$currentVersion-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log")
-              .output),
+              .output,
+          filter: ArceusLogFilter()),
     );
     return _logger!;
   }
@@ -32,13 +37,8 @@ class Arceus {
   static File get mostRecentLog => File(
       "$appDataPath/logs/$currentVersion/arceus-$currentVersion-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log");
 
-  /// # `static` `String` _appDataPath
-  /// ## The path to the application data directory.
-  static String get appDataPath => _getAppDataPath();
-
-  /// # `static` `String` _getAppDataPath
-  /// ## Returns the path to the application data directory.
-  static String _getAppDataPath() {
+  /// The path to the application data directory.
+  static String get appDataPath {
     if (!Platform.environment.containsKey("APPDATA")) {
       return Directory.current.path;
     } else {
@@ -46,23 +46,25 @@ class Arceus {
     }
   }
 
-  /// # `static` `String` getTempFolder
-  /// ## Returns the path to the temp folder.
-  /// Creates a new temp folder if it does not exist.
-  static TemporaryDirectory getTempFolder() {
-    return TemporaryDirectory(
-        Directory.systemTemp.createTempSync("arceus").path);
+  static Future<void> registerLibrary(String path) async {
+    final file = File(path);
+    try {
+      await file.copy("$libraryPath/${path.getFilename()}");
+    } catch (e) {
+      throw Exception(
+          "Failed to register library! Library has probably been registered already.");
+    }
   }
 
-  static String getLibraryPath() {
-    return "${_getAppDataPath()}/libraries";
-  }
+  static Future<void> unregisterLibrary(String name) async =>
+      await File("$libraryPath/$name.skit").delete();
 
-  static Future<void> openURL(String url) async {
-    if (Platform.isWindows) {
-      await Process.run("start", [url], runInShell: true);
-    } else if (Platform.isLinux) {
-      await Process.run("xdg-open", [url], runInShell: true);
+  static Future<SKit> getLibrary(String name) async =>
+      await SKit.open("$libraryPath/$name.skit", type: SKitType.library);
+
+  static void printToConsole(Object message) {
+    if (isDev) {
+      print(message);
     }
   }
 }
@@ -114,10 +116,12 @@ class ArceusLogFormatter extends LoggerFormatter {
   }
 }
 
-class TemporaryDirectory {
-  final String path;
-
-  TemporaryDirectory(this.path);
-
-  void delete() => Directory(path).deleteSync(recursive: true);
+class ArceusLogFilter extends LoggerFilter {
+  @override
+  bool shouldLog(msg, LogLevel level) {
+    if (level == LogLevel.debug && !Arceus.isDev) {
+      return false;
+    }
+    return true;
+  }
 }

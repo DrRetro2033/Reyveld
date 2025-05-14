@@ -147,7 +147,6 @@ Consider sponsoring me on GitHub to help support this project! If you can’t, n
 | Integration w/ Origin/EA | ❌     | ✅                                                    | ✅                                                 |
 | Developer API            | 🚧     | ❌                                                    | ❌                                                 |
 
-
 # Planned Features for the Future
 
 ## Frontend GUI 🖱️
@@ -170,10 +169,12 @@ Transfer your game saves between devices and keep them safe from data loss.
 | ⚠️ Maybe    | Self-hosted  |
 | ❌ Unlikely | iCloud       |
 
-# Why does it exist?
+# Development Q&A
 
-Arceus was created to be simple way for regular users to be able to quickly and efficiently backup savedata with more advanced tools. However, it has evolved into a more generalized toolkit for working with binary files.
+## Why does it exist?
 
-# Why is it called Arceus?
+Arceus was created to be simple way for regular users to be able to quickly and efficiently backup savedata in a git like way. However, it has evolved into a more generalized toolkit for working with binary files. It's designed to make it easy to view and edit savefiles.
+
+## Why is it called Arceus?
 
 The program is named Arceus because Arceus is the "god" of Pokémon and has the ability to affect time and space. It’s also named in connection to my other project, [MudkiPC](https://github.com/Pokemon-Manager/MudkiPC), which is Pokémon-related.
