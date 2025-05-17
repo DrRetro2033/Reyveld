@@ -92,7 +92,7 @@ abstract class SInterface<T> {
 ${_sources()}
 
 ${allStatics.isNotEmpty ? _luaStatics() : ""}
-${exports.isNotEmpty ? _luaExports() : ""}
+${exports.isNotEmpty || parent != null ? _luaExports() : ""}
 """);
   }
 
