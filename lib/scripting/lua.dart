@@ -7,7 +7,6 @@ import 'package:arceus/skit/sobjects/sobjects.dart';
 import 'package:arceus/uuid.dart';
 import 'package:arceus/version_control/constellation/constellation.dart';
 import 'package:arceus/version_control/star/star.dart';
-import 'package:lua_dardo_async/debug.dart';
 import 'package:lua_dardo_async/lua.dart';
 import '../skit/skit.dart';
 
@@ -57,11 +56,71 @@ class Lua {
     }
   }
 
-  /// Prints the stack with [message].
-  void printStack([String message = ""]) {
-    print(message);
-    state.printStack();
-    print("");
+  /// Formats a single stack item for logging.
+  /// It includes the index, type, and value.
+  String _formatStackItem(int i, LuaType type, [String? value]) {
+    var msg = "index:$i -> $type";
+    if (value != null) msg += " value:$value";
+    return msg;
+  }
+
+  /// Formats the entire stack for logging.
+  String _formatStack() {
+    StringBuffer buffer = StringBuffer();
+    buffer.writeln(">------  stack  top  ------<");
+    var len = state.getTop();
+    for (int i = len; i >= 1; i--) {
+      LuaType t = state.type(i);
+      switch (state.type(i)) {
+        case LuaType.luaNone:
+          buffer.writeln(_formatStackItem(i, t));
+          break;
+
+        case LuaType.luaNil:
+          buffer.writeln(_formatStackItem(i, t));
+          break;
+
+        case LuaType.luaBoolean:
+          buffer.writeln(
+              _formatStackItem(i, t, state.toBoolean(i) ? "true" : "false"));
+          break;
+
+        case LuaType.luaLightUserdata:
+          buffer.writeln(_formatStackItem(i, t));
+          break;
+
+        case LuaType.luaNumber:
+          if (state.isInteger(i)) {
+            buffer.writeln(
+                _formatStackItem(i, t, "(integer)${state.toInteger(i)}"));
+          } else if (state.isNumber(i)) {
+            buffer.writeln(_formatStackItem(i, t, "${state.toNumber(i)}"));
+          }
+          break;
+
+        case LuaType.luaString:
+          buffer.writeln(_formatStackItem(i, t, "${state.toStr(i)}"));
+          break;
+
+        case LuaType.luaTable:
+          buffer.writeln(_formatStackItem(i, t));
+          break;
+
+        case LuaType.luaFunction:
+          buffer.writeln(_formatStackItem(i, t));
+          break;
+
+        case LuaType.luaUserdata:
+          buffer.writeln(_formatStackItem(i, t));
+          break;
+
+        case LuaType.luaThread:
+          buffer.writeln(_formatStackItem(i, t));
+          break;
+      }
+    }
+    buffer.writeln(">------ stack bottom ------<");
+    return buffer.toString();
   }
 
   /// Adds a global to the Lua state.
@@ -107,23 +166,39 @@ class Lua {
       state.pushDartFunction((state) async {
         try {
           List<dynamic> args = [];
-          // printStack();
+          final stack = _formatStack();
           for (final arg in value.$2.entries.toList().reversed) {
-            final argValue = getFromTop(optional: !arg.value.isRequired);
-            try {
-              args.add(arg.value.cast(argValue));
-            } catch (e) {
-              throw Exception(
-                  "Expected ${arg.value.type} but got ${argValue.runtimeType}");
+            final argValue = getFromTop(pop: false);
+            // Attempt to cast the argument to the expected type.
+            // It will return null if the cast fails.
+            final trueValue = arg.value.cast(argValue);
+            if (trueValue == null) {
+              if (!arg.value.isRequired) {
+                continue;
+              } else {
+                // Report the before and after stack and throw an error.
+                Arceus.talker.error("Before:\n$stack");
+                Arceus.talker.error("After:\n${_formatStack()}");
+                throw Exception(
+                    "Expected ${arg.value.type} but got ${argValue.runtimeType}");
+              }
             }
+            args.add(trueValue);
+            state.pop(1);
           }
           final finalArgs = args.reversed.toList()
             ..removeWhere((e) => e == null);
+
+          // Log the arguments for debugging.
           Arceus.talker.debug("Args: $finalArgs");
+          Arceus.talker.debug("Before:\n$stack");
+          Arceus.talker.debug("After:\n${_formatStack()}");
           if (value.$3 == null) {
-            await Function.apply(value.$4, finalArgs);
+            // Means that the function doesn't return anything, so just call it.
+            await Function.apply(value.$5, finalArgs);
           } else {
-            final result = await Function.apply(value.$4, finalArgs);
+            // Means that the function returns something, so call it and push the result to the stack.
+            final result = await Function.apply(value.$5, finalArgs);
             await _pushToStack(result);
           }
           return 1;
@@ -138,7 +213,7 @@ class Lua {
   }
 
   /// Gets a value from the top of the stack.
-  T? getFromTop<T>({bool pop = true, bool optional = false}) {
+  T? getFromTop<T>({bool pop = true}) {
     dynamic result;
     try {
       if (state.isString(state.getTop())) {
@@ -249,7 +324,7 @@ class Lua {
       state.error();
       return null;
     }
-    final result = getFromTop(optional: true);
+    final result = getFromTop();
     stopwatch.stop();
     Arceus.talker
         .info("Lua result in ${stopwatch.elapsedMilliseconds}ms: $result");

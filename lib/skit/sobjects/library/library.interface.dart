@@ -19,27 +19,28 @@ read and write to an image file, or more.
   get statics => {
         "new": (
           "Create a new library.",
-          {
+          const {
             "name": (
               "The name of the library.",
               isRequired: true,
               type: String,
-              cast: (name) => name as String
+              cast: typeCheck<String>
             ),
             "description": (
               "The description of the library.",
               isRequired: true,
               type: String,
-              cast: (description) => description as String
+              cast: typeCheck<String>
             ),
             "authors": (
               "A list of authors.",
               isRequired: true,
               type: List,
-              cast: (authors) => authors as List<SAuthor>
+              cast: typeCheck<List<SAuthor>>
             )
           },
           SLibrary,
+          true,
           (String name, String description, List<SAuthor> authors) async =>
               await SLibraryCreator(name,
                       description: description, authors: authors)
@@ -51,15 +52,16 @@ read and write to an image file, or more.
   get exports => {
         "package": (
           "Package a directory into the library.",
-          {
+          const {
             "path": (
               "The path to the directory.",
               isRequired: true,
               type: String,
-              cast: (path) => path as String
+              cast: typeCheck<String>
             ),
           },
           SLibrary,
+          true,
           (String path) async {
             await object!.package(path);
           }

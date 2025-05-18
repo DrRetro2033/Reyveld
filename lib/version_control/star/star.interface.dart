@@ -17,34 +17,37 @@ A star is a point in time that represents a snapshot of an folder.
   get exports => {
         "name": (
           "Gets or sets the name of the star.",
-          {
+          const {
             "name": (
               "The new name of the star.",
               type: String,
-              cast: (value) => value as String,
+              cast: typeCheck<String>,
               isRequired: false
             )
           },
           String,
+          false,
           ([String? name]) => object!.name
         ),
         "constellation": (
           "Gets the constellation of the star.",
           {},
           Constellation,
+          false,
           () => object!.constellation
         ),
         "makeCurrent": (
           "Sets the star as the current star.",
-          {
+          const {
             "updateFolder": (
               "If true, the folder will be updated to the current star.",
               type: bool,
-              cast: (value) => value as bool,
+              cast: typeCheck<bool>,
               isRequired: false
             )
           },
           null,
+          true,
           ([bool updateFolder = true]) async {
             object!.makeCurrent();
             if (updateFolder) {
@@ -56,56 +59,63 @@ A star is a point in time that represents a snapshot of an folder.
           "Gets the archive of the star.",
           {},
           SArchive,
+          true,
           () async => await object!.archive
         ),
         "trim": (
           "Trims this star and all of its descendants.",
           {},
           null,
+          true,
           () async => await object!.trim()
         ),
         "grow": (
           "Grows a new star from this star.",
-          {
+          const {
             "name": (
               "The name of the new star.",
               type: String,
-              cast: (value) => value as String,
+              cast: typeCheck<String>,
               isRequired: true
             )
           },
           Star,
+          true,
           (String name) async => await object!.grow(name)
         ),
         "isRoot": (
           "Checks if the star is the root star.",
           {},
           bool,
+          false,
           () => object!.isRoot
         ),
         "isCurrent": (
           "Checks if the star is the current star.",
           {},
           bool,
+          false,
           () => object!.isCurrent
         ),
         "isSingleChild": (
           "Checks if the star is a single child.",
           {},
           bool,
+          false,
           () => object!.isSingleChild
         ),
         "forward": (
           "Gets the star forward to this star X times.",
-          {
+          const {
             "x": (
-              "The number of stars to move forward. Defaults to 1.",
+              "The number of stars to move down. Defaults to 1.",
               type: int,
-              cast: (value) => value as int,
+              cast: typeCheck<int>,
               isRequired: false
             )
           },
           Star,
+          false,
           ([int x = 1]) async {
             Star star = object!;
             while (x > 0) {
@@ -117,16 +127,17 @@ A star is a point in time that represents a snapshot of an folder.
         ),
         "backward": (
           "Gets the star backward to this star X times.",
-          {
+          const {
             "x": (
-              "The number of stars to move backward. Defaults to 1.",
+              "The number of stars to move down. Defaults to 1.",
               type: int,
-              cast: (value) => value as int,
+              cast: typeCheck<int>,
               isRequired: false
             )
           },
           Star,
-          ([int x = 1]) async {
+          false,
+          ([int x = 1]) {
             Star star = object!;
             while (x > 0) {
               star = star.getParent<Star>() ?? star;
@@ -137,16 +148,17 @@ A star is a point in time that represents a snapshot of an folder.
         ),
         "above": (
           "Gets the star above this star X times.",
-          {
+          const {
             "x": (
-              "The number of stars to move up. Defaults to 1.",
+              "The number of stars to move down. Defaults to 1.",
               type: int,
-              cast: (value) => value as int,
+              cast: typeCheck<int>,
               isRequired: false
             )
           },
           Star,
-          ([int x = 1]) async {
+          false,
+          ([int x = 1]) {
             Star star = object!;
             while (x > 0) {
               star = star.getSiblingAbove<Star>() ?? star;
@@ -157,16 +169,17 @@ A star is a point in time that represents a snapshot of an folder.
         ),
         "below": (
           "Gets the star below this star X times.",
-          {
+          const {
             "x": (
               "The number of stars to move down. Defaults to 1.",
               type: int,
-              cast: (value) => value as int,
+              cast: typeCheck<int>,
               isRequired: false
             )
           },
           Star,
-          ([int x = 1]) async {
+          false,
+          ([int x = 1]) {
             Star star = object!;
             while (x > 0) {
               star = star.getSiblingBelow<Star>() ?? star;
@@ -177,16 +190,17 @@ A star is a point in time that represents a snapshot of an folder.
         ),
         "next": (
           "Gets the Xth child of the star.",
-          {
+          const {
             "x": (
               "The Xth of the child to get.",
               type: int,
-              cast: (value) => value as int,
+              cast: typeCheck<int>,
               isRequired: true
             )
           },
           Star,
-          (int x) async {
+          false,
+          (int x) {
             List<Star?> stars = object!.getChildren<Star>();
             Star star = stars[(x - 1) % stars.length] ?? object!;
             return star;
@@ -196,6 +210,7 @@ A star is a point in time that represents a snapshot of an folder.
           "Gets the most recent decendant of the star.",
           {},
           Star,
+          false,
           () {
             final stars = object!.getDescendants<Star>();
             stars.sort((a, b) => a!.createdOn.compareTo(b!.createdOn));

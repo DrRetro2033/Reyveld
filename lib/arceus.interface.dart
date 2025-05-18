@@ -22,6 +22,7 @@ Contains global functions for Arceus, for example, settings, paths, etc.
             )
           },
           null,
+          true,
           (String path) async {
             final skit = SKit(path);
             if (await skit.isType(SKitType.library)) {
@@ -40,6 +41,7 @@ Contains global functions for Arceus, for example, settings, paths, etc.
             )
           },
           null,
+          true,
           (String name) async {
             await Arceus.unregisterLibrary(name);
           }

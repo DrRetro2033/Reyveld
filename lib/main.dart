@@ -10,10 +10,13 @@ import 'package:http/http.dart' as http;
 typedef ArceusSession = (Lua, WebSocket);
 
 Future<void> main(List<String> args) async {
+  /// Check if the version of this Arceus executable is already running.
   if (await isRunning(Arceus.currentVersion)) {
     Arceus.printToConsole('Already running');
     exit(0);
   }
+
+  /// If not, create a lock file to indicate that this version of Arceus is running.
   File lockFile = File(
       "${Arceus.appDataPath}/locks/${Arceus.currentVersion.toString()}.lock");
   await lockFile.create(recursive: true);
@@ -67,6 +70,7 @@ Future<void> main(List<String> args) async {
                 .close(WebSocketStatus.goingAway, "Server closed.");
           }
           await server.close();
+          exit(0);
         case "lua":
           if (WebSocketTransformer.isUpgradeRequest(request)) {
             final socket = await WebSocketTransformer.upgrade(request);

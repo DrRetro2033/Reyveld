@@ -10,7 +10,8 @@ typedef LuaEntrypoint = (
   String, // description
   Map<String, LuaArgument>, // arguments <name, (description, type, isOptional)>
   Type?, // return type or null
-  Function // function
+  bool, // is async
+  Function // the function itself
 );
 
 typedef LuaArgument = (
@@ -19,6 +20,15 @@ typedef LuaArgument = (
   dynamic Function(dynamic) cast,
   bool isRequired
 });
+
+/// This is a helper function to check if a value is of type [T].
+/// If it is, it returns the value, otherwise it returns null.
+T? typeCheck<T>(dynamic value) {
+  if (value is T) {
+    return value;
+  }
+  return null;
+}
 
 /// This acts as an interface between Lua and SKits.
 abstract class SInterface<T> {
@@ -142,15 +152,20 @@ ${allStatics.entries.map((e) => _luaMethod(e)).join("\n")}
     StringBuffer method = StringBuffer();
     if (export.value.$2.isNotEmpty) {
       for (final arg in export.value.$2.entries) {
+        // Document the argument
         method.writeln(
             "---@param ${arg.key} ${_convertDartToLua(arg.value.type) + (arg.value.isRequired ? "" : "?")} ${arg.value.$1}");
       }
     }
     if (export.value.$3 != null) {
+      // Document the return type
       method.writeln("---@return ${_convertDartToLua(export.value.$3!)}");
     }
+    if (export.value.$4) {
+      method.writeln("---@async");
+    }
     for (final line in export.value.$1.split("\n")) {
-      if (line.isEmpty) continue;
+      // if (line.isEmpty) continue;
       method.writeln("---$line");
     }
     method.writeln(

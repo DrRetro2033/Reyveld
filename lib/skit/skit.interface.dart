@@ -14,20 +14,21 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
         "open": (
           "Opens an SKit file.",
           {
-            "path": (
+            "path": const (
               "The path to the SKit file.",
               type: String,
-              cast: (value) => value.toString(),
+              cast: typeCheck<String>,
               isRequired: true
             ),
-            "overrides": (
+            "overrides": const (
               "Some more options.",
               type: Map,
-              cast: (value) => value as Map,
+              cast: typeCheck<Map>,
               isRequired: false
             ),
           },
           SKit,
+          true,
           (String path, [Map overrides = const {}]) async {
             String? encryptKey =
                 overrides.containsKey("key") ? overrides["key"] : null;
@@ -37,35 +38,37 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
         "exists": (
           "Checks if an SKit exists.",
           {
-            "path": (
+            "path": const (
               "The path to the SKit file.",
               type: String,
-              cast: (value) => value.toString(),
+              cast: typeCheck<String>,
               isRequired: true
             )
           },
           bool,
+          true,
           (String path) async {
             return await SKit(path).exists();
           }
         ),
         "create": (
           "Creates a new SKit file.",
-          {
+          const {
             "path": (
               "The path to the SKit file.",
               type: String,
-              cast: (value) => value as String,
+              cast: typeCheck<String>,
               isRequired: true
             ),
             "overrides": (
               "Some more options.",
               type: Map,
-              cast: (value) => value as Map,
+              cast: typeCheck<Map>,
               isRequired: false
             ),
           },
           SKit,
+          true,
           (String path, [Map overrides = const {}]) async {
             bool? overwrite = overrides.containsKey("override")
                 ? overrides["override"]
@@ -91,19 +94,21 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
           "Returns the path of the SKit file.",
           {},
           String,
+          false,
           () => object!.path
         ),
         "isType": (
           "Returns whether the SKit is of the specified type.",
-          {
+          const {
             "type": (
               "The type to check for.",
               type: int,
-              cast: (value) => value as int,
+              cast: typeCheck<int>,
               isRequired: true
             )
           },
           bool,
+          true,
           (int type) async {
             return await object!.isType(SKitType.values[type]);
           }
@@ -112,12 +117,14 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
           "Returns the SHeader of the SKit.",
           {},
           SHeader,
-          () async => await object!.getHeader()
+          true,
+          () => object!.getHeader()
         ),
         "createdOn": (
           "Returns the creation date of the SKit.",
           {},
           String,
+          true,
           () async {
             final header = await object!.getHeader();
             return header!.createdOn.toIso8601String();
@@ -127,6 +134,7 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
           "Returns the last modified date of the SKit.",
           {},
           String,
+          true,
           () async {
             final header = await object!.getHeader();
             return header!.lastModified.toIso8601String();
@@ -134,15 +142,16 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
         ),
         "key": (
           "Sets and Gets the encryption key of the SKit.",
-          {
+          const {
             "key": (
               "The encryption key.",
               type: String,
-              cast: (value) => value as String,
+              cast: typeCheck<String>,
               isRequired: false
             ),
           },
           String,
+          false,
           ([String? key]) async {
             if (key != null) {
               object!.key = key;
@@ -154,25 +163,28 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
           "Saves changes to the SKit.",
           {},
           null,
-          () async => await object!.save()
+          true,
+          () => object!.save()
         ),
         "discard": (
           "Discards changes to the SKit.",
           {},
           null,
+          false,
           () => object!.discardChanges()
         ),
         "exportAs": (
           "Exports the SKit as an uncompressed, decrypted xml file.",
-          {
+          const {
             "path": (
               "The path to export to.",
               type: String,
-              cast: (value) => value as String,
+              cast: typeCheck<String>,
               isRequired: true
             )
           },
           null,
+          true,
           (String path) async => await object!.exportToXMLFile(path)
         )
       };
