@@ -10,7 +10,7 @@ class SHeaderFactory extends SFactory<SHeader> {
   SHeaderFactory();
 
   @override
-  SHeader load(XmlNode node) => SHeader(node);
+  SHeader load(XmlElement node) => SHeader(node);
 
   @override
   String get tag => "sere";

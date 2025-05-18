@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:arceus/scripting/list.dart';
 import 'package:arceus/skit/skit.dart';
 
 export 'package:xml/xml.dart';
@@ -23,7 +24,7 @@ part 'sobject.interface.dart';
 /// If there is no [SFactory] object found, then the [GenericFactory] will be used, which is not recommended as it will not have strict,
 /// predetermined behavior.
 class SObject {
-  final XmlNode _node;
+  final XmlElement _node;
   SKit? _kit;
 
   SKit get kit {
@@ -70,7 +71,7 @@ class SObject {
   /// Returns the inner text of the xml node.
   String? get innerText => _node.innerText;
 
-  String get tag => (_node as XmlElement).localName;
+  String get tag => _node.localName;
 
   /// Checks if the xml node has an attribute.
   /// Should be used when checking if an attribute exists, if needed.

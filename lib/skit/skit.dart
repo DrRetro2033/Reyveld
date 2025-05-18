@@ -146,11 +146,12 @@ class SKit {
   Future<SHeader?> getHeader() async {
     if (_header == null) {
       final factory = getSFactory<SHeader>();
-      final eventStream = _eventStream;
-      _header = await (eventStream!
+
+      _header = await (_eventStream!
           .selectSubtreeEvents((e) => e.localName == factory.tag)
           .toXmlNodes()
           .expand((e) => e)
+          .whereType<XmlElement>()
           .map((e) => factory.load(e))
           .first);
     }
@@ -224,7 +225,8 @@ class SKit {
                 (e) => filterEvents == null || filterEvents(e))
             .toXmlNodes()
             .expand((e) => e)
-            .map((e) => getSFactory((e as XmlElement).localName).load(e)
+            .whereType<XmlElement>()
+            .map((e) => getSFactory(e.localName).load(e)
               ..kit = this) // Set the kit instance to this.
             .whereType<SRoot>() ??
         Stream.empty();

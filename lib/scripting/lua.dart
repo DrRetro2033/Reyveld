@@ -18,21 +18,34 @@ class Lua {
 
   Lua() : state = LuaState.newState();
 
+  /// A map of all objects in the lua state.
+  ///
+  /// When pushing a object to the stack, an unique hash is generated and
+  /// a duplicate of the SInterface with the object is added to this map.
   final Map<String, SInterface> _objects = {};
 
-  static Set<SInterface> get interfaces => {
+  /// A list of all interfaces in the lua state.
+  static Set<SInterface> get _interfaces => {
         ArceusInterface(),
+        SObjectListInterface(),
         ListInterface(),
         SHeaderInterface(),
-        SObjectInterface(),
         SKitInterface(),
         ConstellationInterface(),
         StarInterface(),
         SArchiveInterface(),
         SFileInterface(),
-        SRFileInterface(),
         SLibraryInterface(),
+        SObjectInterface(),
       };
+
+  static Set<SInterface>? _sortedInterfaces;
+
+  static Set<SInterface> get interfaces {
+    _sortedInterfaces ??=
+        (_interfaces.toList()..sort((a, b) => b.priority - a.priority)).toSet();
+    return _sortedInterfaces!;
+  }
 
   static Map<String, List<Enum>> get enums => {
         "SKitType": SKitType.values,
@@ -190,9 +203,9 @@ class Lua {
             ..removeWhere((e) => e == null);
 
           // Log the arguments for debugging.
-          Arceus.talker.debug("Args: $finalArgs");
-          Arceus.talker.debug("Before:\n$stack");
-          Arceus.talker.debug("After:\n${_formatStack()}");
+          // Arceus.talker.debug("Args: $finalArgs");
+          // Arceus.talker.debug("Before:\n$stack");
+          // Arceus.talker.debug("After:\n${_formatStack()}");
           if (value.$3 == null) {
             // Means that the function doesn't return anything, so just call it.
             await Function.apply(value.$5, finalArgs);
@@ -324,6 +337,8 @@ class Lua {
       state.error();
       return null;
     }
+
+    /// If it was successful, return the result.
     final result = getFromTop();
     stopwatch.stop();
     Arceus.talker
@@ -335,8 +350,17 @@ class Lua {
   static SInterface? getInterface(Object object) {
     for (final interface_ in interfaces) {
       if (interface_.isType(object)) {
-        // Arceus.talker
-        //     .debug("Found interface for $object (${interface_.runtimeType})");
+        // Arceus.talker.debug(
+        //     "Found interface: ${interface_.className} for object: $object");
+        return interface_;
+      }
+    }
+    return null;
+  }
+
+  static SInterface? getInterfaceFromType(Type type) {
+    for (final interface_ in interfaces) {
+      if (interface_.equalsType(type)) {
         return interface_;
       }
     }

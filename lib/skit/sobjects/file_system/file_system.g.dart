@@ -10,7 +10,7 @@ class SArchiveFactory extends SFactory<SArchive> {
   SArchiveFactory();
 
   @override
-  SArchive load(XmlNode node) => SArchive(node);
+  SArchive load(XmlElement node) => SArchive(node);
 
   @override
   String get tag => "archive";
@@ -20,7 +20,7 @@ class SFileFactory extends SFactory<SFile> {
   SFileFactory();
 
   @override
-  SFile load(XmlNode node) => SFile(node);
+  SFile load(XmlElement node) => SFile(node);
 
   @override
   String get tag => "file";
@@ -30,7 +30,7 @@ class SRArchiveFactory extends SFactory<SRArchive> {
   SRArchiveFactory();
 
   @override
-  SRArchive load(XmlNode node) => SRArchive(node);
+  SRArchive load(XmlElement node) => SRArchive(node);
 
   @override
   String get tag => "rarchive";
@@ -40,7 +40,7 @@ class SRFileFactory extends SFactory<SRFile> {
   SRFileFactory();
 
   @override
-  SRFile load(XmlNode node) => SRFile(node);
+  SRFile load(XmlElement node) => SRFile(node);
 
   @override
   String get tag => "rfile";

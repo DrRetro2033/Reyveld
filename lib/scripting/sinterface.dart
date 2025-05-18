@@ -25,6 +25,7 @@ typedef LuaArgument = (
 /// If it is, it returns the value, otherwise it returns null.
 T? typeCheck<T>(dynamic value) {
   if (value is T) {
+    // Arceus.talker.info("Type check passed: $T -> $value");
     return value;
   }
   return null;
@@ -85,12 +86,22 @@ abstract class SInterface<T> {
   /// Used when pushing a object to the stack, and when generating docs.
   SInterface? get parent => null;
 
+  int get priority {
+    SInterface? current = this;
+    int priority = 0;
+    while (current != null) {
+      priority += 1;
+      current = current.parent;
+    }
+    return priority;
+  }
+
   @override
   String toString() => object.toString();
 
   /// This is used when pushing a object to the stack.
   /// Used to figure out which interface to use by checking its priority for [object].
-  bool isType(Object object) => object.runtimeType == T;
+  bool isType(dynamic object) => typeCheck<T>(object) != null;
 
   /// This generates the docs for the interface.
   Future<void> generateDocs() async {
@@ -189,7 +200,23 @@ ${allStatics.entries.map((e) => _luaMethod(e)).join("\n")}
     } else if (type == Object) {
       return "any";
     } else {
-      return type.toString();
+      // Try and find a interface for the type and use that.
+      final inter_ = Lua.getInterfaceFromType(type);
+      if (inter_ != null) {
+        return inter_.className;
+      }
+      // If not, throw an exception as we don't know how to handle this type.
+      throw Exception("Don't know how to handle type $type");
     }
   }
+
+  bool equalsType(Type type) => type == T;
+
+  @override
+  int get hashCode => className.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SInterface && other.className == className;
 }

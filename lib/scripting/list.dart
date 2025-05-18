@@ -92,6 +92,13 @@ class ListInterface extends SInterface<List> {
           Object,
           false,
           (int index) => object![index]
+        ),
+        "single": (
+          "Returns the only object in the list. Will throw an error if the list is empty or has more than one object.",
+          const {},
+          Object,
+          false,
+          () => object!.single
         )
       };
 }

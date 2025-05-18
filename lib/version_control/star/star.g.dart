@@ -10,7 +10,7 @@ class StarFactory extends SFactory<Star> {
   StarFactory();
 
   @override
-  Star load(XmlNode node) => Star(node);
+  Star load(XmlElement node) => Star(node);
 
   @override
   String get tag => "star";

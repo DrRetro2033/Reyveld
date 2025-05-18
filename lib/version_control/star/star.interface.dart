@@ -1,6 +1,6 @@
 part of 'star.dart';
 
-class StarInterface extends SInterface<Star> {
+final class StarInterface extends SInterface<Star> {
   @override
   String get className => "Star";
 
@@ -12,6 +12,11 @@ A star is a point in time that represents a snapshot of an folder.
 
   @override
   get parent => SObjectInterface();
+
+  @override
+  get statics => {
+        "tag": tagEntry(StarFactory()),
+      };
 
   @override
   get exports => {

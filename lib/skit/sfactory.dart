@@ -13,9 +13,9 @@ abstract class SFactory<T extends SObject> {
   String get tag;
 
   /// Loads the [SObject] from the xml node.
-  /// The [SKit] and the [XmlNode] are passed for accessing the underlying xml data,
+  /// The [SKit] and the [XmlElement] are passed for accessing the underlying xml data,
   /// and the file it came from.
-  T load(XmlNode node);
+  T load(XmlElement node);
 
   @override
   operator ==(other) {

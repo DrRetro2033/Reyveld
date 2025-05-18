@@ -1,6 +1,6 @@
 part of 'library.dart';
 
-class SLibraryInterface extends SInterface<SLibrary> {
+final class SLibraryInterface extends SInterface<SLibrary> {
   @override
   get className => "SLibrary";
 
@@ -17,6 +17,7 @@ read and write to an image file, or more.
 
   @override
   get statics => {
+        "tag": tagEntry(SLibraryFactory()),
         "new": (
           "Create a new library.",
           const {

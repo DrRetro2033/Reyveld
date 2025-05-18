@@ -10,7 +10,7 @@ class SUserFactory extends SFactory<SUser> {
   SUserFactory();
 
   @override
-  SUser load(XmlNode node) => SUser(node);
+  SUser load(XmlElement node) => SUser(node);
 
   @override
   String get tag => "user";

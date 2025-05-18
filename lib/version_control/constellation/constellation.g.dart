@@ -10,7 +10,7 @@ class ConstellationFactory extends SFactory<Constellation> {
   ConstellationFactory();
 
   @override
-  Constellation load(XmlNode node) => Constellation(node);
+  Constellation load(XmlElement node) => Constellation(node);
 
   @override
   String get tag => "const";

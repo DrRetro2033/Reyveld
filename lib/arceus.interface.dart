@@ -1,6 +1,6 @@
 part of 'arceus.dart';
 
-class ArceusInterface extends SInterface {
+class ArceusInterface extends SInterface<Arceus> {
   @override
   get className => "Arceus";
 

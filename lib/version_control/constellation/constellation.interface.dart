@@ -1,6 +1,6 @@
 part of 'constellation.dart';
 
-class ConstellationInterface extends SInterface<Constellation> {
+final class ConstellationInterface extends SInterface<Constellation> {
   @override
   get className => "Constellation";
 
@@ -14,13 +14,7 @@ A collection of Stars, with a root star, and a current star.
 
   @override
   get statics => {
-        "tag": (
-          "Get the xml tag of the SObject type.",
-          {},
-          String,
-          false,
-          () => ConstellationFactory().tag
-        ),
+        "tag": tagEntry(ConstellationFactory()),
         "new": (
           "Creates a new constellation.",
           const {

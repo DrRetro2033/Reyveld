@@ -10,7 +10,7 @@ class SDescriptionFactory extends SFactory<SDescription> {
   SDescriptionFactory();
 
   @override
-  SDescription load(XmlNode node) => SDescription(node);
+  SDescription load(XmlElement node) => SDescription(node);
 
   @override
   String get tag => "descr";

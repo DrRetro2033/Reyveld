@@ -1,6 +1,6 @@
 part of 'file_system.dart';
 
-class SArchiveInterface extends SInterface<SArchive> {
+final class SArchiveInterface extends SInterface<SArchive> {
   @override
   get className => "SArchive";
 
@@ -11,6 +11,11 @@ An archive in a SKit. Contains files.
 
   @override
   get parent => SObjectInterface();
+
+  @override
+  get statics => {
+        "tag": tagEntry(SArchiveFactory()),
+      };
 
   @override
   get exports => {
@@ -61,7 +66,7 @@ An archive in a SKit. Contains files.
       };
 }
 
-class SFileInterface extends SInterface<SFile> {
+final class SFileInterface extends SInterface<SFile> {
   @override
   get className => "SFile";
 
@@ -72,6 +77,11 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
 
   @override
   get parent => SObjectInterface();
+
+  @override
+  get statics => {
+        "tag": tagEntry(SFileFactory()),
+      };
 
   @override
   get exports => {
@@ -239,5 +249,3 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
         ),
       };
 }
-
-class SRFileInterface extends SFileInterface {}
