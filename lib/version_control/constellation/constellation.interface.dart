@@ -14,73 +14,59 @@ A collection of Stars, with a root star, and a current star.
 
   @override
   get statics => {
-        "tag": tagEntry(ConstellationFactory()),
-        "new": (
-          "Creates a new constellation.",
-          const {
-            "name": (
-              "The name of the constellation.",
-              type: String,
-              cast: typeCheck<String>,
-              isRequired: true
-            ),
-            "path": (
-              "The path of the constellation.",
-              type: String,
-              cast: typeCheck<String>,
-              isRequired: true
-            )
-          },
-          Constellation,
-          false,
-          (String name, String path) async =>
-              await ConstellationCreator(name, path).create()
-        )
+        tagEntry(ConstellationFactory()),
+        LEntry(
+            name: "create",
+            descr: "Creates a new constellation.",
+            args: const {
+              "name": LArg<String>(
+                descr: "The name of the constellation.",
+              ),
+              "path": LArg<String>(
+                descr: "The path of the constellation.",
+              )
+            },
+            returnType: Constellation,
+            (String name, String path) async =>
+                await ConstellationCreator(name, path).create())
       };
 
   @override
   get exports => {
-        "name": (
-          "Gets the name of the constellation.",
-          {},
-          String,
-          false,
-          () => object?.name
-        ),
-        "path": (
-          "Gets the path of the constellation.",
-          {},
-          String,
-          false,
-          () => object?.path
-        ),
-        "current": (
-          "Gets the current star of the constellation.",
-          {},
-          Star,
-          false,
-          () => object?.getCurrentStar()
-        ),
-        "start": (
-          "Starts the constellation by creating the root star. Call after adding the constellation to the kit.",
-          {},
-          Star,
-          true,
-          () async => await object?.createRootStar()
-        ),
-        "root": (
-          "Gets the root star of the constellation.",
-          {},
-          Star,
-          false,
-          () => object?.root
-        ),
-        "unsaved": (
-          "Gets an archive that contains all of the unsaved changes in the constellation.",
-          {},
-          SArchive,
-          true,
-          () async => await object?.getUnsavedChanges()
-        )
+        LEntry(
+            name: "name",
+            descr: "Gets the name of the constellation.",
+            returnType: String,
+            () => object?.name),
+        LEntry(
+            name: "path",
+            descr: "Gets the path of the constellation.",
+            returnType: String,
+            () => object?.path),
+        LEntry(
+            name: "current",
+            descr: "Gets the current star of the constellation.",
+            returnType: Star,
+            () => object?.getCurrentStar()),
+        LEntry(
+            name: "start",
+            descr:
+                "Starts the constellation by creating the root star. Call after adding the constellation to the kit.",
+            returnType: Star,
+            isAsync: true,
+            () async => await object?.createRootStar()),
+        LEntry(
+            name: "root",
+            descr: "Gets the root star of the constellation.",
+            returnType: Star,
+            isAsync: false,
+            () => object?.root),
+        LEntry(
+            name: "unsaved",
+            descr:
+                "Gets an archive that contains all of the unsaved changes in the constellation.",
+            returnType: SArchive,
+            isAsync: true,
+            () async => await object?.getUnsavedChanges())
       };
 }

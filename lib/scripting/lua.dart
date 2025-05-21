@@ -64,7 +64,7 @@ class Lua {
 
     for (final interface_ in interfaces) {
       if (interface_.statics.isNotEmpty) {
-        await addGlobal(interface_.className, interface_.allStatics);
+        await addGlobal(interface_.className, interface_.staticTable);
       }
     }
   }
@@ -150,6 +150,7 @@ class Lua {
 
   /// Pushes a value to the stack.
   Future<void> _pushToStack(dynamic value) async {
+    final stack = _formatStack();
     if (value is String) {
       state.pushString(value);
     } else if (value is int) {
@@ -175,18 +176,17 @@ class Lua {
         await _pushToStack(await value(this));
         return 1;
       });
-    } else if (value is LuaEntrypoint) {
+    } else if (value is LEntry) {
       state.pushDartFunction((state) async {
         try {
           List<dynamic> args = [];
-          final stack = _formatStack();
-          for (final arg in value.$2.entries.toList().reversed) {
+          for (final arg in value.args.entries.toList().reversed) {
             final argValue = getFromTop(pop: false);
             // Attempt to cast the argument to the expected type.
             // It will return null if the cast fails.
             final trueValue = arg.value.cast(argValue);
             if (trueValue == null) {
-              if (!arg.value.isRequired) {
+              if (!arg.value.required) {
                 continue;
               } else {
                 // Report the before and after stack and throw an error.
@@ -206,12 +206,12 @@ class Lua {
           // Arceus.talker.debug("Args: $finalArgs");
           // Arceus.talker.debug("Before:\n$stack");
           // Arceus.talker.debug("After:\n${_formatStack()}");
-          if (value.$3 == null) {
+          if (value.returnType == null) {
             // Means that the function doesn't return anything, so just call it.
-            await Function.apply(value.$5, finalArgs);
+            await Function.apply(value.func, finalArgs);
           } else {
             // Means that the function returns something, so call it and push the result to the stack.
-            final result = await Function.apply(value.$5, finalArgs);
+            final result = await Function.apply(value.func, finalArgs);
             await _pushToStack(result);
           }
           return 1;
@@ -220,8 +220,12 @@ class Lua {
           rethrow;
         }
       });
+    } else if (value is LField) {
+      _pushToStack(value.value);
     } else {
       Arceus.talker.error("Could not push to stack: $value");
+      Arceus.talker.debug("Before:\n$stack");
+      Arceus.talker.debug("After:\n${_formatStack()}");
     }
   }
 

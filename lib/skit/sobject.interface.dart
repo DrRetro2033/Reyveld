@@ -1,12 +1,10 @@
 part of 'sobject.dart';
 
-LuaEntrypoint tagEntry(SFactory factory) => (
-      "Gets the xml tag of this type. (\"${factory.tag}\")",
-      const {},
-      String,
-      false,
-      () => factory.tag
-    );
+LEntry tagEntry(SFactory factory) => LEntry(
+    name: "tag",
+    descr: "Gets the xml tag of this type. (\"${factory.tag}\")",
+    returnType: String,
+    () => factory.tag);
 
 /// The interface for [SObject]
 final class SObjectInterface extends SInterface<SObject> {
@@ -20,119 +18,60 @@ A base class for all objects in the kit.
 
   @override
   get exports => {
-        "addChild": (
-          "Adds a child SObject to the xml node.",
-          const {
-            "child": (
-              "The child SObject to add.",
-              type: SObject,
-              cast: typeCheck<SObject>,
-              isRequired: true
+        LEntry(
+          name: "addChild",
+          descr: "Adds a child SObject to the xml node.",
+          args: const {
+            "child": LArg<SObject>(
+              descr: "The child SObject to add.",
             )
           },
-          null,
-          false,
           (SObject child) => object!.addChild(child),
         ),
-        "removeChild": (
-          "Removes a child SObject from the xml node.",
-          const {
-            "child": (
-              "The child SObject to remove.",
-              type: SObject,
-              cast: typeCheck<SObject>,
-              isRequired: true
+        LEntry(
+          name: "removeChild",
+          descr: "Removes a child SObject from the xml node.",
+          args: const {
+            "child": LArg<SObject>(
+              descr: "The child SObject to remove.",
             )
           },
-          null,
-          false,
           (SObject child) => object!.removeChild(child),
         ),
-//         "getChild": (
-//           """
-// Returns a child of the SObject, with the specific type.
-
-// If filter is not provided, then it will return the first child of the sobject.
-
-// If filter is provided, then it will return the first child that matches the filter.
-
-// Filter Options:
-// - tag - A tag that represents the type of the child. To find the tag of a SObject type, see [SObject.tag](lua:SObject.tag).
-// - attrbs - A map of attributes to filter by. It will only return the first child that matches the attributes in the map.
-
-// """,
-//           {
-//             "filter": const (
-//               "A map to filter the children by.",
-//               type: Map,
-//               cast: typeCheck<Map>,
-//               isRequired: false
-//             )
-//           },
-//           SObject,
-//           false,
-//           ([Map<dynamic, dynamic>? filter]) {
-//             if (filter == null) return object!.getChild<SObject>();
-//             final type = filter.containsKey("tag") ? filter["tag"] : null;
-//             final attributes =
-//                 filter.containsKey("attrbs") ? filter["attrbs"] : null;
-//             return object!.getChild<SObject>(
-//               filter: (e) {
-//                 if (type != null) {
-//                   if (e.tag != type) {
-//                     return false;
-//                   }
-//                 }
-//                 for (final key in attributes.keys) {
-//                   if (e.get(key) != attributes[key]) {
-//                     return false;
-//                   }
-//                 }
-//                 return true;
-//               },
-//             );
-//           }
-//         ),
-        "getChildren": (
-          "Returns a list of all the children of the SObject.",
-          {},
-          List<SObject>,
-          false,
+        LEntry(
+          name: "getChildren",
+          descr: "Returns a list of all the children of the SObject.",
+          returnType: List<SObject>,
           () => object!.getChildren().nonNulls.toList(),
         ),
-        "getParent": (
-          "Returns the parent of the SObject.",
-          {},
-          SObject,
-          false,
+        LEntry(
+          name: "getParent",
+          descr: "Returns the parent of the SObject.",
+          returnType: SObject,
           () => object!.getParent(),
         ),
-        "getDescendants": (
-          "Returns a list of all the descendants of the SObject.",
-          {},
-          List<SObject>,
-          false,
+        LEntry(
+          name: "getDescendants",
+          descr: "Returns a list of all the descendants of the SObject.",
+          returnType: List<SObject>,
           () => object!.getDescendants().nonNulls.toList(),
         ),
-        "getAncestors": (
-          "Returns a list of all the ancestors of the SObject.",
-          {},
-          List<SObject>,
-          false,
+        LEntry(
+          name: "getAncestors",
+          descr: "Returns a list of all the ancestors of the SObject.",
+          returnType: List<SObject>,
           () => object!.getAncestors().nonNulls.toList(),
         ),
-        "getSiblingAbove": (
-          "Returns the sibling above the SObject.",
-          {},
-          SObject,
-          false,
+        LEntry(
+          name: "getSiblingAbove",
+          descr: "Returns the sibling above the SObject.",
+          returnType: SObject,
           () => object!.getSiblingAbove(),
         ),
-        "getSiblingBelow": (
-          "Returns the sibling below the SObject.",
-          {},
-          SObject,
-          false,
+        LEntry(
+          name: "getSiblingBelow",
+          descr: "Returns the sibling below the SObject.",
+          returnType: SObject,
           () => object!.getSiblingBelow(),
         ),
       };
@@ -152,18 +91,15 @@ A list of SObjects.
 
   @override
   get exports => {
-        "withTag": (
-          "Returns a list of SObjects that are of a specific tag.",
-          const {
-            "tag": (
-              "The tag of SObject to filter by.",
-              type: String,
-              isRequired: true,
-              cast: typeCheck<String>
+        LEntry(
+          name: "withTag",
+          descr: "Returns a list of SObjects that are of a specific tag.",
+          args: const {
+            "tag": LArg<String>(
+              descr: "The tag of SObject to filter by.",
             )
           },
-          List<SObject>,
-          false,
+          returnType: List<SObject>,
           (String tag) => object!.where((e) => e.tag == tag).toList(),
         )
       };

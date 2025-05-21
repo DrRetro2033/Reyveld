@@ -3,23 +3,48 @@ import 'dart:io';
 import 'package:arceus/arceus.dart';
 import 'package:arceus/skit/sobject.dart';
 
-/// This is a typedef for a lua entrypoint.
+/// An export for Lua.
+abstract class LExport {
+  final String name;
+  final String descr;
+  const LExport({required this.name, this.descr = ""});
+}
+
+/// This is a lua entrypoint.
 /// A entrypoint is a function with a description, arguments, and return type.
 /// The arguments are a list of tuples of (description, type, isOptional).
-typedef LuaEntrypoint = (
-  String, // description
-  Map<String, LuaArgument>, // arguments <name, (description, type, isOptional)>
-  Type?, // return type or null
-  bool, // is async
-  Function // the function itself
-);
+class LEntry extends LExport {
+  final Map<String, LArg> args;
+  final bool isAsync;
+  final Type? returnType;
+  final Function func;
 
-typedef LuaArgument = (
-  String, {
-  Type type,
-  dynamic Function(dynamic) cast,
-  bool isRequired
-});
+  const LEntry(this.func,
+      {required super.name,
+      super.descr,
+      this.args = const {},
+      this.isAsync = false,
+      this.returnType});
+}
+
+/// This is a lua argument.
+class LArg<T> {
+  final String descr;
+  final bool required;
+
+  Type get type => T;
+
+  const LArg({this.descr = "", this.required = true});
+
+  T? cast(dynamic value) => typeCheck<T>(value);
+}
+
+/// This is a lua field.
+class LField<T> extends LExport {
+  final dynamic value;
+  Type get type => T;
+  const LField(this.value, {required super.name, super.descr});
+}
 
 /// This is a helper function to check if a value is of type [T].
 /// If it is, it returns the value, otherwise it returns null.
@@ -36,14 +61,20 @@ abstract class SInterface<T> {
   /// This is the name of the interface.
   String get className;
 
-  String get staticDescription => "";
+  String get staticDescription => classDescription;
 
-  /// This is the description of the interface.
+  /// This is the description of the object interface.
+  /// By default, [staticDescription] shares the same description as this.
   String get classDescription => "";
 
   /// This converts the interface into a Lua table.
   Map<String, dynamic> toLua(Lua state, String luaHash) {
-    return {"class": className, "objHash": luaHash, ...allExports};
+    Map<String, LExport> exportTable = {};
+    for (final export in allExports) {
+      exportTable[export.name] = export;
+    }
+    Arceus.talker.log(exportTable);
+    return {"class": className, "objHash": luaHash, ...exportTable};
   }
 
   /// This is the object that this interface wraps around.
@@ -53,16 +84,16 @@ abstract class SInterface<T> {
 
   /// These are the methods of the interface that will be pushed as a table
   /// to Lua when pushing a object of type [T] to the stack.
-  Map<String, LuaEntrypoint> get exports => {};
+  Set<LExport> get exports => {};
 
   /// This is a combination of [exports] and [parent] exports.
   /// Used in [toLua].
-  Map<String, LuaEntrypoint> get allExports {
+  Set<LExport> get allExports {
     final map = exports;
     if (parent == null) return map;
     final parentInstance = parent!..object = object;
-    for (final entry in parentInstance.allExports.entries) {
-      map.putIfAbsent(entry.key, () => entry.value);
+    for (final entry in parentInstance.allExports) {
+      map.add(entry);
     }
     return map;
   }
@@ -70,13 +101,13 @@ abstract class SInterface<T> {
   /// This is the static methods of the interface.
   /// This will be added to a global Lua table with the same name as the interface.
   /// Used for constructors.
-  Map<String, LuaEntrypoint> get statics => {};
+  Set<LEntry> get statics => {};
 
-  Map<String, LuaEntrypoint> get allStatics {
-    final map = statics;
-    if (parent == null) return map;
-    for (final entry in parent!.allStatics.entries) {
-      map.putIfAbsent(entry.key, () => entry.value);
+  /// Used to push statics as a global table.
+  Map<String, LEntry> get staticTable {
+    final map = <String, LEntry>{};
+    for (final entry in statics) {
+      map[entry.name] = entry;
     }
     return map;
   }
@@ -86,21 +117,17 @@ abstract class SInterface<T> {
   /// Used when pushing a object to the stack, and when generating docs.
   SInterface? get parent => null;
 
-  int get priority {
-    SInterface? current = this;
-    int priority = 0;
-    while (current != null) {
-      priority += 1;
-      current = current.parent;
-    }
-    return priority;
-  }
+  /// This is the priority of the interface.
+  /// The priority is determined by the number of parents the interface has.
+  /// The higher the priority, the more specific the interface is, which in turn
+  /// means that it should have a higher priority than its parents.
+  int get priority => parent == null ? 0 : parent!.priority + 1;
 
   @override
   String toString() => object.toString();
 
   /// This is used when pushing a object to the stack.
-  /// Used to figure out which interface to use by checking its priority for [object].
+  /// Used to figure out which interface to use if it matches the type of the object.
   bool isType(dynamic object) => typeCheck<T>(object) != null;
 
   /// This generates the docs for the interface.
@@ -112,8 +139,8 @@ abstract class SInterface<T> {
 ---@meta _
 ${_sources()}
 
-${allStatics.isNotEmpty ? _luaStatics() : ""}
-${exports.isNotEmpty || parent != null ? _luaExports() : ""}
+${statics.isNotEmpty ? _luaStatics() : ""}
+${allExports.isNotEmpty || parent != null ? _luaExports() : ""}
 """);
   }
 
@@ -122,7 +149,8 @@ ${exports.isNotEmpty || parent != null ? _luaExports() : ""}
 ${_covertDescriptionToComment(staticDescription)}
 $className = {}
 
-${allStatics.entries.map((e) => _luaMethod(e)).join("\n")}
+${statics.whereType<LField>().map(_luaField).join("\n")}
+${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
 """;
 
   String _sources() {
@@ -138,7 +166,10 @@ ${allStatics.entries.map((e) => _luaMethod(e)).join("\n")}
         "---@class $className${parent != null && parent!.className != className ? ": ${parent!.className}" : ""}");
     text.writeln(_covertDescriptionToComment(classDescription));
     text.writeln("local $className = {}");
-    for (final export in exports.entries) {
+    for (final export in allExports.whereType<LField>()) {
+      text.writeln(_luaField(export));
+    }
+    for (final export in allExports.whereType<LEntry>()) {
       text.writeln(_luaMethod(export));
     }
     return text.toString();
@@ -153,34 +184,40 @@ ${allStatics.entries.map((e) => _luaMethod(e)).join("\n")}
     return text.toString().trim();
   }
 
+  String _luaField(LField export) {
+    final field =
+        "---@field ${export.name} ${_convertDartToLua(export.type)} ${export.descr}";
+    Arceus.talker.debug(field);
+    return field;
+  }
+
   /// This generates a single method in the docs for the interface.
-  /// [export] is a MapEntry of <name, (description, arguments, return type)>.
-  /// This will generate a function with the name [export.key], and the arguments
-  /// and return type from [export.value].
-  /// The description will be from [export.value.$1].
-  /// This will also generate parameter and return type docs from [export.value.$2] and [export.value.$3].
-  String _luaMethod(MapEntry<String, LuaEntrypoint> export) {
+  /// This will generate a function with the name ([LEntry.name]),
+  /// and the arguments ([LEntry.args]),
+  /// and return type ([LEntry.returnType]);
+  /// Plus the description ([LEntry.descr]).
+  String _luaMethod(LEntry export) {
     StringBuffer method = StringBuffer();
-    if (export.value.$2.isNotEmpty) {
-      for (final arg in export.value.$2.entries) {
+    if (export.args.isNotEmpty) {
+      for (final arg in export.args.entries) {
         // Document the argument
         method.writeln(
-            "---@param ${arg.key} ${_convertDartToLua(arg.value.type) + (arg.value.isRequired ? "" : "?")} ${arg.value.$1}");
+            "---@param ${arg.key} ${_convertDartToLua(arg.value.type) + (arg.value.required ? "" : "?")} ${arg.value.descr}");
       }
     }
-    if (export.value.$3 != null) {
+    if (export.returnType != null) {
       // Document the return type
-      method.writeln("---@return ${_convertDartToLua(export.value.$3!)}");
+      method.writeln("---@return ${_convertDartToLua(export.returnType!)}");
     }
-    if (export.value.$4) {
+    if (export.isAsync) {
       method.writeln("---@async");
     }
-    for (final line in export.value.$1.split("\n")) {
+    for (final line in export.descr.split("\n")) {
       // if (line.isEmpty) continue;
       method.writeln("---$line");
     }
     method.writeln(
-        "function $className.${export.key}(${export.value.$2.keys.join(", ")}) end");
+        "function $className.${export.name}(${export.args.keys.join(", ")}) end");
     return method.toString();
   }
 

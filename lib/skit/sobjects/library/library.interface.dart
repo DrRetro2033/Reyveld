@@ -17,55 +17,42 @@ read and write to an image file, or more.
 
   @override
   get statics => {
-        "tag": tagEntry(SLibraryFactory()),
-        "new": (
-          "Create a new library.",
-          const {
-            "name": (
-              "The name of the library.",
-              isRequired: true,
-              type: String,
-              cast: typeCheck<String>
-            ),
-            "description": (
-              "The description of the library.",
-              isRequired: true,
-              type: String,
-              cast: typeCheck<String>
-            ),
-            "authors": (
-              "A list of authors.",
-              isRequired: true,
-              type: List,
-              cast: typeCheck<List<SAuthor>>
-            )
-          },
-          SLibrary,
-          true,
-          (String name, String description, List<SAuthor> authors) async =>
-              await SLibraryCreator(name,
-                      description: description, authors: authors)
-                  .create()
-        )
+        tagEntry(SLibraryFactory()),
+        LEntry(
+            name: "create",
+            descr: "Create a new library.",
+            args: const {
+              "name": LArg<String>(
+                descr: "The name of the library.",
+              ),
+              "description": LArg<String>(
+                descr: "The description of the library.",
+              ),
+              "authors": LArg<List>(
+                descr: "A list of authors.",
+              )
+            },
+            returnType: SLibrary,
+            isAsync: true,
+            (String name, String description, List<SAuthor> authors) async =>
+                await SLibraryCreator(name,
+                        description: description, authors: authors)
+                    .create())
       };
 
   @override
   get exports => {
-        "package": (
-          "Package a directory into the library.",
-          const {
-            "path": (
-              "The path to the directory.",
-              isRequired: true,
-              type: String,
-              cast: typeCheck<String>
-            ),
-          },
-          SLibrary,
-          true,
-          (String path) async {
-            await object!.package(path);
-          }
-        ),
+        LEntry(
+            name: "package",
+            descr: "Package a directory into the library.",
+            args: const {
+              "path": LArg<String>(
+                descr: "The path to the directory.",
+              ),
+            },
+            returnType: SLibrary,
+            isAsync: true, (String path) async {
+          await object!.package(path);
+        }),
       };
 }

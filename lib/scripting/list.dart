@@ -9,96 +9,68 @@ class ListInterface extends SInterface<List> {
 
   @override
   get exports => {
-        "add": (
-          "Adds an object to the list.",
-          const {
-            "object": (
-              "The object to add.",
-              type: Object,
-              cast: typeCheck<Object>,
-              isRequired: true
-            )
-          },
-          null,
-          false,
-          (Object value) => object!.add(value)
-        ),
-        "remove": (
-          "Removes an object from the list.",
-          const {
-            "object": (
-              "The object to remove.",
-              type: Object,
-              cast: typeCheck<Object>,
-              isRequired: true
-            )
-          },
-          null,
-          false,
-          (Object value) => object!.remove(value)
-        ),
-        "pop": (
-          "Removes the last object from the list and returns it.",
-          const {},
-          null,
-          false,
-          () => object!.removeLast()
-        ),
-        "length": (
-          "Returns the length of the list.",
-          const {},
-          int,
-          false,
-          () => object!.length
-        ),
-        "first": (
-          "Returns the first object in the list.",
-          const {},
-          Object,
-          false,
-          () => object!.first
-        ),
-        "last": (
-          "Returns the last object in the list.",
-          const {},
-          Object,
-          false,
-          () => object!.last
-        ),
-        "contains": (
-          "Returns true if the list contains the object.",
-          const {
-            "object": (
-              "The object to check for.",
-              type: Object,
-              cast: typeCheck<Object>,
-              isRequired: true
-            )
-          },
-          bool,
-          false,
-          (Object value) => object!.contains(value)
-        ),
-        "get": (
-          "Returns the object at the given index.",
-          const {
-            "index": (
-              "The index to get.",
-              type: int,
-              cast: typeCheck<int>,
-              isRequired: true
-            )
-          },
-          Object,
-          false,
-          (int index) => object![index]
-        ),
-        "single": (
-          "Returns the only object in the list. Will throw an error if the list is empty or has more than one object.",
-          const {},
-          Object,
-          false,
-          () => object!.single
-        )
+        LEntry(
+            name: "add",
+            descr: "Adds an object to the list.",
+            args: const {
+              "object": LArg<Object>(
+                descr: "The object to add.",
+              )
+            },
+            (Object value) => object!.add(value)),
+        LEntry(
+            name: "remove",
+            descr: "Removes an object from the list.",
+            args: const {
+              "object": LArg<Object>(
+                descr: "The object to remove.",
+              )
+            },
+            (Object value) => object!.remove(value)),
+        LEntry(
+            name: "pop",
+            descr: "Removes the last object from the list and returns it.",
+            () => object!.removeLast()),
+        LEntry(
+            name: "length",
+            descr: "Returns the length of the list.",
+            returnType: int,
+            () => object!.length),
+        LEntry(
+            name: "first",
+            descr: "Returns the first object in the list.",
+            returnType: Object,
+            () => object!.first),
+        LEntry(
+            name: "last",
+            descr: "Returns the last object in the list.",
+            returnType: Object,
+            () => object!.last),
+        LEntry(
+            name: "contains",
+            descr: "Returns true if the list contains the object.",
+            args: const {
+              "object": LArg<Object>(
+                descr: "The object to check for.",
+              )
+            },
+            returnType: bool,
+            (Object value) => object!.contains(value)),
+        LEntry(
+            name: "get",
+            descr: "Returns the object at the given index.",
+            args: const {
+              "index": LArg<int>(
+                descr: "The index to get.",
+              )
+            },
+            returnType: Object,
+            (int index) => object![index]),
+        LEntry(
+            name: "single",
+            descr:
+                "Returns the only object in the list. Will throw an error if the list is empty or has more than one object.",
+            returnType: Object,
+            () => object!.single)
       };
 }
