@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:arceus/scripting/list.dart';
 import 'package:arceus/skit/skit.dart';
 
@@ -201,12 +200,10 @@ class SObject {
   /// Returns the [SObject] as a xml String.
   String toXmlString() => _node.toXmlString(pretty: true, newLine: "\n");
 
-  String toJson() => jsonEncode(_toJson());
-
-  Map<String, dynamic> _toJson() => {
+  Map<String, dynamic> toJson() => {
         tag: {
           ..._attrbutesToJson(),
-          "children": getChildren().map((child) => child!._toJson()).toList(),
+          "children": getChildren().map((child) => child!.toJson()).toList(),
         }
       };
 
