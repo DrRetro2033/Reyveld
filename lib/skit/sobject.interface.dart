@@ -74,6 +74,13 @@ A base class for all objects in the kit.
           returnType: SObject,
           () => object!.getSiblingBelow(),
         ),
+        LEntry(
+          name: "toJson",
+          descr:
+              "Returns a json representation of the SObject and its descendants.",
+          returnType: String,
+          () => object!.toJson(),
+        )
       };
 }
 

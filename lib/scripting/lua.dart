@@ -298,6 +298,9 @@ class Lua {
 
   // Compiles a lua project.
   Future<String> _compile(String entrypoint) async {
+    /// The regex for hex numbers.
+    /// Lua Dardo should be able to handle this, however, it doesn't.
+    /// So we need to replace it with the actual number as a workaround.
     final hexExp = RegExp(r"0x([0-9A-f]+)");
     final requireExp = RegExp(r"require ([A-z]+)");
 
@@ -335,7 +338,7 @@ class Lua {
     /// Run the lua code and see if it was successful
     final successful = await state
         .doString(await _compile(entrypoint).then((value) => value.trim()));
-
+    stopwatch.stop();
     if (!successful) {
       /// If it wasn't successful, print the error and return null
       state.error();
@@ -344,7 +347,6 @@ class Lua {
 
     /// If it was successful, return the result.
     final result = getFromTop();
-    stopwatch.stop();
     Arceus.talker
         .info("Lua result in ${stopwatch.elapsedMilliseconds}ms: $result");
     return result;
