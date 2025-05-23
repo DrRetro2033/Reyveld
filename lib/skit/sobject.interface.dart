@@ -78,7 +78,7 @@ A base class for all objects in the kit.
           name: "toJson",
           descr:
               "Returns a json representation of the SObject and its descendants.",
-          returnType: String,
+          returnType: Map,
           () => object!.toJson(),
         )
       };
