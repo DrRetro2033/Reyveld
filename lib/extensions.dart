@@ -44,12 +44,12 @@ extension Pathing on String {
 
 extension ChunkStream on Stream<int> {
   Stream<List<int>> chunk(int chunkSize) async* {
-    List<int> buffer = [];
+    final List<int> buffer = [];
     await for (int byte in this) {
       buffer.add(byte);
       if (buffer.length == chunkSize) {
         yield buffer;
-        buffer = [];
+        buffer.clear();
       }
     }
     if (buffer.isNotEmpty) {

@@ -14,25 +14,37 @@ class SArchiveCreator extends SCreator<SArchive> {
       throw Exception("Path does not exist.");
     }
     final archive = await SArchiveCreator().create();
-    for (final file in dir.listSync(recursive: true)) {
-      /// Get all of the files in the current directory recursively,
-      /// and add them to the new archive, making them relative to the archive.
-      if (file is File) {
-        if (filter != null && !filter(file)) continue;
-        final filePath = file.path.relativeTo(path);
+
+    await for (final file in _archiveFolderStream(
+        dir.list(recursive: true).whereType(), path,
+        ref: ref, filter: filter)) {
+      archive.addChild(file!);
+    }
+
+    return archive;
+  }
+
+  static Stream<SFile?> _archiveFolderStream(Stream<File> stream, String path,
+      {SArchive? ref, bool Function(File)? filter}) async* {
+    await for (final e in stream) {
+      if (filter != null && !filter(e)) yield null;
+      yield await Isolate.run<SFile?>(() async {
+        final filePath = e.path.relativeTo(path);
         if (ref != null && ref.hasFile(filePath)) {
-          if (!await ref
-              .getFile(filePath)!
-              .streamDiff(file.openRead())
-              .any((e) => e.any((e) => e != 0))) {
-            archive.addSFile(await SRFileCreator(ref.hash, filePath).create());
-            continue;
+          if (ref.getFile(filePath)!.checkSum ==
+              sha256sum(await e
+                  .openRead()
+                  .transform(gzip.encoder)
+                  .transform(base64.encoder)
+                  .reduce((a, b) => a + b))) {
+            return await SRFileCreator(
+                    ref.hash, filePath, ref.getFile(filePath)!.checkSum)
+                .create();
           }
         }
-        await archive.addFile(file.path.relativeTo(path), file.openRead());
-      }
+        return await SFileCreator(filePath, e.openRead()).create();
+      });
     }
-    return archive;
   }
 
   @override
@@ -44,6 +56,7 @@ class SFileCreator extends SCreator<SFile> {
   final String path;
   final Stream<List<int>> stream;
   late String data;
+  late String checkSum;
 
   SFileCreator(this.path, this.stream);
 
@@ -51,11 +64,13 @@ class SFileCreator extends SCreator<SFile> {
   get beforeCreate => () async {
         final bytes = stream.transform(gzip.encoder).transform(base64.encoder);
         data = await bytes.reduce((a, b) => a + b);
+        checkSum = sha256sum(data);
       };
 
   @override
   get creator => (builder) {
         builder.attribute("path", path.fixPath());
+        builder.attribute("checksum", checkSum);
         builder.text(data);
       };
 }
@@ -64,12 +79,14 @@ class SFileCreator extends SCreator<SFile> {
 class SRFileCreator extends SCreator<SRFile> {
   final String archiveHash;
   final String filePath;
-  SRFileCreator(this.archiveHash, this.filePath);
+  final String checkSum;
+  SRFileCreator(this.archiveHash, this.filePath, this.checkSum);
 
   @override
   get creator => (builder) {
         builder.attribute("archive", archiveHash);
         builder.attribute("path", filePath.fixPath());
+        builder.attribute("checksum", checkSum);
       };
 }
 

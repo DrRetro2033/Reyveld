@@ -48,7 +48,7 @@ class Star extends SObject {
   Future<Star> grow(String name) async {
     final newArchive = await SArchiveCreator.archiveFolder(constellation.path,
         ref: await archive);
-    kit.addRoot(newArchive);
+    await kit.addRoot(newArchive);
     final star = await StarCreator(
             name, constellation.newStarHash(), await newArchive.newIndent())
         .create();

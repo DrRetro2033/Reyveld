@@ -5,6 +5,7 @@ import 'dart:isolate';
 import 'package:arceus/arceus.dart';
 import 'package:arceus/extensions.dart';
 import 'package:arceus/skit/sobject.dart';
+import 'package:hashlib/hashlib.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:async/async.dart';
 
@@ -22,13 +23,13 @@ class SArchive extends SRoot {
   DateTime get archivedOn => DateTime.parse(get("date")!);
 
   /// Adds a [SFile] to the archive.
-  void addSFile(SFile file) => addChild(file);
+  // void addSFile(SFile file) => addChild(file);
 
   /// Adds a file to the archive.
   /// [filepath] must be relative to the archive. For instance: "C://path/to/folder/example.txt" will translate to "example.txt".
   Future<void> addFile(String filepath, Stream<List<int>> data) async {
     final file = await SFileCreator(filepath, data).create();
-    addSFile(file);
+    addChild(file);
   }
 
   /// Returns a [SFile] from the archive.
@@ -124,10 +125,8 @@ class SArchive extends SRoot {
   /// Returns a stream that emits the path of the file currently being extracted.
   Stream<String> extract(String path, {bool temp = false}) async* {
     final files = getFiles();
-    for (final file in files) {
-      yield file!.path;
-      await file.extract(path, temp: temp);
-    }
+    await Future.wait(files.map(
+        (e) => Isolate.run(() async => await e!.extract(path, temp: temp))));
   }
 
   Future<bool> isDifferent(SArchive other) async {
@@ -186,6 +185,8 @@ class SFile extends SObject {
       .map<int>((chunk) => chunk.length)
       .reduce((a, b) => a + b)
       .catchError((e) => 0);
+
+  String get checkSum => get("checksum")!;
 
   /// Returns a stream of the difference between this file and a data stream.
   Stream<List<int>> streamDiff(Stream<List<int>> other) async* {

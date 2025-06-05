@@ -88,6 +88,17 @@ class SObject {
     _node.children.add(child._node);
   }
 
+  void addChildren(List<SObject?> children) {
+    for (var child in children) {
+      if (child!.parent != null) child._node.remove();
+      if (child is SRoot) {
+        throw Exception("Cannot add a SRoot to a SObject!");
+      }
+      child.kit = _kit;
+      _node.children.add(child._node);
+    }
+  }
+
   /// Removes a child [SObject] from the xml node.
   void removeChild(SObject child) {
     if (_node.contains(child._node)) {

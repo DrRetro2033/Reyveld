@@ -21,10 +21,10 @@ class Lua {
   /// A map of all objects in the lua state.
   ///
   /// When pushing a object to the stack, an unique hash is generated and
-  /// a duplicate of the SInterface with the object is added to this map.
+  /// a duplicate of the SInterface with the object as its value is added to this map.
   final Map<String, SInterface> _objects = {};
 
-  /// A list of all interfaces in the lua state.
+  /// A set of all interfaces in the lua state.
   static Set<SInterface> get _interfaces => {
         ArceusInterface(),
         SObjectListInterface(),
@@ -39,6 +39,13 @@ class Lua {
         SObjectInterface(),
       };
 
+  /// This is used to sort the interfaces by priority.
+  ///
+  /// Priority is used to determine which interface to use when pushing a object to the stack,
+  /// for specificly classes that inherit from another class.
+  ///
+  /// Subclasses should have a higher priority than their parent class.
+  /// This is a fix to a problem where the parent class would be used instead of the subclass.
   static Set<SInterface>? _sortedInterfaces;
 
   static Set<SInterface> get interfaces {
@@ -51,6 +58,8 @@ class Lua {
         "SKitType": SKitType.values,
       };
 
+  /// Initializes the lua state.
+  /// This includes opening all libraries and adding all enums and statics to the global table.
   Future<void> init() async {
     await state.openLibs();
 

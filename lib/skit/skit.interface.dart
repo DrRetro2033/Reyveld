@@ -1,5 +1,6 @@
 part of 'skit.dart';
 
+/// The interface for the [SKit] class.
 class SKitInterface extends SInterface<SKit> {
   @override
   get className => "SKit";

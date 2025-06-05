@@ -35,10 +35,11 @@ enum SKitType {
 /// [SKit] is an abrivation for SERE kit, which is a reference to titanfall 2.
 /// [SKit]s can contain any data that Arceus would ever need.
 ///
-/// The two core [SObject]s which is tightly knit into [SKit]s are the [SHeader] and [SRoot]s.
+/// The two core [SObject]s which are tightly knit into [SKit]s are the [SHeader] and [SRoot]s.
 /// The [SHeader] contains information about the kit (e.g. name of kit, version of arceus, the author of the kit, constellations, etc),
 /// while the [SRoot]s can contain much larger sets of data or can be unrelated to the kit itself (e.g. save data, scripts, images, users, etc).
 class SKit {
+  /// Opens a kit file.
   static Future<SKit> open(String path,
       {SKitType? type, String encryptKey = "Arceus"}) async {
     final kit = SKit(path, encryptKey: encryptKey);
@@ -57,14 +58,18 @@ class SKit {
   /// This is the current key used to encrypt and decrypt the kit file.
   String _key;
 
-  /// Used to encrypt the kit file with a new key, while keeping the old key to decrypt when saving a SKit with a new key.
+  /// Used to encrypt the kit file with a new key, while keeping the old key
+  /// to decrypt when transfering old data to the new key.
   String? _newKey;
 
   /// The key used to encrypt and decrypt the kit file.
   String get key => _newKey ?? _key;
   set key(String value) => _newKey = value;
 
+  /// The key used to decrypt the kit file.
   Key get _decryptKey => Key.fromUtf8(_key.padRight(32, ".").substring(0, 32));
+
+  /// The key used to encrypt the kit file.
   Key get _encryptKey =>
       Key.fromUtf8(_newKey?.padRight(32, ".").substring(0, 32) ??
           _key.padRight(32, ".").substring(0, 32));
@@ -74,7 +79,7 @@ class SKit {
   Encrypter get _decrypter => Encrypter(Fernet(_decryptKey));
   Encrypter get _encrypter => Encrypter(Fernet(_encryptKey));
 
-  /// How many bytes are added to the kit file after encrypting.
+  /// The additional bytes which are added to the kit file after encrypting.
   /// Used to chunk data properly when decrypting.
   static const int _encryptionExtraSize = 73;
 
@@ -94,9 +99,21 @@ class SKit {
   /// This will be empty if no archive has been got yet by calling [getArchive].
   final Set<SRoot> _loadedRoots = {};
 
-  /// This is used to store the deletion requests for any root in the file.
+  /// This is used to store any deletion requests for any root in the file.
   /// To add a deletion request, use [addDeletionRequest].
   final Set<SIndent> _indents = {};
+
+  /// Decrypts the data and sends it to the sink.
+  void _decryptTransformer(List<int> data, EventSink<List<int>> sink) {
+    sink.add(_decrypter.decryptBytes(Encrypted(Uint8List.fromList(data))));
+  }
+
+  void _encryptTransformer(List<int> data, EventSink<List<int>> sink) {
+    final encrypted = _encrypter.encryptBytes(data);
+    // Arceus.talker.debug(
+    //     "Encrypted ${e.length} bytes to ${encrypted.bytes.length} bytes.");
+    sink.add(encrypted.bytes);
+  }
 
   /// Returns the stream of [_file].
   /// Do not use directly, and use [_eventStream] instead.
@@ -105,13 +122,12 @@ class SKit {
           .openRead()
           .expand((e) => e)
           .chunk(SFile.chunkSize + _encryptionExtraSize)
-          .map((e) {
-          final decrypted =
-              _decrypter.decryptBytes(Encrypted(Uint8List.fromList(e)));
-          // Arceus.talker
-          //     .debug("Decrypted ${e.length} bytes to ${decrypted.length} bytes.");
-          return decrypted;
-        }).transform(gzip.decoder)
+          .transform(StreamTransformer.fromHandlers(
+            handleData: _decryptTransformer,
+            handleError: (er, st, sink) =>
+                Arceus.talker.error("Error decrypting kit file", er, st),
+          ))
+          .transform(gzip.decoder)
       : null;
 
   /// Returns a stream of [XmlEvent]s from the file.
@@ -207,12 +223,18 @@ class SKit {
   /// This will add the root to the kit file in memory, but will not save the changes to the file.
   /// To save the changes to the file, use [save].
   Future<void> addRoot(SRoot root) async {
+    // Generate a unique hash for the root
     root.hash = generateUniqueHash(await usedRootHashes());
     Arceus.talker.debug(
         "New ${root.runtimeType} added to ${path.getFilename(withExtension: false)}! ($path)");
+
+    // Adding the root to [_loadedRoots] is necessary for the [save] function to work.
     _loadedRoots.add(root);
   }
 
+  /// Removes a root from the kit file.
+  /// This will remove the root from the kit file in memory, and will not save its changes to the file.
+  /// To save the changes to the file, use [save].
   void unloadRoot(SRoot root) => _loadedRoots.remove(root);
 
   /// Streams the roots of the kit file, getting their cached version if possible.
@@ -248,10 +270,18 @@ class SKit {
     }
   }
 
+  Stream<String> _streamRootsAsXml() async* {
+    await for (final root in _streamRoots()) {
+      yield root.toXmlString();
+    }
+  }
+
   /// Returns the hashes used in the SKit file.
   Future<Set<String>> usedRootHashes<T extends SRoot>() async =>
       (await getRoots<T>(addToCache: false)).map((e) => e!.hash).toSet();
 
+  /// Adds an indent to the kit file.
+  /// Used for deletion.
   void addIndent(SIndent indent) => _indents.add(indent);
 
   /// Saves the kit file.
@@ -279,20 +309,16 @@ class SKit {
     // Write the new XML to temp file.
     final stream = Rx.merge<String>([
       Stream.fromFuture(getHeader().then((e) => e!.toXmlString())),
-      _streamRoots().map((event) => event.toXmlString())
+      _streamRootsAsXml()
     ]);
 
     await tempSink.addStream(stream
-        .map<List<int>>((e) => e.codeUnits)
+        .transform(utf8.encoder)
         .transform(gzip.encoder)
         .expand((e) => e)
         .chunk(SFile.chunkSize) // Using chunk size in SFile, for consistency.
-        .map((e) {
-      final encrypted = _encrypter.encryptBytes(e);
-      // Arceus.talker.debug(
-      //     "Encrypted ${e.length} bytes to ${encrypted.bytes.length} bytes.");
-      return encrypted.bytes;
-    }));
+        .transform(
+            StreamTransformer.fromHandlers(handleData: _encryptTransformer)));
     // Flush and Close the sink for the temp file.
     await tempSink.flush();
     await tempSink.close();
@@ -334,6 +360,7 @@ class SKit {
   /// Discards all of the changes to the kit file.
   /// This will unload all of the loaded archives, and clear the current kit header.
   void discardChanges() {
+    _header = null;
     _loadedRoots.clear();
     _indents.clear();
   }

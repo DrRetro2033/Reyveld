@@ -85,12 +85,26 @@ Future<void> main(List<String> args) async {
               Arceus.talker.info('Received: $data');
               try {
                 final result = await sessions[request.session.id]!.$1.run(data);
-                socket.add(jsonEncode({"successful": true, "return": result}));
+                socket.add(jsonEncode({
+                  "successful": true,
+                  "processTime": sessions[request.session.id]!
+                      .$1
+                      .stopwatch
+                      .elapsedMilliseconds,
+                  "return": result
+                }));
               } catch (e, st) {
                 Arceus.printToConsole(
                     "There was a crash on this request (Session ID: ${request.session.id}), please check the log folder (${Arceus.appDataPath}/logs) for more information.");
                 Arceus.talker.critical("Crash Handler", e, st);
-                socket.add(jsonEncode({"successful": false, "return": null}));
+                socket.add(jsonEncode({
+                  "successful": false,
+                  "processTime": sessions[request.session.id]!
+                      .$1
+                      .stopwatch
+                      .elapsedMilliseconds,
+                  "return": null
+                }));
               }
             }, onDone: () {
               Arceus.printToConsole(
