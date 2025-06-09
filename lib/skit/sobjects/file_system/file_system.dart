@@ -364,6 +364,11 @@ class SFile extends SObject {
     await sink.flush();
     await sink.close();
   }
+
+  Future<SRFile> getRef() async {
+    return await SRFileCreator(getParent<SArchive>()!.hash, path, checkSum)
+        .create();
+  }
 }
 
 /// A reference to an [SArchive].
@@ -389,4 +394,9 @@ class SRFile extends SFile {
       .then((value) async => await value!.getFile(filePath)!.bytes);
 
   SRFile(super.node);
+
+  @override
+  Future<SRFile> getRef() async {
+    return await SRFileCreator(archiveHash, filePath, checkSum).create();
+  }
 }

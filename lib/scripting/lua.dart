@@ -7,7 +7,6 @@ import 'package:arceus/skit/sobjects/sobjects.dart';
 import 'package:arceus/uuid.dart';
 import 'package:arceus/version_control/constellation/constellation.dart';
 import 'package:arceus/version_control/star/star.dart';
-import 'package:http/http.dart';
 import 'package:lua_dardo_async/lua.dart';
 import '../skit/skit.dart';
 

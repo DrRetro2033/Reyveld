@@ -37,9 +37,7 @@ class SArchiveCreator extends SCreator<SArchive> {
                   .transform(gzip.encoder)
                   .transform(base64.encoder)
                   .reduce((a, b) => a + b))) {
-            return await SRFileCreator(
-                    ref.hash, filePath, ref.getFile(filePath)!.checkSum)
-                .create();
+            return await ref.getFile(filePath)!.getRef();
           }
         }
         return await SFileCreator(filePath, e.openRead()).create();
