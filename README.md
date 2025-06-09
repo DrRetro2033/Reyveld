@@ -35,7 +35,7 @@ With Arceus, you can create branches of a folder, so multiple versions can exist
 ```lua
 function Grow(path, starname)
     local skit = SKit.open(path)
-    skit.header().getChildren().withTag(Constellation.tag()).single().current().grow(starname)
+    skit.header().getChild({tag=Constellation.tag()}).current().grow(starname)
     skit.save()
 end
 ```
@@ -47,7 +47,7 @@ Rollback to earlier versions of a folder or file, preserving any previous action
 ```lua
 function Rollback(path)
     local skit = SKit.open(path)
-    skit.header().getChildren().withTag(Constellation.tag()).single().current().back(2).makeCurrent()
+    skit.header().getChild({tag=Constellation.tag()}).current().back(2).makeCurrent()
     skit.save()
 end
 ```
@@ -79,11 +79,11 @@ Keep your modded saves away from your main game saves, and recover from a corrup
 
 ## For Video Recording 🎥
 
-Ever needed to replay a specific point of a game to get better footage? Well Arceus will make it easy to do so.
+Ever needed to replay a specific point of a game to get better footage? Well, Arceus makes it easy and quick to do so.
 
 ## For Artists 🎨
 
-Arceus is not just useful for gamers, artists can join the fun as well! Simply create a constellation inside a folder, and add the files you would like to track! It's that simple! Arceus will work with anything; [Krita](https://krita.org/en/), [Blender](https://www.blender.org/), [Kdenlive](https://kdenlive.org/en/), etc...
+Arceus is not just useful for gamers or programmers, artists can join the fun as well! Simply create a constellation inside a folder, and add the files you would like to track! It's that simple! Arceus will work with anything; [Krita](https://krita.org/en/), [Blender](https://www.blender.org/), [Kdenlive](https://kdenlive.org/en/), etc...
 
 ## For Save Editors 📝
 

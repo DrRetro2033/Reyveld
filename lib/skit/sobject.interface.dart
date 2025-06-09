@@ -39,6 +39,20 @@ A base class for all objects in the kit.
           (SObject child) => object!.removeChild(child),
         ),
         LEntry(
+          name: "getChild",
+          descr: "Returns a child of the SObject.",
+          args: const {
+            "tag": LArg<String>(
+              descr: "The tag of the child to get.",
+              positional: false,
+            ),
+          },
+          returnType: SObject,
+          ({required String tag}) => object!.getChild<SObject>(
+            filter: (p0) => p0.tag == tag,
+          ),
+        ),
+        LEntry(
           name: "getChildren",
           descr: "Returns a list of all the children of the SObject.",
           returnType: List<SObject>,

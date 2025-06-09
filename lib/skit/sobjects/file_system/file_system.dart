@@ -176,7 +176,7 @@ class SFile extends SObject {
   /// Returns the path of the file.
   String get path => get("path")!;
 
-  bool get isExternal => get("extern")! == "1";
+  bool get isExternal => (get("extern") ?? "0") == "1";
 
   /// Returns a stream of the bytes stored, uncompressing along the way.
   FutureOr<Stream<List<int>>> get bytes => Stream.fromIterable(

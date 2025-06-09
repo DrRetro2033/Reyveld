@@ -7,6 +7,7 @@ import 'package:arceus/skit/sobjects/sobjects.dart';
 import 'package:arceus/uuid.dart';
 import 'package:arceus/version_control/constellation/constellation.dart';
 import 'package:arceus/version_control/star/star.dart';
+import 'package:http/http.dart';
 import 'package:lua_dardo_async/lua.dart';
 import '../skit/skit.dart';
 
@@ -189,10 +190,22 @@ class Lua {
       state.pushDartFunction((state) async {
         try {
           List<dynamic> args = [];
-          for (final arg in value.args.entries.toList().reversed) {
+          Map<dynamic, dynamic> namedArgs = {};
+          if (value.hasNamedArgs &&
+              state.getTop() > value.numOfPositionalArgs &&
+              state.isTable(state.getTop())) {
+            Arceus.talker.debug("Named args");
+            namedArgs = getFromTop();
+          }
+          for (final arg in value.args.entries
+              .where(
+                (element) => element.value.positional,
+              )
+              .toList()
+              .reversed) {
             final argValue = getFromTop(pop: false);
             // Attempt to cast the argument to the expected type.
-            // It iwll return null if the cast fails.
+            // It will return null if the cast fails.
             final trueValue = arg.value.cast(argValue);
             if (trueValue == null) {
               if (!arg.value.required) {
@@ -217,10 +230,18 @@ class Lua {
           // Arceus.talker.debug("After:\n${_formatStack()}");
           if (value.returnType == null) {
             // Means that the function doesn't return anything, so just call it.
-            await Function.apply(value.func, finalArgs);
+            await Function.apply(value.func, finalArgs,
+                namedArgs.map((key, value) {
+              return MapEntry(Symbol(key), value);
+            }));
           } else {
             // Means that the function returns something, so call it and push the result to the stack.
-            final result = await Function.apply(value.func, finalArgs);
+            final result =
+                await Function.apply(value.func, finalArgs, namedArgs.map(
+              (key, value) {
+                return MapEntry(Symbol(key), value);
+              },
+            ));
             await _pushToStack(result);
           }
           return 1;

@@ -15,8 +15,13 @@ abstract class LExport {
 /// A entrypoint is a function with a description, arguments, and return type.
 class LEntry extends LExport {
   final Map<String, LArg> args;
+
   final bool isAsync;
   final Type? returnType;
+
+  bool get hasNamedArgs => args.entries.any((e) => !e.value.positional);
+  int get numOfPositionalArgs =>
+      args.entries.where((e) => e.value.positional).length;
   final Function func;
 
   const LEntry(this.func,
@@ -29,15 +34,29 @@ class LEntry extends LExport {
 
 /// This is a lua argument.
 class LArg<T> {
-  /// TODO: Implement this as a named argument.
-  final String? name;
   final String descr;
+
+  /// Here we check if the argument is required.
+  /// If it is, it will throw an error if the argument is not provided.
+  /// If it is not required, it will return null if the argument is not provided.
+  /// By default, it is required.
   final bool required;
 
+  /// If true, the argument is positional.
+  /// If false, the argument is named, and can be accessed by name by adding a table to the end of the argument list.
+  /// By default, it is true.
+  ///
+  /// Note: If a named argument is provided, then DO NOT use positional arguments as they WILL BREAK THINGS IN UNEXPECTED WAYS.
+  final bool positional;
+
+  /// This is the type of the argument.
   Type get type => T;
 
-  const LArg({this.descr = "", this.required = true, this.name});
+  const LArg({this.descr = "", this.required = true, this.positional = true});
 
+  /// This is a helper function to check if a value is of type [T].
+  /// If it is, it returns the value, otherwise it returns null.
+  /// It is used to check if the argument is of the correct type.
   T? cast(dynamic value) => typeCheck<T>(value);
 }
 
@@ -211,9 +230,16 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
     StringBuffer method = StringBuffer();
     if (export.args.isNotEmpty) {
       for (final arg in export.args.entries) {
+        if (arg.value.positional) {
+          method.writeln(
+              "---@param ${arg.key} ${_convertDartToLua(arg.value.type) + (arg.value.required ? "" : "?")} ${arg.value.descr}");
+        }
         // Document the argument
+      }
+      if (export.hasNamedArgs) {
+        // Document the named arguments
         method.writeln(
-            "---@param ${arg.key} ${_convertDartToLua(arg.value.type) + (arg.value.required ? "" : "?")} ${arg.value.descr}");
+            "---@param named table? Named arguments go here. See the description for more info.");
       }
     }
     if (export.returnType != null) {
@@ -227,8 +253,19 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
       // if (line.isEmpty) continue;
       method.writeln("---$line");
     }
-    method.writeln(
-        "function $className.${export.name}(${export.args.keys.join(", ")}) end");
+    if (export.hasNamedArgs) {
+      method.writeln("---");
+      method.writeln("--- Named arguments:");
+      for (final arg in export.args.entries.where((e) => !e.value.positional)) {
+        method.writeln("---");
+        method.writeln(
+            "--- `${arg.key}`: `${_convertDartToLua(arg.value.type)}${arg.value.required ? "" : "?"}` - ${arg.value.descr}");
+      }
+    }
+    method.writeln("function $className.${export.name}(${[
+      ...export.args.entries.where((e) => e.value.positional).map((e) => e.key),
+      export.hasNamedArgs ? "named" : null
+    ].whereType<String>().join(", ")}) end");
     return method.toString();
   }
 
