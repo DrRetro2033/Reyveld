@@ -70,6 +70,7 @@ class SObject {
 
   /// Returns the inner text of the xml node.
   String? get innerText => _node.innerText;
+  set innerText(String? value) => _node.innerText = value ?? "";
 
   String get tag => _node.localName;
 

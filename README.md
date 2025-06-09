@@ -16,15 +16,16 @@
 
 # What is Arceus?
 
-Arceus is a WebSocket based server that uses Lua 5.3 to give developers the power of version control, hex editing, and more packed into a tiny and simple package.
+Arceus is a WebSocket based server that uses Lua 5.3 to give developers the power of version control, hex editing, and more packed into a single, portable executable.
 
 ```lua
-local skit = SKit.create("...", {
-    type = SKitType.constellation
-})
-skit.newConstellation("...",
-    "...")
-skit.save()
+function CreateConstellation(kitPath, name, path)
+    local skit = SKit.create(kitPath, { type = SKitType.constellation, override = true })
+    local const = Constellation.new(name, path)
+    skit.header().addChild(const)
+    const.start()
+    skit.save()
+end
 ```
 
 ## Branch Off Into Different Timelines 🌌
@@ -32,9 +33,11 @@ skit.save()
 With Arceus, you can create branches of a folder, so multiple versions can exist simultaneously. So secondary playthroughs (or projects) can branch off from an initial instance, without need to restart from the beginning!
 
 ```lua
-local skit = SKit.open("...")
-skit.getConstellation().current().grow("Hello World!")
-skit.save()
+function Grow(path, starname)
+    local skit = SKit.open(path)
+    skit.header().getChildren().withTag(Constellation.tag()).single().current().grow(starname)
+    skit.save()
+end
 ```
 
 ## Rollback to Older Versions 🕔
@@ -42,9 +45,11 @@ skit.save()
 Rollback to earlier versions of a folder or file, preserving any previous actions. So no matter the mistake, Arceus can help you get back on track.
 
 ```lua
-local skit = SKit.open("...")
-skit.getConstellation().current().back(2).makeCurrent()
-skit.save()
+function Rollback(path)
+    local skit = SKit.open(path)
+    skit.header().getChildren().withTag(Constellation.tag()).single().current().back(2).makeCurrent()
+    skit.save()
+end
 ```
 
 ## Cross Platform 🖥️📱

@@ -192,7 +192,7 @@ class Lua {
           for (final arg in value.args.entries.toList().reversed) {
             final argValue = getFromTop(pop: false);
             // Attempt to cast the argument to the expected type.
-            // It will return null if the cast fails.
+            // It iwll return null if the cast fails.
             final trueValue = arg.value.cast(argValue);
             if (trueValue == null) {
               if (!arg.value.required) {

@@ -22,6 +22,8 @@ Future<void> main(List<String> args) async {
       "${Arceus.appDataPath}/locks/${Arceus.currentVersion.toString()}.lock");
   await lockFile.create(recursive: true);
 
+  await Lua.generateDocs();
+
   final server = await HttpServer.bind(InternetAddress.anyIPv4, 7274);
   Arceus.printToConsole('Server Started');
 
@@ -56,11 +58,6 @@ Future<void> main(List<String> args) async {
           request.response.statusCode = HttpStatus.ok;
           Arceus.talker
               .info("Heatbeat checked at ${DateTime.now().toIso8601String()}.");
-          await request.response.close();
-        case "docs":
-          request.response.statusCode = HttpStatus.ok;
-          await Lua.generateDocs();
-          Arceus.talker.info("Generated docs.");
           await request.response.close();
         case "close":
           request.response.statusCode = HttpStatus.ok;

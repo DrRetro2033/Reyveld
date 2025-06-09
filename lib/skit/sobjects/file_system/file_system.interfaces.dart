@@ -69,6 +69,18 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
   @override
   get statics => {
         tagEntry(SFileFactory()),
+        LEntry(
+            name: "open",
+            descr: "Opens a file externally.",
+            returnType: SFile,
+            args: const {
+              "path": LArg<String>(
+                descr: "The path to open the file at.",
+              )
+            },
+            isAsync: true, (path) async {
+          return await SFileCreator.open(path);
+        }),
       };
 
   @override
@@ -82,7 +94,8 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               ),
             },
             isAsync: true,
-            (state) async => object!.extract(await state.getFromTop<String>())),
+            (state) async =>
+                object!.extractTo(await state.getFromTop<String>())),
         LEntry(
             name: "path",
             descr: "Returns the path of the file",
@@ -111,6 +124,21 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             isAsync: true,
             (int index) async => object!.get8(index)),
         LEntry(
+            name: "set8",
+            descr:
+                "Sets a 8 bit value at the specified index. It does not matter if the value is signed or unsigned, only that it fits into 8 bits.",
+            args: const {
+              "index": LArg<int>(
+                descr: "The index to set the value at.",
+              ),
+              "value": LArg<int>(
+                descr: "The value to set.",
+              ),
+            },
+            isAsync: true, (int index, int value) async {
+          await object!.set8(index, value);
+        }),
+        LEntry(
             name: "getU16",
             descr: "Returns a unsigned 16 bit value at the specified index.",
             args: const {
@@ -132,6 +160,21 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             returnType: int,
             isAsync: true,
             (int index) async => object!.get16(index)),
+        LEntry(
+            name: "set16",
+            descr:
+                "Sets a 16 bit value at the specified index. It does not matter if the value is signed or unsigned, only that it fits into 16 bits.",
+            args: const {
+              "index": LArg<int>(
+                descr: "The index to set the value at.",
+              ),
+              "value": LArg<int>(
+                descr: "The value to set.",
+              ),
+            },
+            isAsync: true, (int index, int value) async {
+          await object!.set16(index, value);
+        }),
         LEntry(
             name: "getU32",
             descr: "Returns a unsigned 32 bit value at the specified index.",
@@ -155,6 +198,21 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             isAsync: true,
             (int index) async => object!.get32(index)),
         LEntry(
+            name: "set32",
+            descr:
+                "Sets a 32 bit value at the specified index. It does not matter if the value is signed or unsigned, only that it fits into 32 bits.",
+            args: const {
+              "index": LArg<int>(
+                descr: "The index to set the value at.",
+              ),
+              "value": LArg<int>(
+                descr: "The value to set.",
+              ),
+            },
+            isAsync: true, (int index, int value) async {
+          await object!.set32(index, value);
+        }),
+        LEntry(
             name: "getU64",
             descr: "Returns a unsigned 64 bit value at the specified index.",
             args: const {
@@ -177,6 +235,21 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             isAsync: true,
             (int index) async => object!.get64(index)),
         LEntry(
+            name: "set64",
+            descr:
+                "Sets a 64 bit value at the specified index. It does not matter if the value is signed or unsigned, only that it fits into 64 bits.",
+            args: const {
+              "index": LArg<int>(
+                descr: "The index to set the value at.",
+              ),
+              "value": LArg<int>(
+                descr: "The value to set.",
+              ),
+            },
+            isAsync: true, (int index, int value) async {
+          await object!.set64(index, value);
+        }),
+        LEntry(
             name: "getS16",
             descr: "Returns a string at the specified index and length.",
             args: const {
@@ -196,5 +269,27 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
                 [bool stopAtNull = false]) async {
           return await object!.getStr16(index, length, stopAtNull: stopAtNull);
         }),
+        LEntry(
+            name: "save",
+            descr: "Saves the file to disk if path is external.",
+            isAsync: true, () async {
+          await object!.save();
+        }),
+        LEntry(
+          name: "saveAs",
+          descr: "Saves the file to the specified path.",
+          args: const {
+            "path": LArg<String>(
+              descr: "The path to save the file to.",
+            ),
+            "overwrite": LArg<bool>(
+                descr: "Whether to overwrite the file if it already exists.",
+                required: false),
+          },
+          isAsync: true,
+          (String path, [bool overwrite = false]) async {
+            await object!.saveAs(path, overwrite: overwrite);
+          },
+        )
       };
 }

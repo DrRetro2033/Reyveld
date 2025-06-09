@@ -4,6 +4,7 @@ import 'package:arceus/arceus.dart';
 import 'package:arceus/skit/sobject.dart';
 
 /// An export for Lua.
+/// An export is a function or field for a [SInterface].
 abstract class LExport {
   final String name;
   final String descr;
@@ -12,7 +13,6 @@ abstract class LExport {
 
 /// This is a lua entrypoint.
 /// A entrypoint is a function with a description, arguments, and return type.
-/// The arguments are a list of tuples of (description, type, isOptional).
 class LEntry extends LExport {
   final Map<String, LArg> args;
   final bool isAsync;
@@ -29,12 +29,14 @@ class LEntry extends LExport {
 
 /// This is a lua argument.
 class LArg<T> {
+  /// TODO: Implement this as a named argument.
+  final String? name;
   final String descr;
   final bool required;
 
   Type get type => T;
 
-  const LArg({this.descr = "", this.required = true});
+  const LArg({this.descr = "", this.required = true, this.name});
 
   T? cast(dynamic value) => typeCheck<T>(value);
 }
@@ -56,7 +58,7 @@ T? typeCheck<T>(dynamic value) {
   return null;
 }
 
-/// This acts as an interface between Lua and SKits.
+/// This acts as an interface between Lua and Arceus.
 abstract class SInterface<T> {
   /// This is the name of the interface.
   String get className;
@@ -89,9 +91,16 @@ abstract class SInterface<T> {
   /// This is a combination of [exports] and [parent] exports.
   /// Used in [toLua].
   Set<LExport> get allExports {
+    /// Initialize the map with the current exports.
     final map = exports;
+
+    /// If there is no parent, then return the map.
     if (parent == null) return map;
+
+    /// If there is a parent, then set the parent interface's object to the current object.
     final parentInstance = parent!..object = object;
+
+    /// Add the parent's exports to the map.
     for (final entry in parentInstance.allExports) {
       map.add(entry);
     }
@@ -175,6 +184,7 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
     return text.toString();
   }
 
+  /// This converts a description into a comment for lua.
   String _covertDescriptionToComment(String description) {
     final text = StringBuffer();
     for (final line in description.split("\n")) {
@@ -184,6 +194,7 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
     return text.toString().trim();
   }
 
+  /// This generates a lua field.
   String _luaField(LField export) {
     final field =
         "---@field ${export.name} ${_convertDartToLua(export.type)} ${export.descr}";
@@ -221,6 +232,7 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
     return method.toString();
   }
 
+  /// This converts a native dart type into a lua type.
   String _convertDartToLua(Type type) {
     if (type == String) {
       return "string";

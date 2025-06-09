@@ -16,7 +16,7 @@ A collection of Stars, with a root star, and a current star.
   get statics => {
         tagEntry(ConstellationFactory()),
         LEntry(
-            name: "create",
+            name: "new",
             descr: "Creates a new constellation.",
             args: const {
               "name": LArg<String>(

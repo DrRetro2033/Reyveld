@@ -55,10 +55,16 @@ class SArchiveCreator extends SCreator<SArchive> {
 class SFileCreator extends SCreator<SFile> {
   final String path;
   final Stream<List<int>> stream;
+  final bool isExternal;
   late String data;
   late String checkSum;
 
-  SFileCreator(this.path, this.stream);
+  SFileCreator(this.path, this.stream, {this.isExternal = false});
+
+  static Future<SFile> open(String path) async {
+    final file = SFileCreator(path, File(path).openRead(), isExternal: true);
+    return await file.create();
+  }
 
   @override
   get beforeCreate => () async {
@@ -71,6 +77,7 @@ class SFileCreator extends SCreator<SFile> {
   get creator => (builder) {
         builder.attribute("path", path.fixPath());
         builder.attribute("checksum", checkSum);
+        builder.attribute("extern", isExternal ? "1" : "0");
         builder.text(data);
       };
 }
