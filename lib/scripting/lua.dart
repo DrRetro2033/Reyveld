@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:arceus/arceus.dart';
 import 'package:arceus/scripting/list.dart';
+import 'package:arceus/scripting/socket.dart';
 import 'package:arceus/skit/sobjects/sobjects.dart';
 import 'package:arceus/uuid.dart';
 import 'package:arceus/version_control/constellation/constellation.dart';
@@ -16,7 +17,9 @@ class Lua {
 
   final Stopwatch stopwatch = Stopwatch();
 
-  Lua() : state = LuaState.newState();
+  final WebSocket socket;
+
+  Lua(this.socket) : state = LuaState.newState();
 
   /// A map of all objects in the lua state.
   ///
@@ -37,6 +40,7 @@ class Lua {
         SFileInterface(),
         SLibraryInterface(),
         SObjectInterface(),
+        SocketInterface()
       };
 
   /// This is used to sort the interfaces by priority.
@@ -58,11 +62,22 @@ class Lua {
         "SKitType": SKitType.values,
       };
 
+  static Map<String, (SInterface, FutureOr<dynamic> Function(Lua))>
+      get globals => {
+            "session": (
+              SocketInterface(),
+              (lua) {
+                return lua.socket;
+              }
+            )
+          };
+
   /// Initializes the lua state.
   /// This includes opening all libraries and adding all enums and statics to the global table.
   Future<void> init() async {
     await state.openLibs();
 
+    /// Add all enums.
     for (final enum_ in enums.entries) {
       final table = <String, dynamic>{};
       for (final value in enum_.value) {
@@ -71,10 +86,16 @@ class Lua {
       await addGlobal(enum_.key, table);
     }
 
+    // Add all static exports as global object.
     for (final interface_ in interfaces) {
       if (interface_.statics.isNotEmpty) {
         await addGlobal(interface_.className, interface_.staticTable);
       }
+    }
+
+    // Add all globals
+    for (final global in globals.entries) {
+      await addGlobal(global.key, await global.value.$2(this));
     }
   }
 
@@ -414,6 +435,31 @@ class Lua {
       await interface_.generateDocs();
     }
     _generateEnumDocs();
+    _generateGlobalDocs();
+  }
+
+  // Generates a docs file for all of the globals.
+  static Future<void> _generateGlobalDocs() async {
+    final doc = File(
+        "${Arceus.appDataPath}/docs/${Arceus.currentVersion.toString()}/globals.lua");
+    await doc.create(recursive: true);
+    await doc.writeAsString("""
+---@meta _
+
+${_formatGlobals()}
+""");
+  }
+
+  // Formats all of the globals for the docs file.
+  static String _formatGlobals() {
+    List<String> formattedGlobals = [];
+    for (final global in globals.entries) {
+      formattedGlobals.add("""
+---@type ${global.value.$1.className}
+${global.key} = {}
+""");
+    }
+    return formattedGlobals.join("\n\n");
   }
 
   // Generates a docs file for all of the enums.

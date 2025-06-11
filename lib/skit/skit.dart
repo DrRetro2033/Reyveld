@@ -277,8 +277,13 @@ class SKit {
   }
 
   /// Returns the hashes used in the SKit file.
-  Future<Set<String>> usedRootHashes<T extends SRoot>() async =>
-      (await getRoots<T>(addToCache: false)).map((e) => e!.hash).toSet();
+  Future<Set<String>> usedRootHashes<T extends SRoot>({String? tag}) async =>
+      (await getRoots<T>(
+        addToCache: false,
+        filterRoots: (root) => root.tag == tag,
+      ))
+          .map((e) => e!.hash)
+          .toSet();
 
   /// Adds an indent to the kit file.
   /// Used for deletion.

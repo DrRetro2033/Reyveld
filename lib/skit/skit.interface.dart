@@ -118,6 +118,20 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
           return object!.key;
         }),
         LEntry(
+            name: "usedHashes",
+            descr:
+                "Returns the hashes used by the roots in the SKit. You can specify a tag to filter by.",
+            args: const {
+              "tag": LArg<String>(
+                  descr: "The tag to filter by.",
+                  required: false,
+                  positional: false),
+            },
+            returnType: List,
+            isAsync: true, ({String? tag}) async {
+          return (await object!.usedRootHashes(tag: tag)).toList();
+        }),
+        LEntry(
             name: "save",
             descr: "Saves changes to the SKit.",
             isAsync: true,

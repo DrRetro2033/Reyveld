@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
+
+import 'package:hashlib/hashlib.dart';
 // import 'package:arceus/scripting/addon.dart';
 
 /// # `extension` Compression
@@ -64,5 +67,24 @@ extension CreateParentDirectory on File {
       await parent.create(recursive: true);
     }
     return;
+  }
+}
+
+extension FileChecksum on File {
+  Future<String> get checksum async => sha256sum(await openRead()
+      .transform(gzip.encoder)
+      .transform(base64.encoder)
+      .reduce((a, b) => a + b));
+}
+
+extension DirectoryChecksum on Directory {
+  Future<String> get checksum async {
+    List<String> checksums = [];
+    await for (final file in list(recursive: true)) {
+      if (file is File) {
+        checksums.add(await file.checksum);
+      }
+    }
+    return sha256sum(checksums.join());
   }
 }

@@ -14,14 +14,27 @@ abstract class LExport {
 /// This is a lua entrypoint.
 /// A entrypoint is a function with a description, arguments, and return type.
 class LEntry extends LExport {
+  /// The arguments of the entrypoint.
   final Map<String, LArg> args;
 
+  /// This is used to define if the entrypoint is async.
   final bool isAsync;
+
+  /// The return type of the entrypoint.
+  /// This is used to define the return type of the entrypoint.
   final Type? returnType;
 
+  /// This is used to determine if the entrypoint has named arguments.
+  /// Named arguments are arguments that are accessed by name by adding a table
+  /// to the end of the argument list.
   bool get hasNamedArgs => args.entries.any((e) => !e.value.positional);
+
+  /// This is used to determine the number of positional arguments.
+  /// Used to determine if the named arguments table is provided.
   int get numOfPositionalArgs =>
       args.entries.where((e) => e.value.positional).length;
+
+  /// The actual function of the entrypoint.
   final Function func;
 
   const LEntry(this.func,
@@ -36,17 +49,14 @@ class LEntry extends LExport {
 class LArg<T> {
   final String descr;
 
-  /// Here we check if the argument is required.
-  /// If it is, it will throw an error if the argument is not provided.
-  /// If it is not required, it will return null if the argument is not provided.
-  /// By default, it is required.
+  /// By default, this argument is required.
   final bool required;
 
   /// If true, the argument is positional.
   /// If false, the argument is named, and can be accessed by name by adding a table to the end of the argument list.
   /// By default, it is true.
   ///
-  /// Note: If a named argument is provided, then DO NOT use positional arguments as they WILL BREAK THINGS IN UNEXPECTED WAYS.
+  /// Note: If a named argument is provided, then DO NOT use optional positional arguments as they WILL BREAK THINGS IN UNEXPECTED WAYS.
   final bool positional;
 
   /// This is the type of the argument.
@@ -259,7 +269,7 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
       for (final arg in export.args.entries.where((e) => !e.value.positional)) {
         method.writeln("---");
         method.writeln(
-            "--- `${arg.key}`: `${_convertDartToLua(arg.value.type)}${arg.value.required ? "" : "?"}` - ${arg.value.descr}");
+            "--- \t`${arg.key}`: ${_convertDartToLua(arg.value.type)}${arg.value.required ? "" : "?"} - ${arg.value.descr}");
       }
     }
     method.writeln("function $className.${export.name}(${[

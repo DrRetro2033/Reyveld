@@ -72,7 +72,7 @@ Future<void> main(List<String> args) async {
         case "lua":
           if (WebSocketTransformer.isUpgradeRequest(request)) {
             final socket = await WebSocketTransformer.upgrade(request);
-            sessions[request.session.id] = (Lua(), socket);
+            sessions[request.session.id] = (Lua(socket), socket);
             await sessions[request.session.id]!.$1.init();
 
             Arceus.printToConsole('Client (${request.session.id}) connected.');
