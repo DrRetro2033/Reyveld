@@ -122,10 +122,8 @@ class SArchive extends SRoot {
       return true;
     }
 
-    final extStream = extFile.openRead();
-    final diffStream = file.streamDiff(extStream);
-    final diff = await diffStream.any((e) => e.any((e) => e != 0));
-    if (diff) return true;
+    final externChecksum = await extFile.checksum;
+    if (file.checksum != externChecksum) return true;
     return false;
   }
 
@@ -200,7 +198,7 @@ class SFile extends SObject {
       .reduce((a, b) => a + b)
       .catchError((e) => 0);
 
-  String get checkSum => get("checksum")!;
+  String get checksum => get("checksum")!;
 
   /// Returns a stream of the difference between this file and a data stream.
   Stream<List<int>> streamDiff(Stream<List<int>> other) async* {
@@ -366,7 +364,7 @@ class SFile extends SObject {
   }
 
   Future<SRFile> getRef() async {
-    return await SRFileCreator(getParent<SArchive>()!.hash, path, checkSum)
+    return await SRFileCreator(getParent<SArchive>()!.hash, path, checksum)
         .create();
   }
 }
@@ -397,6 +395,6 @@ class SRFile extends SFile {
 
   @override
   Future<SRFile> getRef() async {
-    return await SRFileCreator(archiveHash, filePath, checkSum).create();
+    return await SRFileCreator(archiveHash, filePath, checksum).create();
   }
 }

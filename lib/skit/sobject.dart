@@ -212,6 +212,8 @@ class SObject {
   /// Returns the [SObject] as a xml String.
   String toXmlString() => _node.toXmlString(pretty: true, newLine: "\n");
 
+  /// Returns the [SObject] as a json map.
+  /// This is used to serialize the [SObject] for sending to clients.
   Map<String, dynamic> toJson() => {
         tag: {
           ..._attrbutesToJson(),
@@ -219,6 +221,13 @@ class SObject {
         }
       };
 
+  /// Returns a map of the attributes of the xml node.
+  /// This is used in [toJson].
   Map<String, String> _attrbutesToJson() => Map.fromEntries(
       _node.attributes.map((attr) => MapEntry(attr.name.local, attr.value)));
+
+  SObject copy() {
+    final factory = getSFactory(_node.name.local);
+    return factory.load(_node.copy())..kit = _kit;
+  }
 }

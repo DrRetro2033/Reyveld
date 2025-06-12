@@ -2,8 +2,9 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:arceus/arceus.dart';
+import 'package:arceus/scripting/extras/directory.dart';
 import 'package:arceus/scripting/list.dart';
-import 'package:arceus/scripting/socket.dart';
+import 'package:arceus/scripting/extras/socket.dart';
 import 'package:arceus/skit/sobjects/sobjects.dart';
 import 'package:arceus/uuid.dart';
 import 'package:arceus/version_control/constellation/constellation.dart';
@@ -40,7 +41,8 @@ class Lua {
         SFileInterface(),
         SLibraryInterface(),
         SObjectInterface(),
-        SocketInterface()
+        SocketInterface(),
+        DirectoryInterface(),
       };
 
   /// This is used to sort the interfaces by priority.
@@ -71,6 +73,34 @@ class Lua {
               }
             )
           };
+
+  /// Code effects are functions that are applied to the lua code before it is compiled.
+  /// This is used to clean up the lua code before it is compiled, like
+  /// replacing hex numbers with their decimal counterparts and removing type definitions.
+  static List<String Function(String)> get codeEffects => [
+        (code) {
+          /// Lua Dardo should be able to handle hex numbers, however, it doesn't.
+          /// So we need to replace it with the actual number as a workaround.
+          final hexExp = RegExp(r"0x([0-9A-f]+)");
+          while (hexExp.hasMatch(code)) {
+            final match = hexExp.firstMatch(code)!;
+            code = code.replaceRange(match.start, match.end,
+                int.parse(match.group(1)!, radix: 16).toString());
+          }
+          return code;
+        },
+        (code) {
+          /// Remove type definitions.
+          /// Lua Dardo doesn't support type definitions, so we need to remove them before compiling.
+          final typeDefRegExp =
+              RegExp(r"(?:local)?\s*(\w[\w\d]*)\s*:\s*\w[\w\d]*");
+          while (typeDefRegExp.hasMatch(code)) {
+            final match = typeDefRegExp.firstMatch(code)!;
+            code = code.replaceRange(match.start, match.end, match.group(1)!);
+          }
+          return code;
+        }
+      ];
 
   /// Initializes the lua state.
   /// This includes opening all libraries and adding all enums and statics to the global table.
@@ -348,25 +378,9 @@ class Lua {
 
   // Compiles a lua project.
   Future<String> _compile(String entrypoint) async {
-    /// The regex for hex numbers.
-    /// Lua Dardo should be able to handle this, however, it doesn't.
-    /// So we need to replace it with the actual number as a workaround.
-    final hexExp = RegExp(r"0x([0-9A-f]+)");
-    final requireExp = RegExp(r"require ([A-z]+)");
-
     String compiled = entrypoint;
-
-    while (requireExp.hasMatch(compiled)) {
-      final match = requireExp.firstMatch(compiled)!;
-      // Gets the library from the name.
-      final lib = LuaLibrary("${Arceus.libraryPath}/${match.group(1)!}.skit");
-      compiled = compiled.replaceRange(match.start, match.end, await lib.code);
-    }
-
-    while (hexExp.hasMatch(compiled)) {
-      final match = hexExp.firstMatch(compiled)!;
-      compiled = compiled.replaceRange(match.start, match.end,
-          int.parse(match.group(1)!, radix: 16).toString());
+    for (final effect in codeEffects) {
+      compiled = effect(compiled);
     }
     return compiled;
   }

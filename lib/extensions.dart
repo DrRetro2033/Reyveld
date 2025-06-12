@@ -71,7 +71,7 @@ extension CreateParentDirectory on File {
 }
 
 extension FileChecksum on File {
-  Future<String> get checksum async => sha256sum(await openRead()
+  Future<String> get checksum async => md5sum(await openRead()
       .transform(gzip.encoder)
       .transform(base64.encoder)
       .reduce((a, b) => a + b));
@@ -85,6 +85,6 @@ extension DirectoryChecksum on Directory {
         checksums.add(await file.checksum);
       }
     }
-    return sha256sum(checksums.join());
+    return md5sum(checksums.join());
   }
 }

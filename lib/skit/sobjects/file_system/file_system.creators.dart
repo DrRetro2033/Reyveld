@@ -31,12 +31,7 @@ class SArchiveCreator extends SCreator<SArchive> {
       yield await Isolate.run<SFile?>(() async {
         final filePath = e.path.relativeTo(path);
         if (ref != null && ref.hasFile(filePath)) {
-          if (ref.getFile(filePath)!.checkSum ==
-              sha256sum(await e
-                  .openRead()
-                  .transform(gzip.encoder)
-                  .transform(base64.encoder)
-                  .reduce((a, b) => a + b))) {
+          if (ref.getFile(filePath)!.checksum == await e.checksum) {
             return await ref.getFile(filePath)!.getRef();
           }
         }
@@ -55,7 +50,7 @@ class SFileCreator extends SCreator<SFile> {
   final Stream<List<int>> stream;
   final bool isExternal;
   late String data;
-  late String checkSum;
+  late String checksum;
 
   SFileCreator(this.path, this.stream, {this.isExternal = false});
 
@@ -68,13 +63,13 @@ class SFileCreator extends SCreator<SFile> {
   get beforeCreate => () async {
         final bytes = stream.transform(gzip.encoder).transform(base64.encoder);
         data = await bytes.reduce((a, b) => a + b);
-        checkSum = sha256sum(data);
+        checksum = md5sum(data);
       };
 
   @override
   get creator => (builder) {
         builder.attribute("path", path.fixPath());
-        builder.attribute("checksum", checkSum);
+        builder.attribute("checksum", checksum);
         builder.attribute("extern", isExternal ? "1" : "0");
         builder.text(data);
       };

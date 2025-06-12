@@ -52,6 +52,17 @@ function Rollback(path)
 end
 ```
 
+## Edit/View Raw Data with Confidence 📜
+
+Easily open binary files to both read and write data with ease!
+```lua
+function IncrementPK9SpeciesBy1(path)
+    local file = SFile.open(path)
+    file.set16(0x08, file.getU16()+1)
+    file.save()
+end
+``` 
+
 ## Cross Platform 🖥️📱
 
 Arceus can run on any modern device that can run Dart code!
@@ -59,6 +70,20 @@ Arceus can run on any modern device that can run Dart code!
 ## Developer Friendly 🤝
 
 Anyone can use Arceus in their projects, yes even you! Just remember to give credit if you incorporate it into your project.
+
+# Why use Arceus?
+
+## Quick & Dirty Scripting
+
+Ever needed to quickly write to a binary file, or build a backup of your project? Arceus can help without needing to install Python.
+
+## Minimal Boilerplate
+
+You don't need logic to modify files, convert data, or create version control from scratch; Arceus will take care of all that!
+
+## Unified Code
+
+Arceus scripts can be used in many different projects and be shared others easly, so learning different packages or libraries is not needed!
 
 > [!NOTE]
 > If you want an example of what you can do with Arceus, check out my other project [MudkiPC](https://github.com/Pokemon-Manager/MudkiPC).
@@ -178,8 +203,7 @@ Transfer your game saves between devices and keep them safe from data loss.
 
 ## Why does it exist?
 
-Arceus was created to be simple way for regular users to be able to quickly and efficiently backup savedata in a git like way. However, it has evolved into a more generalized toolkit for working with binary files. It's designed to make it easy to view and edit savefiles.
-
+Arceus was created to be simple way for regular users to be able to quickly and efficiently backup savedata in a git like way. However, it has evolved into a more generalized toolkit for working with binary files.
 ## Why is it called Arceus?
 
 The program is named Arceus because Arceus is the "god" of Pokémon and has the ability to affect time and space. It’s also named in connection to my other project, [MudkiPC](https://github.com/Pokemon-Manager/MudkiPC), which is Pokémon-related.

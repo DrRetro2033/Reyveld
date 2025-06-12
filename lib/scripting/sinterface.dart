@@ -24,6 +24,8 @@ class LEntry extends LExport {
   /// This is used to define the return type of the entrypoint.
   final Type? returnType;
 
+  final bool returnGeneric;
+
   /// This is used to determine if the entrypoint has named arguments.
   /// Named arguments are arguments that are accessed by name by adding a table
   /// to the end of the argument list.
@@ -42,7 +44,8 @@ class LEntry extends LExport {
       super.descr,
       this.args = const {},
       this.isAsync = false,
-      this.returnType});
+      this.returnType,
+      this.returnGeneric = false});
 }
 
 /// This is a lua argument.
@@ -202,11 +205,13 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
     final text = StringBuffer();
     text.writeln(
         "---@class $className${parent != null && parent!.className != className ? ": ${parent!.className}" : ""}");
-    text.writeln(_covertDescriptionToComment(classDescription));
-    text.writeln("local $className = {}");
     for (final export in allExports.whereType<LField>()) {
       text.writeln(_luaField(export));
     }
+    text.writeln(_covertDescriptionToComment(classDescription));
+
+    text.writeln("local $className = {}");
+
     for (final export in allExports.whereType<LEntry>()) {
       text.writeln(_luaMethod(export));
     }
@@ -238,6 +243,10 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
   /// Plus the description ([LEntry.descr]).
   String _luaMethod(LEntry export) {
     StringBuffer method = StringBuffer();
+    if (export.returnGeneric && export.returnType != null) {
+      method
+          .writeln("---@generic T : ${_convertDartToLua(export.returnType!)}");
+    }
     if (export.args.isNotEmpty) {
       for (final arg in export.args.entries) {
         if (arg.value.positional) {
@@ -249,10 +258,12 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
       if (export.hasNamedArgs) {
         // Document the named arguments
         method.writeln(
-            "---@param named table? Named arguments go here. See the description for more info.");
+            "---@param named table? Named arguments go here. See description below for more info.");
       }
     }
-    if (export.returnType != null) {
+    if (export.returnGeneric && export.returnType != null) {
+      method.writeln("---@return T");
+    } else if (export.returnType != null) {
       // Document the return type
       method.writeln("---@return ${_convertDartToLua(export.returnType!)}");
     }

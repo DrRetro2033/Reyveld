@@ -48,6 +48,7 @@ A base class for all objects in the kit.
             ),
           },
           returnType: SObject,
+          returnGeneric: true,
           ({required String tag}) => object!.getChild<SObject>(
             filter: (p0) => p0.tag == tag,
           ),
@@ -62,6 +63,7 @@ A base class for all objects in the kit.
           name: "getParent",
           descr: "Returns the parent of the SObject.",
           returnType: SObject,
+          returnGeneric: true,
           () => object!.getParent(),
         ),
         LEntry(
