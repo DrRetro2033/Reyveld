@@ -208,7 +208,9 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
     for (final export in allExports.whereType<LField>()) {
       text.writeln(_luaField(export));
     }
-    text.writeln(_covertDescriptionToComment(classDescription));
+    if (classDescription.isNotEmpty) {
+      text.writeln(_covertDescriptionToComment(classDescription));
+    }
 
     text.writeln("local $className = {}");
 
@@ -306,6 +308,8 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
       return "table";
     } else if (type == Object) {
       return "any";
+    } else if (type == LuaFuncRef) {
+      return "function";
     } else {
       // Try and find a interface for the type and use that.
       final inter_ = Lua.getInterfaceFromType(type);

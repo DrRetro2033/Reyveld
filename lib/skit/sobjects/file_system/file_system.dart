@@ -176,6 +176,10 @@ class SFile extends SObject {
 
   bool get isExternal => (get("extern") ?? "0") == "1";
 
+  /// This is the default endianness of the file.
+  /// Can be set to false to force big endian as the default.
+  bool defaultEndian = true;
+
   /// Returns a stream of the bytes stored, uncompressing along the way.
   FutureOr<Stream<List<int>>> get bytes => Stream.fromIterable(
           base64Decode(innerText!))
@@ -225,11 +229,13 @@ class SFile extends SObject {
   Future<Stream<int>> getRange(int start, int end) async =>
       (await singleBytes).defaultIfEmpty(0).skip(start).take(end - start);
 
-  Future<void> setRange(int start, int end, Iterable<int> data) async {
+  Future<void> setRange(
+      int start, int end, Iterable<int> data, bool? littleEndian) async {
     if (data.length > end - start) {
       throw Exception(
           "Data is too large for the specified range of ${end - start} bytes! Please make sure the data is smaller than the range.");
     }
+    if (!(littleEndian ?? defaultEndian)) data = data.toList().reversed;
     innerText = await _setBytes(start, end, data.toList())
         .chunk(chunkSize)
         .transform(gzip.encoder)
@@ -254,17 +260,13 @@ class SFile extends SObject {
     }
   }
 
-  Future<int> getU8(int index) async {
-    return _formNumber(await getRange(index, index + 1));
-  }
+  Future<int> getU8(int index) async =>
+      await _formNumber(await getRange(index, index + 1), false);
 
-  Future<int> get8(int index) async {
-    return (await getU8(index)).toSigned(8);
-  }
+  Future<int> get8(int index) async => (await getU8(index)).toSigned(8);
 
-  Future<void> set8(int index, int value) async {
-    await setRange(index, index + 1, _seperateInt(value));
-  }
+  Future<void> set8(int index, int value) async =>
+      await setRange(index, index + 1, _seperateInt(value), true);
 
   /// Merges two bytes into one. This is used to form numbers larger than one byte.
   int _mergeInt(a, b) => (a << 8) | b;
@@ -278,41 +280,51 @@ class SFile extends SObject {
 
   /// Forms a number from a stream of bytes.
   /// Reverses the stream before merging.
-  Future<int> _formNumber(Stream<int> stream) async {
-    return stream.toList().then((e) => e.reversed.reduce(_mergeInt));
+  Future<int> _formNumber(Stream<int> stream, bool? littleEndian) async {
+    if (!(littleEndian ?? defaultEndian)) {
+      return await stream.toList().then((e) => e.reduce(_mergeInt));
+    }
+    return await stream.toList().then((e) => e.reversed.reduce(_mergeInt));
   }
 
-  Future<int> getU16(int index) async {
-    return _formNumber(await getRange(index, index + 2));
-  }
+  Future<int> getU16(int index, {bool? littleEndian}) async =>
+      await _formNumber(await getRange(index, index + 2), littleEndian);
 
-  Future<void> set16(int index, int value) async {
-    final seperated = _seperateInt(value);
-    Arceus.talker.log(seperated);
-    await setRange(index, index + 2, seperated);
-  }
+  Future<int> get16(int index, {bool? littleEndian}) async =>
+      (await getU16(index, littleEndian: littleEndian)).toSigned(16);
 
-  Future<int> get16(int index) async => (await getU16(index)).toSigned(16);
+  Future<void> set16(int index, int value, {bool? littleEndian}) async =>
+      await setRange(index, index + 2, _seperateInt(value), littleEndian);
 
-  Future<int> getU32(int index) async {
-    return _formNumber(await getRange(index, index + 4));
-  }
+  Future<int> getU32(int index, {bool? littleEndian}) async =>
+      await _formNumber(await getRange(index, index + 4), littleEndian);
 
-  Future<int> get32(int index) async => (await getU32(index)).toSigned(32);
+  Future<int> get32(int index, {bool? littleEndian}) async =>
+      (await getU32(index, littleEndian: littleEndian)).toSigned(32);
 
-  Future<void> set32(int index, int value) async {
-    await setRange(index, index + 4, _seperateInt(value));
-  }
+  Future<void> set32(int index, int value, {bool? littleEndian}) async =>
+      await setRange(index, index + 4, _seperateInt(value), littleEndian);
 
-  Future<int> getU64(int index) async {
-    return _formNumber(await getRange(index, index + 8));
-  }
+  Future<int> getU64(int index, {bool? littleEndian}) async =>
+      await _formNumber(await getRange(index, index + 8), littleEndian);
 
-  Future<int> get64(int index) async => (await getU64(index)).toSigned(64);
+  Future<int> get64(int index, {bool? littleEndian}) async =>
+      (await getU64(index, littleEndian: littleEndian)).toSigned(64);
 
-  Future<void> set64(int index, int value) async {
-    await setRange(index, index + 8, _seperateInt(value));
-  }
+  Future<void> set64(int index, int value, {bool? littleEndian}) async =>
+      await setRange(index, index + 8, _seperateInt(value), littleEndian);
+
+  /// Retrieves a UTF-16 encoded string from the file starting at the specified index.
+  ///
+  /// This function reads `length` * 2 bytes starting from `index` and converts them
+  /// into a string using UTF-16 encoding. Each character is composed of two bytes.
+  ///
+  /// [index] is the starting position in the file from which the string is read.
+  /// [length] specifies the number of characters to read.
+  /// [stopAtNull] if set to true, stops reading when a null character is encountered.
+  ///
+  /// Returns the constructed string of the specified length or until a null character
+  /// if [stopAtNull] is true.
 
   Future<String> getStr16(int index, int length,
       {bool stopAtNull = false}) async {

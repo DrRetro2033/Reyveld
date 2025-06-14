@@ -244,8 +244,7 @@ class Lua {
           if (value.hasNamedArgs &&
               state.getTop() > value.numOfPositionalArgs &&
               state.isTable(state.getTop())) {
-            Arceus.talker.debug("Named args");
-            namedArgs = getFromTop();
+            namedArgs = await getFromTop();
           }
           for (final arg in value.args.entries
               .where(
@@ -253,7 +252,7 @@ class Lua {
               )
               .toList()
               .reversed) {
-            final argValue = getFromTop(pop: false);
+            final argValue = await getFromTop(pop: false);
             // Attempt to cast the argument to the expected type.
             // It will return null if the cast fails.
             final trueValue = arg.value.cast(argValue);
@@ -294,6 +293,7 @@ class Lua {
             ));
             await _pushToStack(result);
           }
+          Arceus.talker.debug("Successfully ran ${value.name}.");
           return 1;
         } catch (e, st) {
           Arceus.talker.error("", e, st);
@@ -310,7 +310,7 @@ class Lua {
   }
 
   /// Gets a value from the top of the stack.
-  T? getFromTop<T>({bool pop = true}) {
+  Future<T?> getFromTop<T>({bool pop = true}) async {
     dynamic result;
     try {
       if (state.isString(state.getTop())) {
@@ -328,10 +328,16 @@ class Lua {
         result = state.toNumber(state.getTop());
       } else if (state.isBoolean(state.getTop())) {
         result = state.toBoolean(state.getTop());
+      } else if (state.isFunction(state.getTop())) {
+        result = LuaFuncRef(this, await state.ref(luaRegistryIndex));
+        await state.rawGetI(luaRegistryIndex, (result as LuaFuncRef).ref);
       } else if (state.isTable(state.getTop())) {
-        final table = _getTableFromState();
+        /// If the top of the stack is a table, get the table and check if it has an objHash key.
+        final table = await _getTableFromState();
         if (table.containsKey("objHash") &&
             _objects[table["objHash"]] != null) {
+          /// If the table has an objHash key, then it means it is an interface for an object,
+          /// so get the object and return it.
           result = _objects[table["objHash"]]!.object;
         } else if (table.keys.every((e) => int.tryParse(e) != null)) {
           List<dynamic> list = [];
@@ -364,12 +370,12 @@ class Lua {
   String _createUniqueObjectHash() => generateUniqueHash(_objects.keys.toSet());
 
   /// Returns a table from the lua state.
-  Map<dynamic, dynamic> _getTableFromState() {
+  Future<Map> _getTableFromState() async {
     Map<dynamic, dynamic> resultTable = {};
     state.pushNil();
     while (state.next(state.getTop() - 1)) {
-      dynamic value = getFromTop();
-      String key = getFromTop<String>()!;
+      dynamic value = await getFromTop();
+      String key = await getFromTop<String>() ?? "";
       resultTable[key] = value;
       _pushToStack(key);
     }
@@ -410,7 +416,7 @@ class Lua {
     }
 
     /// If it was successful, return the result.
-    final result = getFromTop();
+    final result = await getFromTop();
     Arceus.talker
         .info("Lua result in ${stopwatch.elapsedMilliseconds}ms: $result");
     return result;
@@ -530,4 +536,33 @@ class LuaLibrary extends LuaCode {
     return header!.getChild<SLibrary>()!.archive.then((archive) =>
         archive.getFiles().map((e) async => await e!.str).join("\n"));
   }
+}
+
+/// A reference to a lua function.
+/// This is used to call lua functions from dart.
+/// What it does is register the function in the lua registry, and then when [call] is called,
+/// it will push the function back to the stack, and then call it.
+///
+/// To unregister the function from the registry when it is no longer needed, use [unregister].
+/// Should always be done, as it will prevent memory leaks or overflows.
+final class LuaFuncRef {
+  final Lua lua;
+  final int ref;
+
+  const LuaFuncRef(this.lua, this.ref);
+
+  Future<void> call(List<dynamic> args, {bool returns = false}) async {
+    await lua.state.rawGetI(luaRegistryIndex, ref);
+    for (final arg in args) {
+      await lua._pushToStack(arg);
+    }
+    await lua.state.call(args.length, returns ? 1 : 0);
+    // lua.state.pop(1);
+  }
+
+  /// Unregisters the function from the registry.
+  ///
+  /// This should always be called when the reference is no longer needed to prevent memory leaks or overflows.
+  Future<void> unregister() async =>
+      await lua.state.unRef(luaRegistryIndex, ref);
 }

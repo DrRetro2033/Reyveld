@@ -1,3 +1,4 @@
+import 'package:arceus/scripting/lua.dart';
 import 'package:arceus/scripting/sinterface.dart';
 
 class ListInterface extends SInterface<List> {
@@ -71,6 +72,21 @@ class ListInterface extends SInterface<List> {
             descr:
                 "Returns the only object in the list. Will throw an error if the list is empty or has more than one object.",
             returnType: Object,
-            () => object!.single)
+            () => object!.single),
+        LEntry(
+          name: "forEach",
+          descr: "Runs a function for each object in the list.",
+          args: const {
+            "func": LArg<LuaFuncRef>(
+              descr: "The function to run.",
+            )
+          },
+          (LuaFuncRef function) async {
+            for (var e in object!) {
+              await function.call([e]);
+            }
+            await function.unregister();
+          },
+        )
       };
 }

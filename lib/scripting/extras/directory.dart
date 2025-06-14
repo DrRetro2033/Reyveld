@@ -1,12 +1,14 @@
 import 'dart:io';
 
 import 'package:arceus/scripting/sinterface.dart';
-import 'package:arceus/skit/sobjects/file_system/file_system.dart';
 import 'package:rxdart/rxdart.dart';
 
 class DirectoryInterface extends SInterface<Directory> {
   @override
-  String get className => "Directory";
+  get className => "Directory";
+
+  @override
+  get classDescription => "A directory on the file system.";
 
   @override
   get statics => {
@@ -83,15 +85,12 @@ class DirectoryInterface extends SInterface<Directory> {
                   descr: "Whether to list recursively (default: false).",
                   required: false,
                   positional: false)
-            }, ({bool recursive = false}) async {
-          final files = object!.list(recursive: recursive).whereType<File>();
-          final List<SFile> sfiles = [];
-          await for (final file in files) {
-            sfiles.add(
-                await SFileCreator(file.path, file.openRead(), isExternal: true)
-                    .create());
-          }
-        }),
+            },
+            ({bool recursive = false}) async => await object!
+                .list(recursive: recursive)
+                .whereType<File>()
+                .map((e) => e.path)
+                .toList()),
         LEntry(
           name: "exists",
           descr: "Checks if the directory exists.",

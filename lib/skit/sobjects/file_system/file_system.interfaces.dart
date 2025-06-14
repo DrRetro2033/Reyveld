@@ -94,13 +94,12 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               ),
             },
             isAsync: true,
-            (state) async =>
-                object!.extractTo(await state.getFromTop<String>())),
+            (String path) async => await object!.extractTo(path)),
         LEntry(
             name: "path",
             descr: "Returns the path of the file",
             returnType: String,
-            (state) => object!.path),
+            () => object!.path),
         LEntry(
             name: "getU8",
             descr: "Returns a unsigned 8 bit value at the specified index.",
@@ -111,7 +110,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             },
             returnType: int,
             isAsync: true,
-            (int index) async => object!.getU8(index)),
+            (int index) async => await object!.getU8(index)),
         LEntry(
             name: "get8",
             descr: "Returns a signed 8 bit value at the specified index.",
@@ -122,7 +121,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             },
             returnType: int,
             isAsync: true,
-            (int index) async => object!.get8(index)),
+            (int index) async => await object!.get8(index)),
         LEntry(
             name: "set8",
             descr:
@@ -145,10 +144,15 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               "index": LArg<int>(
                 descr: "The index to get the value at.",
               ),
+              "littleEndian": LArg<bool>(
+                  descr:
+                      "If true, the value will be little endian, otherwise it will be big endian.",
+                  required: false)
             },
             returnType: int,
             isAsync: true,
-            (int index) async => object!.getU16(index)),
+            (int index, [bool? littleEndian]) async =>
+                await object!.getU16(index, littleEndian: littleEndian)),
         LEntry(
             name: "get16",
             descr: "Returns a signed 16 bit value at the specified index.",
@@ -156,10 +160,15 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               "index": LArg<int>(
                 descr: "The index to get the value at.",
               ),
+              "littleEndian": LArg<bool>(
+                  descr:
+                      "If true, the value will be little endian, otherwise it will be big endian.",
+                  required: false)
             },
             returnType: int,
             isAsync: true,
-            (int index) async => object!.get16(index)),
+            (int index, [bool? littleEndian]) async =>
+                await object!.get16(index, littleEndian: littleEndian)),
         LEntry(
             name: "set16",
             descr:
@@ -171,9 +180,13 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               "value": LArg<int>(
                 descr: "The value to set.",
               ),
+              "littleEndian": LArg<bool>(
+                  descr:
+                      "If true, the value will be little endian, otherwise it will be big endian.",
+                  required: false)
             },
-            isAsync: true, (int index, int value) async {
-          await object!.set16(index, value);
+            isAsync: true, (int index, int value, [bool? littleEndian]) async {
+          await object!.set16(index, value, littleEndian: littleEndian);
         }),
         LEntry(
             name: "getU32",
@@ -182,10 +195,15 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               "index": LArg<int>(
                 descr: "The index to get the value at.",
               ),
+              "littleEndian": LArg<bool>(
+                  descr:
+                      "If true, the value will be little endian, otherwise it will be big endian.",
+                  required: false)
             },
             returnType: int,
             isAsync: true,
-            (int index) async => object!.getU32(index)),
+            (int index, [bool? littleEndian]) async =>
+                await object!.getU32(index, littleEndian: littleEndian)),
         LEntry(
             name: "get32",
             descr: "Returns a signed 32 bit value at the specified index.",
@@ -193,10 +211,15 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               "index": LArg<int>(
                 descr: "The index to get the value at.",
               ),
+              "littleEndian": LArg<bool>(
+                  descr:
+                      "If true, the value will be little endian, otherwise it will be big endian.",
+                  required: false)
             },
             returnType: int,
             isAsync: true,
-            (int index) async => object!.get32(index)),
+            (int index, [bool? littleEndian]) async =>
+                await object!.get32(index, littleEndian: littleEndian)),
         LEntry(
             name: "set32",
             descr:
@@ -208,9 +231,13 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               "value": LArg<int>(
                 descr: "The value to set.",
               ),
+              "littleEndian": LArg<bool>(
+                  descr:
+                      "If true, the value will be little endian, otherwise it will be big endian.",
+                  required: false)
             },
-            isAsync: true, (int index, int value) async {
-          await object!.set32(index, value);
+            isAsync: true, (int index, int value, [bool? littleEndian]) async {
+          await object!.set32(index, value, littleEndian: littleEndian);
         }),
         LEntry(
             name: "getU64",
@@ -219,10 +246,15 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               "index": LArg<int>(
                 descr: "The index to get the value at.",
               ),
+              "littleEndian": LArg<bool>(
+                  descr:
+                      "If true, the value will be little endian, otherwise it will be big endian.",
+                  required: false)
             },
             returnType: int,
             isAsync: true,
-            (int index) async => object!.getU64(index)),
+            (int index, [bool? littleEndian]) async =>
+                await object!.getU64(index, littleEndian: littleEndian)),
         LEntry(
             name: "get64",
             descr: "Returns a signed 64 bit value at the specified index.",
@@ -230,10 +262,15 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               "index": LArg<int>(
                 descr: "The index to get the value at.",
               ),
+              "littleEndian": LArg<bool>(
+                  descr:
+                      "If true, the value will be little endian, otherwise it will be big endian.",
+                  required: false)
             },
             returnType: int,
             isAsync: true,
-            (int index) async => object!.get64(index)),
+            (int index, [bool? littleEndian]) async =>
+                object!.get64(index, littleEndian: littleEndian)),
         LEntry(
             name: "set64",
             descr:
@@ -245,9 +282,24 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               "value": LArg<int>(
                 descr: "The value to set.",
               ),
+              "littleEndian": LArg<bool>(
+                  descr:
+                      "If true, the value will be little endian, otherwise it will be big endian.",
+                  required: false)
             },
-            isAsync: true, (int index, int value) async {
-          await object!.set64(index, value);
+            isAsync: true, (int index, int value, [bool? littleEndian]) async {
+          await object!.set64(index, value, littleEndian: littleEndian);
+        }),
+        LEntry(name: "defaultEndian", returnType: bool, args: {
+          "littleEndian": LArg<bool>(
+              descr:
+                  "If true, the default endian will be little endian, otherwise it will be big endian.",
+              required: false)
+        }, ([bool? littleEndian]) {
+          if (littleEndian != null) {
+            object!.defaultEndian = littleEndian;
+          }
+          return object!.defaultEndian;
         }),
         LEntry(
             name: "getS16",
@@ -262,6 +314,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               "stopAtNull": LArg<bool>(
                   descr:
                       "Whether to stop at the first null character while getting the string.",
+                  positional: false,
                   required: false),
             },
             returnType: String,

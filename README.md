@@ -204,6 +204,7 @@ Transfer your game saves between devices and keep them safe from data loss.
 ## Why does it exist?
 
 Arceus was created to be simple way for regular users to be able to quickly and efficiently backup savedata in a git like way. However, it has evolved into a more generalized toolkit for working with binary files.
+
 ## Why is it called Arceus?
 
 The program is named Arceus because Arceus is the "god" of Pokémon and has the ability to affect time and space. It’s also named in connection to my other project, [MudkiPC](https://github.com/Pokemon-Manager/MudkiPC), which is Pokémon-related.
