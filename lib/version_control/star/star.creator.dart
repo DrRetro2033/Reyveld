@@ -8,7 +8,7 @@ class StarCreator extends SCreator<Star> {
   StarCreator(this.name, this.hash, this.archiveIndent);
   @override
   get creator => (builder) {
-        builder.attribute("name", name);
+        builder.attribute("name", name.formatForXML());
         builder.attribute("hash", hash);
         builder.attribute("date", DateTime.now().toIso8601String());
         builder.xml(archiveIndent.toXmlString());

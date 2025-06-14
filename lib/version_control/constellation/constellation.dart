@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:arceus/arceus.dart';
 import 'package:arceus/extensions.dart';
 import 'package:arceus/skit/sobject.dart';
 import 'package:arceus/skit/sobjects/file_system/file_system.dart';
@@ -14,6 +15,8 @@ part 'constellation.creator.dart';
 class Constellation extends SObject {
   Constellation(super._node);
   String get name => get("name") ?? "Constellation";
+
+  set name(String value) => set("name", value.formatForXML());
 
   String get path => get("path")!.fixPath();
 

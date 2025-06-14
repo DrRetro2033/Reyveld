@@ -19,6 +19,12 @@ A base class for all objects in the kit.
   @override
   get exports => {
         LEntry(
+          name: "tag",
+          descr: "Gets the xml tag of this object.",
+          returnType: String,
+          () => object!.tag,
+        ),
+        LEntry(
           name: "addChild",
           descr: "Adds a child SObject to the xml node.",
           args: const {
@@ -39,26 +45,59 @@ A base class for all objects in the kit.
           (SObject child) => object!.removeChild(child),
         ),
         LEntry(
-          name: "getChild",
-          descr: "Returns a child of the SObject.",
+          name: "getChildByTag",
+          descr:
+              "Returns a child of the SObject by tag. If multiple children have the same tag, only the first one will be returned.",
           args: const {
             "tag": LArg<String>(
               descr: "The tag of the child to get.",
-              positional: false,
             ),
           },
           returnType: SObject,
           returnGeneric: true,
-          ({required String tag}) => object!.getChild<SObject>(
+          (String tag) => object!.getChild<SObject>(
             filter: (p0) => p0.tag == tag,
           ),
         ),
         LEntry(
-          name: "getChildren",
-          descr: "Returns a list of all the children of the SObject.",
-          returnType: List<SObject>,
-          () => object!.getChildren().nonNulls.toList(),
-        ),
+            name: "getChild",
+            descr:
+                "Returns a child of the SObject by a filter. Returns the first child that matches the filter.",
+            args: const {
+              "filter": LArg<LuaFuncRef>(
+                descr: "The filter to apply to the children.",
+                docTypeOverride: "fun(child: SObject): boolean",
+              )
+            },
+            returnType: SObject,
+            returnGeneric: true,
+            isAsync: true, ({required LuaFuncRef filter}) async {
+          for (final child in object!.getChildren().nonNulls) {
+            final res = await filter.call([child], returns: true) as bool;
+            if (res) return child;
+          }
+        }),
+        LEntry(
+            name: "getChildren",
+            descr: "Returns a list of all the children of the SObject.",
+            args: const {
+              "filter": LArg<LuaFuncRef>(
+                descr: "The filter to apply to the children.",
+                docTypeOverride: "fun(child: SObject): boolean",
+                required: false,
+              ),
+            },
+            returnType: List,
+            isAsync: true, ({LuaFuncRef? filter}) async {
+          final children = object!.getChildren().nonNulls.toList();
+          for (final child in object!.getChildren().nonNulls) {
+            if (filter != null) {
+              final res = await filter.call([child], returns: true) as bool;
+              if (!res) children.remove(child);
+            }
+          }
+          return children;
+        }),
         LEntry(
           name: "getParent",
           descr: "Returns the parent of the SObject.",
@@ -69,13 +108,13 @@ A base class for all objects in the kit.
         LEntry(
           name: "getDescendants",
           descr: "Returns a list of all the descendants of the SObject.",
-          returnType: List<SObject>,
+          returnType: List,
           () => object!.getDescendants().nonNulls.toList(),
         ),
         LEntry(
           name: "getAncestors",
           descr: "Returns a list of all the ancestors of the SObject.",
-          returnType: List<SObject>,
+          returnType: List,
           () => object!.getAncestors().nonNulls.toList(),
         ),
         LEntry(
@@ -96,34 +135,6 @@ A base class for all objects in the kit.
               "Returns a json representation of the SObject and its descendants.",
           returnType: Map,
           () => object!.toJson(),
-        )
-      };
-}
-
-final class SObjectListInterface extends SInterface<List<SObject>> {
-  @override
-  get className => "SObjectList";
-
-  @override
-  get classDescription => """
-A list of SObjects.
-""";
-
-  @override
-  get parent => ListInterface();
-
-  @override
-  get exports => {
-        LEntry(
-          name: "withTag",
-          descr: "Returns a list of SObjects that are of a specific tag.",
-          args: const {
-            "tag": LArg<String>(
-              descr: "The tag of SObject to filter by.",
-            )
-          },
-          returnType: List<SObject>,
-          (String tag) => object!.where((e) => e.tag == tag).toList(),
         )
       };
 }

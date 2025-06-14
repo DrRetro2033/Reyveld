@@ -8,8 +8,7 @@ import 'package:hashlib/hashlib.dart';
 /// ## Extension for the `String` class.
 /// Used to compress and decompress strings.
 extension Pathing on String {
-  /// # `String` fixPath()
-  /// ## Fixes the path by replacing windows formatting with an absolute path and universal format.
+  /// Fixes the path by converting windows formatting to an absolute path in unix format.
   /// This will also replace environment variables with their values.
   String fixPath() {
     String path = replaceAll("\"", "");
@@ -42,6 +41,10 @@ extension Pathing on String {
     } else {
       return path.split("/").last.split(".").first;
     }
+  }
+
+  String formatForXML() {
+    return replaceAll(RegExp("'\""), "");
   }
 }
 

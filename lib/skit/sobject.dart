@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:arceus/scripting/list.dart';
 import 'package:arceus/skit/skit.dart';
 
 export 'package:xml/xml.dart';

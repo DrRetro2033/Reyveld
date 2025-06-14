@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:arceus/extensions.dart';
 import 'package:arceus/scripting/sinterface.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -89,7 +90,7 @@ class DirectoryInterface extends SInterface<Directory> {
             ({bool recursive = false}) async => await object!
                 .list(recursive: recursive)
                 .whereType<File>()
-                .map((e) => e.path)
+                .map((e) => e.path.fixPath())
                 .toList()),
         LEntry(
           name: "exists",

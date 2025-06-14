@@ -49,7 +49,7 @@ class LEntry extends LExport {
 }
 
 /// This is a lua argument.
-class LArg<T> {
+final class LArg<T> {
   final String descr;
 
   /// By default, this argument is required.
@@ -62,10 +62,22 @@ class LArg<T> {
   /// Note: If a named argument is provided, then DO NOT use optional positional arguments as they WILL BREAK THINGS IN UNEXPECTED WAYS.
   final bool positional;
 
+  /// Set this to override the doc type of the argument.
+  /// You can use this to have a more specific type than the default one.
+  /// For example:
+  /// ```lua
+  /// ---@param addfunc fun(a: int, b: int):int  Do this to specify the return and parmeters of a function parameter
+  /// ```
+  final String? docTypeOverride;
+
   /// This is the type of the argument.
   Type get type => T;
 
-  const LArg({this.descr = "", this.required = true, this.positional = true});
+  const LArg(
+      {this.descr = "",
+      this.required = true,
+      this.positional = true,
+      this.docTypeOverride});
 
   /// This is a helper function to check if a value is of type [T].
   /// If it is, it returns the value, otherwise it returns null.
@@ -253,7 +265,7 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
       for (final arg in export.args.entries) {
         if (arg.value.positional) {
           method.writeln(
-              "---@param ${arg.key} ${_convertDartToLua(arg.value.type) + (arg.value.required ? "" : "?")} ${arg.value.descr}");
+              "---@param ${arg.key} ${(arg.value.docTypeOverride ?? _convertDartToLua(arg.value.type)) + (arg.value.required ? "" : "?")} ${arg.value.descr}");
         }
         // Document the argument
       }

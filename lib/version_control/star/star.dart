@@ -1,3 +1,4 @@
+import 'package:arceus/extensions.dart';
 import 'package:arceus/skit/sobject.dart';
 import 'package:arceus/skit/sobjects/file_system/file_system.dart';
 import 'package:arceus/version_control/constellation/constellation.dart';
@@ -17,7 +18,7 @@ class Star extends SObject {
   String get name => get("name") ?? "Initial Star";
 
   /// Sets the name of the star.
-  set name(String value) => set("name", value);
+  set name(String value) => set("name", value.formatForXML());
 
   /// Returns the hash of the star.
   String get hash => get("hash")!;

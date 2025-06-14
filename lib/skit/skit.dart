@@ -352,7 +352,7 @@ class SKit {
   }
 
   Future<void> exportToXMLFile(String path) async {
-    final file = File(path);
+    final file = File(path.fixPath());
 
     // Ensures that the parent directory exists.
     await file.ensureParentDirectory();

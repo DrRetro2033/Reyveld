@@ -31,7 +31,6 @@ class Lua {
   /// A set of all interfaces in the lua state.
   static Set<SInterface> get _interfaces => {
         ArceusInterface(),
-        SObjectListInterface(),
         ListInterface(),
         SHeaderInterface(),
         SKitInterface(),
@@ -385,8 +384,20 @@ class Lua {
   // Compiles a lua project.
   Future<String> _compile(String entrypoint) async {
     String compiled = entrypoint;
+    final strings = [];
+    while (RegExp("\"(.*)\"|'(.*)'").hasMatch(compiled)) {
+      final match = RegExp("\"(.*)\"|'(.*)'").firstMatch(compiled)!;
+
+      /// Placeholder to add string back later.
+      /// This is done so that anything inside the string is not effected by code effects.
+      compiled = compiled.replaceFirst(match[0]!, "⭐");
+      strings.add(match[1] ?? match[2]!);
+    }
     for (final effect in codeEffects) {
       compiled = effect(compiled);
+    }
+    while (compiled.contains("⭐")) {
+      compiled = compiled.replaceFirst("⭐", "\"${strings.removeAt(0)}\"");
     }
     return compiled;
   }
@@ -551,13 +562,13 @@ final class LuaFuncRef {
 
   const LuaFuncRef(this.lua, this.ref);
 
-  Future<void> call(List<dynamic> args, {bool returns = false}) async {
+  Future<dynamic> call(List<dynamic> args, {bool returns = false}) async {
     await lua.state.rawGetI(luaRegistryIndex, ref);
     for (final arg in args) {
       await lua._pushToStack(arg);
     }
     await lua.state.call(args.length, returns ? 1 : 0);
-    // lua.state.pop(1);
+    return returns ? await lua.getFromTop() : null;
   }
 
   /// Unregisters the function from the registry.

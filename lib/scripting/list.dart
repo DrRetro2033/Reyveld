@@ -78,8 +78,8 @@ class ListInterface extends SInterface<List> {
           descr: "Runs a function for each object in the list.",
           args: const {
             "func": LArg<LuaFuncRef>(
-              descr: "The function to run.",
-            )
+                descr: "The function to run.",
+                docTypeOverride: "fun(object: any):nil")
           },
           (LuaFuncRef function) async {
             for (var e in object!) {
