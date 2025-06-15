@@ -225,8 +225,8 @@ class SKit {
   Future<void> addRoot(SRoot root) async {
     // Generate a unique hash for the root
     root.hash = generateUniqueHash(await usedRootHashes());
-    Arceus.talker.debug(
-        "New ${root.runtimeType} added to ${path.getFilename(withExtension: false)}! ($path)");
+    // Arceus.talker.debug(
+    //     "New ${root.runtimeType} added to ${path.getFilename(withExtension: false)}! ($path)");
 
     // Adding the root to [_loadedRoots] is necessary for the [save] function to work.
     _loadedRoots.add(root);
@@ -303,7 +303,7 @@ class SKit {
       await temp.delete(); // delete the temp file.
     }
     // Write the new kit header to the temp file.
-    Arceus.talker.debug("Attempting to save SKit. ($path)");
+    // Arceus.talker.debug("Attempting to save SKit. ($path)");
 
     // Ensure that the parent directory exists.
     await temp.ensureParentDirectory();

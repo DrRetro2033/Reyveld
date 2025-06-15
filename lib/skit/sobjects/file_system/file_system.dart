@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
-import 'package:arceus/arceus.dart';
 import 'package:arceus/extensions.dart';
 import 'package:arceus/skit/sobject.dart';
 import 'package:hashlib/hashlib.dart';
@@ -59,7 +58,7 @@ class SArchive extends SRoot {
   /// This check includes new files, deleted files, and changes in files.
   Future<bool> checkForChanges(String path) async {
     final stopwatch = Stopwatch(); // track process time.
-    Arceus.talker.debug("Attempting to check for changes at $path");
+    // Arceus.talker.debug("Attempting to check for changes at $path");
     stopwatch.start();
     final files = getFiles();
 
@@ -77,12 +76,12 @@ class SArchive extends SRoot {
 
     stopwatch.stop();
     if (changes) {
-      Arceus.talker
-          .info("Changes found in ${stopwatch.elapsedMilliseconds}ms! ($path)");
+      // Arceus.talker
+      //     .info("Changes found in ${stopwatch.elapsedMilliseconds}ms! ($path)");
       return true;
     }
-    Arceus.talker.info(
-        "No changes found in ${stopwatch.elapsedMilliseconds}ms! ($path)");
+    // Arceus.talker.info(
+    //     "No changes found in ${stopwatch.elapsedMilliseconds}ms! ($path)");
     return false;
   }
 

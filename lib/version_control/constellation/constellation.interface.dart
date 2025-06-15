@@ -27,7 +27,7 @@ A collection of Stars, with a root star, and a current star.
               )
             },
             returnType: Constellation, (String name, String path) async {
-          Arceus.talker.info("Creating new constellation: $name");
+          // Arceus.talker.info("Creating new constellation: $name");
           return await ConstellationCreator(name, path).create();
         })
       };

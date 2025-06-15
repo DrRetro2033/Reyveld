@@ -79,7 +79,7 @@ Future<void> main(List<String> args) async {
 
             Arceus.talker.info("Client (${request.session.id}) connected.");
             socket.listen((data) async {
-              Arceus.talker.info('Received: $data');
+              // Arceus.talker.info('Received: $data');
               try {
                 final result = await sessions[request.session.id]!.$1.run(data);
                 socket.add(jsonEncode({

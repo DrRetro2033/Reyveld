@@ -292,7 +292,7 @@ class Lua {
             ));
             await _pushToStack(result);
           }
-          Arceus.talker.debug("Successfully ran ${value.name}.");
+          // Arceus.talker.debug("Successfully ran ${value.name}.");
           return 1;
         } catch (e, st) {
           Arceus.talker.error("", e, st);
@@ -303,8 +303,8 @@ class Lua {
       _pushToStack(value.value);
     } else {
       Arceus.talker.error("Could not push to stack: $value");
-      Arceus.talker.debug("Before:\n$stack");
-      Arceus.talker.debug("After:\n${_formatStack()}");
+      // Arceus.talker.debug("Before:\n$stack");
+      // Arceus.talker.debug("After:\n${_formatStack()}");
     }
   }
 
@@ -383,21 +383,23 @@ class Lua {
 
   // Compiles a lua project.
   Future<String> _compile(String entrypoint) async {
+    final stringPlaceholder = "⭐🌃✨🌟";
     String compiled = entrypoint;
     final strings = [];
     while (RegExp("\"(.*)\"|'(.*)'").hasMatch(compiled)) {
       final match = RegExp("\"(.*)\"|'(.*)'").firstMatch(compiled)!;
 
-      /// Placeholder to add string back later.
+      /// Replace the string with a placeholder to add string back later.
       /// This is done so that anything inside the string is not effected by code effects.
-      compiled = compiled.replaceFirst(match[0]!, "⭐");
+      compiled = compiled.replaceFirst(match[0]!, stringPlaceholder);
       strings.add(match[1] ?? match[2]!);
     }
     for (final effect in codeEffects) {
       compiled = effect(compiled);
     }
-    while (compiled.contains("⭐")) {
-      compiled = compiled.replaceFirst("⭐", "\"${strings.removeAt(0)}\"");
+    while (compiled.contains(stringPlaceholder)) {
+      compiled = compiled.replaceFirst(
+          stringPlaceholder, "\"${strings.removeAt(0)}\"");
     }
     return compiled;
   }
