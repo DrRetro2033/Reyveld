@@ -12,7 +12,9 @@ final Set<SFactory> sobjectFactories = {
   SFileFactory(),
   SRArchiveFactory(),
   SRFileFactory(),
-  SDescriptionFactory()
+  SDescriptionFactory(),
+  WhitelistFactory(),
+  BlacklistFactory(),
 };
 
 /// Get the factory for the given [SObject] subclass.

@@ -6,6 +6,7 @@ import "dart:io";
 import "dart:typed_data";
 import "package:arceus/arceus.dart";
 import "package:arceus/extensions.dart";
+import "package:arceus/skit/sobjects/file_system/filelist/filelist.dart";
 import "package:arceus/uuid.dart";
 import "package:rxdart/rxdart.dart";
 import 'package:xml/xml_events.dart';

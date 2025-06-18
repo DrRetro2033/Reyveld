@@ -53,15 +53,43 @@ A collection of Stars, with a root star, and a current star.
             name: "start",
             descr:
                 "Starts the constellation by creating the root star. Call after adding the constellation to the kit.",
+            args: const {
+              "throwIfExists": LArg<bool>(
+                descr:
+                    "Throws an exception if the constellation already has a root star.",
+                required: false,
+                docDefaultValue: "true",
+              )
+            },
             returnType: Star,
             isAsync: true,
-            () async => await object?.createRootStar()),
+            ([bool throwIfExists = true]) async =>
+                await object?.createRootStar(throwIfExists: throwIfExists)),
+        LEntry(
+          name: "hasRoot",
+          descr: "Returns true if the constellation has a root star.",
+          returnType: bool,
+          () => object?.hasRoot,
+        ),
         LEntry(
             name: "root",
             descr: "Gets the root star of the constellation.",
             returnType: Star,
             isAsync: false,
             () => object?.root),
+        LEntry(
+            name: "globs",
+            descr:
+                "Gets and sets the globs of the constellation. Used to specify which files to track, and which files to ignore.",
+            args: const {
+              "globs": LArg<Globs>(descr: "The globs to set.", required: false)
+            },
+            returnType: Globs, ([Globs? filelist]) {
+          if (filelist != null) {
+            object?.globs = filelist;
+          }
+          return object?.globs;
+        }),
         LEntry(
             name: "unsaved",
             descr:

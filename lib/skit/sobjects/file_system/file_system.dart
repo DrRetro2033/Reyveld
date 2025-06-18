@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:isolate';
 import 'package:arceus/extensions.dart';
 import 'package:arceus/skit/sobject.dart';
+import 'package:arceus/skit/sobjects/file_system/filelist/filelist.dart';
 import 'package:hashlib/hashlib.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:async/async.dart';
@@ -56,7 +57,7 @@ class SArchive extends SRoot {
   /// This method uses isolates to check for changes in parallel to speed up the process.
   /// Returns true if there are changes, false if there are none.
   /// This check includes new files, deleted files, and changes in files.
-  Future<bool> checkForChanges(String path) async {
+  Future<bool> checkForChanges(String path, {Globs? includeList}) async {
     final stopwatch = Stopwatch(); // track process time.
     // Arceus.talker.debug("Attempting to check for changes at $path");
     stopwatch.start();
@@ -64,8 +65,8 @@ class SArchive extends SRoot {
 
     /// Gets the files in the archive
     final results = await Future.wait([
-      Isolate.run<bool>(
-          () async => await _checkForNewFiles(path)), // check for new files
+      Isolate.run<bool>(() async => await _checkForNewFiles(path,
+          includeList: includeList)), // check for new files
       Isolate.run<bool>(() async =>
           await _checkForDeletedFiles(path)), // check for deleted files
       for (final file in files)
@@ -85,13 +86,14 @@ class SArchive extends SRoot {
     return false;
   }
 
-  Future<bool> _checkForNewFiles(String path) async {
+  Future<bool> _checkForNewFiles(String path, {Globs? includeList}) async {
     final extFiles = Directory(path).list(recursive: true);
     final addedFiles = await extFiles.whereType<File>().any((file) {
       final filePath = file.path.relativeTo(path);
       if (filePath.endsWith(".tmp")) {
         return false;
       }
+      if (includeList != null && !includeList.included(filePath)) return false;
       final archiveFile = getFile(filePath);
       // does the archive not have this file?
       if (archiveFile == null) {
@@ -129,26 +131,12 @@ class SArchive extends SRoot {
   /// Extracts the archive to the specified path.
   /// If [temp] is true, then the files will be extracted as temporary files with a `.tmp` extension.
   /// Returns a stream that emits the path of the file currently being extracted.
-  Stream<String> extract(String path, {bool temp = false}) async* {
+  Stream<String> extract(String path, {bool temp = false}) {
     final files = getFiles();
-    await Future.wait(files.map(
-        (e) => Isolate.run(() async => await e!.extractTo(path, temp: temp))));
-  }
-
-  Future<bool> isDifferent(SArchive other) async {
-    final files = getFiles();
-    final otherFiles = other.getFiles();
-    if (getFiles().map((e) => e!.path) !=
-        other.getFiles().map((e) => e!.path)) {
-      return true;
-    }
-    for (int i = 0; i < files.length; i++) {
-      final file = files[i]!;
-      final otherFile = otherFiles[i]!;
-      final diffStream = file.streamDiff(await otherFile.bytes);
-      if (await diffStream.any((e) => e.any((e) => e != 0))) return true;
-    }
-    return false;
+    return Stream.fromFutures(files.map((e) => Isolate.run(() async {
+          await e!.extractTo(path, temp: temp);
+          return e.path;
+        })));
   }
 }
 

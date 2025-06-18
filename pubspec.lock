@@ -226,7 +226,7 @@ packages:
     source: hosted
     version: "4.0.0"
   glob:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: glob
       sha256: c3f1ee72c96f8f78935e18aa8cecced9ab132419e8625dc187e1c2408efc20de
@@ -533,18 +533,18 @@ packages:
     dependency: "direct main"
     description:
       name: talker
-      sha256: cef2230ac81e74a7d8c0f8d2e2e0d6d92a41d0c8e02b505cf00f5271f8c5f9cc
+      sha256: "82083d0b22f6dd8a060809fa818ec7e0c1b260ac14d570b6c005e36bc6c05bba"
       url: "https://pub.dev"
     source: hosted
-    version: "4.8.4"
+    version: "4.9.0"
   talker_logger:
     dependency: transitive
     description:
       name: talker_logger
-      sha256: d4519dde2ea3a03188486a8847a2f7e1e483b52e0746122e48a06c9f60c9930c
+      sha256: "4c8fea848ebaa22495eac61923aea74af2e9735ee19d2e28b44694fc0e1775ba"
       url: "https://pub.dev"
     source: hosted
-    version: "4.8.4"
+    version: "4.9.0"
   term_glyph:
     dependency: transitive
     description:

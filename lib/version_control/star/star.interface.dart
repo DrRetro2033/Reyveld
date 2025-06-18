@@ -41,12 +41,14 @@ A star is a point in time that represents a snapshot of an folder.
               "updateFolder": LArg<bool>(
                   descr:
                       "If true, the folder will be updated to the current star.",
+                  docDefaultValue: "true",
                   required: false)
             },
-            isAsync: true, ([bool updateFolder = true]) async {
+            isAsync: true,
+            returnType: Stream, ([bool updateFolder = true]) async {
           object!.makeCurrent();
           if (updateFolder) {
-            await object!.constellation.updateToCurrent();
+            return await object!.constellation.updateToCurrent();
           }
         }),
         LEntry(
@@ -91,7 +93,8 @@ A star is a point in time that represents a snapshot of an folder.
             descr: "Gets the star forward to this star X times.",
             args: const {
               "x": LArg<int>(
-                  descr: "The number of stars to move forward. Defaults to 1.",
+                  descr: "The number of stars to move forward.",
+                  docDefaultValue: "1",
                   required: false)
             },
             returnType: Star, ([int x = 1]) async {
@@ -107,7 +110,8 @@ A star is a point in time that represents a snapshot of an folder.
             descr: "Gets the star backward to this star X times.",
             args: const {
               "x": LArg<int>(
-                  descr: "The number of stars to move backward. Defaults to 1.",
+                  descr: "The number of stars to move backward.",
+                  docDefaultValue: "1",
                   required: false)
             },
             returnType: Star, ([int x = 1]) {

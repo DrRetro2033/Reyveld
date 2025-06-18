@@ -3,8 +3,10 @@ import 'dart:io';
 
 import 'package:arceus/arceus.dart';
 import 'package:arceus/scripting/extras/directory.dart';
-import 'package:arceus/scripting/list.dart';
+import 'package:arceus/scripting/extras/list.dart';
 import 'package:arceus/scripting/extras/session.dart';
+import 'package:arceus/scripting/extras/stream.dart';
+import 'package:arceus/skit/sobjects/file_system/filelist/filelist.dart';
 import 'package:arceus/skit/sobjects/sobjects.dart';
 import 'package:arceus/uuid.dart';
 import 'package:arceus/version_control/constellation/constellation.dart';
@@ -38,10 +40,13 @@ class Lua {
         StarInterface(),
         SArchiveInterface(),
         SFileInterface(),
-        SLibraryInterface(),
         SObjectInterface(),
         SessionInterface(),
         DirectoryInterface(),
+        StreamInterface(),
+        GlobsInterface(),
+        WhitelistInterface(),
+        BlacklistInterface()
       };
 
   /// This is used to sort the interfaces by priority.
@@ -344,6 +349,7 @@ class Lua {
             ..sort((a, b) => int.parse(a).compareTo(int.parse(b)))) {
             list.add(table[key]);
           }
+          Arceus.talker.log("List: $list");
           result = list;
         } else {
           result = table;
@@ -519,35 +525,6 @@ ${enum_.key} = {
 """);
     }
     return formattedEnums.join("\n\n");
-  }
-}
-
-abstract class LuaCode {
-  final String path;
-  Future<String> get code;
-
-  LuaCode(this.path);
-}
-
-class LuaScript extends LuaCode {
-  @override
-  get code async {
-    final file = File(path);
-    return await file.readAsString();
-  }
-
-  LuaScript(super.path);
-}
-
-class LuaLibrary extends LuaCode {
-  LuaLibrary(super.path);
-
-  @override
-  get code async {
-    final skit = await SKit.open(path, type: SKitType.library);
-    final header = await skit.getHeader();
-    return header!.getChild<SLibrary>()!.archive.then((archive) =>
-        archive.getFiles().map((e) async => await e!.str).join("\n"));
   }
 }
 

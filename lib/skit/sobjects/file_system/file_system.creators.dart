@@ -8,7 +8,7 @@ class SArchiveCreator extends SCreator<SArchive> {
   /// Adds all of the files in the folder to the archive, making them relative to the archive.
   /// Will add the new archive to the kit, and returns it.
   static Future<SArchive> archiveFolder(String path,
-      {SArchive? ref, bool Function(File)? filter}) async {
+      {SArchive? ref, Globs? includeList}) async {
     final dir = Directory(path);
     if (!await dir.exists()) {
       throw Exception("Path does not exist.");
@@ -16,20 +16,23 @@ class SArchiveCreator extends SCreator<SArchive> {
     final archive = await SArchiveCreator().create();
 
     await for (final file in _archiveFolderStream(
-        dir.list(recursive: true).whereType(), path,
-        ref: ref, filter: filter)) {
-      archive.addChild(file!);
+      dir.list(recursive: true).whereType<File>().where(
+          (e) => includeList!.included(e.path.fixPath().relativeTo(path))),
+      path,
+      ref: ref,
+    )) {
+      archive.addChild(file);
     }
 
     return archive;
   }
 
-  static Stream<SFile?> _archiveFolderStream(Stream<File> stream, String path,
-      {SArchive? ref, bool Function(File)? filter}) async* {
+  static Stream<SFile> _archiveFolderStream(Stream<File> stream, String path,
+      {SArchive? ref, bool Function(String)? filter}) async* {
     await for (final e in stream) {
-      if (filter != null && !filter(e)) yield null;
-      yield await Isolate.run<SFile?>(() async {
-        final filePath = e.path.relativeTo(path);
+      final filePath = e.path.relativeTo(path);
+      if (filter != null && !filter(filePath)) continue;
+      yield await Isolate.run<SFile>(() async {
         if (ref != null && ref.hasFile(filePath)) {
           if (ref.getFile(filePath)!.checksum == await e.checksum) {
             return await ref.getFile(filePath)!.getRef();

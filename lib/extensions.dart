@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:hashlib/hashlib.dart';
 // import 'package:arceus/scripting/addon.dart';
 

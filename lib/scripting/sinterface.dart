@@ -70,6 +70,14 @@ final class LArg<T> {
   /// ```
   final String? docTypeOverride;
 
+  /// Set this to override the doc default value of the argument.
+  /// If set, the argument will show a default value in the docs.
+  ///
+  /// Example:
+  ///
+  /// Example boolean argument with default value. (default: true)
+  final String? docDefaultValue;
+
   /// This is the type of the argument.
   Type get type => T;
 
@@ -77,6 +85,7 @@ final class LArg<T> {
       {this.descr = "",
       this.required = true,
       this.positional = true,
+      this.docDefaultValue,
       this.docTypeOverride});
 
   /// This is a helper function to check if a value is of type [T].
@@ -264,7 +273,7 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
       for (final arg in export.args.entries) {
         if (arg.value.positional) {
           method.writeln(
-              "---@param ${arg.key} ${(arg.value.docTypeOverride ?? _convertDartToLua(arg.value.type)) + (arg.value.required ? "" : "?")} ${arg.value.descr}");
+              "---@param ${arg.key} ${(arg.value.docTypeOverride ?? _convertDartToLua(arg.value.type)) + (arg.value.required ? "" : "?")} ${arg.value.descr}${arg.value.docDefaultValue != null ? " (default: ${arg.value.docDefaultValue})" : ""}");
         }
         // Document the argument
       }

@@ -47,6 +47,7 @@ class Star extends SObject {
   /// Grows a new star from this star.
   /// Returns the new star.
   Future<Star> grow(String name) async {
+    /// The new star.
     Star star;
 
     /// If there are no changes, create a new star with the exact same archive reference.
@@ -57,7 +58,7 @@ class Star extends SObject {
           .create();
     } else {
       final newArchive = await SArchiveCreator.archiveFolder(constellation.path,
-          ref: await archive);
+          ref: await archive, includeList: constellation.globs);
       await kit.addRoot(newArchive);
       star = await StarCreator(
               name, constellation.newStarHash(), await newArchive.newIndent())
@@ -91,7 +92,7 @@ class Star extends SObject {
 
   /// Checks for changes from the current star, and returns true if there are changes, false if there are none.
   Future<bool> checkForChanges() async {
-    return archive
-        .then<bool>((value) => value!.checkForChanges(constellation.path));
+    return await archive.then<bool>((value) => value!
+        .checkForChanges(constellation.path, includeList: constellation.globs));
   }
 }

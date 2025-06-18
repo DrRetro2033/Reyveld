@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:arceus/extensions.dart';
 import 'package:arceus/skit/sobject.dart';
 import 'package:arceus/skit/sobjects/file_system/file_system.dart';
+import 'package:arceus/skit/sobjects/file_system/filelist/filelist.dart';
 import 'package:arceus/uuid.dart';
 import 'package:arceus/version_control/star/star.dart';
 
@@ -35,10 +36,29 @@ class Constellation extends SObject {
     return root;
   }
 
+  bool get hasRoot => getChild<Star>() != null;
+
+  Globs? get globs => getChild<Globs>();
+  set globs(Globs? value) {
+    if (getChild<Globs>() != null) {
+      getChild<Globs>()!.unparent();
+    } else {
+      addChild(value!);
+    }
+  }
+
   /// Creates the root [Star] of the constellation.
   /// This is used when creating a new constellation.
-  Future<Star> createRootStar() async {
-    final archive = await SArchiveCreator.archiveFolder(path);
+  Future<Star> createRootStar({bool throwIfExists = true}) async {
+    if (hasRoot) {
+      if (throwIfExists) {
+        throw Exception(
+            "Constellation already has a root star! Do not call this function twice!");
+      }
+      return root;
+    }
+    final archive =
+        await SArchiveCreator.archiveFolder(path, includeList: globs);
     await kit.addRoot(archive);
     final rootStar = await StarCreator(
             "Initial Star", newStarHash(), await archive.newIndent())
@@ -82,22 +102,19 @@ class Constellation extends SObject {
 
   /// Checks for changes from the current star, and returns true if
   /// there are changes, false if there are none.
-  Future<bool> checkForChanges() {
-    return getCurrentStar().checkForChanges();
+  Future<bool> checkForChanges() async {
+    return await getCurrentStar().checkForChanges();
   }
 
   /// Updates the tracked folder to the current star.
-  Future<void> updateToCurrent() async {
-    return await getCurrentStar()
-        .archive
-        .then((e) async => e!.extract(path).toList());
+  Future<Stream<String>> updateToCurrent() async {
+    return await getCurrentStar().archive.then((e) async => e!.extract(path));
   }
 
   /// Returns an archive with unsaved changes in the tracked folder.
   Future<SArchive> getUnsavedChanges() async {
     final archive = await SArchiveCreator.archiveFolder(path);
-    if (!await archive
-        .isDifferent(await getCurrentStar().archive.then((e) async => e!))) {
+    if (!await archive.checkForChanges(path)) {
       return await getCurrentStar().archive.then((e) async => e!);
     }
     return archive;
