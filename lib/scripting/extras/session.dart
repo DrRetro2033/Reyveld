@@ -6,16 +6,21 @@ import 'package:arceus/scripting/sinterface.dart';
 /// This is the socket interface.
 /// This can be used from Lua to send data through the web socket,
 /// so the external client can know what the script is doing at a given time.
-class SocketInterface extends SInterface<WebSocket> {
+class SessionInterface extends SInterface<WebSocket> {
   @override
-  String get className => "Socket";
+  String get className => "Session";
 
   @override
   String get classDescription =>
-      "Send data through the current web socket during script execution.";
+      "Send data through the web socket of the current session during script execution.";
 
   @override
   get exports => {
+        LField<String>(
+            name: "os",
+            descr:
+                "The operating system of the server. (\"${Platform.operatingSystem}\")",
+            Platform.operatingSystem),
         LEntry(
             name: "send",
             descr: "Send data through the web socket.",

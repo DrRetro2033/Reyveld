@@ -124,8 +124,7 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
         }),
         LEntry(
             name: "usedHashes",
-            descr:
-                "Returns the hashes used by the roots in the SKit. You can specify a tag to filter by.",
+            descr: "Returns the hashes used by the roots in the SKit.",
             args: const {
               "tag": LArg<String>(
                   descr: "The tag to filter by.",
@@ -134,7 +133,7 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
             },
             returnType: List,
             isAsync: true, ({String? tag}) async {
-          return (await object!.usedRootHashes(tag: tag)).toList();
+          return (await object!.usedRootHashes()).toList();
         }),
         LEntry(
             name: "save",

@@ -37,7 +37,7 @@ enum SKitType {
 ///
 /// The two core [SObject]s which are tightly knit into [SKit]s are the [SHeader] and [SRoot]s.
 /// The [SHeader] contains information about the kit (e.g. name of kit, version of arceus, the author of the kit, constellations, etc),
-/// while the [SRoot]s can contain much larger sets of data or can be unrelated to the kit itself (e.g. save data, scripts, images, users, etc).
+/// while the [SRoot]s can contain much larger sets of data (e.g. save data, scripts, images, users, etc).
 class SKit {
   /// Opens a kit file.
   static Future<SKit> open(String path,
@@ -270,6 +270,10 @@ class SKit {
     }
   }
 
+  /// Streams the roots of the kit file as xml strings.
+  /// This will stream all of the roots of the kit file as xml strings.
+  /// The roots are streamed in the order they are stored in the kit file.
+  /// This will cache the roots, so if you want to stream the roots without caching, use [_streamRoots].
   Stream<String> _streamRootsAsXml() async* {
     await for (final root in _streamRoots()) {
       yield root.toXmlString();
@@ -277,10 +281,8 @@ class SKit {
   }
 
   /// Returns the hashes used in the SKit file.
-  Future<Set<String>> usedRootHashes<T extends SRoot>({String? tag}) async =>
-      (await getRoots<T>(
+  Future<Set<String>> usedRootHashes() async => (await getRoots(
         addToCache: false,
-        filterRoots: (root) => root.tag == tag,
       ))
           .map((e) => e!.hash)
           .toSet();
@@ -288,6 +290,11 @@ class SKit {
   /// Adds an indent to the kit file.
   /// Used for deletion.
   void addIndent(SIndent indent) => _indents.add(indent);
+
+  /// Checks to see if the hash is marked for deletion.
+  bool isMarkedForDeletion(String hash) {
+    return _indents.any((e) => e.hash == hash && e.isDeleted);
+  }
 
   /// Saves the kit file.
   /// This will save the kit header and all of the archives to the kit file.
@@ -310,6 +317,9 @@ class SKit {
 
     // Open the temp file for writing.
     final tempSink = temp.openWrite();
+
+    // Calls onSave on the header to do any necessary changes before saving.
+    await getHeader().then((header) => header!.onSave(this));
 
     // Write the new XML to temp file.
     final stream = Rx.merge<String>([

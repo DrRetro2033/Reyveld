@@ -278,7 +278,7 @@ class SFile extends SObject {
   }
 
   /// Forms a number from a stream of bytes.
-  /// Reverses the stream before merging.
+  /// If littleEndian is true, then the stream will be reversed before merging.
   Future<int> _formNumber(Stream<int> stream, bool? littleEndian) async {
     if (!(littleEndian ?? defaultEndian)) {
       return await stream.toList().then((e) => e.reduce(_mergeInt));
@@ -286,30 +286,39 @@ class SFile extends SObject {
     return await stream.toList().then((e) => e.reversed.reduce(_mergeInt));
   }
 
+  /// Forms a unsigned number from a stream of bytes.
   Future<int> getU16(int index, {bool? littleEndian}) async =>
       await _formNumber(await getRange(index, index + 2), littleEndian);
 
+  /// Forms a signed number from a stream of bytes.
   Future<int> get16(int index, {bool? littleEndian}) async =>
       (await getU16(index, littleEndian: littleEndian)).toSigned(16);
 
+  /// Sets a 16 bit number at the specified index.
   Future<void> set16(int index, int value, {bool? littleEndian}) async =>
       await setRange(index, index + 2, _seperateInt(value), littleEndian);
 
+  /// Forms a unsigned number from a stream of bytes.
   Future<int> getU32(int index, {bool? littleEndian}) async =>
       await _formNumber(await getRange(index, index + 4), littleEndian);
 
+  /// Forms a signed number from a stream of bytes.
   Future<int> get32(int index, {bool? littleEndian}) async =>
       (await getU32(index, littleEndian: littleEndian)).toSigned(32);
 
+  /// Sets a 32 bit number at the specified index.
   Future<void> set32(int index, int value, {bool? littleEndian}) async =>
       await setRange(index, index + 4, _seperateInt(value), littleEndian);
 
+  /// Forms a unsigned number from a stream of bytes.
   Future<int> getU64(int index, {bool? littleEndian}) async =>
       await _formNumber(await getRange(index, index + 8), littleEndian);
 
+  /// Forms a signed number from a stream of bytes.
   Future<int> get64(int index, {bool? littleEndian}) async =>
       (await getU64(index, littleEndian: littleEndian)).toSigned(64);
 
+  /// Sets a 64 bit number at the specified index.
   Future<void> set64(int index, int value, {bool? littleEndian}) async =>
       await setRange(index, index + 8, _seperateInt(value), littleEndian);
 
@@ -389,6 +398,15 @@ class SRArchive extends SIndent<SArchive> {
   Future<SArchive?> getRef() async {
     return await kit.getArchive(hash);
   }
+
+  @override
+  void onSave(SKit kit) {
+    /// Check if the referenced archive is marked for deletion.
+    /// If it is, unparent this reference.
+    if (kit.isMarkedForDeletion(hash)) {
+      unparent();
+    }
+  }
 }
 
 /// A reference to an [SFile] in a [SArchive].
@@ -407,5 +425,15 @@ class SRFile extends SFile {
   @override
   Future<SRFile> getRef() async {
     return await SRFileCreator(archiveHash, filePath, checksum).create();
+  }
+
+  @override
+  void onSave(SKit kit) {
+    /// Check if the orgin archive is marked for deletion.
+    /// If it is, unparent this reference.
+    /// This could result in missing files if not properly handled.
+    if (kit.isMarkedForDeletion(archiveHash)) {
+      unparent();
+    }
   }
 }

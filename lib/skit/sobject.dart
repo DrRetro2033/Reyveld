@@ -225,8 +225,15 @@ class SObject {
   Map<String, String> _attrbutesToJson() => Map.fromEntries(
       _node.attributes.map((attr) => MapEntry(attr.name.local, attr.value)));
 
+  /// Creates a copy of the [SObject].
   SObject copy() {
     final factory = getSFactory(_node.name.local);
     return factory.load(_node.copy())..kit = _kit;
+  }
+
+  void onSave(SKit kit) {
+    for (var child in getChildren()) {
+      child!.onSave(kit);
+    }
   }
 }

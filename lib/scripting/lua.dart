@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:arceus/arceus.dart';
 import 'package:arceus/scripting/extras/directory.dart';
 import 'package:arceus/scripting/list.dart';
-import 'package:arceus/scripting/extras/socket.dart';
+import 'package:arceus/scripting/extras/session.dart';
 import 'package:arceus/skit/sobjects/sobjects.dart';
 import 'package:arceus/uuid.dart';
 import 'package:arceus/version_control/constellation/constellation.dart';
@@ -40,7 +40,7 @@ class Lua {
         SFileInterface(),
         SLibraryInterface(),
         SObjectInterface(),
-        SocketInterface(),
+        SessionInterface(),
         DirectoryInterface(),
       };
 
@@ -66,7 +66,7 @@ class Lua {
   static Map<String, (SInterface, FutureOr<dynamic> Function(Lua))>
       get globals => {
             "session": (
-              SocketInterface(),
+              SessionInterface(),
               (lua) {
                 return lua.socket;
               }
