@@ -1,6 +1,6 @@
 part of 'filelist.dart';
 
-class GlobsInterface extends SInterface<Globs> {
+class GlobsInterface<T extends Globs> extends SInterface<Globs> {
   GlobsInterface();
 
   @override
@@ -24,24 +24,14 @@ class GlobsInterface extends SInterface<Globs> {
           return await BlacklistCreator([]).create();
         }),
       };
-}
-
-class WhitelistInterface extends SInterface<Whitelist> {
-  @override
-  get parent => GlobsInterface();
-
-  WhitelistInterface();
-
-  @override
-  get className => 'Whitelist';
 
   @override
   get exports => {
         LEntry(
           name: "add",
           descr: "Adds a glob to the whitelist.",
-          args: {"glob": LArg<String>(descr: "The glob to add.")},
-          returnType: Whitelist,
+          args: const {"glob": LArg<String>(descr: "The glob to add.")},
+          returnType: T,
           (String glob) async {
             return object!..add(glob);
           },
@@ -49,8 +39,8 @@ class WhitelistInterface extends SInterface<Whitelist> {
         LEntry(
           name: "remove",
           descr: "Removes a glob from the whitelist.",
-          args: {"glob": LArg<String>(descr: "The glob to remove.")},
-          returnType: Whitelist,
+          args: const {"glob": LArg<String>(descr: "The glob to remove.")},
+          returnType: T,
           (String glob) async {
             return object!..remove(glob);
           },
@@ -58,34 +48,22 @@ class WhitelistInterface extends SInterface<Whitelist> {
       };
 }
 
+class WhitelistInterface extends SInterface<Whitelist> {
+  @override
+  get parent => GlobsInterface<Whitelist>();
+
+  WhitelistInterface();
+
+  @override
+  get className => 'Whitelist';
+}
+
 class BlacklistInterface extends SInterface<Blacklist> {
   @override
-  get parent => GlobsInterface();
+  get parent => GlobsInterface<Blacklist>();
 
   BlacklistInterface();
 
   @override
-  get className => 'blacklist';
-
-  @override
-  get exports => {
-        LEntry(
-          name: "add",
-          descr: "Adds a glob to the blacklist.",
-          args: {"glob": LArg<String>(descr: "The glob to add.")},
-          returnType: Blacklist,
-          (String glob) async {
-            return object!..add(glob);
-          },
-        ),
-        LEntry(
-          name: "remove",
-          descr: "Removes a glob from the blacklist.",
-          args: {"glob": LArg<String>(descr: "The glob to remove.")},
-          returnType: Blacklist,
-          (String glob) async {
-            return object!..remove(glob);
-          },
-        ),
-      };
+  get className => 'Blacklist';
 }

@@ -65,7 +65,9 @@ class SObject {
   }
 
   /// Returns the parent of the xml node, if it has one.
-  XmlNode? get parent => _node.parent;
+  XmlNode? get _parent => _node.parent;
+
+  bool get hasParent => _parent != null;
 
   /// Returns the inner text of the xml node.
   String? get innerText => _node.innerText;
@@ -80,7 +82,7 @@ class SObject {
   /// Adds a child [SObject] to the xml node.
   /// Removes the child from its current parent to safely move it to the new parent.
   void addChild(SObject child) {
-    if (child.parent != null) child._node.remove();
+    if (child._parent != null) child._node.remove();
     if (child is SRoot) {
       throw Exception("Cannot add a SRoot to a SObject!");
     }
@@ -90,7 +92,7 @@ class SObject {
 
   void addChildren(List<SObject?> children) {
     for (var child in children) {
-      if (child!.parent != null) child._node.remove();
+      if (child!._parent != null) child._node.remove();
       if (child is SRoot) {
         throw Exception("Cannot add a SRoot to a SObject!");
       }
@@ -141,12 +143,11 @@ class SObject {
 
   /// Returns the parent of the [SObject], if it has one.
   /// If [filter] is provided, it will only return the parent that matches the filter.
-  T? getParent<T extends SObject>({bool Function(T)? filter}) {
+  T? getParent<T extends SObject>() {
     if (_node.parentElement == null) return null;
     final factory = getSFactory(_node.parentElement!.name.local);
     if (factory is! SFactory<T>) return null;
     T obj = factory.load(_node.parentElement!)..kit = _kit;
-    if (filter != null && !filter(obj)) return null;
     return obj;
   }
 
@@ -167,7 +168,7 @@ class SObject {
     return descendants;
   }
 
-  /// Returns the closest ancestor of the [SObject], if it has one.
+  /// Returns the ancestors of the [SObject], if it has one.
   List<T?> getAncestors<T extends SObject>({bool Function(T)? filter}) {
     final ancest = <T>[];
     Iterable<XmlElement> ancestors = _node.ancestorElements;
@@ -236,4 +237,14 @@ class SObject {
       child!.onSave(kit);
     }
   }
+
+  @override
+  int get hashCode => _node.hashCode;
+
+  @override
+  operator ==(Object other) =>
+      other is SObject &&
+      (identical(other._node, _node) ||
+          other._node == _node ||
+          other._node.isEqualNode(_node));
 }

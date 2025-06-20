@@ -61,7 +61,8 @@ class Constellation extends SObject {
         await SArchiveCreator.archiveFolder(path, includeList: globs);
     await kit.addRoot(archive);
     final rootStar = await StarCreator(
-            "Initial Star", newStarHash(), await archive.newIndent())
+            "Initial Star", newStarHash(), await archive.newIndent(),
+            branch: "main")
         .create();
     addChild(rootStar);
     currentHash = rootStar.hash;
@@ -99,6 +100,20 @@ class Constellation extends SObject {
     final hashes = getStarHashes();
     return generateUniqueHash(hashes);
   }
+
+  /// Get the start of a branch.
+  /// Also known as the anchor star.
+  Star? getStartOfBranch(String branch) {
+    return getDescendants<Star>(
+            filter: (star) => star.has("branch") && star.branchName == branch)
+        .firstOrNull;
+  }
+
+  /// Returns all of the branches in the constellation.
+  Set<String> getAllBranches() =>
+      getDescendants<Star>(filter: (star) => star.has("branch"))
+          .map((e) => e!.branchName)
+          .toSet();
 
   /// Checks for changes from the current star, and returns true if
   /// there are changes, false if there are none.

@@ -96,6 +96,20 @@ A collection of Stars, with a root star, and a current star.
                 "Gets an archive that contains all of the unsaved changes in the constellation.",
             returnType: SArchive,
             isAsync: true,
-            () async => await object?.getUnsavedChanges())
+            () async => await object?.getUnsavedChanges()),
+        LEntry(
+          name: "getStem",
+          descr: "Get the start of a named branch.",
+          args: const {
+            "branch": LArg<String>(descr: "The name of the branch.")
+          },
+          returnType: Star,
+          (String branch) => object?.getStartOfBranch(branch),
+        ),
+        LEntry(
+            name: "getAllBranches",
+            descr: "Get all of the branches.",
+            returnType: List,
+            () => object?.getAllBranches().toList()),
       };
 }

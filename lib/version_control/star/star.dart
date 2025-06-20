@@ -1,3 +1,4 @@
+import 'package:arceus/arceus.dart';
 import 'package:arceus/extensions.dart';
 import 'package:arceus/skit/sobject.dart';
 import 'package:arceus/skit/sobjects/file_system/file_system.dart';
@@ -9,7 +10,6 @@ part 'star.creator.dart';
 
 /// This class represents a star in a constellation.
 /// A star is a node in the constellation tree, and contains a reference to an archive.
-/// TODO: Add multi-user support, either by making a unique constellation for each user, or by associating the star with a user.
 @SGen("star")
 class Star extends SObject {
   Star(super._node);
@@ -44,9 +44,39 @@ class Star extends SObject {
   /// Returns true if the star is a single child.
   bool get isSingleChild => getParent<Star>()?.getChildren<Star>().length == 1;
 
+  bool get isLeaf => getChildren<Star>().isEmpty;
+
+  bool get isStem => has("branch");
+
+  String get branchName => stem.get("branch")!;
+
+  /// Returns the anchor star of the branch.
+  Star get stem {
+    final stem = has("branch")
+        ? this
+        : getAncestors<Star>(filter: (star) => star.has("branch")).first!;
+    Arceus.talker.log(
+        "$name: ${getAncestors<Star>(filter: (star) => star.has("branch")).map((e) => e!.name).toList()}");
+    return stem;
+  }
+
+  void makeAnchor(String name) {
+    /// If the branch name already exists, throw an exception.
+    if (constellation.getAllBranches().contains(name)) {
+      throw Exception("Branch name already exists.");
+    }
+    set("branch", name);
+  }
+
+  void removeAnchor() {
+    /// If the star is the root star, it cannot be unanchored, so it will do nothing and return.
+    if (isRoot) return;
+    set("branch", null);
+  }
+
   /// Grows a new star from this star.
   /// Returns the new star.
-  Future<Star> grow(String name) async {
+  Future<Star> grow(String name, {String? branchName}) async {
     /// The new star.
     Star star;
 
@@ -65,7 +95,11 @@ class Star extends SObject {
           .create();
     }
     addChild(star);
-    constellation.currentHash = star.hash;
+
+    if (branchName != null) {
+      star.makeAnchor(branchName);
+    }
+
     return star;
   }
 

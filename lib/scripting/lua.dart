@@ -46,23 +46,21 @@ class Lua {
         StreamInterface(),
         GlobsInterface(),
         WhitelistInterface(),
-        BlacklistInterface()
+        BlacklistInterface(),
       };
 
-  /// This is used to sort the interfaces by priority.
+  /// A set of all interfaces in the lua state, sorted by priority.
   ///
   /// Priority is used to determine which interface to use when pushing a object to the stack,
   /// for specificly classes that inherit from another class.
   ///
   /// Subclasses should have a higher priority than their parent class.
   /// This is a fix to a problem where the parent class would be used instead of the subclass.
-  static Set<SInterface>? _sortedInterfaces;
-
-  static Set<SInterface> get interfaces {
-    _sortedInterfaces ??=
-        (_interfaces.toList()..sort((a, b) => b.priority - a.priority)).toSet();
-    return _sortedInterfaces!;
-  }
+  ///
+  /// NOTE: Do not try to cache this set, as it will only use a single instance of the interface when pushing object,
+  /// and not a new instance every time; Which will break logic in Lua.
+  static Set<SInterface> get interfaces =>
+      (_interfaces.toList()..sort((a, b) => b.priority - a.priority)).toSet();
 
   static Map<String, List<Enum>> get enums => {
         "SKitType": SKitType.values,
@@ -349,7 +347,6 @@ class Lua {
             ..sort((a, b) => int.parse(a).compareTo(int.parse(b)))) {
             list.add(table[key]);
           }
-          Arceus.talker.log("List: $list");
           result = list;
         } else {
           result = table;
@@ -392,8 +389,9 @@ class Lua {
     final stringPlaceholder = "⭐🌃✨🌟";
     String compiled = entrypoint;
     final strings = [];
-    while (RegExp("\"(.*)\"|'(.*)'").hasMatch(compiled)) {
-      final match = RegExp("\"(.*)\"|'(.*)'").firstMatch(compiled)!;
+    final strExp = RegExp("\"(.+?)\"|'(.+?)'");
+    while (strExp.hasMatch(compiled)) {
+      final match = strExp.firstMatch(compiled)!;
 
       /// Replace the string with a placeholder to add string back later.
       /// This is done so that anything inside the string is not effected by code effects.
@@ -403,10 +401,12 @@ class Lua {
     for (final effect in codeEffects) {
       compiled = effect(compiled);
     }
+
     while (compiled.contains(stringPlaceholder)) {
       compiled = compiled.replaceFirst(
           stringPlaceholder, "\"${strings.removeAt(0)}\"");
     }
+    Arceus.talker.debug("Compiled:\n$compiled");
     return compiled;
   }
 
@@ -445,8 +445,6 @@ class Lua {
   static SInterface? getInterface(Object object) {
     for (final interface_ in interfaces) {
       if (interface_.isType(object)) {
-        // Arceus.talker.debug(
-        //     "Found interface: ${interface_.className} for object: $object");
         return interface_;
       }
     }
