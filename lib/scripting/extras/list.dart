@@ -68,12 +68,6 @@ class ListInterface extends SInterface<List> {
             returnType: Object,
             (int index) => object![index]),
         LEntry(
-            name: "single",
-            descr:
-                "Returns the only object in the list. Will throw an error if the list is empty or has more than one object.",
-            returnType: Object,
-            () => object!.single),
-        LEntry(
           name: "forEach",
           descr: "Runs a function for each object in the list.",
           args: const {
@@ -87,6 +81,68 @@ class ListInterface extends SInterface<List> {
             }
             await function.unregister();
           },
-        )
+        ),
+        LEntry(
+          name: "firstWhere",
+          descr:
+              "Returns the first object in the list that passes the given function, or null if none match.",
+          args: const {
+            "check": LArg<LuaFuncRef>(
+                descr: "The function to check.",
+                docTypeOverride: "fun(object: any):boolean")
+          },
+          returnType: Object,
+          returnNullable: true,
+          (LuaFuncRef function) async {
+            for (var e in object!) {
+              if (await function.call([e]) == true) {
+                return e;
+              }
+            }
+            return null;
+          },
+        ),
+        LEntry(
+          name: "lastWhere",
+          descr:
+              "Returns the last object in the list that passes the given function, or null if none match.",
+          args: const {
+            "check": LArg<LuaFuncRef>(
+                descr: "The function to check.",
+                docTypeOverride: "fun(object: any):boolean"),
+          },
+          returnType: Object,
+          returnNullable: true,
+          (LuaFuncRef function) async {
+            for (var e in object!.reversed) {
+              if (await function.call([e]) == true) {
+                return e;
+              }
+            }
+            return null;
+          },
+        ),
+        LEntry(
+            name: "where",
+            descr: "Returns a filtered copy of the list.",
+            args: const {
+              "check": LArg<LuaFuncRef>(
+                  descr: "The function to check.",
+                  docTypeOverride: "fun(object: any):boolean")
+            },
+            returnType: List, (LuaFuncRef function) async {
+          List filtered = [];
+          for (var e in object!) {
+            if (await function.call([e]) == true) {
+              filtered.add(e);
+            }
+          }
+          return filtered;
+        }),
+        LEntry(
+            name: "reversed",
+            descr: "Returns a reversed copy of the list.",
+            returnType: List,
+            () => object!.reversed.toList()),
       };
 }

@@ -2,6 +2,7 @@ import 'package:arceus/skit/sobject.dart';
 
 part 'user.g.dart';
 part 'user.creator.dart';
+part 'user.interface.dart';
 
 /// Repersents a user in a kit file.
 /// A user can be created to associate a [SObject] with a specific user, allowing for multi-user support.

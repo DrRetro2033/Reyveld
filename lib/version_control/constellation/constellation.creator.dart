@@ -1,5 +1,6 @@
 part of 'constellation.dart';
 
+/// The creator for [Constellation]s.
 class ConstellationCreator extends SCreator<Constellation> {
   final String name;
   final String path;

@@ -24,7 +24,11 @@ class LEntry extends LExport {
   /// This is used to define the return type of the entrypoint.
   final Type? returnType;
 
+  /// This is used to define if the return type of the entrypoint is generic.
   final bool returnGeneric;
+
+  /// This is used to define if the return type of the entrypoint can be null.
+  final bool returnNullable;
 
   /// This is used to determine if the entrypoint has named arguments.
   /// Named arguments are arguments that are accessed by name by adding a table
@@ -45,6 +49,7 @@ class LEntry extends LExport {
       this.args = const {},
       this.isAsync = false,
       this.returnType,
+      this.returnNullable = false,
       this.returnGeneric = false});
 }
 
@@ -280,14 +285,15 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
       if (export.hasNamedArgs) {
         // Document the named arguments
         method.writeln(
-            "---@param named table? Named arguments go here. See description below for more info.");
+            "---@param named {${export.args.entries.where((e) => !e.value.positional).map((e) => "${e.key}: ${_convertDartToLua(e.value.type)}${e.value.required ? "" : "?"}").join(", ")}}? Named arguments go here. See description below for more info.");
       }
     }
     if (export.returnGeneric && export.returnType != null) {
       method.writeln("---@return T");
     } else if (export.returnType != null) {
       // Document the return type
-      method.writeln("---@return ${_convertDartToLua(export.returnType!)}");
+      method.writeln(
+          "---@return ${_convertDartToLua(export.returnType!)}${export.returnNullable ? "?" : ""}");
     }
     if (export.isAsync) {
       method.writeln("---@async");
@@ -337,7 +343,7 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
         return inter_.className;
       }
       // If not, throw an exception as we don't know how to handle this type.
-      throw Exception("Don't know how to handle type $type");
+      throw Exception("Don't know how to handle type $type.");
     }
   }
 

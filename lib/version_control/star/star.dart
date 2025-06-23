@@ -14,16 +14,12 @@ part 'star.creator.dart';
 class Star extends SObject {
   Star(super._node);
 
-  /// Returns the name of the star.
+  /// The name of the star.
   String get name => get("name") ?? "Initial Star";
-
-  /// Sets the name of the star.
   set name(String value) => set("name", value.formatForXML());
 
-  /// Returns the hash of the star.
+  /// The hash of the star.
   String get hash => get("hash")!;
-
-  /// Sets the hash of the star.
   set hash(String value) => set("hash", value);
 
   /// Returns the archive of the star.
@@ -44,10 +40,13 @@ class Star extends SObject {
   /// Returns true if the star is a single child.
   bool get isSingleChild => getParent<Star>()?.getChildren<Star>().length == 1;
 
+  /// Returns true if the star is a leaf.
   bool get isLeaf => getChildren<Star>().isEmpty;
 
+  /// Returns true if the star is the stem of a branch.
   bool get isStem => has("branch");
 
+  /// Returns the branch name of the star.
   String get branchName => stem.get("branch")!;
 
   /// Returns the anchor star of the branch.
@@ -60,6 +59,7 @@ class Star extends SObject {
     return stem;
   }
 
+  /// Anchors the star, making it the stem of a new branch.
   void makeAnchor(String name) {
     /// If the branch name already exists, throw an exception.
     if (constellation.getAllBranches().contains(name)) {
@@ -68,6 +68,7 @@ class Star extends SObject {
     set("branch", name);
   }
 
+  /// Unanchors the star.
   void removeAnchor() {
     /// If the star is the root star, it cannot be unanchored, so it will do nothing and return.
     if (isRoot) return;

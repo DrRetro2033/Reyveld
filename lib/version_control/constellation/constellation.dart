@@ -11,19 +11,22 @@ part 'constellation.g.dart';
 part 'constellation.interface.dart';
 part 'constellation.creator.dart';
 
+/// This class represents a constellation in a kit file.
+/// A constellation is a collection of [Star]s, which describes the history of a folder.
 @SGen("const")
 class Constellation extends SObject {
   Constellation(super._node);
-  String get name => get("name") ?? "Constellation";
 
+  /// The name of the constellation.
+  String get name => get("name") ?? "Constellation";
   set name(String value) => set("name", value.formatForXML());
 
-  String get path => get("path")!.fixPath();
-
+  /// The current hash of the constellation.
   String get currentHash => get("cur") ?? "";
-
   set currentHash(String value) => set("cur", value);
 
+  /// The tracked path of the constellation.
+  String get path => get("path")!.fixPath();
   set path(String value) => set("path", value.fixPath());
 
   /// Returns the root [Star] of the constellation.
@@ -36,8 +39,10 @@ class Constellation extends SObject {
     return root;
   }
 
+  /// Returns true if the constellation has a root star.
   bool get hasRoot => getChild<Star>() != null;
 
+  /// Returns the globs of the constellation.
   Globs? get globs => getChild<Globs>();
   set globs(Globs? value) {
     if (getChild<Globs>() != null) {
@@ -102,7 +107,7 @@ class Constellation extends SObject {
   }
 
   /// Get the start of a branch.
-  /// Also known as the anchor star.
+  /// Also known as the anchor/stem star.
   Star? getStartOfBranch(String branch) {
     return getDescendants<Star>(
             filter: (star) => star.has("branch") && star.branchName == branch)
