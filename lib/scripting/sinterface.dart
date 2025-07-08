@@ -226,6 +226,7 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
   }
 
   /// This generates the methods for the interface.
+  /// This will generate a function with the name ([LEntry.name]), and the arguments ([LEntry.args]), and return type ([LEntry.returnType]);
   String _luaExports() {
     final text = StringBuffer();
     text.writeln(

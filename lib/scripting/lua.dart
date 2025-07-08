@@ -149,20 +149,16 @@ class Lua {
       switch (state.type(i)) {
         case LuaType.luaNone:
           buffer.writeln(_formatStackItem(i, t));
-          break;
 
         case LuaType.luaNil:
           buffer.writeln(_formatStackItem(i, t));
-          break;
 
         case LuaType.luaBoolean:
           buffer.writeln(
               _formatStackItem(i, t, state.toBoolean(i) ? "true" : "false"));
-          break;
 
         case LuaType.luaLightUserdata:
           buffer.writeln(_formatStackItem(i, t));
-          break;
 
         case LuaType.luaNumber:
           if (state.isInteger(i)) {
@@ -171,27 +167,21 @@ class Lua {
           } else if (state.isNumber(i)) {
             buffer.writeln(_formatStackItem(i, t, "${state.toNumber(i)}"));
           }
-          break;
 
         case LuaType.luaString:
           buffer.writeln(_formatStackItem(i, t, "${state.toStr(i)}"));
-          break;
 
         case LuaType.luaTable:
           buffer.writeln(_formatStackItem(i, t));
-          break;
 
         case LuaType.luaFunction:
           buffer.writeln(_formatStackItem(i, t));
-          break;
 
         case LuaType.luaUserdata:
           buffer.writeln(_formatStackItem(i, t));
-          break;
 
         case LuaType.luaThread:
           buffer.writeln(_formatStackItem(i, t));
-          break;
       }
     }
     buffer.writeln(">------ stack bottom ------<");
