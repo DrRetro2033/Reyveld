@@ -3,7 +3,7 @@ part of 'header.dart';
 class SHeaderCreator extends SCreator<SHeader> {
   final SKitType type;
 
-  SHeaderCreator(this.type);
+  SHeaderCreator({this.type = SKitType.unspecified});
 
   @override
   get creator => (builder) {

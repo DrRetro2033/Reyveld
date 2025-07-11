@@ -16,8 +16,8 @@ class SArchiveCreator extends SCreator<SArchive> {
     final archive = await SArchiveCreator().create();
 
     await for (final file in _archiveFolderStream(
-      dir.list(recursive: true).whereType<File>().where(
-          (e) => includeList!.included(e.path.fixPath().relativeTo(path))),
+      dir.list(recursive: true).whereType<File>().where((e) =>
+          includeList?.included(e.path.fixPath().relativeTo(path)) ?? true),
       path,
       ref: ref,
     )) {

@@ -1,16 +1,18 @@
 import 'package:arceus/skit/sobject.dart';
+import 'package:basic_utils/basic_utils.dart';
+
+part 'author.creator.dart';
+part 'author.g.dart';
 
 /// Repersents an author of an Arceus library.
-class SAuthor extends SObject {
+@SGen("author")
+class SAuthor extends SRoot {
   String get name => get("name")!;
-  String? get email => get("email");
-  String? get github => get("github");
-  String? get twitter => get("twitter");
-  String? get bluesky => get("bluesky");
-  String? get threads => get("threads");
-  String? get discord => get("discord");
-  String? get patreon => get("patreon");
-  String? get website => get("website");
+  RSAPublicKey get publicKey {
+    return CryptoUtils.rsaPublicKeyFromPem(
+      innerText!.replaceAll(String.fromCharCode(0), "\n"),
+    );
+  }
 
   SAuthor(super.node);
 }

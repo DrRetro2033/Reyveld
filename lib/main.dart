@@ -22,7 +22,11 @@ Future<void> main(List<String> args) async {
       "${Arceus.appDataPath}/locks/${Arceus.currentVersion.toString()}.lock");
   await lockFile.create(recursive: true);
 
+  /// Regenerate the lua documentation.
   await Lua.generateDocs();
+
+  /// Verify the signature of the user.
+  await Arceus.verifySignature();
 
   final server = await HttpServer.bind(InternetAddress.anyIPv4, 7274);
   Arceus.printToConsole('Server Started');
@@ -30,7 +34,6 @@ Future<void> main(List<String> args) async {
   Map<String, ArceusSession> sessions = {};
 
   await for (HttpRequest request in server) {
-    final requestUrl = request.uri.pathSegments.sublist(1).join('/');
     try {
       /// Check if the requested version is the same as this program's version.
       if (request.uri.pathSegments.firstOrNull !=
@@ -52,12 +55,14 @@ Future<void> main(List<String> args) async {
         }
       }
 
+      final requestUrl = request.uri.pathSegments.sublist(1).join('/');
+
       /// If the requested version is the same as this program's version, continue as normal.
       switch (requestUrl) {
-        case "heatbeat":
+        case "heartbeat":
           request.response.statusCode = HttpStatus.ok;
-          Arceus.talker
-              .info("Heatbeat checked at ${DateTime.now().toIso8601String()}.");
+          Arceus.talker.info(
+              "Heartbeat checked at ${DateTime.now().toIso8601String()}.");
           await request.response.close();
         case "close":
           request.response.statusCode = HttpStatus.ok;

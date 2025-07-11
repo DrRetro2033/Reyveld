@@ -8,8 +8,12 @@ String generateUniqueHash(Set<String> existingHashes) {
     if (retries <= 0) {
       throw Exception("Unable to generate a unique hash! Retries exceeded.");
     }
-    hash = _uuid.v4();
+    hash = generateUUIDv4();
     retries--;
   }
   return hash;
+}
+
+String generateUUIDv4() {
+  return _uuid.v4();
 }

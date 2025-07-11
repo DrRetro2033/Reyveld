@@ -8,6 +8,8 @@ import "package:arceus/arceus.dart";
 import "package:arceus/extensions.dart";
 import "package:arceus/skit/sobjects/file_system/filelist/filelist.dart";
 import "package:arceus/uuid.dart";
+import "package:basic_utils/basic_utils.dart" show CryptoUtils;
+import "package:pointycastle/pointycastle.dart" show RSAPublicKey;
 import "package:rxdart/rxdart.dart";
 import 'package:xml/xml_events.dart';
 
@@ -80,9 +82,76 @@ class SKit {
   Encrypter get _decrypter => Encrypter(Fernet(_decryptKey));
   Encrypter get _encrypter => Encrypter(Fernet(_encryptKey));
 
+  /// The cached version of the public key.
+  RSAPublicKey? _cachedKitPublicKey;
+
+  /// Returns the public key stored in the kit file.
+  /// The public key is used to verify the signature of the kit file.
+  /// If the file does not exist yet, it will return the public key of Arceus.
+  Future<RSAPublicKey> get kitPublicKey async {
+    if (_cachedKitPublicKey == null) {
+      if (!await _file.exists()) {
+        _cachedKitPublicKey = await Arceus.publicKey;
+      } else {
+        final stream =
+            _file.openRead(0, _publicKeySize).expand((bytes) => bytes);
+        StringBuffer header = StringBuffer();
+        await for (final byte in stream) {
+          header.writeCharCode(byte);
+        }
+        final pem = header.toString();
+        _cachedKitPublicKey = CryptoUtils.rsaPublicKeyFromPem(pem);
+      }
+    }
+    return _cachedKitPublicKey!;
+  }
+
+  Future<Signer> get _signer async => Signer(RSASigner(RSASignDigest.SHA256,
+      privateKey: await Arceus.privateKey, publicKey: await Arceus.publicKey));
+
+  Future<Signer> get _verifier async =>
+      Signer(RSASigner(RSASignDigest.SHA256, publicKey: await kitPublicKey));
+
+  Stream<List<int>> _sign(Stream<List<int>> data) async* {
+    await for (final bytes in data) {
+      final signer = await _signer;
+      final signature = signer.signBytes(bytes);
+      yield [...signature.bytes, ...bytes];
+    }
+  }
+
+  /// Verifies the signature of the current kit file.
+  Stream<List<int>> _verify(Stream<List<int>> data) async* {
+    final verifier = await _verifier;
+    await for (final bytes in data) {
+      if (bytes.length < _signExtraSize) {
+        throw Exception("Invalid signature length.");
+      }
+      final signature =
+          Encrypted(Uint8List.fromList(bytes.sublist(0, _signExtraSize)));
+      final content = bytes.sublist(_signExtraSize);
+      if (!verifier.verifyBytes(content, signature)) {
+        throw Exception("Invalid signature.");
+      }
+      yield content;
+    }
+  }
+
+  Future<bool> isTrusted() async =>
+      await Arceus.isTrustedAuthor(await kitPublicKey);
+
+  Future<void> trustAuthor([String? name]) async {
+    await Arceus.trustAuthor(await kitPublicKey, name: name);
+  }
+
   /// The additional bytes which are added to the kit file after encrypting.
   /// Used to chunk data properly when decrypting.
   static const int _encryptionExtraSize = 73;
+
+  static const int _signExtraSize =
+      256; // The size of a signature in bytes (meaning the bytes before the actual data).
+
+  static const int _publicKeySize = 450; // The size of the public key in bytes.
 
   SKit(String path, {String encryptKey = ""})
       : path = path.fixPath(),
@@ -120,9 +189,12 @@ class SKit {
   /// Do not use directly, and use [_eventStream] instead.
   Stream<List<int>>? get _byteStream => _file.existsSync()
       ? _file
-          .openRead()
+          .openRead(_publicKeySize)
           .expand((e) => e)
-          .chunk(SFile.chunkSize + _encryptionExtraSize)
+          .chunk(SFile.chunkSize + _encryptionExtraSize + _signExtraSize)
+          .transform(StreamTransformer.fromBind(
+            _verify,
+          )) // Verify the signature of the kit file.
           .transform(StreamTransformer.fromHandlers(
             handleData: _decryptTransformer,
             handleError: (er, st, sink) =>
@@ -151,7 +223,7 @@ class SKit {
       await _file.delete();
     }
     discardChanges(); // clear the current kit from memory.
-    _header = await SHeaderCreator(type).create();
+    _header = await SHeaderCreator(type: type).create();
     return _header!;
   }
 
@@ -162,6 +234,9 @@ class SKit {
   /// If the header has already been loaded, it will return the cached header.
   Future<SHeader?> getHeader() async {
     if (_header == null) {
+      if (!_file.existsSync()) {
+        return await SHeaderCreator().create();
+      }
       final factory = getSFactory<SHeader>();
 
       _header = await (_eventStream!
@@ -200,10 +275,12 @@ class SKit {
   }
 
   /// Gets all of the roots of the kit file. of the specified type.
+  ///
   /// If the roots have already been loaded, it will return the cached roots.
   /// If the roots have not been loaded, it will return.
   /// If [filterRoots] is specified, it will only return the roots that pass the filter.
   /// If [filterEvents] is specified, it will only return the events that pass the filter.
+  ///
   /// If [addToCache] is true, it will add the roots to the cache.
   /// Returns a future that completes with the roots of the kit file.
   Future<Set<T?>> getRoots<T extends SRoot>(
@@ -302,6 +379,9 @@ class SKit {
   /// The header is saved to the top of the file, and the archives are saved to the bottom of the file.
   /// This will save all of the changes to the file.
   Future<void> save({String? encryptKey}) async {
+    // if (!await isTrusted()) {
+    //   throw TrustException(this, await kitPublicKey);
+    // }
     final stopwatch =
         Stopwatch(); // initialize a stopwatch for checking how long it takes to save.
     stopwatch.start();
@@ -323,18 +403,31 @@ class SKit {
     await getHeader().then((header) => header!.onSave(this));
 
     // Write the new XML to temp file.
-    final stream = Rx.merge<String>([
+    final stringStream = Rx.merge<String>([
       Stream.fromFuture(getHeader().then((e) => e!.toXmlString())),
       _streamRootsAsXml()
     ]);
 
-    await tempSink.addStream(stream
-        .transform(utf8.encoder)
-        .transform(gzip.encoder)
-        .expand((e) => e)
-        .chunk(SFile.chunkSize) // Using chunk size in SFile, for consistency.
-        .transform(
-            StreamTransformer.fromHandlers(handleData: _encryptTransformer)));
+    // Will override the kit file's public key if it has one.
+    final publicKey = await Arceus.publicKey;
+
+    _cachedKitPublicKey =
+        publicKey; // Cache our own public key. Used when signing another person's kit file with our own keys.
+
+    final byteStream = Rx.merge<List<int>>([
+      Stream.value(CryptoUtils.encodeRSAPublicKeyToPem(publicKey).codeUnits),
+      stringStream
+          .transform(utf8.encoder)
+          .transform(gzip.encoder)
+          .expand((e) => e)
+          .chunk(SFile.chunkSize +
+              _encryptionExtraSize) // Using chunk size in SFile, for consistency.
+          .transform(
+              StreamTransformer.fromHandlers(handleData: _encryptTransformer))
+          .transform(StreamTransformer.fromBind(_sign))
+    ]);
+
+    await tempSink.addStream(byteStream);
     // Flush and Close the sink for the temp file.
     await tempSink.flush();
     await tempSink.close();
@@ -363,6 +456,9 @@ class SKit {
   }
 
   Future<void> exportToXMLFile(String path) async {
+    if (!await isTrusted()) {
+      throw TrustException(this, await kitPublicKey);
+    }
     final file = File(path.fixPath());
 
     // Ensures that the parent directory exists.
@@ -380,4 +476,14 @@ class SKit {
     _loadedRoots.clear();
     _indents.clear();
   }
+}
+
+class TrustException implements Exception {
+  final RSAPublicKey publicKey;
+  final SKit kit;
+  TrustException(this.kit, this.publicKey);
+
+  @override
+  String toString() =>
+      "The author of \"${kit.path}\" is not trusted! Please trust the author before using this kit.";
 }

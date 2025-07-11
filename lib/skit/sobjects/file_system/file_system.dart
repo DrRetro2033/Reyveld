@@ -78,7 +78,7 @@ class SArchive extends SRoot {
     stopwatch.stop();
     if (changes) {
       // Arceus.talker
-      //     .info("Changes found in ${stopwatch.elapsedMilliseconds}ms! ($path)");
+      //     .info("Changes found in ${stopwatch.elapsdMillisecondse}ms! ($path)");
       return true;
     }
     // Arceus.talker.info(
@@ -86,6 +86,8 @@ class SArchive extends SRoot {
     return false;
   }
 
+  /// Checks for new files, by comparing the files in the archive with the files in the path provided.
+  /// Returns true if there are new files, false if there are none.
   Future<bool> _checkForNewFiles(String path, {Globs? includeList}) async {
     final extFiles = Directory(path).list(recursive: true);
     final addedFiles = await extFiles.whereType<File>().any((file) {
@@ -105,6 +107,8 @@ class SArchive extends SRoot {
     return false;
   }
 
+  /// Checks for deleted files, by comparing the files in the archive with the files in the path provided.
+  /// Returns true if there are deleted files, false if there are none.
   Future<bool> _checkForDeletedFiles(String relativePath) async {
     for (final file in getFiles()) {
       final filePath = "$relativePath/${file!.path}";
@@ -116,6 +120,8 @@ class SArchive extends SRoot {
     return false;
   }
 
+  /// Checks for changes in a file by comparing the checksum of the file in the archive with the file on disk.
+  /// Returns true if the file has changed, false if it has not.
   Future<bool> _checkForChange(SFile file, String path) async {
     final filePath = "$path/${file.path}";
     final extFile = File(filePath);
@@ -336,6 +342,9 @@ class SFile extends SObject {
   /// Extracts the file to the specified folder.
   /// If [temp] is true, then the file will be extracted as a temporary file with a `.tmp` extension.
   Future<void> extractTo(String folderPath, {bool temp = false}) async {
+    if (!await kit.isTrusted()) {
+      throw TrustException(kit, await kit.kitPublicKey);
+    }
     final filePath = "$folderPath/$path${temp ? ".tmp" : ""}";
     final extFile = File(filePath);
     await extFile.create(recursive: true);

@@ -7,6 +7,8 @@ part 'filelist.creators.dart';
 part 'filelist.interfaces.dart';
 part 'filelist.g.dart';
 
+/// Represents a list of file patterns that can be used to filter files
+/// based on their paths. This class supports both whitelisting and blacklisting.
 sealed class Globs extends SObject {
   Globs(super._node);
 

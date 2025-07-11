@@ -123,6 +123,24 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
           return object!.key;
         }),
         LEntry(
+            name: "isTrusted",
+            descr: "Checks if the SKit is trusted.",
+            returnType: bool,
+            isAsync: true, () async {
+          return await object!.isTrusted();
+        }),
+        LEntry(
+            name: "trustAuthor",
+            descr: "Trusts the author of the SKit.",
+            args: const {
+              "name": LArg<String>(
+                  descr: "The name of the author to trust. Must be unique.",
+                  required: false),
+            },
+            isAsync: true, ([String? authorName]) async {
+          await object!.trustAuthor(authorName);
+        }),
+        LEntry(
             name: "usedHashes",
             descr: "Returns the hashes used by the roots in the SKit.",
             args: const {

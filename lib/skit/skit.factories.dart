@@ -15,6 +15,7 @@ final Set<SFactory> sobjectFactories = {
   SDescriptionFactory(),
   WhitelistFactory(),
   BlacklistFactory(),
+  SAuthorFactory(),
 };
 
 /// Get the factory for the given [SObject] subclass.
