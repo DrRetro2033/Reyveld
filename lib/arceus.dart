@@ -182,9 +182,9 @@ $publicKeyPem""");
 
   static Future<void> trustAuthor(RSAPublicKey key, {String? name}) async {
     if (await isTrustedAuthor(key)) {
-      throw Exception("Author is already trusted.");
+      Arceus.talker.warning("Author was already trusted.");
+      return;
     }
-
     final kit = await _trustedAuthorsKit;
     final author =
         await SAuthorCreator(name: name ?? "Author", publicKey: key).create();

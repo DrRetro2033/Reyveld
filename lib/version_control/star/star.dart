@@ -1,5 +1,4 @@
 import 'package:arceus/arceus.dart';
-import 'package:arceus/extensions.dart';
 import 'package:arceus/skit/sobject.dart';
 import 'package:arceus/skit/sobjects/file_system/file_system.dart';
 import 'package:arceus/version_control/constellation/constellation.dart';
@@ -15,8 +14,8 @@ class Star extends SObject {
   Star(super._node);
 
   /// The name of the star.
-  String get name => get("name") ?? "Initial Star";
-  set name(String value) => set("name", value.formatForXML());
+  String get name => decodeText(get("name") ?? encodeText("Initial Star"));
+  set name(String value) => set("name", encodeText(value));
 
   /// The hash of the star.
   String get hash => get("hash")!;
@@ -47,7 +46,7 @@ class Star extends SObject {
   bool get isStem => has("branch");
 
   /// Returns the branch name of the star.
-  String get branchName => stem.get("branch")!;
+  String get branchName => decodeText(stem.get("branch")!);
 
   /// Returns the anchor star of the branch.
   Star get stem {
@@ -60,16 +59,16 @@ class Star extends SObject {
   }
 
   /// Anchors the star, making it the stem of a new branch.
-  void makeAnchor(String name) {
+  void makeStem(String name) {
     /// If the branch name already exists, throw an exception.
     if (constellation.getAllBranches().contains(name)) {
       throw Exception("Branch name already exists.");
     }
-    set("branch", name);
+    set("branch", encodeText(name));
   }
 
   /// Unanchors the star.
-  void removeAnchor() {
+  void unmakeStem() {
     /// If the star is the root star, it cannot be unanchored, so it will do nothing and return.
     if (isRoot) return;
     set("branch", null);
@@ -98,7 +97,7 @@ class Star extends SObject {
     addChild(star);
 
     if (branchName != null) {
-      star.makeAnchor(branchName);
+      star.makeStem(branchName);
     }
 
     return star;

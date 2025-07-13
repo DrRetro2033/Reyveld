@@ -70,8 +70,8 @@ class SArchive extends SRoot {
       Isolate.run<bool>(() async =>
           await _checkForDeletedFiles(path)), // check for deleted files
       for (final file in files)
-        Isolate.run<bool>(
-            () async => await _checkForChange(file!, path)) // check for changes
+        Isolate.run<bool>(() async =>
+            await _checkForChangedFiles(file!, path)) // check for changes
     ]);
     final changes = results.any((e) => e);
 
@@ -122,7 +122,7 @@ class SArchive extends SRoot {
 
   /// Checks for changes in a file by comparing the checksum of the file in the archive with the file on disk.
   /// Returns true if the file has changed, false if it has not.
-  Future<bool> _checkForChange(SFile file, String path) async {
+  Future<bool> _checkForChangedFiles(SFile file, String path) async {
     final filePath = "$path/${file.path}";
     final extFile = File(filePath);
     if (!await extFile.exists()) {
@@ -356,6 +356,9 @@ class SFile extends SObject {
 
   /// Saves the file its path defined by [path].
   Future<void> save() async {
+    if (!await kit.isTrusted()) {
+      throw TrustException(kit, await kit.kitPublicKey);
+    }
     if (!isExternal) throw Exception("Cannot save an internal file!");
     final file = File(path);
     if (!file.isAbsolute) {
@@ -371,6 +374,9 @@ class SFile extends SObject {
 
   /// Saves the file to the specified path.
   Future<void> saveAs(String path, {bool overwrite = false}) async {
+    if (!await kit.isTrusted()) {
+      throw TrustException(kit, await kit.kitPublicKey);
+    }
     final file = File(path);
     if (overwrite && await file.exists()) await file.delete();
     await file.create(recursive: true, exclusive: true);

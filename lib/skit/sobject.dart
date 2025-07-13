@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:arceus/skit/skit.dart';
 
 export 'package:xml/xml.dart';
@@ -19,7 +20,7 @@ part 'sobject.interface.dart';
 /// - The [SCreator] of the [SObject] used for creating.
 ///
 /// A object that wraps around a [XmlNode] and provides a simple API to access its attributes, children, and more.
-/// SObjects must have a [SFactory] object inside [_sobjectFactories] (inside serekit.g.dart) in order to be parsed from xml properly.
+/// SObjects must have a [SFactory] object inside [_sobjectFactories] (inside skit.factories.dart) in order to be parsed from xml properly.
 /// If there is no [SFactory] object found, then the [GenericFactory] will be used, which is not recommended as it will not have strict,
 /// predetermined behavior.
 class SObject {
@@ -247,4 +248,12 @@ class SObject {
       (identical(other._node, _node) ||
           other._node == _node ||
           other._node.isEqualNode(_node));
+}
+
+String encodeText(String text) {
+  return base64.encode(utf8.encode(text));
+}
+
+String decodeText(String text) {
+  return utf8.decode(base64.decode(text));
 }

@@ -34,13 +34,15 @@ enum SKitType {
   library,
 }
 
-/// Represents a compressed, encrypted XML file.
+/// Represents a compressed, encrypted, and signed XML file.
 /// [SKit] is an abrivation for SERE kit, which is a reference to titanfall 2.
 /// [SKit]s can contain any data that Arceus would ever need.
 ///
 /// The two core [SObject]s which are tightly knit into [SKit]s are the [SHeader] and [SRoot]s.
 /// The [SHeader] contains information about the kit (e.g. name of kit, version of arceus, the author of the kit, constellations, etc),
 /// while the [SRoot]s can contain much larger sets of data (e.g. save data, scripts, images, users, etc).
+///
+/// [SKit]s are first compressed using GZip, then encrypted using Fernet, and finally is signed using RSA.
 class SKit {
   /// Opens a kit file.
   static Future<SKit> open(String path,
@@ -83,9 +85,10 @@ class SKit {
   Encrypter get _encrypter => Encrypter(Fernet(_encryptKey));
 
   /// The cached version of the public key.
+  /// This is used to verify the signature of the kit file.
   RSAPublicKey? _cachedKitPublicKey;
 
-  /// Returns the public key stored in the kit file.
+  /// Returns the public key of the kit file.
   /// The public key is used to verify the signature of the kit file.
   /// If the file does not exist yet, it will return the public key of Arceus.
   Future<RSAPublicKey> get kitPublicKey async {
@@ -148,10 +151,11 @@ class SKit {
   /// Used to chunk data properly when decrypting.
   static const int _encryptionExtraSize = 73;
 
-  static const int _signExtraSize =
-      256; // The size of a signature in bytes (meaning the bytes before the actual data).
+  /// The size of a signature in bytes (meaning the bytes before the actual data).
+  static const int _signExtraSize = 256;
 
-  static const int _publicKeySize = 450; // The size of the public key in bytes.
+  /// The size of the public key in bytes.
+  static const int _publicKeySize = 450;
 
   SKit(String path, {String encryptKey = ""})
       : path = path.fixPath(),
@@ -170,7 +174,7 @@ class SKit {
   final Set<SRoot> _loadedRoots = {};
 
   /// This is used to store any deletion requests for any root in the file.
-  /// To add a deletion request, use [addDeletionRequest].
+  /// To add a deletion request, use [addIndent].
   final Set<SIndent> _indents = {};
 
   /// Decrypts the data and sends it to the sink.
@@ -379,9 +383,9 @@ class SKit {
   /// The header is saved to the top of the file, and the archives are saved to the bottom of the file.
   /// This will save all of the changes to the file.
   Future<void> save({String? encryptKey}) async {
-    // if (!await isTrusted()) {
-    //   throw TrustException(this, await kitPublicKey);
-    // }
+    if (!await isTrusted()) {
+      throw TrustException(this, await kitPublicKey);
+    }
     final stopwatch =
         Stopwatch(); // initialize a stopwatch for checking how long it takes to save.
     stopwatch.start();

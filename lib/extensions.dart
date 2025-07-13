@@ -41,10 +41,6 @@ extension Pathing on String {
       return path.split("/").last.split(".").first;
     }
   }
-
-  String formatForXML() {
-    return replaceAll(RegExp("'\""), "");
-  }
 }
 
 extension ChunkStream on Stream<int> {

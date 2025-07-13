@@ -18,8 +18,8 @@ class Constellation extends SObject {
   Constellation(super._node);
 
   /// The name of the constellation.
-  String get name => get("name") ?? "Constellation";
-  set name(String value) => set("name", value.formatForXML());
+  String get name => decodeText(get("name") ?? encodeText("Constellation"));
+  set name(String value) => set("name", encodeText(value));
 
   /// The current hash of the constellation.
   String get currentHash => get("cur") ?? "";

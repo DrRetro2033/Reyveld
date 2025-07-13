@@ -9,7 +9,7 @@ class ConstellationCreator extends SCreator<Constellation> {
 
   @override
   get creator => (builder) {
-        builder.attribute("name", name.formatForXML());
+        builder.attribute("name", encodeText(name));
         builder.attribute("path", path.fixPath());
       };
 }

@@ -7,10 +7,10 @@ part 'author.g.dart';
 /// Repersents an author of an Arceus library.
 @SGen("author")
 class SAuthor extends SRoot {
-  String get name => get("name")!;
+  String get name => decodeText(get("name")!);
   RSAPublicKey get publicKey {
     return CryptoUtils.rsaPublicKeyFromPem(
-      innerText!.replaceAll(String.fromCharCode(0), "\n"),
+      decodeText(innerText!),
     );
   }
 

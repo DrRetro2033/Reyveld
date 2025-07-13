@@ -200,13 +200,6 @@ A star is a point in time that represents a snapshot of an folder.
           () => object!.stem,
         ),
         LEntry(
-          name: "snapoff",
-          descr:
-              "Dissolves the branch the star is located in (i.e. the branch is merged with its parent branch).",
-          returnType: Star,
-          () => object!.stem.removeAnchor(),
-        ),
-        LEntry(
           name: "branch",
           descr: "Sets and gets the branch name the star is located in.",
           args: const {
@@ -217,7 +210,7 @@ A star is a point in time that represents a snapshot of an folder.
           ([String? name]) {
             if (name != null) {
               /// A way of renaming a branch, without a separate function.
-              object!.stem.makeAnchor(name);
+              object!.stem.makeStem(name);
             }
             return object!.branchName;
           },
@@ -231,16 +224,16 @@ A star is a point in time that represents a snapshot of an folder.
               )
             },
             returnType: Star, (String name) {
-          object!.makeAnchor(name);
+          object!.makeStem(name);
           return object!;
         }),
         LEntry(
             name: "unanchor",
             descr:
-                """If this star is an anchor, it will become a regular star, and the branch will no longer exist. 
-Will never work on the root star, as it cannot be unanchored. Use the snapoff function instead of calling stem.unanchor.""",
+                """If this star is an stem, it will become a regular star, and the branch will no longer exist. 
+Will never work on the root star, as it cannot be unanchored.""",
             returnType: Star, () {
-          object!.removeAnchor();
+          object!.unmakeStem();
           return object!;
         }),
       };
