@@ -15,3 +15,13 @@ class SAuthorFactory extends SFactory<SAuthor> {
   @override
   String get tag => "author";
 }
+
+class SRAuthorFactory extends SFactory<SRAuthor> {
+  SRAuthorFactory();
+
+  @override
+  SRAuthor load(XmlElement node) => SRAuthor(node);
+
+  @override
+  String get tag => "rauthor";
+}

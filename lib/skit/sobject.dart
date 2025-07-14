@@ -47,11 +47,15 @@ class SObject {
   /// ```dart
   /// set name(String value) => set("name", value);
   /// ```
-  void set(String key, dynamic value) {
+  void set(String key, dynamic value, {bool encode = false}) {
     if (value == null) {
       _node.removeAttribute(key);
     } else {
-      _node.setAttribute(key, value.toString());
+      if (encode) {
+        _node.setAttribute(key, encodeText(value.toString()));
+      } else {
+        _node.setAttribute(key, value.toString());
+      }
     }
   }
 
@@ -60,9 +64,11 @@ class SObject {
   /// ```dart
   /// String get name => get("name");
   /// ```
-  String? get(String key) {
+  String? get(String key, {bool decode = false}) {
     if (_node.getAttribute(key) == null) return null;
-    return _node.getAttribute(key)!;
+    return decode
+        ? decodeText(_node.getAttribute(key)!)
+        : _node.getAttribute(key)!;
   }
 
   /// Returns the parent of the xml node, if it has one.

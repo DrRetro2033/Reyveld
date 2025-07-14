@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:arceus/extensions.dart';
 import 'package:arceus/skit/skit.dart';
 import 'package:arceus/skit/sobjects/author/author.dart';
+import 'package:arceus/user.dart';
 import 'package:pointycastle/export.dart';
 import 'package:basic_utils/basic_utils.dart';
 import 'package:version/version.dart';
@@ -35,9 +36,10 @@ class Arceus {
   static RSAPrivateKey? _cachedPrivateKey;
   static RSAPublicKey? _cachedPublicKey;
 
+  static File get signatureFile => File("$appDataPath/me.keys");
+
   static Future<RSAPrivateKey> get privateKey async {
     if (_cachedPrivateKey == null) {
-      final signatureFile = File("$appDataPath/me.signature");
       if (!await signatureFile.exists()) {
         throw Exception(
             "Signature file not found! Please rerun Arceus to generate it.");
@@ -51,7 +53,6 @@ class Arceus {
 
   static Future<RSAPublicKey> get publicKey async {
     if (_cachedPublicKey == null) {
-      final signatureFile = File("$appDataPath/me.signature");
       if (!await signatureFile.exists()) {
         throw Exception(
             "Signature file not found! Please rerun Arceus to generate it.");
@@ -62,6 +63,8 @@ class Arceus {
     }
     return _cachedPublicKey!;
   }
+
+  static Author? author;
 
   /// The logger for Arceus.
   /// If the logger is not initialized, it will be initialized.
@@ -89,39 +92,27 @@ class Arceus {
     }
   }
 
-  static File get signatureFile => File("$appDataPath/me.signature");
-
-  static Future<void> registerLibrary(String path) async {
-    final file = File(path);
-    try {
-      await file.copy("$libraryPath/${path.getFilename()}");
-    } catch (e) {
-      throw Exception(
-          "Failed to register library! Library has probably been registered already.");
-    }
-  }
-
-  static Future<void> unregisterLibrary(String name) async =>
-      await File("$libraryPath/$name.skit").delete();
-
-  static Future<SKit> getLibrary(String name) async =>
-      await SKit.open("$libraryPath/$name.skit", type: SKitType.library);
-
+  /// Prints the message to console, only if Arceus is a developer build.
   static void printToConsole(Object message) {
     if (isDev) {
       print(message);
     }
   }
 
+  static Future<void> initializeAuthor() async {
+    author = await Author.initialize();
+  }
+
+  /// Verifies that the user has a signature.
   static Future<void> verifySignature() async {
     if (!await signatureFile.exists()) {
       await generateRSAKeys();
       print(
-          """me.signature was not found, so new keys were generated. This is normal on the first run.
-Never share your signature file with anyone, as it contains your secret private key. Your private key is used to sign your kits to verify that it was created by you.
+          """me.keys was not found, so new keys were generated. This is normal on the first run.
+Never share your keys file with anyone, as it contains your secret private key. Your private key is used to sign your kits to verify that it was created by you.
 If you share your private key, anyone can create kits that appear to be created by you, which could lead to them injecting malicious code into your kits.
 
-In the unlikely event that your private key is compromised, you can generate a new one by deleting the me.signature file and running Arceus again.
+In the unlikely event that your private key is compromised, you can generate a new one by deleting the me.keys file and running Arceus again.
 """);
     }
   }
@@ -152,7 +143,6 @@ In the unlikely event that your private key is compromised, you can generate a n
   static Future<void> saveMe(
       {required RSAPrivateKey privateKey,
       required RSAPublicKey publicKey}) async {
-    final signatureFile = File("$appDataPath/me.signature");
     if (!signatureFile.existsSync()) {
       await signatureFile.create(recursive: true);
     }
@@ -163,9 +153,9 @@ ${String.fromCharCode(0)}
 $publicKeyPem""");
   }
 
-  static Future<bool> isTrustedAuthor(RSAPublicKey key) async {
-    /// If the public key is the same as the user's public key, then it is always trusted.
-    if (key == await publicKey) return true;
+  static Future<bool> isTrustedAuthor(SAuthor author) async {
+    /// If the author's public key is the same as the user's public key, then it is always trusted.
+    if (author.publicKey == await publicKey) return true;
 
     /// Check if the trusted authors kit contains the author, which means trusted.
 
@@ -173,22 +163,20 @@ $publicKeyPem""");
       return false; // No trusted authors kit, so not trusted.
     }
     final kit = await _trustedAuthorsKit;
-    final trustedAuthor = await kit.getRoot<SAuthor>(filterRoots: (author) {
-      return author.publicKey == key;
+    final trustedAuthor = await kit.getRoot<SAuthor>(filterRoots: (t) {
+      return t == author;
     });
 
     return trustedAuthor != null;
   }
 
-  static Future<void> trustAuthor(RSAPublicKey key, {String? name}) async {
-    if (await isTrustedAuthor(key)) {
+  static Future<void> trustAuthor(SAuthor author) async {
+    if (await isTrustedAuthor(author)) {
       Arceus.talker.warning("Author was already trusted.");
       return;
     }
     final kit = await _trustedAuthorsKit;
-    final author =
-        await SAuthorCreator(name: name ?? "Author", publicKey: key).create();
-    await kit.addRoot(author);
+    await kit.addRoot(author.copy());
     await kit.save();
   }
 }

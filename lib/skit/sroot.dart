@@ -29,6 +29,10 @@ abstract class SRoot extends SObject {
     delete = true;
   }
 
-  Future<T> newIndent<T extends SIndent>() async =>
-      await SIndentCreator(hash).create() as T;
+  Future<SIndent> newIndent();
+
+  @override
+  SRoot copy() {
+    return super.copy() as SRoot;
+  }
 }

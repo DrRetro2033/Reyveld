@@ -123,23 +123,17 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
           return object!.key;
         }),
         LEntry(
-            name: "isTrusted",
-            descr: "Checks if the SKit is trusted.",
-            returnType: bool,
-            isAsync: true, () async {
-          return await object!.isTrusted();
-        }),
+            name: "author",
+            descr: "Returns the author of the kit.",
+            isAsync: true,
+            returnType: SAuthor,
+            () async => await object!.author),
         LEntry(
-            name: "trustAuthor",
-            descr: "Trusts the author of the SKit.",
-            args: const {
-              "name": LArg<String>(
-                  descr: "The name of the author to trust. Must be unique.",
-                  required: false),
-            },
-            isAsync: true, ([String? authorName]) async {
-          await object!.trustAuthor(authorName);
-        }),
+            name: "verify",
+            descr: "Verifies the kit file to make sure it is signed properly.",
+            isAsync: true,
+            returnType: bool,
+            () => object!.verify()),
         LEntry(
             name: "usedHashes",
             descr: "Returns the hashes used by the roots in the SKit.",

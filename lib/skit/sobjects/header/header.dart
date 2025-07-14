@@ -12,6 +12,7 @@ part 'header.creator.dart';
 class SHeader extends SObject {
   SHeader(super._node);
 
+  /// When the kit file was created.
   DateTime get createdOn =>
       DateTime.parse(get("createdOn") ?? DateTime.now().toIso8601String());
   set createdOn(DateTime value) {
@@ -20,14 +21,18 @@ class SHeader extends SObject {
     }
   }
 
+  /// The last time the kit file was modified.
   DateTime get lastModified =>
       DateTime.parse(get("lastModified") ?? DateTime.now().toIso8601String());
   set lastModified(DateTime value) {
     set("lastModified", value.toIso8601String());
   }
 
+  /// Which version of arceus was this kit file packaged in?
   String get version => get("version") ?? Arceus.currentVersion.toString();
 
+  /// What kind of kit is this?
+  /// See [SKitType] for more info.
   SKitType get type => SKitType.values[int.parse(get("type") ?? "0")];
 
   @override

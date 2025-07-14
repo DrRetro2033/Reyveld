@@ -144,6 +144,9 @@ class SArchive extends SRoot {
           return e.path;
         })));
   }
+
+  @override
+  Future<SRArchive> newIndent() async => await SRArchiveCreator(hash).create();
 }
 
 extension SArchiveExtensions on SKit {
@@ -342,7 +345,7 @@ class SFile extends SObject {
   /// Extracts the file to the specified folder.
   /// If [temp] is true, then the file will be extracted as a temporary file with a `.tmp` extension.
   Future<void> extractTo(String folderPath, {bool temp = false}) async {
-    if (!await kit.isTrusted()) {
+    if (!await kit.isVerifiedAndTrusted()) {
       throw TrustException(kit, await kit.kitPublicKey);
     }
     final filePath = "$folderPath/$path${temp ? ".tmp" : ""}";
@@ -356,7 +359,7 @@ class SFile extends SObject {
 
   /// Saves the file its path defined by [path].
   Future<void> save() async {
-    if (!await kit.isTrusted()) {
+    if (!await kit.isVerifiedAndTrusted()) {
       throw TrustException(kit, await kit.kitPublicKey);
     }
     if (!isExternal) throw Exception("Cannot save an internal file!");
@@ -374,7 +377,7 @@ class SFile extends SObject {
 
   /// Saves the file to the specified path.
   Future<void> saveAs(String path, {bool overwrite = false}) async {
-    if (!await kit.isTrusted()) {
+    if (!await kit.isVerifiedAndTrusted()) {
       throw TrustException(kit, await kit.kitPublicKey);
     }
     final file = File(path);

@@ -47,6 +47,7 @@ class Lua {
         GlobsInterface(),
         WhitelistInterface(),
         BlacklistInterface(),
+        SAuthorInterface()
       };
 
   /// A set of all interfaces in the lua state, sorted by priority.
@@ -374,7 +375,7 @@ class Lua {
     return resultTable;
   }
 
-  // Compiles a lua project.
+  /// Compiles a lua project.
   Future<String> _compile(String entrypoint) async {
     final stringPlaceholder = "⭐🌃✨🌟";
     String compiled = entrypoint;
@@ -407,7 +408,7 @@ class Lua {
     return true;
   }
 
-  // Runs a lua script.
+  /// Runs a lua script.
   Future<dynamic> run(String entrypoint) async {
     /// Resets the stopwatch and starts it, to track process time,
     /// and to notify if its done.
@@ -431,7 +432,7 @@ class Lua {
     return result;
   }
 
-  // Gets the interface for an object.
+  /// Gets the interface for an object.
   static SInterface? getInterface(Object object) {
     for (final interface_ in interfaces) {
       if (interface_.isType(object)) {
@@ -450,7 +451,7 @@ class Lua {
     return null;
   }
 
-  // Generates a docs file for all of the interfaces.
+  /// Generates a docs file for all of the interfaces.
   static Future<void> generateDocs() async {
     final dir = Directory(
         "${Arceus.appDataPath}/docs/${Arceus.currentVersion.toString()}");
@@ -465,7 +466,7 @@ class Lua {
     _generateGlobalDocs();
   }
 
-  // Generates a docs file for all of the globals.
+  /// Generates a docs file for all of the globals.
   static Future<void> _generateGlobalDocs() async {
     final doc = File(
         "${Arceus.appDataPath}/docs/${Arceus.currentVersion.toString()}/globals.lua");

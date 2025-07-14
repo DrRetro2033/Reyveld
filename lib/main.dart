@@ -28,6 +28,9 @@ Future<void> main(List<String> args) async {
   /// Verify the signature of the user.
   await Arceus.verifySignature();
 
+  /// Initializes the default user
+  await Arceus.initializeAuthor();
+
   final server = await HttpServer.bind(InternetAddress.anyIPv4, 7274);
   Arceus.printToConsole('Server Started');
 

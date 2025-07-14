@@ -12,4 +12,10 @@ class SUser extends SRoot {
   set name(String value) => set("name", value);
 
   SUser(super.node);
+
+  @override
+  Future<SIndent<SRoot>> newIndent() {
+    // TODO: implement newIndent
+    throw UnimplementedError();
+  }
 }

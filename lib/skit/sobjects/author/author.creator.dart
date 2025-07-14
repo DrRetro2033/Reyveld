@@ -12,3 +12,5 @@ class SAuthorCreator extends SCreator<SAuthor> {
             .text(encodeText(CryptoUtils.encodeRSAPublicKeyToPem(publicKey)));
       };
 }
+
+typedef SRAuthorCreator = SIndentCreator<SRAuthor>;
