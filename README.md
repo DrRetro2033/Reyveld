@@ -142,6 +142,7 @@ Using GZip to compress its data down, SKits does not bloat your storage or memor
 ## Trustworthy & Safe 🔏
 
 SKits are encrypted and signed by you, and only you. So you can share your SKits with confidence, knowing that no one can inject malicious code into them.
+
 ---
 
 # With more to come...
