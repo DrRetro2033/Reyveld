@@ -125,7 +125,7 @@ Binary files can be challenging to analyze, but Arceus is designed to detect the
 ---
 # SKits
 
-Arceus uses a brand new file format called SKit. SKit uses both XML and GZip to store everything Arceus could ever need, replacing the use of ZIP files and JSON.
+Arceus uses a brand new file format called SKit. SKit uses XML, GZip, Fernet, and RSA to store everything Arceus could ever need, replacing the need of ZIP files.
 
 ## Blazingly Fast ⚡
 
@@ -133,12 +133,15 @@ SKits are quick to read from disk, with everything essential already at the top 
 
 ## Multi-Purpose Containers 🫙
 
-Arceus has already switched to saving archives, stars, constellations, users, code, and more into SKits.
+SKits can store anything and everything you could ever need.
 
 ## Tiny Size 🐁
 
-Using GZip to compress its data down, SKit does not bloat your storage or memory, loading nothing but the bare essentials when reading.
+Using GZip to compress its data down, SKits does not bloat your storage or memory, loading nothing but the bare essentials when reading.
 
+## Trustworthy & Safe 🔏
+
+SKits are encrypted and signed by you, and only you. So you can share your SKits with confidence, knowing that no one can inject malicious code into them.
 ---
 
 # With more to come...
