@@ -11,6 +11,7 @@ import 'package:arceus/skit/sobjects/sobjects.dart';
 import 'package:arceus/uuid.dart';
 import 'package:arceus/version_control/constellation/constellation.dart';
 import 'package:arceus/version_control/star/star.dart';
+import 'package:chalkdart/chalkstrings.dart';
 import 'package:lua_dardo_async/lua.dart';
 import '../skit/skit.dart';
 
@@ -414,10 +415,11 @@ class Lua {
     /// and to notify if its done.
     stopwatch.reset();
     stopwatch.start();
+    final code = await _compile(entrypoint).then((value) => value.trim());
+    // Arceus.printToConsole(code.rebeccaPurple);
 
     /// Run the lua code and see if it was successful
-    final successful = await state
-        .doString(await _compile(entrypoint).then((value) => value.trim()));
+    final successful = await state.doString(code);
     stopwatch.stop();
     if (!successful) {
       /// If it wasn't successful, print the error and return null
@@ -452,7 +454,7 @@ class Lua {
   }
 
   /// Generates a docs file for all of the interfaces.
-  static Future<void> generateDocs() async {
+  static Stream<String> generateDocs() async* {
     final dir = Directory(
         "${Arceus.appDataPath}/docs/${Arceus.currentVersion.toString()}");
     if (await dir.exists()) {
@@ -460,10 +462,13 @@ class Lua {
     }
     await dir.create(recursive: true);
     for (final interface_ in interfaces) {
+      yield interface_.className;
       await interface_.generateDocs();
     }
-    _generateEnumDocs();
-    _generateGlobalDocs();
+    yield "Enums";
+    await _generateEnumDocs();
+    yield "Globals";
+    await _generateGlobalDocs();
   }
 
   /// Generates a docs file for all of the globals.

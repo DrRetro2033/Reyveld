@@ -5,6 +5,8 @@ import 'dart:io';
 import 'package:arceus/arceus.dart';
 import 'package:arceus/scripting/lua.dart';
 import 'package:arceus/skit/skit.dart';
+import 'package:chalkdart/chalkstrings.dart';
+import 'package:cli_spin/cli_spin.dart';
 import 'package:version/version.dart';
 import 'package:http/http.dart' as http;
 
@@ -12,18 +14,29 @@ typedef ArceusSession = (Lua, WebSocket);
 
 Future<void> main(List<String> args) async {
   /// Check if the version of this Arceus executable is already running.
+  final isRunningSpinner =
+      CliSpin(spinner: CliSpinners.moon).start("Checking if running...");
   if (await isRunning(Arceus.currentVersion)) {
-    Arceus.printToConsole('Already running');
+    isRunningSpinner.fail('Already Running.');
     exit(0);
   }
+
+  isRunningSpinner.success("Ready to Start!");
 
   /// If not, create a lock file to indicate that this version of Arceus is running.
   File lockFile = File(
       "${Arceus.appDataPath}/locks/${Arceus.currentVersion.toString()}.lock");
-  await lockFile.create(recursive: true);
+
+  final spinner =
+      CliSpin(spinner: CliSpinners.moon).start("Generating Docs...");
 
   /// Regenerate the lua documentation.
-  await Lua.generateDocs();
+  await Lua.generateDocs().listen((doc) {
+    spinner.text = "Generating $doc...";
+  }).asFuture();
+
+  spinner.success(
+      "Generated Lua Docs at \"${Arceus.appDataPath}/docs/${Arceus.currentVersion.toString()}/");
 
   /// Verify the signature of the user.
   await Arceus.verifySignature();
@@ -31,8 +44,11 @@ Future<void> main(List<String> args) async {
   /// Initializes the default user
   await Arceus.initializeAuthor();
 
+  final serverSpinner =
+      CliSpin(spinner: CliSpinners.moon).start("Starting Server...");
+
   final server = await HttpServer.bind(InternetAddress.anyIPv4, 7274);
-  Arceus.printToConsole('Server Started');
+  serverSpinner.success("Server Started!");
 
   Map<String, ArceusSession> sessions = {};
 
@@ -83,11 +99,14 @@ Future<void> main(List<String> args) async {
             sessions[request.session.id] = (Lua(socket), socket);
             await sessions[request.session.id]!.$1.init();
 
-            Arceus.printToConsole('Client (${request.session.id}) connected.');
+            Arceus.printToConsole(
+                'Client (${request.session.id}) connected.'.skyBlue);
 
             Arceus.talker.info("Client (${request.session.id}) connected.");
             socket.listen((data) async {
-              // Arceus.talker.info('Received: $data');
+              final requestProgress = CliSpin(spinner: CliSpinners.moon).start(
+                  "Processing request from client (${request.session.id})..."
+                      .aqua);
               try {
                 final result = await sessions[request.session.id]!.$1.run(data);
                 socket.add(jsonEncode({
@@ -98,9 +117,13 @@ Future<void> main(List<String> args) async {
                       .elapsedMilliseconds,
                   "return": result
                 }));
+                requestProgress.success(
+                    "Completed request from client (${request.session.id})!"
+                        .limeGreen);
               } catch (e, st) {
-                Arceus.printToConsole(
-                    "There was a crash on this request (Session ID: ${request.session.id}), please check the log folder (${Arceus.appDataPath}/logs) for more information.");
+                requestProgress.fail(
+                    "There was a crash on this request (Session ID: ${request.session.id}), please check the log folder (${Arceus.appDataPath}/logs) for more information."
+                        .red);
                 Arceus.talker.critical("Crash Handler", e, st);
                 socket.add(jsonEncode({
                   "successful": false,
@@ -113,7 +136,7 @@ Future<void> main(List<String> args) async {
               }
             }, onDone: () {
               Arceus.printToConsole(
-                  'Client (${request.session.id}) disconnected');
+                  'Client (${request.session.id}) disconnected'.skyBlue);
               Arceus.talker
                   .info("Client (${request.session.id}) disconnected.");
               socket.close();
@@ -130,7 +153,8 @@ Future<void> main(List<String> args) async {
       }
     } catch (e, st) {
       Arceus.printToConsole(
-          "There was a crash on this request, please check the log folder (${Arceus.appDataPath}/logs) for more information.");
+          "There was a crash on a websocket, please check the log folder (${Arceus.appDataPath}/logs) for more information."
+              .red);
       Arceus.talker.critical("Crash Handler", e, st);
     }
   }

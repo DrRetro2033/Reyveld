@@ -94,9 +94,10 @@ class Arceus {
 
   /// Prints the message to console, only if Arceus is a developer build.
   static void printToConsole(Object message) {
-    if (isDev) {
-      print(message);
-    }
+    print(message);
+    // if (isDev) {
+    //   print(message);
+    // }
   }
 
   static Future<void> initializeAuthor() async {
