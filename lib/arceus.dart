@@ -18,7 +18,7 @@ class Arceus {
   static Version get currentVersion => version.currentVersion;
   static late String _currentPath;
   static String get currentPath => _currentPath;
-  static set currentPath(String path) => _currentPath = path.fixPath();
+  static set currentPath(String path) => _currentPath = path.resolvePath();
   static String get libraryPath => "$appDataPath/libraries";
   static late bool isInternal;
   static bool get isDev =>
@@ -88,7 +88,7 @@ class Arceus {
     if (!Platform.environment.containsKey("APPDATA")) {
       return Directory.current.path;
     } else {
-      return "${Platform.environment["APPDATA"]!.fixPath()}/arceus";
+      return "${Platform.environment["APPDATA"]!.resolvePath()}/arceus";
     }
   }
 

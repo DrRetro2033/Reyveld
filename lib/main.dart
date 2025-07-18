@@ -14,29 +14,30 @@ typedef ArceusSession = (Lua, WebSocket);
 
 Future<void> main(List<String> args) async {
   /// Check if the version of this Arceus executable is already running.
-  final isRunningSpinner =
-      CliSpin(spinner: CliSpinners.moon).start("Checking if running...");
+  final isRunningSpinner = CliSpin(spinner: CliSpinners.bounce)
+      .start("Checking if running...".skyBlue);
   if (await isRunning(Arceus.currentVersion)) {
-    isRunningSpinner.fail('Already Running.');
+    isRunningSpinner.fail('Already Running.'.skyBlue);
     exit(0);
   }
 
-  isRunningSpinner.success("Ready to Start!");
+  isRunningSpinner.success("Ready to Start!".skyBlue);
 
   /// If not, create a lock file to indicate that this version of Arceus is running.
   File lockFile = File(
       "${Arceus.appDataPath}/locks/${Arceus.currentVersion.toString()}.lock");
 
   final spinner =
-      CliSpin(spinner: CliSpinners.moon).start("Generating Docs...");
+      CliSpin(spinner: CliSpinners.bounce).start("Generating Docs...".skyBlue);
 
   /// Regenerate the lua documentation.
   await Lua.generateDocs().listen((doc) {
-    spinner.text = "Generating $doc...";
+    spinner.text = "Generating $doc...".skyBlue;
   }).asFuture();
 
   spinner.success(
-      "Generated Lua Docs at \"${Arceus.appDataPath}/docs/${Arceus.currentVersion.toString()}/");
+      "Generated Lua Docs at \"${Arceus.appDataPath}/docs/${Arceus.currentVersion.toString()}/\""
+          .skyBlue);
 
   /// Verify the signature of the user.
   await Arceus.verifySignature();
@@ -45,10 +46,10 @@ Future<void> main(List<String> args) async {
   await Arceus.initializeAuthor();
 
   final serverSpinner =
-      CliSpin(spinner: CliSpinners.moon).start("Starting Server...");
+      CliSpin(spinner: CliSpinners.bounce).start("Starting Server...".skyBlue);
 
   final server = await HttpServer.bind(InternetAddress.anyIPv4, 7274);
-  serverSpinner.success("Server Started!");
+  serverSpinner.success("Server Started!".skyBlue);
 
   Map<String, ArceusSession> sessions = {};
 
@@ -104,7 +105,7 @@ Future<void> main(List<String> args) async {
 
             Arceus.talker.info("Client (${request.session.id}) connected.");
             socket.listen((data) async {
-              final requestProgress = CliSpin(spinner: CliSpinners.moon).start(
+              final requestProgress = CliSpin(spinner: CliSpinners.bounce).start(
                   "Processing request from client (${request.session.id})..."
                       .aqua);
               try {
@@ -118,7 +119,7 @@ Future<void> main(List<String> args) async {
                   "return": result
                 }));
                 requestProgress.success(
-                    "Completed request from client (${request.session.id})!"
+                    "Completed request in ${sessions[request.session.id]!.$1.stopwatch.elapsedMilliseconds}ms (${request.session.id})!"
                         .limeGreen);
               } catch (e, st) {
                 requestProgress.fail(

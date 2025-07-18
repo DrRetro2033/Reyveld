@@ -172,7 +172,7 @@ class SKit {
   static const int _signExtraSize = 256;
 
   SKit(String path, {String encryptKey = ""})
-      : path = path.fixPath(),
+      : path = path.resolvePath(),
         _key = encryptKey;
 
   /// Returns the [File] of the kit file.
@@ -483,7 +483,7 @@ class SKit {
     if (!await isVerifiedAndTrusted()) {
       throw TrustException(this, await kitPublicKey);
     }
-    final file = File(path.fixPath());
+    final file = File(path.resolvePath());
 
     // Ensures that the parent directory exists.
     await file.ensureParentDirectory();

@@ -90,7 +90,7 @@ class DirectoryInterface extends SInterface<Directory> {
             ({bool recursive = false}) async => await object!
                 .list(recursive: recursive)
                 .whereType<File>()
-                .map((e) => e.path.fixPath())
+                .map((e) => e.path.resolvePath())
                 .toList()),
         LEntry(
           name: "exists",

@@ -26,8 +26,8 @@ class Constellation extends SObject {
   set currentHash(String value) => set("cur", value);
 
   /// The tracked path of the constellation.
-  String get path => get("path")!.fixPath();
-  set path(String value) => set("path", value.fixPath());
+  String get path => get("path", decode: true)!;
+  set path(String value) => set("path", value, encode: true);
 
   /// Returns the root [Star] of the constellation.
   Star get root {
@@ -62,8 +62,8 @@ class Constellation extends SObject {
       }
       return root;
     }
-    final archive =
-        await SArchiveCreator.archiveFolder(path, includeList: globs);
+    final archive = await SArchiveCreator.archiveFolder(path.resolvePath(),
+        includeList: globs);
     await kit.addRoot(archive);
     final rootStar = await StarCreator(
             "Initial Star", newStarHash(), await archive.newIndent(),
@@ -128,13 +128,15 @@ class Constellation extends SObject {
 
   /// Updates the tracked folder to the current star.
   Future<Stream<String>> updateToCurrent() async {
-    return await getCurrentStar().archive.then((e) async => e!.extract(path));
+    return await getCurrentStar()
+        .archive
+        .then((e) async => e!.extract(path.resolvePath()));
   }
 
   /// Returns an archive with unsaved changes in the tracked folder.
   Future<SArchive> getUnsavedChanges() async {
-    final archive = await SArchiveCreator.archiveFolder(path);
-    if (!await archive.checkForChanges(path)) {
+    final archive = await SArchiveCreator.archiveFolder(path.resolvePath());
+    if (!await archive.checkForChanges(path.resolvePath())) {
       return await getCurrentStar().archive.then((e) async => e!);
     }
     return archive;

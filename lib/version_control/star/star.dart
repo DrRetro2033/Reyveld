@@ -1,4 +1,5 @@
 import 'package:arceus/arceus.dart';
+import 'package:arceus/extensions.dart';
 import 'package:arceus/skit/sobject.dart';
 import 'package:arceus/skit/sobjects/file_system/file_system.dart';
 import 'package:arceus/version_control/constellation/constellation.dart';
@@ -87,8 +88,10 @@ class Star extends SObject {
               getChild<SRArchive>()!.copy() as SRArchive)
           .create();
     } else {
-      final newArchive = await SArchiveCreator.archiveFolder(constellation.path,
-          ref: await archive, includeList: constellation.globs);
+      final newArchive = await SArchiveCreator.archiveFolder(
+          constellation.path.resolvePath(),
+          ref: await archive,
+          includeList: constellation.globs);
       await kit.addRoot(newArchive);
       star = await StarCreator(
               name, constellation.newStarHash(), await newArchive.newIndent())
@@ -126,7 +129,8 @@ class Star extends SObject {
 
   /// Checks for changes from the current star, and returns true if there are changes, false if there are none.
   Future<bool> checkForChanges() async {
-    return await archive.then<bool>((value) => value!
-        .checkForChanges(constellation.path, includeList: constellation.globs));
+    return await archive.then<bool>((value) => value!.checkForChanges(
+        constellation.path.resolvePath(),
+        includeList: constellation.globs));
   }
 }
