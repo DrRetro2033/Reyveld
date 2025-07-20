@@ -64,7 +64,7 @@ class Arceus {
     return _cachedPublicKey!;
   }
 
-  static Author? author;
+  static Future<Author?> get author async => await Author.initialize();
 
   /// The logger for Arceus.
   /// If the logger is not initialized, it will be initialized.
@@ -98,10 +98,6 @@ class Arceus {
     // if (isDev) {
     //   print(message);
     // }
-  }
-
-  static Future<void> initializeAuthor() async {
-    author = await Author.initialize();
   }
 
   /// Verifies that the user has a signature.

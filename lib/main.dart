@@ -42,9 +42,6 @@ Future<void> main(List<String> args) async {
   /// Verify the signature of the user.
   await Arceus.verifySignature();
 
-  /// Initializes the default user
-  await Arceus.initializeAuthor();
-
   final serverSpinner =
       CliSpin(spinner: CliSpinners.bounce).start("Starting Server...".skyBlue);
 
@@ -97,7 +94,7 @@ Future<void> main(List<String> args) async {
         case "lua":
           if (WebSocketTransformer.isUpgradeRequest(request)) {
             final socket = await WebSocketTransformer.upgrade(request);
-            sessions[request.session.id] = (Lua(socket), socket);
+            sessions[request.session.id] = (Lua(socket: socket), socket);
             await sessions[request.session.id]!.$1.init();
 
             Arceus.printToConsole(

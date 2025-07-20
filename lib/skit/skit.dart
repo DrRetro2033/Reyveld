@@ -108,7 +108,7 @@ class SKit {
   Future<SAuthor> get author async {
     final header = await getHeader();
     return (await header?.getChild<SRAuthor>()?.getRef()) ??
-        await Arceus.author!.toSAuthor();
+        await Arceus.author.then((e) => e!.toSAuthor());
   }
 
   Future<Signer> get _signer async => Signer(RSASigner(RSASignDigest.SHA256,
@@ -242,7 +242,7 @@ class SKit {
     }
     discardChanges(); // clear the current kit from memory.
     _header = await SHeaderCreator(type: type).create();
-    final author = await Arceus.author!.toSAuthor();
+    final author = await Arceus.author.then((e) => e!.toSAuthor());
     await addRoot(author);
     final ref = await author.newIndent();
     _header!.addChild(ref);

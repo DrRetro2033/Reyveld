@@ -20,9 +20,9 @@ class Lua {
 
   final Stopwatch stopwatch = Stopwatch();
 
-  final WebSocket socket;
+  final WebSocket? socket;
 
-  Lua(this.socket) : state = LuaState.newState();
+  Lua({this.socket}) : state = LuaState.newState();
 
   /// A map of all objects in the lua state.
   ///
@@ -67,15 +67,15 @@ class Lua {
         "SKitType": SKitType.values,
       };
 
-  static Map<String, (SInterface, FutureOr<dynamic> Function(Lua))>
-      get globals => {
-            "session": (
-              SessionInterface(),
-              (lua) {
-                return lua.socket;
-              }
-            )
-          };
+  static Map<String, (SInterface, Future<dynamic> Function(Lua))> get globals =>
+      {
+        "session": (
+          SessionInterface(),
+          (lua) async {
+            return lua.socket;
+          }
+        )
+      };
 
   /// Code effects are functions that are applied to the lua code before it is compiled.
   /// This is used to clean up the lua code before it is compiled, like
@@ -108,8 +108,6 @@ class Lua {
   /// Initializes the lua state.
   /// This includes opening all libraries and adding all enums and statics to the global table.
   Future<void> init() async {
-    await state.openLibs();
-
     /// Add all enums.
     for (final enum_ in enums.entries) {
       final table = <String, dynamic>{};
@@ -197,6 +195,9 @@ class Lua {
   ///
   /// This will push the table to the stack and then set the global with the given name.
   Future<void> addGlobal(String name, dynamic table) async {
+    // if (table == null) {
+    //   return;
+    // }
     await _pushToStack(table);
     await state.setGlobal(name);
   }
@@ -295,6 +296,8 @@ class Lua {
       });
     } else if (value is LField) {
       _pushToStack(value.value);
+    } else if (value == null) {
+      state.pushNil();
     } else {
       Arceus.talker.error("Could not push to stack: $value");
       // Arceus.talker.debug("Before:\n$stack");
@@ -397,7 +400,7 @@ class Lua {
       compiled = compiled.replaceFirst(
           stringPlaceholder, "\"${strings.removeAt(0)}\"");
     }
-    Arceus.talker.debug("Compiled:\n$compiled");
+    // Arceus.talker.debug("Compiled:\n$compiled");
     return compiled;
   }
 
