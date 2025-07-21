@@ -431,8 +431,8 @@ class Lua {
 
     /// If it was successful, return the result.
     final result = await getFromTop();
-    Arceus.talker
-        .info("Lua result in ${stopwatch.elapsedMilliseconds}ms: $result");
+    // Arceus.talker
+    //     .info("Lua result in ${stopwatch.elapsedMilliseconds}ms: $result");
     return result;
   }
 

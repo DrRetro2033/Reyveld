@@ -121,6 +121,8 @@ class SKit {
     await for (final bytes in data) {
       final signer = await _signer;
       final signature = signer.signBytes(bytes);
+      Arceus.talker
+          .debug("Signed ${bytes.length} bytes to with '${signature.base16}'.");
       yield [...signature.bytes, ...bytes];
     }
   }
@@ -132,13 +134,15 @@ class SKit {
       return true;
     }
     final stream = _file.openRead();
-    await for (final bytes in stream) {
-      if (bytes.length < _signExtraSize) {
-        throw Exception("Invalid signature length.");
-      }
+    await for (final bytes in stream
+        .expand((e) => e)
+        .chunk(SFile.chunkSize + _encryptionExtraSize + _signExtraSize)) {
+      Arceus.talker.debug("Verifying ${bytes.length} bytes.");
       final signature =
           Encrypted(Uint8List.fromList(bytes.sublist(0, _signExtraSize)));
       final content = bytes.sublist(_signExtraSize);
+      Arceus.talker
+          .debug("Verify ${content.length} with '${signature.base16}'.");
       if (!verifier.verifyBytes(content, signature)) {
         stream.drain();
         return false;
@@ -440,8 +444,7 @@ class SKit {
         .transform(utf8.encoder)
         .transform(gzip.encoder)
         .expand((e) => e)
-        .chunk(SFile.chunkSize +
-            _encryptionExtraSize) // Using chunk size in SFile, for consistency.
+        .chunk(SFile.chunkSize) // Using chunk size in SFile, for consistency.
         .transform(
             StreamTransformer.fromHandlers(handleData: _encryptTransformer))
         .transform(StreamTransformer.fromBind(_sign));
@@ -475,8 +478,8 @@ class SKit {
     }
 
     stopwatch.stop();
-    Arceus.talker.info(
-        "Successfully saved SKit in ${stopwatch.elapsedMilliseconds}ms! ($path)");
+    // Arceus.talker.info(
+    //     "Successfully saved SKit in ${stopwatch.elapsedMilliseconds}ms! ($path)");
   }
 
   Future<void> exportToXMLFile(String path) async {

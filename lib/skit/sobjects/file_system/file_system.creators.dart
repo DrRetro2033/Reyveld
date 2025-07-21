@@ -39,7 +39,8 @@ class SArchiveCreator extends SCreator<SArchive> {
             return await ref.getFile(filePath)!.getRef();
           }
         }
-        return await SFileCreator(filePath, e.openRead()).create();
+        return await SFileCreator(filePath, await e.checksum, e.openRead())
+            .create();
       });
     }
   }
@@ -54,12 +55,15 @@ class SFileCreator extends SCreator<SFile> {
   final Stream<List<int>> stream;
   final bool isExternal;
   late String data;
-  late String checksum;
+  final String checksum;
 
-  SFileCreator(this.path, this.stream, {this.isExternal = false});
+  SFileCreator(this.path, this.checksum, this.stream,
+      {this.isExternal = false});
 
   static Future<SFile> open(String path) async {
-    final file = SFileCreator(path, File(path).openRead(), isExternal: true);
+    final file = SFileCreator(
+        path, await File(path).checksum, File(path).openRead(),
+        isExternal: true);
     return await file.create();
   }
 
@@ -67,7 +71,6 @@ class SFileCreator extends SCreator<SFile> {
   get beforeCreate => () async {
         final bytes = stream.transform(gzip.encoder).transform(base64.encoder);
         data = await bytes.reduce((a, b) => a + b);
-        checksum = md5sum(data);
       };
 
   @override
@@ -83,14 +86,14 @@ class SFileCreator extends SCreator<SFile> {
 class SRFileCreator extends SCreator<SRFile> {
   final String archiveHash;
   final String filePath;
-  final String checkSum;
-  SRFileCreator(this.archiveHash, this.filePath, this.checkSum);
+  final String checksum;
+  SRFileCreator(this.archiveHash, this.filePath, this.checksum);
 
   @override
   get creator => (builder) {
         builder.attribute("archive", archiveHash);
         builder.attribute("path", filePath.resolvePath());
-        builder.attribute("checksum", checkSum);
+        builder.attribute("checksum", checksum);
       };
 }
 

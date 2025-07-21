@@ -1,14 +1,19 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:arceus/scripting/lua.dart';
 import 'package:chalkdart/chalkstrings.dart';
 import 'package:cli_spin/cli_spin.dart';
 import 'package:arceus/extensions.dart';
+import 'package:hashlib/random.dart';
 
+/// Number of times each test will be run.
 const amountOfTests = 512;
 
 typedef SpeedTest = (String, String Function(Directory));
 
+/// A list of speed tests to run.
+/// Each test is a tuple containing the name of the test and a function that generates the Lua code for the test.
 final tests = <SpeedTest>[
   (
     "Creating a Constellation",
@@ -46,26 +51,25 @@ Grow(
     local const : Constellation = Constellation.new(name, path)
     skit.header().addChild(const)
     const.start()
-    skit.save()
+    return skit
 end
 
-function Grow(path, starname)
-    local skit = SKit.open(path)
+function Grow(skit, starname)
     local const : Constellation = skit.header().getChildByTag(Constellation.tag())
     const.current().grow(starname)
-    skit.save()
 end
 
-CreateConstellation(
+local skit = CreateConstellation(
     ":appdata:/arceus/constellations/Test.skit", 
     "Test Constellation",
     "${dir.path.resolvePath()}"
 )
 
 Grow(
-    ":appdata:/arceus/constellations/Test.skit", 
+    skit,
     "Test Star"
 )
+skit.save()
 """
   ),
 ];
@@ -76,10 +80,10 @@ Future<void> main(List<String> args) async {
           .start();
   final dir = await Directory.systemTemp.createTemp("arceus_test_").then(
       (tempDir) async {
-    final testFile = File("${tempDir.path}/test_file_1.txt");
-    await testFile.writeAsString("This is a test file.");
-    final testFile2 = File("${tempDir.path}/test_file_2.txt");
-    await testFile2.writeAsString("This is another test file.");
+    final testFile = File("${tempDir.path}/test_file_1");
+    await testFile.writeAsBytes(randomBytes(1024));
+    final testFile2 = File("${tempDir.path}/test_file_2");
+    await testFile2.writeAsBytes(randomBytes(pow(1024, 2).toInt()));
     spin.success("Test files created at ${tempDir.path}");
     return tempDir;
   }, onError: (e) {

@@ -1,5 +1,6 @@
-import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
+
 import 'package:hashlib/hashlib.dart';
 // import 'package:arceus/scripting/addon.dart';
 
@@ -126,20 +127,19 @@ extension CreateParentDirectory on File {
 }
 
 extension FileChecksum on File {
-  Future<String> get checksum async => md5sum(await openRead()
-      .transform(gzip.encoder)
-      .transform(base64.encoder)
-      .reduce((a, b) => a + b));
+  Future<String> get checksum async {
+    final input = openRead();
+    final digest = await md5.bind(input).first;
+    return digest.toString();
+  }
 }
 
 extension DirectoryChecksum on Directory {
   Future<String> get checksum async {
-    List<String> checksums = [];
-    await for (final file in list(recursive: true)) {
-      if (file is File) {
-        checksums.add(await file.checksum);
-      }
-    }
-    return md5sum(checksums.join());
+    final files = listSync(recursive: true).whereType<File>();
+    final digests = await Future.wait(files.map((file) => Isolate.run(() async {
+          return await file.checksum;
+        })));
+    return md5.convert(digests.join().codeUnits).toString();
   }
 }

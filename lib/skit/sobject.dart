@@ -79,6 +79,20 @@ class SObject {
   /// Returns the inner text of the xml node.
   String? get innerText => _node.innerText;
   set innerText(String? value) => _node.innerText = value ?? "";
+  Iterable<int> get cdata {
+    if (_node.childElements.whereType<XmlCDATA>().isEmpty) {
+      return [];
+    }
+    return _node.childElements
+        .whereType<XmlCDATA>()
+        .map((e) => e.value.codeUnits)
+        .expand((e) => e);
+  }
+
+  set cdata(Iterable<int> value) {
+    _node.childElements.whereType<XmlCDATA>().forEach((e) => e.remove());
+    _node.children.add(XmlCDATA(utf8.decode(value.toList())));
+  }
 
   String get tag => _node.localName;
 

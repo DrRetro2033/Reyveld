@@ -6,7 +6,6 @@ import 'package:arceus/arceus.dart';
 import 'package:arceus/extensions.dart';
 import 'package:arceus/skit/sobject.dart';
 import 'package:arceus/skit/sobjects/file_system/filelist/filelist.dart';
-import 'package:hashlib/hashlib.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:async/async.dart';
 
@@ -22,13 +21,6 @@ class SArchive extends SRoot {
 
   /// Returns the date the archive was archived/created on.
   DateTime get archivedOn => DateTime.parse(get("date")!);
-
-  /// Adds a file to the archive.
-  /// [filepath] must be relative to the archive. For instance: "C://path/to/folder/example.txt" will translate to "example.txt".
-  Future<void> addFile(String filepath, Stream<List<int>> data) async {
-    final file = await SFileCreator(filepath, data).create();
-    addChild(file);
-  }
 
   @override
   void addChild(SObject child) {
