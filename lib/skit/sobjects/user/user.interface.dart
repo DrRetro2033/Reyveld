@@ -14,7 +14,8 @@ class UserInterface extends SInterface<SUser> {
             descr: "Sets and gets the name of the user.",
             args: const {
               "name": LArg<String>(
-                  descr: "The new name of the user.", required: false),
+                  descr: "The new name of the user.",
+                  kind: ArgKind.optionalPositional),
             },
             returnType: String,
             () => object!.name),

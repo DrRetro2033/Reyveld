@@ -47,15 +47,11 @@ class SObject {
   /// ```dart
   /// set name(String value) => set("name", value);
   /// ```
-  void set(String key, dynamic value, {bool encode = false}) {
+  void set(String key, dynamic value) {
     if (value == null) {
       _node.removeAttribute(key);
     } else {
-      if (encode) {
-        _node.setAttribute(key, encodeText(value.toString()));
-      } else {
-        _node.setAttribute(key, value.toString());
-      }
+      _node.setAttribute(key, encodeText(value.toString()));
     }
   }
 
@@ -64,11 +60,9 @@ class SObject {
   /// ```dart
   /// String get name => get("name");
   /// ```
-  String? get(String key, {bool decode = false}) {
+  String? get(String key) {
     if (_node.getAttribute(key) == null) return null;
-    return decode
-        ? decodeText(_node.getAttribute(key)!)
-        : _node.getAttribute(key)!;
+    return decodeText(_node.getAttribute(key)!);
   }
 
   /// Returns the parent of the xml node, if it has one.
@@ -79,21 +73,6 @@ class SObject {
   /// Returns the inner text of the xml node.
   String? get innerText => _node.innerText;
   set innerText(String? value) => _node.innerText = value ?? "";
-  Iterable<int> get cdata {
-    if (_node.childElements.whereType<XmlCDATA>().isEmpty) {
-      return [];
-    }
-    return _node.childElements
-        .whereType<XmlCDATA>()
-        .map((e) => e.value.codeUnits)
-        .expand((e) => e);
-  }
-
-  set cdata(Iterable<int> value) {
-    _node.childElements.whereType<XmlCDATA>().forEach((e) => e.remove());
-    _node.children.add(XmlCDATA(utf8.decode(value.toList())));
-  }
-
   String get tag => _node.localName;
 
   /// Checks if the xml node has an attribute.
@@ -244,8 +223,8 @@ class SObject {
 
   /// Returns a map of the attributes of the xml node.
   /// This is used in [toJson].
-  Map<String, String> _attrbutesToJson() => Map.fromEntries(
-      _node.attributes.map((attr) => MapEntry(attr.name.local, attr.value)));
+  Map<String, String> _attrbutesToJson() => Map.fromEntries(_node.attributes
+      .map((attr) => MapEntry(attr.name.local, decodeText(attr.value))));
 
   /// Creates a copy of the [SObject].
   SObject copy() {

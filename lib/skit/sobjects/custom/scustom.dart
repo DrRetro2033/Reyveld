@@ -6,7 +6,7 @@ part 'scustom.interface.dart';
 
 @SGen("custom")
 class SCustom extends SObject {
-  String get type => get("type", decode: true)!;
+  String get type => get("type")!;
 
   SCustom(super._node);
 
@@ -14,7 +14,7 @@ class SCustom extends SObject {
     if (!has(key)) {
       return null;
     }
-    return int.tryParse(get(key, decode: true)!);
+    return int.tryParse(get(key)!);
   }
 
   void setInt(String key, int value) {
@@ -25,10 +25,10 @@ class SCustom extends SObject {
     if (!has(key)) {
       return null;
     }
-    return get(key, decode: true);
+    return get(key);
   }
 
   void setString(String key, String value) {
-    set(key, encodeText(value));
+    set(key, value);
   }
 }

@@ -74,7 +74,7 @@ class SFileCreator extends SCreator<SFile> {
 
   @override
   get creator => (builder) {
-        builder.attribute("path", encodeText(path));
+        builder.attribute("path", path);
         builder.attribute("checksum", checksum);
         builder.attribute("extern", isExternal ? "1" : "0");
         builder.text(data);
@@ -91,7 +91,7 @@ class SRFileCreator extends SCreator<SRFile> {
   @override
   get creator => (builder) {
         builder.attribute("archive", archiveHash);
-        builder.attribute("path", encodeText(filePath));
+        builder.attribute("path", filePath);
         builder.attribute("checksum", checksum);
       };
 }

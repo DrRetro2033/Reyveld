@@ -9,8 +9,8 @@ part 'author.interface.dart';
 /// Repersents an author of an Arceus library.
 @SGen("author")
 class SAuthor extends SRoot {
-  String get name => get("name", decode: true)!;
-  String? get github => get("github", decode: true);
+  String get name => get("name")!;
+  String? get github => get("github");
   RSAPublicKey get publicKey {
     return CryptoUtils.rsaPublicKeyFromPem(
       decodeText(innerText!),
@@ -20,7 +20,7 @@ class SAuthor extends SRoot {
   @override
   Future<SRAuthor> newIndent() async => await SRAuthorCreator(hash).create();
 
-  SAuthor(super.node);
+  SAuthor(super._node);
 
   Future<bool> isTrusted() async => Arceus.isTrustedAuthor(this);
   Future<void> trust() async => Arceus.trustAuthor(this);
@@ -28,5 +28,5 @@ class SAuthor extends SRoot {
 
 @SGen("rauthor")
 class SRAuthor extends SIndent<SAuthor> {
-  SRAuthor(super.node);
+  SRAuthor(super._node);
 }

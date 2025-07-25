@@ -18,16 +18,16 @@ class Constellation extends SObject {
   Constellation(super._node);
 
   /// The name of the constellation.
-  String get name => get("name", decode: true) ?? "Constellation";
-  set name(String value) => set("name", value, encode: true);
+  String get name => get("name") ?? "Constellation";
+  set name(String value) => set("name", value);
 
   /// The current hash of the constellation.
   String get currentHash => get("cur") ?? "";
   set currentHash(String value) => set("cur", value);
 
   /// The tracked path of the constellation.
-  String get path => get("path", decode: true)!;
-  set path(String value) => set("path", value, encode: true);
+  String get path => get("path")!;
+  set path(String value) => set("path", value);
 
   /// Returns the root [Star] of the constellation.
   Star get root {

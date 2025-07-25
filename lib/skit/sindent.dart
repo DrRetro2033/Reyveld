@@ -12,7 +12,7 @@ abstract class SIndent<T extends SRoot> extends SObject {
 
   /// The hash of the [SRoot] that is being referenced.
   String get hash => get("hash")!;
-  SIndent(super.node);
+  SIndent(super._node);
 
   /// Returns the [SRoot] that is being referenced by the [SIndent].
   Future<T?> getRef() async {
@@ -61,7 +61,7 @@ class SIndentCreator<T extends SIndent> extends SCreator {
 
   @override
   FutureOr<T> create() async {
-    final builder = XmlBuilder();
+    final builder = ModifiedXmlBuilder();
 
     /// Does something before creation asyncronously
     await beforeCreate();

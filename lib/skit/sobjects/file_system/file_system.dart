@@ -161,7 +161,7 @@ class SFile extends SObject {
   SFile(super._node);
 
   /// Returns the path of the file.
-  String get path => decodeText(get("path")!);
+  String get path => get("path")!;
 
   bool get isExternal => (get("extern") ?? "0") == "1";
 
@@ -404,7 +404,7 @@ class SFile extends SObject {
 /// A reference to an [SArchive].
 @SGen("rarchive")
 class SRArchive extends SIndent<SArchive> {
-  SRArchive(super.node);
+  SRArchive(super._node);
 
   @override
   Future<SArchive?> getRef() async {
@@ -425,14 +425,14 @@ class SRArchive extends SIndent<SArchive> {
 @SGen("rfile")
 class SRFile extends SFile {
   String get archiveHash => get("archive")!;
-  String get filePath => decodeText(get("path")!);
+  String get filePath => get("path")!;
 
   @override
   Future<Stream<List<int>>> get bytes => kit
       .getArchive(archiveHash)
       .then((value) async => await value!.getFile(filePath)!.bytes);
 
-  SRFile(super.node);
+  SRFile(super._node);
 
   @override
   Future<SRFile> getRef() async {

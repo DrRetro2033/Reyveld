@@ -6,7 +6,6 @@ import 'package:arceus/scripting/extras/directory.dart';
 import 'package:arceus/scripting/extras/list.dart';
 import 'package:arceus/scripting/extras/session.dart';
 import 'package:arceus/scripting/extras/stream.dart';
-import 'package:arceus/skit/sobjects/file_system/filelist/filelist.dart';
 import 'package:arceus/skit/sobjects/sobjects.dart';
 import 'package:arceus/uuid.dart';
 import 'package:arceus/version_control/constellation/constellation.dart';
@@ -47,7 +46,8 @@ class Lua {
         GlobsInterface(),
         WhitelistInterface(),
         BlacklistInterface(),
-        SAuthorInterface()
+        SAuthorInterface(),
+        SCustomInterface()
       };
 
   /// A set of all interfaces in the lua state, sorted by priority.

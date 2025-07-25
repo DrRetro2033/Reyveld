@@ -5,7 +5,7 @@ part of 'sobject.dart';
 ///
 /// To reference a root object in the header, use the [SIndent] object.
 abstract class SRoot extends SObject {
-  SRoot(super.node);
+  SRoot(super._node);
 
   bool delete = false;
 

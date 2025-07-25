@@ -24,8 +24,7 @@ class StreamInterface extends SInterface<Stream> {
               "onData": LArg<LuaFuncRef>(
                   descr: "The function to call when data is received.",
                   docTypeOverride: "fun(data: any):nil",
-                  required: false,
-                  positional: false),
+                  kind: ArgKind.optionalNamed),
             }, ({LuaFuncRef? onData}) async {
           final StreamQueue queue = StreamQueue(object!);
           while (await queue.hasNext) {

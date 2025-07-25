@@ -82,10 +82,9 @@ A base class for all objects in the kit.
             descr: "Returns a list of all the children of the SObject.",
             args: const {
               "filter": LArg<LuaFuncRef>(
-                descr: "The filter to apply to the children.",
-                docTypeOverride: "fun(child: SObject): boolean",
-                required: false,
-              ),
+                  descr: "The filter to apply to the children.",
+                  docTypeOverride: "fun(child: SObject): boolean",
+                  kind: ArgKind.optionalPositional),
             },
             returnType: List,
             isAsync: true, ({LuaFuncRef? filter}) async {

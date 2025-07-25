@@ -28,10 +28,8 @@ class SessionInterface extends SInterface<WebSocket> {
               "data": LArg<Object>(
                   descr: "The data to send through the web socket."),
               "message": LArg<String>(
-                descr: "The message with the data to send with the data.",
-                positional: false,
-                required: false,
-              ),
+                  descr: "The message with the data to send with the data.",
+                  kind: ArgKind.optionalNamed),
             },
             (Object data, {String message = ""}) => object!.add(jsonEncode({
                   "type": "data",

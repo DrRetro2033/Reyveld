@@ -28,10 +28,10 @@ class DirectoryInterface extends SInterface<Directory> {
             "relative": LArg<String>(
                 descr:
                     "Provide a relative path inside the appdata directory to get a specific directory.",
-                required: false)
+                kind: ArgKind.optionalNamed)
           },
           returnType: Directory,
-          ([String relative = ""]) {
+          ({String relative = ""}) {
             final home = Platform.environment['HOME'] ??
                 Platform.environment['USERPROFILE'];
             if (Platform.isMacOS) {
@@ -53,9 +53,9 @@ class DirectoryInterface extends SInterface<Directory> {
               "relative": LArg<String>(
                   descr:
                       "Provide a relative path inside the documents directory to get a specific directory.",
-                  required: false)
+                  kind: ArgKind.optionalNamed)
             },
-            returnType: Directory, ([String relative = ""]) {
+            returnType: Directory, ({String relative = ""}) {
           final home = Platform.environment['HOME'] ??
               Platform.environment['USERPROFILE'];
           if (Platform.isMacOS || Platform.isLinux) {
@@ -84,8 +84,7 @@ class DirectoryInterface extends SInterface<Directory> {
               "recursive": LArg<bool>(
                   descr:
                       "Whether to list recursively (i.e. include subdirectories) (default: false).",
-                  required: false,
-                  positional: false)
+                  kind: ArgKind.optionalNamed)
             },
             ({bool recursive = false}) => object!
                     .list(recursive: recursive)
@@ -111,8 +110,7 @@ class DirectoryInterface extends SInterface<Directory> {
             args: {
               "recursive": LArg<bool>(
                   descr: "Whether to create recursively (default: false).",
-                  required: false,
-                  positional: false)
+                  kind: ArgKind.optionalNamed)
             },
             ({bool recursive = false}) async =>
                 await object!.create(recursive: recursive)),

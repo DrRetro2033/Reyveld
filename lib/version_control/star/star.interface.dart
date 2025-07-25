@@ -25,7 +25,8 @@ A star is a point in time that represents a snapshot of an folder.
             descr: "Gets or sets the name of the star.",
             args: const {
               "name": LArg<String>(
-                  descr: "The new name of the star.", required: false)
+                  descr: "The new name of the star.",
+                  kind: ArgKind.optionalPositional)
             },
             returnType: String,
             ([String? name]) => object!.name),
@@ -42,7 +43,7 @@ A star is a point in time that represents a snapshot of an folder.
                   descr:
                       "If true, the folder will be synced to the current star.",
                   docDefaultValue: "true",
-                  required: false)
+                  kind: ArgKind.optionalPositional)
             },
             isAsync: true,
             returnType: Stream, ([bool syncFolder = false]) async {
@@ -71,8 +72,7 @@ A star is a point in time that represents a snapshot of an folder.
               ),
               "branch": LArg<String>(
                   descr: "Makes this star the new stem for a new branch.",
-                  positional: false,
-                  required: false)
+                  kind: ArgKind.optionalNamed)
             },
             returnType: Star,
             isAsync: true,
@@ -113,7 +113,7 @@ A star is a point in time that represents a snapshot of an folder.
               "x": LArg<int>(
                   descr: "The number of stars to move forward.",
                   docDefaultValue: "1",
-                  required: false)
+                  kind: ArgKind.optionalPositional)
             },
             returnType: Star, ([int x = 1]) async {
           Star star = object!;
@@ -131,7 +131,7 @@ A star is a point in time that represents a snapshot of an folder.
               "x": LArg<int>(
                   descr: "The number of stars to move backward.",
                   docDefaultValue: "1",
-                  required: false)
+                  kind: ArgKind.optionalPositional)
             },
             returnType: Star, ([int x = 1]) {
           Star star = object!;
@@ -148,7 +148,7 @@ A star is a point in time that represents a snapshot of an folder.
             args: const {
               "x": LArg<int>(
                   descr: "The number of stars to move up. Defaults to 1.",
-                  required: false)
+                  kind: ArgKind.optionalPositional)
             },
             returnType: Star, ([int x = 1]) {
           Star star = object!;
@@ -165,7 +165,7 @@ A star is a point in time that represents a snapshot of an folder.
             args: const {
               "x": LArg<int>(
                   descr: "The number of stars to move down. Defaults to 1.",
-                  required: false)
+                  kind: ArgKind.optionalPositional)
             },
             returnType: Star, ([int x = 1]) {
           Star star = object!;
@@ -204,7 +204,8 @@ A star is a point in time that represents a snapshot of an folder.
           descr: "Sets and gets the branch name the star is located in.",
           args: const {
             "name": LArg<String>(
-                descr: "The new name of the branch.", required: false)
+                descr: "The new name of the branch.",
+                kind: ArgKind.optionalPositional)
           },
           returnType: Star,
           ([String? name]) {

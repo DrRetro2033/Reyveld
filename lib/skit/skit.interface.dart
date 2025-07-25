@@ -20,9 +20,7 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
                 descr: "The path to the SKit file.",
               ),
               "key": LArg<String>(
-                  descr: "The encryption key.",
-                  required: false,
-                  positional: false),
+                  descr: "The encryption key.", kind: ArgKind.optionalNamed),
             },
             returnType: SKit,
             isAsync: true,
@@ -49,16 +47,11 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
               ),
               "overwrite": LArg<bool>(
                   descr: "Whether to overwrite the file if it already exists.",
-                  required: false,
-                  positional: false),
+                  kind: ArgKind.optionalNamed),
               "type": LArg<int>(
-                  descr: "The type of the SKit.",
-                  required: false,
-                  positional: false),
+                  descr: "The type of the SKit.", kind: ArgKind.optionalNamed),
               "key": LArg<String>(
-                  descr: "The encryption key.",
-                  required: false,
-                  positional: false),
+                  descr: "The encryption key.", kind: ArgKind.optionalNamed),
             },
             returnType: SKit,
             isAsync: true, (String path,
@@ -113,8 +106,9 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
             name: "key",
             descr: "Sets and Gets the encryption key of the SKit.",
             args: const {
-              "key":
-                  LArg<String>(descr: "The encryption key.", required: false),
+              "key": LArg<String>(
+                  descr: "The encryption key.",
+                  kind: ArgKind.optionalPositional),
             },
             returnType: String, ([String? key]) async {
           if (key != null) {
@@ -139,9 +133,7 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
             descr: "Returns the hashes used by the roots in the SKit.",
             args: const {
               "tag": LArg<String>(
-                  descr: "The tag to filter by.",
-                  required: false,
-                  positional: false),
+                  descr: "The tag to filter by.", kind: ArgKind.optionalNamed),
             },
             returnType: List,
             isAsync: true, ({String? tag}) async {

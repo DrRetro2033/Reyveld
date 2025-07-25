@@ -57,7 +57,7 @@ A collection of Stars, with a root star, and a current star.
               "throwIfExists": LArg<bool>(
                 descr:
                     "Throws an exception if the constellation already has a root star.",
-                required: false,
+                kind: ArgKind.optionalPositional,
                 docDefaultValue: "true",
               )
             },
@@ -82,7 +82,8 @@ A collection of Stars, with a root star, and a current star.
             descr:
                 "Gets and sets the globs of the constellation. Used to specify which files to track, and which files to ignore.",
             args: const {
-              "globs": LArg<Globs>(descr: "The globs to set.", required: false)
+              "globs": LArg<Globs>(
+                  descr: "The globs to set.", kind: ArgKind.optionalPositional)
             },
             returnType: Globs, ([Globs? filelist]) {
           if (filelist != null) {

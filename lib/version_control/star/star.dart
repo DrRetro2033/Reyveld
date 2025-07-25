@@ -14,8 +14,8 @@ class Star extends SObject {
   Star(super._node);
 
   /// The name of the star.
-  String get name => get("name", decode: true) ?? "Initial Star";
-  set name(String value) => set("name", value, encode: true);
+  String get name => get("name") ?? "Initial Star";
+  set name(String value) => set("name", value);
 
   /// The hash of the star.
   String get hash => get("hash")!;
@@ -46,7 +46,7 @@ class Star extends SObject {
   bool get isStem => has("branch");
 
   /// Returns the branch name of the star.
-  String get branchName => stem.get("branch", decode: true)!;
+  String get branchName => stem.get("branch")!;
 
   /// Returns the anchor star of the branch.
   Star get stem {
@@ -62,7 +62,7 @@ class Star extends SObject {
     if (constellation.getAllBranches().contains(name)) {
       throw Exception("Branch name already exists.");
     }
-    set("branch", name, encode: true);
+    set("branch", name);
   }
 
   /// Unanchors the star.

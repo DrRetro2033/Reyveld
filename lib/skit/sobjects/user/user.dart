@@ -11,7 +11,7 @@ class SUser extends SRoot {
   String get name => get("name") ?? "";
   set name(String value) => set("name", value);
 
-  SUser(super.node);
+  SUser(super._node);
 
   @override
   Future<SIndent<SRoot>> newIndent() {

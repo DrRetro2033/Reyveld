@@ -106,11 +106,9 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
           returnType: String,
           args: const {
             "extension": LArg<bool>(
-              descr:
-                  "Whether to include the file extension in the filename. (default: true)",
-              required: false,
-              positional: false,
-            )
+                descr:
+                    "Whether to include the file extension in the filename. (default: true)",
+                kind: ArgKind.optionalNamed)
           },
           ({bool extension = true}) =>
               object!.path.getFilename(withExtension: extension),
@@ -162,7 +160,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               "littleEndian": LArg<bool>(
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
-                  required: false)
+                  kind: ArgKind.optionalPositional)
             },
             returnType: int,
             isAsync: true,
@@ -178,7 +176,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               "littleEndian": LArg<bool>(
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
-                  required: false)
+                  kind: ArgKind.optionalPositional)
             },
             returnType: int,
             isAsync: true,
@@ -198,7 +196,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               "littleEndian": LArg<bool>(
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
-                  required: false)
+                  kind: ArgKind.optionalPositional)
             },
             isAsync: true, (int index, int value, [bool? littleEndian]) async {
           await object!.set16(index, value, littleEndian: littleEndian);
@@ -213,7 +211,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               "littleEndian": LArg<bool>(
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
-                  required: false)
+                  kind: ArgKind.optionalPositional)
             },
             returnType: int,
             isAsync: true,
@@ -229,7 +227,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               "littleEndian": LArg<bool>(
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
-                  required: false)
+                  kind: ArgKind.optionalPositional)
             },
             returnType: int,
             isAsync: true,
@@ -249,7 +247,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               "littleEndian": LArg<bool>(
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
-                  required: false)
+                  kind: ArgKind.optionalPositional)
             },
             isAsync: true, (int index, int value, [bool? littleEndian]) async {
           await object!.set32(index, value, littleEndian: littleEndian);
@@ -264,7 +262,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               "littleEndian": LArg<bool>(
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
-                  required: false)
+                  kind: ArgKind.optionalPositional)
             },
             returnType: int,
             isAsync: true,
@@ -280,7 +278,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               "littleEndian": LArg<bool>(
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
-                  required: false)
+                  kind: ArgKind.optionalPositional)
             },
             returnType: int,
             isAsync: true,
@@ -300,7 +298,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               "littleEndian": LArg<bool>(
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
-                  required: false)
+                  kind: ArgKind.optionalPositional)
             },
             isAsync: true, (int index, int value, [bool? littleEndian]) async {
           await object!.set64(index, value, littleEndian: littleEndian);
@@ -315,7 +313,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               "littleEndian": LArg<bool>(
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
-                  required: false)
+                  kind: ArgKind.optionalPositional)
             },
             returnType: double,
             isAsync: true, (int index, [bool? littleEndian]) async {
@@ -331,7 +329,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               "littleEndian": LArg<bool>(
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
-                  required: false)
+                  kind: ArgKind.optionalPositional)
             },
             returnType: double,
             isAsync: true, (int index, [bool? littleEndian]) async {
@@ -350,7 +348,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               "littleEndian": LArg<bool>(
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
-                  required: false)
+                  kind: ArgKind.optionalPositional)
             },
             isAsync: true, (int index, double value,
                 [bool? littleEndian]) async {
@@ -369,7 +367,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               "littleEndian": LArg<bool>(
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
-                  required: false)
+                  kind: ArgKind.optionalPositional)
             },
             isAsync: true, (int index, double value,
                 [bool? littleEndian]) async {
@@ -379,7 +377,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
           "littleEndian": LArg<bool>(
               descr:
                   "If true, the default endian will be little endian, otherwise it will be big endian.",
-              required: false)
+              kind: ArgKind.optionalPositional)
         }, ([bool? littleEndian]) {
           if (littleEndian != null) {
             object!.defaultEndian = littleEndian;
@@ -399,8 +397,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
               "stopAtNull": LArg<bool>(
                   descr:
                       "Whether to stop at the first null character while getting the string.",
-                  positional: false,
-                  required: false),
+                  kind: ArgKind.optionalNamed),
             },
             returnType: String,
             isAsync: true, (int index, int length,
@@ -422,7 +419,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             ),
             "overwrite": LArg<bool>(
                 descr: "Whether to overwrite the file if it already exists.",
-                required: false),
+                kind: ArgKind.optionalPositional),
           },
           isAsync: true,
           (String path, [bool overwrite = false]) async {

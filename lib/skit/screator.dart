@@ -37,7 +37,7 @@ abstract class SCreator<T extends SObject> {
   SCreator();
 
   FutureOr<T> create() async {
-    final builder = XmlBuilder();
+    final builder = ModifiedXmlBuilder();
 
     /// Does something before creation asyncronously
     await beforeCreate();
@@ -71,5 +71,13 @@ abstract class SCreator<T extends SObject> {
   /// Creator must never be asynchronous, as the xml package does not play nicely with it.
   /// It must be synchronous. However, if you need to use asyncronous code,
   /// use [beforeCreate] to do stuff before creating the [SObject].
-  void Function(XmlBuilder builder) get creator;
+  void Function(ModifiedXmlBuilder builder) get creator;
+}
+
+class ModifiedXmlBuilder extends XmlBuilder {
+  @override
+  void attribute(String name, Object? value,
+          {String? namespace, XmlAttributeType? attributeType}) =>
+      super.attribute(name, encodeText(value.toString()),
+          namespace: namespace, attributeType: attributeType);
 }

@@ -53,19 +53,38 @@ class LEntry extends LExport {
       this.returnGeneric = false});
 }
 
+/// The kind of the arg.
+/// - requiredPositional
+///   Lua: `Example(x)`
+///   Dart: `Example(type x)`
+/// - optionalPositional
+///   Lua: `Example(x?)`
+///   Dart: `Example([type? x])`
+/// - requiredNamed
+///   Lua: `Example({x})`
+///   Dart: `Example({required type x})`
+/// - optionalNamed
+///   Lua: `Example({x?})`
+///   Dart: `Example({type? x})`
+
+enum ArgKind {
+  requiredPositional,
+  optionalPositional,
+  requiredNamed,
+  optionalNamed
+}
+
 /// This is a lua argument.
 final class LArg<T> {
   final String descr;
 
-  /// By default, this argument is required.
-  final bool required;
+  final ArgKind kind;
 
-  /// If true, the argument is positional.
-  /// If false, the argument is named, and can be accessed by name by adding a table to the end of the argument list.
-  /// By default, it is true.
-  ///
-  /// Note: If a named argument is provided, then DO NOT use optional positional arguments as they WILL BREAK THINGS IN UNEXPECTED WAYS.
-  final bool positional;
+  bool get positional =>
+      kind == ArgKind.requiredPositional || kind == ArgKind.optionalPositional;
+
+  bool get required =>
+      kind == ArgKind.requiredPositional || kind == ArgKind.requiredNamed;
 
   /// Set this to override the doc type of the argument.
   /// You can use this to have a more specific type than the default one.
@@ -88,8 +107,7 @@ final class LArg<T> {
 
   const LArg(
       {this.descr = "",
-      this.required = true,
-      this.positional = true,
+      this.kind = ArgKind.requiredPositional,
       this.docDefaultValue,
       this.docTypeOverride});
 

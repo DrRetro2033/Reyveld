@@ -8,13 +8,13 @@ class SCustomCreator extends SCreator<SCustom> {
 
   @override
   get creator => (builder) {
-        builder.attribute("type", encodeText(type));
+        builder.attribute("type", type);
         if (attributes != null) {
           for (var entry in attributes!.entries) {
             if (entry.key == "type") {
               continue; // Avoid overwriting the type attribute
             }
-            builder.attribute(entry.key, encodeText(entry.value.toString()));
+            builder.attribute(entry.key, entry.value.toString());
           }
         }
       };

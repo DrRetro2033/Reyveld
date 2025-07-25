@@ -7,7 +7,7 @@ class SAuthorCreator extends SCreator<SAuthor> {
 
   @override
   get creator => (builder) {
-        builder.attribute("name", encodeText(name));
+        builder.attribute("name", name);
         builder
             .text(encodeText(CryptoUtils.encodeRSAPublicKeyToPem(publicKey)));
       };
