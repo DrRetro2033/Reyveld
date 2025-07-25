@@ -9,7 +9,6 @@ class SArchiveCreator extends SCreator<SArchive> {
   /// Will add the new archive to the kit, and returns it.
   static Future<SArchive> archiveFolder(String path,
       {SArchive? ref, Globs? includeList}) async {
-    Arceus.talker.log(path);
     final dir = Directory(path);
     if (!await dir.exists()) {
       throw Exception("Path does not exist.");
@@ -75,7 +74,7 @@ class SFileCreator extends SCreator<SFile> {
 
   @override
   get creator => (builder) {
-        builder.attribute("path", path.resolvePath());
+        builder.attribute("path", encodeText(path));
         builder.attribute("checksum", checksum);
         builder.attribute("extern", isExternal ? "1" : "0");
         builder.text(data);
@@ -92,7 +91,7 @@ class SRFileCreator extends SCreator<SRFile> {
   @override
   get creator => (builder) {
         builder.attribute("archive", archiveHash);
-        builder.attribute("path", filePath.resolvePath());
+        builder.attribute("path", encodeText(filePath));
         builder.attribute("checksum", checksum);
       };
 }

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
-import 'package:arceus/arceus.dart';
+import 'dart:typed_data';
 import 'package:arceus/extensions.dart';
 import 'package:arceus/skit/sobject.dart';
 import 'package:arceus/skit/sobjects/file_system/filelist/filelist.dart';
@@ -161,7 +161,7 @@ class SFile extends SObject {
   SFile(super._node);
 
   /// Returns the path of the file.
-  String get path => get("path")!;
+  String get path => decodeText(get("path")!);
 
   bool get isExternal => (get("extern") ?? "0") == "1";
 
@@ -170,13 +170,11 @@ class SFile extends SObject {
   bool defaultEndian = true;
 
   /// Returns a stream of the bytes stored, uncompressing along the way.
-  FutureOr<Stream<List<int>>> get bytes => Stream.fromIterable(
-          base64Decode(innerText!))
-      .chunk(chunkSize)
-      .transform(gzip.decoder)
-      .expand((e) =>
-          e) // Rechunks the stream to make sure each chunk is sized correctly.
-      .chunk(chunkSize);
+  FutureOr<Stream<List<int>>> get bytes =>
+      Stream.fromIterable(base64Decode(innerText!))
+          .chunk(chunkSize)
+          .transform(gzip.decoder)
+          .rechunk(chunkSize);
 
   /// A single byte version of [bytes].
   Future<Stream<int>> get singleBytes async => (await bytes).expand((e) => e);
@@ -228,8 +226,7 @@ class SFile extends SObject {
     innerText = await _setBytes(start, end, data.toList())
         .chunk(chunkSize)
         .transform(gzip.encoder)
-        .expand((e) => e)
-        .chunk(chunkSize)
+        .rechunk(chunkSize)
         .transform(base64.encoder)
         .reduce((a, b) => a + b);
   }
@@ -312,19 +309,35 @@ class SFile extends SObject {
   Future<void> set64(int index, int value, {bool? littleEndian}) async =>
       await setRange(index, index + 8, _seperateInt(value), littleEndian);
 
-  /// Retrieves a UTF-16 encoded string from the file starting at the specified index.
-  ///
-  /// This function reads `length` * 2 bytes starting from `index` and converts them
-  /// into a string using UTF-16 encoding. Each character is composed of two bytes.
-  ///
-  /// [index] is the starting position in the file from which the string is read.
-  /// [length] specifies the number of characters to read.
-  /// [stopAtNull] if set to true, stops reading when a null character is encountered.
-  ///
-  /// Returns the constructed string of the specified length or until a null character
-  /// if [stopAtNull] is true.
+  Future<double> get32Float(int index, {bool? littleEndian}) async {
+    final getUnsigned = await getU32(index, littleEndian: littleEndian);
+    final buffer = ByteData(4);
+    buffer.setUint32(0, getUnsigned);
+    return buffer.getFloat32(0);
+  }
 
-  Future<String> getStr16(int index, int length,
+  Future<void> set32Float(int index, double value, {bool? littleEndian}) async {
+    final buffer = ByteData(4);
+    buffer.setFloat32(0, value);
+    final bytes = buffer.buffer.asUint8List();
+    await setRange(index, index + 4, bytes, littleEndian);
+  }
+
+  Future<double> get64Float(int index, {bool? littleEndian}) async {
+    final getUnsigned = await getU64(index, littleEndian: littleEndian);
+    final buffer = ByteData(8);
+    buffer.setUint64(0, getUnsigned);
+    return buffer.getFloat64(0);
+  }
+
+  Future<void> set64Float(int index, double value, {bool? littleEndian}) async {
+    final buffer = ByteData(8);
+    buffer.setFloat64(0, value);
+    final bytes = buffer.buffer.asUint8List();
+    await setRange(index, index + 8, bytes, littleEndian);
+  }
+
+  Future<String> getStr(int index, int length,
       {bool stopAtNull = false}) async {
     final bytes = await getRange(index, index + (length * 2));
     final buffer = StringBuffer();
@@ -412,7 +425,7 @@ class SRArchive extends SIndent<SArchive> {
 @SGen("rfile")
 class SRFile extends SFile {
   String get archiveHash => get("archive")!;
-  String get filePath => get("path")!;
+  String get filePath => decodeText(get("path")!);
 
   @override
   Future<Stream<List<int>>> get bytes => kit

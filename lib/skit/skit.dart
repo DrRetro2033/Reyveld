@@ -121,8 +121,6 @@ class SKit {
     await for (final bytes in data) {
       final signer = await _signer;
       final signature = signer.signBytes(bytes);
-      Arceus.talker
-          .debug("Signed ${bytes.length} bytes to with '${signature.base16}'.");
       yield [...signature.bytes, ...bytes];
     }
   }
@@ -135,14 +133,10 @@ class SKit {
     }
     final stream = _file.openRead();
     await for (final bytes in stream
-        .expand((e) => e)
-        .chunk(SFile.chunkSize + _encryptionExtraSize + _signExtraSize)) {
-      Arceus.talker.debug("Verifying ${bytes.length} bytes.");
+        .rechunk(SFile.chunkSize + _encryptionExtraSize + _signExtraSize)) {
       final signature =
           Encrypted(Uint8List.fromList(bytes.sublist(0, _signExtraSize)));
       final content = bytes.sublist(_signExtraSize);
-      Arceus.talker
-          .debug("Verify ${content.length} with '${signature.base16}'.");
       if (!verifier.verifyBytes(content, signature)) {
         stream.drain();
         return false;
@@ -212,8 +206,7 @@ class SKit {
   Stream<List<int>>? get _byteStream => _file.existsSync()
       ? _file
           .openRead()
-          .expand((e) => e)
-          .chunk(SFile.chunkSize + _encryptionExtraSize + _signExtraSize)
+          .rechunk(SFile.chunkSize + _encryptionExtraSize + _signExtraSize)
           .transform(StreamTransformer.fromBind(
             _removeSign,
           )) // Verify the signature of the kit file.
@@ -356,10 +349,12 @@ class SKit {
               ..kit = this) // Set the kit instance to this.
             .whereType<SRoot>() ??
         Stream.empty();
-    final processedRoots = <SRoot>{};
+    final loads = {..._loadedRoots};
     await for (final root in rootStream) {
-      processedRoots.add(root);
-      final loaded = _loadedRoots.where((e) => e == root).singleOrNull;
+      final loaded = loads.where((e) => e == root).singleOrNull;
+      if (loaded != null) {
+        loads.remove(loaded);
+      }
       SRoot sending = loaded ?? root;
       if (_indents.any((e) => e.isFor(sending) && e.isDeleted) ||
           sending.delete) {
@@ -367,11 +362,8 @@ class SKit {
       }
       yield sending;
     }
-    for (final root in _loadedRoots) {
-      if (!processedRoots.contains(root)) {
-        yield root;
-      }
-    }
+    yield* Stream.fromIterable(
+        loads.where((e) => !_indents.any((i) => i.isFor(e) && i.isDeleted)));
   }
 
   /// Streams the roots of the kit file as xml strings.
@@ -443,8 +435,7 @@ class SKit {
     final byteStream = stringStream
         .transform(utf8.encoder)
         .transform(gzip.encoder)
-        .expand((e) => e)
-        .chunk(SFile.chunkSize) // Using chunk size in SFile, for consistency.
+        .rechunk(SFile.chunkSize) // Using chunk size in SFile, for consistency.
         .transform(
             StreamTransformer.fromHandlers(handleData: _encryptTransformer))
         .transform(StreamTransformer.fromBind(_sign));

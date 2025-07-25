@@ -260,7 +260,6 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
   String _luaField(LField export) {
     final field =
         "---@field ${export.name} ${_convertDartToLua(export.type)} ${export.descr}";
-    // Arceus.talker.debug(field);
     return field;
   }
 

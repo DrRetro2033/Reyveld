@@ -110,10 +110,6 @@ Ever needed to replay a specific point of a game to get better footage? Well, Ar
 
 Arceus is not just useful for gamers or programmers, artists can join the fun as well! Simply create a constellation inside a folder, and add the files you would like to track! It's that simple! Arceus will work with anything; [Krita](https://krita.org/en/), [Blender](https://www.blender.org/), [Kdenlive](https://kdenlive.org/en/), etc...
 
-## For Save Editors 📝
-
-The main use case for Arceus is for developers wanting to make a save editor. Arceus can be used in save editors to make it easier to focus on what actually matters, the features.
-
 ## For Game Development 💻
 
 Easily rollback to any point in your game for testing, provide items for debugging, or intentionally corrupt a save to test edge cases—without writing debug menus! You could even use Arceus as a backend for saving and loading data!
@@ -130,10 +126,6 @@ Arceus uses a brand new file format called SKit. SKit uses XML, GZip, Fernet, an
 ## Blazingly Fast ⚡
 
 SKits are quick to read from disk, with everything essential already at the top of the file.
-
-## Multi-Purpose Containers 🫙
-
-SKits can store anything and everything you could ever need.
 
 ## Tiny Size 🐁
 
@@ -163,24 +155,6 @@ Click the badge below to download the latest artifact.
 
 Consider sponsoring me on GitHub to help support this project! If you can’t, no worries— spreading the word about Arceus is equally appreciated. Thank you!
 
----
-
-# Comparison with Other Save Managers:
-
-| Feature                  | Arceus | [GameSave Manager](https://www.gamesave-manager.com/) | [Ludusavi](https://github.com/mtkennerly/ludusavi) |
-| ------------------------ | ------ | ----------------------------------------------------- | -------------------------------------------------- |
-| Tree Structuring         | ✅     | ❌                                                    | ❌                                                 |
-| Multi-User Support       | ✅     | ❌                                                    | ❌                                                 |
-| Save Editing             | ✅     | ❌                                                    | ❌                                                 |
-| Sharing                  | ✅     | ❌                                                    | ❌                                                 |
-| Cloud-Sync               | ❌     | ✅                                                    | ✅                                                 |
-| Open-Source              | ✅     | ❌                                                    | ✅                                                 |
-| Integration w/ Steam     | ❌     | ✅                                                    | ✅                                                 |
-| Integration w/ GOG       | ❌     | ✅                                                    | ✅                                                 |
-| Integration w/ Epic      | ❌     | ✅                                                    | ✅                                                 |
-| Integration w/ Origin/EA | ❌     | ✅                                                    | ✅                                                 |
-| Developer API            | 🚧     | ❌                                                    | ❌                                                 |
-
 # Planned Features for the Future
 
 ## Frontend GUI 🖱️
@@ -193,7 +167,7 @@ Whenever you close a game, Arceus will grow a star from the current, ensuring yo
 
 ## Cloud Backups ☁️
 
-Transfer your game saves between devices and keep them safe from data loss.
+Transfer files between devices and keep them safe from data loss.
 
 | Planned     | Service      |
 | ----------- | ------------ |

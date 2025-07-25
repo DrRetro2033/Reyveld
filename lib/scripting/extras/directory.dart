@@ -1,7 +1,7 @@
+import 'dart:async';
 import 'dart:io';
-
-import 'package:arceus/extensions.dart';
 import 'package:arceus/scripting/sinterface.dart';
+import 'package:arceus/skit/sobjects/file_system/file_system.dart';
 import 'package:rxdart/rxdart.dart';
 
 class DirectoryInterface extends SInterface<Directory> {
@@ -78,20 +78,23 @@ class DirectoryInterface extends SInterface<Directory> {
         LEntry(
             name: "list",
             descr:
-                "Lists the files in the directory (files will be of type SFiles).",
-            returnType: List,
-            isAsync: true,
+                "Returns a stream of the files in the directory (files will be of type SFiles).",
+            returnType: Stream,
             args: {
               "recursive": LArg<bool>(
-                  descr: "Whether to list recursively (default: false).",
+                  descr:
+                      "Whether to list recursively (i.e. include subdirectories) (default: false).",
                   required: false,
                   positional: false)
             },
-            ({bool recursive = false}) async => await object!
-                .list(recursive: recursive)
-                .whereType<File>()
-                .map((e) => e.path.resolvePath())
-                .toList()),
+            ({bool recursive = false}) => object!
+                    .list(recursive: recursive)
+                    .whereType<File>()
+                    .transform(StreamTransformer.fromBind((stream) async* {
+                  await for (final file in stream) {
+                    yield await SFileCreator.open(file.path);
+                  }
+                }))),
         LEntry(
           name: "exists",
           descr: "Checks if the directory exists.",

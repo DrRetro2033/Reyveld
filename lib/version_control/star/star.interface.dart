@@ -38,17 +38,17 @@ A star is a point in time that represents a snapshot of an folder.
             name: "makeCurrent",
             descr: "Sets the star as the current star.",
             args: const {
-              "updateFolder": LArg<bool>(
+              "syncFolder": LArg<bool>(
                   descr:
-                      "If true, the folder will be updated to the current star.",
+                      "If true, the folder will be synced to the current star.",
                   docDefaultValue: "true",
                   required: false)
             },
             isAsync: true,
-            returnType: Stream, ([bool updateFolder = true]) async {
+            returnType: Stream, ([bool syncFolder = false]) async {
           object!.makeCurrent();
-          if (updateFolder) {
-            return await object!.constellation.updateToCurrent();
+          if (syncFolder) {
+            return await object!.constellation.sync();
           }
         }),
         LEntry(

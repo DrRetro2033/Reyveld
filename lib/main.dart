@@ -108,6 +108,7 @@ Future<void> main(List<String> args) async {
               try {
                 final result = await sessions[request.session.id]!.$1.run(data);
                 socket.add(jsonEncode({
+                  "type": "response",
                   "successful": true,
                   "processTime": sessions[request.session.id]!
                       .$1
@@ -124,6 +125,7 @@ Future<void> main(List<String> args) async {
                         .red);
                 Arceus.talker.critical("Crash Handler", e, st);
                 socket.add(jsonEncode({
+                  "type": "response",
                   "successful": false,
                   "processTime": sessions[request.session.id]!
                       .$1

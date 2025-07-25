@@ -82,14 +82,14 @@ extension Pathing on String {
     return resolvedParts.join("/");
   }
 
+  /// Makes the path relative to another path.
   String relativeTo(String relativeTo) {
     final formattedPath = resolvePath();
     final formattedRelativeTo = relativeTo.resolvePath();
     return formattedPath.replaceFirst(formattedRelativeTo, "").resolvePath();
   }
 
-  /// # `String` getFilename()
-  /// ## Returns the filename of the string.
+  /// Returns the filename of the string.
   /// The filename will be the same for both internal and external paths.
   String getFilename({bool withExtension = true}) {
     String path = resolvePath();
@@ -104,11 +104,27 @@ extension Pathing on String {
 extension ChunkStream on Stream<int> {
   Stream<List<int>> chunk(int chunkSize) async* {
     final List<int> buffer = [];
-    await for (int byte in this) {
+    await for (final byte in this) {
       buffer.add(byte);
       if (buffer.length == chunkSize) {
         yield buffer;
         buffer.clear();
+      }
+    }
+    if (buffer.isNotEmpty) {
+      yield buffer;
+    }
+  }
+}
+
+extension ReChunkStream on Stream<List<int>> {
+  Stream<List<int>> rechunk(int chunkSize) async* {
+    final List<int> buffer = [];
+    await for (final chunk in this) {
+      buffer.addAll(chunk);
+      while (buffer.length >= chunkSize) {
+        yield buffer.sublist(0, chunkSize);
+        buffer.removeRange(0, chunkSize);
       }
     }
     if (buffer.isNotEmpty) {

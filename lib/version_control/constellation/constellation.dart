@@ -126,8 +126,8 @@ class Constellation extends SObject {
     return await getCurrentStar().checkForChanges();
   }
 
-  /// Updates the tracked folder to the current star.
-  Future<Stream<String>> updateToCurrent() async {
+  /// Syncs the tracked folder to the current star.
+  Future<Stream<String>> sync() async {
     return await getCurrentStar()
         .archive
         .then((e) async => e!.extract(path.resolvePath()));

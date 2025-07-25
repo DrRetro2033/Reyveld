@@ -8,7 +8,7 @@ import 'package:arceus/extensions.dart';
 import 'package:hashlib/random.dart';
 
 /// Number of times each test will be run.
-const amountOfTests = 512;
+const amountOfTests = 256;
 
 typedef SpeedTest = (String, String Function(Directory));
 

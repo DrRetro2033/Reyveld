@@ -101,6 +101,21 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             returnType: String,
             () => object!.path),
         LEntry(
+          name: "filename",
+          descr: "Returns the filename of the file",
+          returnType: String,
+          args: const {
+            "extension": LArg<bool>(
+              descr:
+                  "Whether to include the file extension in the filename. (default: true)",
+              required: false,
+              positional: false,
+            )
+          },
+          ({bool extension = true}) =>
+              object!.path.getFilename(withExtension: extension),
+        ),
+        LEntry(
             name: "getU8",
             descr: "Returns a unsigned 8 bit value at the specified index.",
             args: const {
@@ -290,6 +305,76 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             isAsync: true, (int index, int value, [bool? littleEndian]) async {
           await object!.set64(index, value, littleEndian: littleEndian);
         }),
+        LEntry(
+            name: "getF32",
+            descr: "Returns a 32 bit float value at the specified index.",
+            args: const {
+              "index": LArg<int>(
+                descr: "The index to get the value at.",
+              ),
+              "littleEndian": LArg<bool>(
+                  descr:
+                      "If true, the value will be little endian, otherwise it will be big endian.",
+                  required: false)
+            },
+            returnType: double,
+            isAsync: true, (int index, [bool? littleEndian]) async {
+          return await object!.get32Float(index, littleEndian: littleEndian);
+        }),
+        LEntry(
+            name: "getF64",
+            descr: "Returns a 64 bit float value at the specified index.",
+            args: const {
+              "index": LArg<int>(
+                descr: "The index to get the value at.",
+              ),
+              "littleEndian": LArg<bool>(
+                  descr:
+                      "If true, the value will be little endian, otherwise it will be big endian.",
+                  required: false)
+            },
+            returnType: double,
+            isAsync: true, (int index, [bool? littleEndian]) async {
+          return await object!.get64Float(index, littleEndian: littleEndian);
+        }),
+        LEntry(
+            name: "setF32",
+            descr: "Sets a 32 bit float value at the specified index.",
+            args: const {
+              "index": LArg<int>(
+                descr: "The index to set the value at.",
+              ),
+              "value": LArg<double>(
+                descr: "The value to set.",
+              ),
+              "littleEndian": LArg<bool>(
+                  descr:
+                      "If true, the value will be little endian, otherwise it will be big endian.",
+                  required: false)
+            },
+            isAsync: true, (int index, double value,
+                [bool? littleEndian]) async {
+          await object!.set32Float(index, value, littleEndian: littleEndian);
+        }),
+        LEntry(
+            name: "setF64",
+            descr: "Sets a 64 bit float value at the specified index.",
+            args: const {
+              "index": LArg<int>(
+                descr: "The index to set the value at.",
+              ),
+              "value": LArg<double>(
+                descr: "The value to set.",
+              ),
+              "littleEndian": LArg<bool>(
+                  descr:
+                      "If true, the value will be little endian, otherwise it will be big endian.",
+                  required: false)
+            },
+            isAsync: true, (int index, double value,
+                [bool? littleEndian]) async {
+          await object!.set64Float(index, value, littleEndian: littleEndian);
+        }),
         LEntry(name: "defaultEndian", returnType: bool, args: {
           "littleEndian": LArg<bool>(
               descr:
@@ -302,7 +387,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
           return object!.defaultEndian;
         }),
         LEntry(
-            name: "getS16",
+            name: "getStr",
             descr: "Returns a string at the specified index and length.",
             args: const {
               "index": LArg<int>(
@@ -320,7 +405,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             returnType: String,
             isAsync: true, (int index, int length,
                 [bool stopAtNull = false]) async {
-          return await object!.getStr16(index, length, stopAtNull: stopAtNull);
+          return await object!.getStr(index, length, stopAtNull: stopAtNull);
         }),
         LEntry(
             name: "save",

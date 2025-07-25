@@ -1,4 +1,3 @@
-import 'package:arceus/arceus.dart';
 import 'package:arceus/extensions.dart';
 import 'package:arceus/skit/sobject.dart';
 import 'package:arceus/skit/sobjects/file_system/file_system.dart';
@@ -54,8 +53,6 @@ class Star extends SObject {
     final stem = has("branch")
         ? this
         : getAncestors<Star>(filter: (star) => star.has("branch")).first!;
-    Arceus.talker.log(
-        "$name: ${getAncestors<Star>(filter: (star) => star.has("branch")).map((e) => e!.name).toList()}");
     return stem;
   }
 
@@ -114,7 +111,7 @@ class Star extends SObject {
       throw Exception("Cannot trim root star!");
     }
     getParent<Star>()!.makeCurrent();
-    await constellation.updateToCurrent();
+    await constellation.sync();
     await archive.then((e) => e!.markForDeletion());
     for (final archiveReference in getDescendants<SRArchive>()) {
       archiveReference!.markForDeletion();

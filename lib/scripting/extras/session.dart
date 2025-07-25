@@ -34,6 +34,7 @@ class SessionInterface extends SInterface<WebSocket> {
               ),
             },
             (Object data, {String message = ""}) => object!.add(jsonEncode({
+                  "type": "data",
                   "message": message,
                   "timesent": DateTime.now().toIso8601String(),
                   "data": data,
