@@ -385,8 +385,8 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
           return object!.defaultEndian;
         }),
         LEntry(
-            name: "getStr",
-            descr: "Returns a string at the specified index and length.",
+            name: "getUtf16",
+            descr: "Returns a utf-16 string at the specified index and length.",
             args: const {
               "index": LArg<int>(
                 descr: "The index to get the string at.",
@@ -401,8 +401,28 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             },
             returnType: String,
             isAsync: true, (int index, int length,
-                [bool stopAtNull = false]) async {
-          return await object!.getStr(index, length, stopAtNull: stopAtNull);
+                {bool stopAtNull = false}) async {
+          return await object!.getUtf16(index, length, stopAtNull: stopAtNull);
+        }),
+        LEntry(
+            name: "getUtf8",
+            descr: "Returns a utf-8 string at the specified index and length.",
+            args: const {
+              "index": LArg<int>(
+                descr: "The index to get the string at.",
+              ),
+              "length": LArg<int>(
+                descr: "The length of the string.",
+              ),
+              "stopAtNull": LArg<bool>(
+                  descr:
+                      "Whether to stop at the first null character while getting the string.",
+                  kind: ArgKind.optionalNamed),
+            },
+            returnType: String,
+            isAsync: true, (int index, int length,
+                {bool stopAtNull = false}) async {
+          return await object!.getUtf8(index, length, stopAtNull: stopAtNull);
         }),
         LEntry(
             name: "save",

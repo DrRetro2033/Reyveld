@@ -9,13 +9,13 @@ import 'package:pointycastle/export.dart';
 import 'package:basic_utils/basic_utils.dart';
 import 'package:version/version.dart';
 import 'package:talker/talker.dart';
-import 'package:arceus/version.dart' as version;
+import 'package:arceus/version.dart' as versi;
 
 part "arceus.interface.dart";
 
 /// Contains global functions for Arceus, for example, settings, paths, etc.
 class Arceus {
-  static Version get currentVersion => version.currentVersion;
+  static Version get version => versi.currentVersion;
   static late String _currentPath;
   static String get currentPath => _currentPath;
   static set currentPath(String path) => _currentPath = path.resolvePath();
@@ -73,7 +73,7 @@ class Arceus {
       logger: TalkerLogger(
           formatter: ArceusLogFormatter(),
           output: ArceusLogger(
-                  "$appDataPath/logs/$currentVersion/arceus-$currentVersion-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log")
+                  "$appDataPath/logs/$version/arceus-$version-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log")
               .output,
           filter: ArceusLogFilter()),
     );
@@ -81,7 +81,7 @@ class Arceus {
   }
 
   static File get mostRecentLog => File(
-      "$appDataPath/logs/$currentVersion/arceus-$currentVersion-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log");
+      "$appDataPath/logs/$version/arceus-$version-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log");
 
   /// The path to the application data directory.
   static String get appDataPath {
@@ -198,7 +198,7 @@ class ArceusLogger {
   Locale                ${Platform.localeName}
   
 [App Info]
-  Version               ${Arceus.currentVersion.toString()}
+  Version               ${Arceus.version.toString()}
 
 [Log]
   Date                  ${DateTime.now().year}/${DateTime.now().month}/${DateTime.now().day}
@@ -208,7 +208,7 @@ class ArceusLogger {
     logFile.writeAsStringSync("""
 
 Run at ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, "0")}:${DateTime.now().second.toString().padLeft(2, "0")}.${DateTime.now().millisecond.toString().padLeft(3, "0")}
-Version ${Arceus.currentVersion.toString()}
+Version ${Arceus.version.toString()}
 ───────────────────────────────────────────────────────────────
 """, mode: FileMode.append);
   }

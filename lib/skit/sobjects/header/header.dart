@@ -29,7 +29,7 @@ class SHeader extends SObject {
   }
 
   /// Which version of arceus was this kit file packaged in?
-  String get version => get("version") ?? Arceus.currentVersion.toString();
+  String get version => get("version") ?? Arceus.version.toString();
 
   /// What kind of kit is this?
   /// See [SKitType] for more info.

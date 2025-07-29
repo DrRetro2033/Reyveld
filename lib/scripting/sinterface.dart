@@ -217,7 +217,7 @@ abstract class SInterface<T> {
   /// This generates the docs for the interface.
   Future<void> generateDocs() async {
     final doc = File(
-        "${Arceus.appDataPath}/docs/${Arceus.currentVersion.toString()}/${className.toLowerCase()}.lua");
+        "${Arceus.appDataPath}/docs/${Arceus.version.toString()}/${className.toLowerCase()}.lua");
     await doc.create(recursive: true);
     await doc.writeAsString("""
 ---@meta _

@@ -337,13 +337,24 @@ class SFile extends SObject {
     await setRange(index, index + 8, bytes, littleEndian);
   }
 
-  Future<String> getStr(int index, int length,
+  Future<String> getUtf16(int index, int length,
       {bool stopAtNull = false}) async {
     final bytes = await getRange(index, index + (length * 2));
     final buffer = StringBuffer();
     await for (final char in bytes.chunk(2)) {
       if (stopAtNull && char[0] == 0 && char[1] == 0) break;
       buffer.writeCharCode(_mergeInt(char[1], char[0]));
+    }
+    return buffer.toString();
+  }
+
+  Future<String> getUtf8(int index, int length,
+      {bool stopAtNull = false}) async {
+    final bytes = await getRange(index, index + length);
+    final buffer = StringBuffer();
+    await for (final char in bytes) {
+      if (stopAtNull && char == 0) break;
+      buffer.writeCharCode(char);
     }
     return buffer.toString();
   }

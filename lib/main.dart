@@ -7,7 +7,9 @@ import 'package:arceus/scripting/lua.dart';
 import 'package:arceus/skit/skit.dart';
 import 'package:chalkdart/chalkstrings.dart';
 import 'package:cli_spin/cli_spin.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:version/version.dart';
+import 'package:arceus/extensions.dart';
 import 'package:http/http.dart' as http;
 
 typedef ArceusSession = (Lua, WebSocket);
@@ -16,16 +18,19 @@ Future<void> main(List<String> args) async {
   /// Check if the version of this Arceus executable is already running.
   final isRunningSpinner = CliSpin(spinner: CliSpinners.bounce)
       .start("Checking if running...".skyBlue);
-  if (await isRunning(Arceus.currentVersion)) {
+  if (await isRunning(Arceus.version)) {
     isRunningSpinner.fail('Already Running.'.skyBlue);
     exit(0);
   }
 
+  /// The reroute version is the version that
+  Version rerouteVersion = await getMostRecentVersion();
+
   isRunningSpinner.success("Ready to Start!".skyBlue);
 
   /// If not, create a lock file to indicate that this version of Arceus is running.
-  File lockFile = File(
-      "${Arceus.appDataPath}/locks/${Arceus.currentVersion.toString()}.lock");
+  File lockFile =
+      File("${Arceus.appDataPath}/locks/${Arceus.version.toString()}.lock");
 
   final spinner =
       CliSpin(spinner: CliSpinners.bounce).start("Generating Docs...".skyBlue);
@@ -36,7 +41,7 @@ Future<void> main(List<String> args) async {
   }).asFuture();
 
   spinner.success(
-      "Generated Lua Docs at \"${Arceus.appDataPath}/docs/${Arceus.currentVersion.toString()}/\""
+      "Generated Lua Docs at \"${Arceus.appDataPath}/docs/${Arceus.version.toString()}/\""
           .skyBlue);
 
   /// Verify the signature of the user.
@@ -52,12 +57,18 @@ Future<void> main(List<String> args) async {
 
   await for (HttpRequest request in server) {
     try {
+      Version requestedVersion;
+
+      try {
+        requestedVersion = Version.parse(request.uri.pathSegments.first);
+      } catch (e) {
+        requestedVersion = rerouteVersion;
+      }
+
       /// Check if the requested version is the same as this program's version.
-      if (request.uri.pathSegments.firstOrNull !=
-          Arceus.currentVersion.toString()) {
+      if (requestedVersion != Arceus.version) {
         /// If not, check if the requested version is running.
-        if (await isRunning(
-            Version.parse(request.uri.pathSegments.firstOrNull!))) {
+        if (await isRunning(requestedVersion)) {
           /// The requested version is running.
           request.response.statusCode = HttpStatus.movedPermanently;
           await request.response.close();
@@ -72,7 +83,15 @@ Future<void> main(List<String> args) async {
         }
       }
 
-      final requestUrl = request.uri.pathSegments.sublist(1).join('/');
+      // Has the client requested a specific version?
+      bool definedVersion = true;
+      try {
+        Version.parse(request.uri.pathSegments.first);
+      } catch (_) {
+        definedVersion = false;
+      }
+      final requestUrl =
+          request.uri.pathSegments.sublist(definedVersion ? 1 : 0).join('/');
 
       /// If the requested version is the same as this program's version, continue as normal.
       switch (requestUrl) {
@@ -95,13 +114,11 @@ Future<void> main(List<String> args) async {
           if (WebSocketTransformer.isUpgradeRequest(request)) {
             final socket = await WebSocketTransformer.upgrade(request);
             sessions[request.session.id] = (Lua(socket: socket), socket);
-            await sessions[request.session.id]!.$1.init();
-
             Arceus.printToConsole(
                 'Client (${request.session.id}) connected.'.skyBlue);
-
             Arceus.talker.info("Client (${request.session.id}) connected.");
             socket.listen((data) async {
+              await sessions[request.session.id]!.$1.init();
               final requestProgress = CliSpin(spinner: CliSpinners.bounce).start(
                   "Processing request from client (${request.session.id})..."
                       .aqua);
@@ -182,4 +199,17 @@ Future<bool> isRunning(Version version) async {
   } else {
     return false;
   }
+}
+
+Future<Version> getMostRecentVersion() async {
+  Directory lockDir = Directory("${Arceus.appDataPath}/locks/");
+  Version currentVersion = Arceus.version;
+  await for (final lockFile in lockDir.list().whereType<File>()) {
+    Version version =
+        Version.parse(lockFile.path.getFilename(withExtension: false));
+    if (currentVersion.compareTo(version) > 0) {
+      currentVersion = version;
+    }
+  }
+  return currentVersion;
 }

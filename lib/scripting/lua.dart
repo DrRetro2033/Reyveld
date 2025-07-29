@@ -457,8 +457,8 @@ class Lua {
 
   /// Generates a docs file for all of the interfaces.
   static Stream<String> generateDocs() async* {
-    final dir = Directory(
-        "${Arceus.appDataPath}/docs/${Arceus.currentVersion.toString()}");
+    final dir =
+        Directory("${Arceus.appDataPath}/docs/${Arceus.version.toString()}");
     if (await dir.exists()) {
       await dir.delete(recursive: true);
     }
@@ -476,7 +476,7 @@ class Lua {
   /// Generates a docs file for all of the globals.
   static Future<void> _generateGlobalDocs() async {
     final doc = File(
-        "${Arceus.appDataPath}/docs/${Arceus.currentVersion.toString()}/globals.lua");
+        "${Arceus.appDataPath}/docs/${Arceus.version.toString()}/globals.lua");
     await doc.create(recursive: true);
     await doc.writeAsString("""
 ---@meta _
@@ -500,7 +500,7 @@ ${global.key} = {}
   // Generates a docs file for all of the enums.
   static Future<void> _generateEnumDocs() async {
     final doc = File(
-        "${Arceus.appDataPath}/docs/${Arceus.currentVersion.toString()}/enums.lua");
+        "${Arceus.appDataPath}/docs/${Arceus.version.toString()}/enums.lua");
     await doc.create(recursive: true);
     await doc.writeAsString("""
 ---@meta _
