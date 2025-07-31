@@ -30,7 +30,7 @@ class StreamInterface extends SInterface<Stream> {
           while (await queue.hasNext) {
             final data = await queue.next;
             if (data == Exception) throw data;
-            if (data != null && onData != null) onData.call([data]);
+            if (data != null && onData != null) await onData.call([data]);
           }
           await onData!.unregister();
         }),

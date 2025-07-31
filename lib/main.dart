@@ -118,11 +118,11 @@ Future<void> main(List<String> args) async {
                 'Client (${request.session.id}) connected.'.skyBlue);
             Arceus.talker.info("Client (${request.session.id}) connected.");
             socket.listen((data) async {
-              await sessions[request.session.id]!.$1.init();
               final requestProgress = CliSpin(spinner: CliSpinners.bounce).start(
                   "Processing request from client (${request.session.id})..."
                       .aqua);
               try {
+                await sessions[request.session.id]!.$1.init();
                 final result = await sessions[request.session.id]!.$1.run(data);
                 socket.add(jsonEncode({
                   "type": "response",

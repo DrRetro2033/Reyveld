@@ -268,9 +268,13 @@ class SFile extends SObject {
   /// If littleEndian is true, then the stream will be reversed before merging.
   Future<int> _formNumber(Stream<int> stream, bool? littleEndian) async {
     if (!(littleEndian ?? defaultEndian)) {
-      return await stream.toList().then((e) => e.reduce(_mergeInt));
+      return await stream
+          .toList()
+          .then((e) => e.isEmpty ? 0 : e.reduce(_mergeInt));
     }
-    return await stream.toList().then((e) => e.reversed.reduce(_mergeInt));
+    return await stream
+        .toList()
+        .then((e) => e.isEmpty ? 0 : e.reversed.reduce(_mergeInt));
   }
 
   /// Forms a unsigned number from a stream of bytes.

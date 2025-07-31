@@ -218,6 +218,7 @@ class Lua {
       for (String key in value.keys) {
         await _pushToStack(key);
         await _pushToStack(value[key]);
+        // Arceus.talker.debug(_formatStack());
         await state.setTable(state.getTop() - 2);
       }
     } else if (value is Object && getInterface(value) != null) {
@@ -295,7 +296,7 @@ class Lua {
         }
       });
     } else if (value is LField) {
-      _pushToStack(value.value);
+      await _pushToStack(value.value);
     } else if (value == null) {
       state.pushNil();
     } else {
@@ -373,7 +374,7 @@ class Lua {
       dynamic value = await getFromTop();
       String key = await getFromTop<String>() ?? "";
       resultTable[key] = value;
-      _pushToStack(key);
+      await _pushToStack(key);
     }
     return resultTable;
   }
@@ -395,6 +396,8 @@ class Lua {
     for (final effect in codeEffects) {
       compiled = effect(compiled);
     }
+
+    Arceus.talker.debug("Compiled:\n$compiled");
 
     while (compiled.contains(stringPlaceholder)) {
       compiled = compiled.replaceFirst(
@@ -548,7 +551,7 @@ final class LuaFuncRef {
 
   /// Unregisters the function from the registry.
   ///
-  /// This should always be called when the reference is no longer needed to prevent memory leaks or overflows.
+  /// This should always be called when the reference is no longer needed.
   Future<void> unregister() async =>
       await lua.state.unRef(luaRegistryIndex, ref);
 }

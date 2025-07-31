@@ -99,6 +99,11 @@ extension Pathing on String {
       return path.split("/").last.split(".").first;
     }
   }
+
+  String getExtensions() {
+    String path = resolvePath();
+    return path.split(".").sublist(1).join(".");
+  }
 }
 
 extension ChunkStream on Stream<int> {

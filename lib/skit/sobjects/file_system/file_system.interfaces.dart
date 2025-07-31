@@ -445,6 +445,11 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
           (String path, [bool overwrite = false]) async {
             await object!.saveAs(path, overwrite: overwrite);
           },
-        )
+        ),
+        LEntry(
+            name: "extension",
+            descr: "Returns the extension of the file.",
+            returnType: String,
+            () => object!.path.getExtensions()),
       };
 }
