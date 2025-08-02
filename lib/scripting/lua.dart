@@ -213,9 +213,9 @@ class Lua {
       state.pushBoolean(value);
     } else if (value is double) {
       state.pushNumber(value);
-    } else if (value is Map<String, dynamic>) {
+    } else if (value is Map) {
       state.newTable();
-      for (String key in value.keys) {
+      for (final key in value.keys) {
         await _pushToStack(key);
         await _pushToStack(value[key]);
         // Arceus.talker.debug(_formatStack());
@@ -336,13 +336,6 @@ class Lua {
           /// If the table has an objHash key, then it means it is an interface for an object,
           /// so get the object and return it.
           result = _objects[table["objHash"]]!.object;
-        } else if (table.keys.every((e) => int.tryParse(e) != null)) {
-          List<dynamic> list = [];
-          for (final key in table.keys.toList()
-            ..sort((a, b) => int.parse(a).compareTo(int.parse(b)))) {
-            list.add(table[key]);
-          }
-          result = list;
         } else {
           result = table;
         }
@@ -396,8 +389,6 @@ class Lua {
     for (final effect in codeEffects) {
       compiled = effect(compiled);
     }
-
-    Arceus.talker.debug("Compiled:\n$compiled");
 
     while (compiled.contains(stringPlaceholder)) {
       compiled = compiled.replaceFirst(
@@ -540,13 +531,18 @@ final class LuaFuncRef {
 
   const LuaFuncRef(this.lua, this.ref);
 
-  Future<dynamic> call(List<dynamic> args, {bool returns = false}) async {
+  Future<T?> call<T>(List<dynamic> args) async {
     await lua.state.rawGetI(luaRegistryIndex, ref);
     for (final arg in args) {
+      // Arceus.talker.debug(arg);
       await lua._pushToStack(arg);
     }
-    await lua.state.call(args.length, returns ? 1 : 0);
-    return returns ? await lua.getFromTop() : null;
+    if (lua.state.isNil(lua.state.getTop())) {
+      return null;
+    }
+    // Arceus.talker.debug(lua._formatStack());
+    await lua.state.call(args.length, 1);
+    return await lua.getFromTop();
   }
 
   /// Unregisters the function from the registry.

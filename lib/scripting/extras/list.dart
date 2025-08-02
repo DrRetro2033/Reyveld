@@ -9,6 +9,15 @@ class ListInterface extends SInterface<List> {
   get classDescription => "A list of objects.";
 
   @override
+  get statics => {
+        LEntry(
+            name: "new",
+            descr: "Creates a new list.",
+            returnType: List,
+            () => [])
+      };
+
+  @override
   get exports => {
         LEntry(
             name: "add",
@@ -18,7 +27,10 @@ class ListInterface extends SInterface<List> {
                 descr: "The object to add.",
               )
             },
-            (Object value) => object!.add(value)),
+            returnType: List, (Object value) {
+          object!.add(value);
+          return object!;
+        }),
         LEntry(
             name: "remove",
             descr: "Removes an object from the list.",

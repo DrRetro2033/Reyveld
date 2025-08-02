@@ -73,8 +73,8 @@ A base class for all objects in the kit.
             returnGeneric: true,
             isAsync: true, ({required LuaFuncRef filter}) async {
           for (final child in object!.getChildren().nonNulls) {
-            final res = await filter.call([child], returns: true) as bool;
-            if (res) return child;
+            final res = await filter.call<bool>([child]);
+            if (res!) return child;
           }
         }),
         LEntry(
@@ -91,8 +91,8 @@ A base class for all objects in the kit.
           final children = object!.getChildren().nonNulls.toList();
           for (final child in object!.getChildren().nonNulls) {
             if (filter != null) {
-              final res = await filter.call([child], returns: true) as bool;
-              if (!res) children.remove(child);
+              final res = await filter.call<bool>([child]);
+              if (!res!) children.remove(child);
             }
           }
           return children;

@@ -313,6 +313,7 @@ class SFile extends SObject {
   Future<void> set64(int index, int value, {bool? littleEndian}) async =>
       await setRange(index, index + 8, _seperateInt(value), littleEndian);
 
+  /// Forms a float from a U32.
   Future<double> get32Float(int index, {bool? littleEndian}) async {
     final getUnsigned = await getU32(index, littleEndian: littleEndian);
     final buffer = ByteData(4);
@@ -327,6 +328,7 @@ class SFile extends SObject {
     await setRange(index, index + 4, bytes, littleEndian);
   }
 
+  /// Forms a float from a U64.
   Future<double> get64Float(int index, {bool? littleEndian}) async {
     final getUnsigned = await getU64(index, littleEndian: littleEndian);
     final buffer = ByteData(8);
@@ -458,7 +460,7 @@ class SRFile extends SFile {
   void onSave(SKit kit) {
     /// Check if the orgin archive is marked for deletion.
     /// If it is, unparent this reference.
-    /// This could result in missing files if not properly handled.
+    /// Not doing this could result in references to missing files.
     if (kit.isMarkedForDeletion(archiveHash)) {
       unparent();
     }
