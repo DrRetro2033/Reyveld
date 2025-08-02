@@ -303,7 +303,7 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
       if (export.hasNamedArgs) {
         // Document the named arguments
         method.writeln(
-            "---@param named {${export.args.entries.where((e) => !e.value.positional).map((e) => "${e.key}: ${_convertDartToLua(e.value.type)}${e.value.required ? "" : "?"}").join(", ")}}? Named arguments go here. See description below for more info.");
+            "---@param named {${export.args.entries.where((e) => !e.value.positional).map((e) => "${e.key}: ${(e.value.docTypeOverride ?? _convertDartToLua(e.value.type))}${e.value.required ? "" : "?"}").join(", ")}}? Put any named arguments in a table here. See description below for more info.");
       }
     }
     if (export.returnGeneric && export.returnType != null) {
@@ -322,11 +322,11 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
     }
     if (export.hasNamedArgs) {
       method.writeln("---");
-      method.writeln("--- Named arguments:");
+      method.writeln("---## Named arguments:");
       for (final arg in export.args.entries.where((e) => !e.value.positional)) {
         method.writeln("---");
         method.writeln(
-            "--- \t`${arg.key}`: ${_convertDartToLua(arg.value.type)}${arg.value.required ? "" : "?"} - ${arg.value.descr}");
+            "---- ${arg.key}: `${(arg.value.docTypeOverride ?? _convertDartToLua(arg.value.type))}${arg.value.required ? "" : "?"}` - ${arg.value.descr}");
       }
     }
     method.writeln("function $className.${export.name}(${[

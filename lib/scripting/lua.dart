@@ -6,6 +6,7 @@ import 'package:arceus/scripting/extras/directory.dart';
 import 'package:arceus/scripting/extras/list.dart';
 import 'package:arceus/scripting/extras/session.dart';
 import 'package:arceus/scripting/extras/stream.dart';
+import 'package:arceus/scripting/extras/talker.dart';
 import 'package:arceus/skit/sobjects/sobjects.dart';
 import 'package:arceus/uuid.dart';
 import 'package:arceus/version_control/constellation/constellation.dart';
@@ -47,7 +48,8 @@ class Lua {
         WhitelistInterface(),
         BlacklistInterface(),
         SAuthorInterface(),
-        SCustomInterface()
+        SCustomInterface(),
+        TalkerInterface(),
       };
 
   /// A set of all interfaces in the lua state, sorted by priority.
@@ -336,6 +338,8 @@ class Lua {
           /// If the table has an objHash key, then it means it is an interface for an object,
           /// so get the object and return it.
           result = _objects[table["objHash"]]!.object;
+        } else if (table.keys.every((key) => key is int)) {
+          result = table.values.toList();
         } else {
           result = table;
         }
@@ -361,15 +365,20 @@ class Lua {
 
   /// Returns a table from the lua state.
   Future<Map> _getTableFromState() async {
-    Map<dynamic, dynamic> resultTable = {};
+    Map? resultTable;
     state.pushNil();
     while (state.next(state.getTop() - 1)) {
       dynamic value = await getFromTop();
-      String key = await getFromTop<String>() ?? "";
-      resultTable[key] = value;
+      dynamic key = await getFromTop();
+      if (key is String && resultTable == null) {
+        resultTable = <String, dynamic>{};
+      } else if (key is int && resultTable == null) {
+        resultTable = <int, dynamic>{};
+      }
+      resultTable![key] = value;
       await _pushToStack(key);
     }
-    return resultTable;
+    return resultTable!;
   }
 
   /// Compiles a lua project.
