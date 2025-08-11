@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:arceus/arceus.dart';
 import 'package:arceus/scripting/lua.dart';
+import 'package:arceus/security/authveld.dart';
 import 'package:arceus/skit/skit.dart';
 import 'package:chalkdart/chalkstrings.dart';
 import 'package:cli_spin/cli_spin.dart';
@@ -93,80 +94,125 @@ Future<void> main(List<String> args) async {
       final requestUrl =
           request.uri.pathSegments.sublist(definedVersion ? 1 : 0).join('/');
 
+      Arceus.talker
+          .log("Requested: ${request.method} ${request.uri.toString()}");
+
       /// If the requested version is the same as this program's version, continue as normal.
-      switch (requestUrl) {
-        case "heartbeat":
-          request.response.statusCode = HttpStatus.ok;
-          Arceus.talker.info(
-              "Heartbeat checked at ${DateTime.now().toIso8601String()}.");
-          await request.response.close();
-        case "close":
-          request.response.statusCode = HttpStatus.ok;
-          await request.response.close();
-          for (final session in sessions.entries) {
-            await session.value.$1.awaitForCompletion();
-            await session.value.$2
-                .close(WebSocketStatus.goingAway, "Server closed.");
-          }
-          await server.close();
-          exit(0);
-        case "lua":
-          if (WebSocketTransformer.isUpgradeRequest(request)) {
-            final socket = await WebSocketTransformer.upgrade(request);
-            sessions[request.session.id] = (Lua(socket: socket), socket);
-            Arceus.printToConsole(
-                'Client (${request.session.id}) connected.'.skyBlue);
-            Arceus.talker.info("Client (${request.session.id}) connected.");
-            socket.listen((data) async {
-              final requestProgress = CliSpin(spinner: CliSpinners.bounce).start(
-                  "Processing request from client (${request.session.id})..."
-                      .aqua);
-              try {
-                await sessions[request.session.id]!.$1.init();
-                final result = await sessions[request.session.id]!.$1.run(data);
-                socket.add(jsonEncode({
-                  "type": "response",
-                  "successful": true,
-                  "processTime": sessions[request.session.id]!
-                      .$1
-                      .stopwatch
-                      .elapsedMilliseconds,
-                  "return": result
-                }));
-                requestProgress.success(
-                    "Completed request in ${sessions[request.session.id]!.$1.stopwatch.elapsedMilliseconds}ms (${request.session.id})!"
-                        .limeGreen);
-              } catch (e, st) {
-                requestProgress.fail(
-                    "There was a crash on this request (Session ID: ${request.session.id}), please check the log folder (${Arceus.appDataPath}/logs) for more information."
-                        .red);
-                Arceus.talker.critical("Crash Handler", e, st);
-                socket.add(jsonEncode({
-                  "type": "response",
-                  "successful": false,
-                  "processTime": sessions[request.session.id]!
-                      .$1
-                      .stopwatch
-                      .elapsedMilliseconds,
-                  "return": null
-                }));
-              }
-            }, onDone: () {
+      if (request.method == "GET") {
+        switch (requestUrl) {
+          case "authveld":
+            request.response.headers.contentType = ContentType.html;
+            request.response.add(
+                AuthVeld.authorizePage(request.uri.queryParameters["ticket"]!)
+                    .codeUnits);
+            await request.response.close();
+          case "heartbeat":
+            request.response.statusCode = HttpStatus.ok;
+            Arceus.talker.info(
+                "Heartbeat checked at ${DateTime.now().toIso8601String()}.");
+            await request.response.close();
+          case "close":
+            request.response.statusCode = HttpStatus.ok;
+            await request.response.close();
+            for (final session in sessions.entries) {
+              await session.value.$1.awaitForCompletion();
+              await session.value.$2
+                  .close(WebSocketStatus.goingAway, "Server closed.");
+            }
+            await server.close();
+            exit(0);
+          case "lua":
+            if (WebSocketTransformer.isUpgradeRequest(request)) {
+              final socket = await WebSocketTransformer.upgrade(request);
+              sessions[request.session.id] = (Lua(socket: socket), socket);
               Arceus.printToConsole(
-                  'Client (${request.session.id}) disconnected'.skyBlue);
-              Arceus.talker
-                  .info("Client (${request.session.id}) disconnected.");
-              socket.close();
-              sessions.remove(request.session.id);
-              return;
-            }, onError: (error, stack) {
-              Arceus.talker.error("Error", error, stack);
-            }, cancelOnError: false);
-          } else {
-            request.response
-              ..statusCode = HttpStatus.forbidden
-              ..close();
-          }
+                  'Client (${request.session.id}) connected.'.skyBlue);
+              Arceus.talker.info("Client (${request.session.id}) connected.");
+              socket.listen((data) async {
+                final requestProgress = CliSpin(spinner: CliSpinners.bounce).start(
+                    "Processing request from client (${request.session.id})..."
+                        .aqua);
+                try {
+                  await sessions[request.session.id]!.$1.init();
+                  final result =
+                      await sessions[request.session.id]!.$1.run(data);
+                  socket.add(jsonEncode({
+                    "type": "response",
+                    "successful": true,
+                    "processTime": sessions[request.session.id]!
+                        .$1
+                        .stopwatch
+                        .elapsedMilliseconds,
+                    "return": result
+                  }));
+                  requestProgress.success(
+                      "Completed request in ${sessions[request.session.id]!.$1.stopwatch.elapsedMilliseconds}ms (${request.session.id})!"
+                          .limeGreen);
+                } catch (e, st) {
+                  requestProgress.fail(
+                      "There was a crash on this request (Session ID: ${request.session.id}), please check the log folder (${Arceus.appDataPath}/logs) for more information."
+                          .red);
+                  Arceus.talker.critical("Crash Handler", e, st);
+                  socket.add(jsonEncode({
+                    "type": "response",
+                    "successful": false,
+                    "processTime": sessions[request.session.id]!
+                        .$1
+                        .stopwatch
+                        .elapsedMilliseconds,
+                    "return": null
+                  }));
+                }
+              }, onDone: () {
+                Arceus.printToConsole(
+                    'Client (${request.session.id}) disconnected'.skyBlue);
+                Arceus.talker
+                    .info("Client (${request.session.id}) disconnected.");
+                socket.close();
+                sessions.remove(request.session.id);
+                return;
+              }, onError: (error, stack) {
+                Arceus.talker.error("Error", error, stack);
+              }, cancelOnError: false);
+            } else {
+              request.response
+                ..statusCode = HttpStatus.forbidden
+                ..close();
+            }
+          case "permissions/details":
+            request.response.headers.contentType = ContentType.html;
+            request.response.add(
+                AuthVeld.getDetailsPage(request.uri.queryParameters["ticket"]!)
+                    .codeUnits);
+            await request.response.close();
+        }
+      } else if (request.method == "POST") {
+        switch (requestUrl) {
+          case "authorize":
+            final origin =
+                request.headers["origin"] ?? request.headers['referer'];
+            if (origin == null || origin.isEmpty) {
+              request.response.statusCode = HttpStatus.forbidden;
+              await request.response.close();
+              continue;
+            }
+            AuthVeld.authorize(request.uri.queryParameters["ticket"]!);
+            request.response.headers.contentType = ContentType.json;
+            request.response.add(jsonEncode({"allowed": true}).codeUnits);
+            await request.response.close();
+          case "deauthorize":
+            final origin =
+                request.headers["origin"] ?? request.headers['referer'];
+            if (origin == null || origin.isEmpty) {
+              request.response.statusCode = HttpStatus.forbidden;
+              await request.response.close();
+              continue;
+            }
+            AuthVeld.unauthorize(request.uri.queryParameters["ticket"]!);
+            request.response.headers.contentType = ContentType.json;
+            request.response.add(jsonEncode({"allowed": false}).codeUnits);
+            await request.response.close();
+        }
       }
     } catch (e, st) {
       Arceus.printToConsole(

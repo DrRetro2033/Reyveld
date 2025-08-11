@@ -30,6 +30,9 @@ class LEntry extends LExport {
   /// This is used to define if the return type of the entrypoint can be null.
   final bool returnNullable;
 
+  /// Pass the [Lua] object to the entrypoint as the first argument.
+  final bool passLua;
+
   /// This is used to determine if the entrypoint has named arguments.
   /// Named arguments are arguments that are accessed by name by adding a table
   /// to the end of the argument list.
@@ -48,6 +51,7 @@ class LEntry extends LExport {
       super.descr,
       this.args = const {},
       this.isAsync = false,
+      this.passLua = false,
       this.returnType,
       this.returnNullable = false,
       this.returnGeneric = false});

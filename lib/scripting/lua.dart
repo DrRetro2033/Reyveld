@@ -2,11 +2,10 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:arceus/arceus.dart';
-import 'package:arceus/scripting/extras/directory.dart';
-import 'package:arceus/scripting/extras/list.dart';
-import 'package:arceus/scripting/extras/session.dart';
-import 'package:arceus/scripting/extras/stream.dart';
-import 'package:arceus/scripting/extras/talker.dart';
+import 'package:arceus/scripting/extras/extras.dart';
+import 'package:arceus/security/authveld.dart';
+import 'package:arceus/security/certificate/certificate.dart';
+import 'package:arceus/security/policies/policies.dart';
 import 'package:arceus/skit/sobjects/sobjects.dart';
 import 'package:arceus/uuid.dart';
 import 'package:arceus/version_control/constellation/constellation.dart';
@@ -22,7 +21,9 @@ class Lua {
 
   final WebSocket? socket;
 
-  Lua({this.socket}) : state = LuaState.newState();
+  final SCertificate? certificate;
+
+  Lua({this.socket, this.certificate}) : state = LuaState.newState();
 
   /// A map of all objects in the lua state.
   ///
@@ -50,6 +51,11 @@ class Lua {
         SAuthorInterface(),
         SCustomInterface(),
         TalkerInterface(),
+        AuthVeldInterface(),
+        SPolicyInterface(),
+        SPolicyFilesInterface(),
+        SPolicySKitInterface(),
+        SPolicyAllInterface(),
       };
 
   /// A set of all interfaces in the lua state, sorted by priority.
@@ -267,6 +273,11 @@ class Lua {
             args.add(trueValue);
             state.pop(1);
           }
+
+          if (value.passLua) {
+            args.add(this);
+          }
+
           final finalArgs = args.reversed.toList()
             ..removeWhere((e) => e == null);
 

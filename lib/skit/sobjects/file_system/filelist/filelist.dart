@@ -26,9 +26,11 @@ sealed class Globs extends SObject {
 
   void remove(String pattern) => _list = _list..remove(Glob(pattern));
 
+  /// Returns a list of filepaths that are allowed by the list.
   List<String> filter(List<String> filepaths) =>
       filepaths.where((f) => included(f)).toList();
 
+  /// Returns true if the filepath is allowed by the list, false if it is not.
   bool included(String filepath);
 }
 

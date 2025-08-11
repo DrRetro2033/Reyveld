@@ -80,4 +80,12 @@ class ModifiedXmlBuilder extends XmlBuilder {
           {String? namespace, XmlAttributeType? attributeType}) =>
       super.attribute(name, encodeText(value.toString()),
           namespace: namespace, attributeType: attributeType);
+
+  /// Creates a boolean attribute (true = 1, false = 0).
+  void boolAttri(String name, bool value,
+          {String? namespace, XmlAttributeType? attributeType}) =>
+      attribute(name, value ? "1" : "0",
+          namespace: namespace, attributeType: attributeType);
+
+  void sobject(SObject obj) => xml(obj.toXmlString());
 }

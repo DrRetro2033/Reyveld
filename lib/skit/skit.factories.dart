@@ -17,7 +17,10 @@ Set<SFactory> get sobjectFactories => {
       BlacklistFactory(),
       SAuthorFactory(),
       SRAuthorFactory(),
-      SCustomFactory()
+      SCustomFactory(),
+      SPolicyAllFactory(),
+      SPolicyFilesFactory(),
+      SPolicySKitFactory(),
     };
 
 /// Get the factory for the given [SObject] subclass.
