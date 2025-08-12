@@ -65,6 +65,7 @@ String buildAuthPage(
             justify-content: center;
             color: grey;
             font-size: 11px;
+            text-shadow: 2px 2px 2px #000000;
         }
 
         h1 {
@@ -80,6 +81,20 @@ String buildAuthPage(
             transition: all 0.3s ease;
         }
 
+        .bubble {
+            background: #181a1b;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            padding: 1em;
+        }
+
+        .auth-dialog.expanded .bubble {
+
+            height: 100%;
+        }
+
         .auth-dialog {
             text-align: center;
             position: fixed;
@@ -87,9 +102,6 @@ String buildAuthPage(
             transform: translateX(-50%);
             width: 400px;
             padding: 1em;
-            background: #181a1b;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             transition: all 0.3s ease;
             overflow: hidden;
             display: flex;
@@ -331,36 +343,37 @@ String buildAuthPage(
         <h1 id="finish-message-header">Done</h1>
     </div>
     <div class="auth-dialog" id="authDialog">
-
-        <h1>AuthVeld</h1>
-        <h2>$applicationName wants Access</h2>
-        <div class="summary" id="summary" onclick="expandDialog()">
-            <strong>$applicationName</strong> is requesting access to Arceus.
-            <p><strong>Requested permissions:</strong></p>
-            <ul class="permission-list">
-                ${permissions.map((p) => '<li>${p.description}</li>').join('\n')}
-            </ul>
-        </div>
-
-        <div class="details">
-            <iframe class="frame" id="details" frameborder="0"></iframe>
-        </div>
-        <div class="bottom-row">
-            <div class="actions">
-
-                <div class="check tooltip" id="$color"
-                    style="font-variation-settings: 'FILL' 1, 'wght' 700, 'GRAD' 0, 'opsz'24;">
-                    <span class="material-symbols-outlined md-48">$iconName</span>
-                    <span class="tooltiptext" M>$tooltip</span>
-                </div>
-                <button class="deny" onclick="handleDeny()">Deny</button>
-                <button class="allow" onclick="handleAllow()">Allow</button>
-
+        <div class="bubble">
+            <h1>AuthVeld</h1>
+            <h2>$applicationName wants Access</h2>
+            <div class="summary" id="summary" onclick="expandDialog()">
+                <strong>$applicationName</strong> is requesting access to Arceus.
+                <p><strong>Requested permissions:</strong></p>
+                <ul class="permission-list">
+                    ${permissions.map((p) => '<li>${p.description}</li>').join('\n')}
+                </ul>
             </div>
-            <button class="back" onclick="shinkDialog()">Back</button>
+
+            <div class="details">
+                <iframe class="frame" id="details" frameborder="0"></iframe>
+            </div>
+            <div class="bottom-row">
+                <div class="actions">
+
+                    <div class="check tooltip" id="$color"
+                        style="font-variation-settings: 'FILL' 1, 'wght' 700, 'GRAD' 0, 'opsz'24;">
+                        <span class="material-symbols-outlined md-48">$iconName</span>
+                        <span class="tooltiptext" M>$tooltip</span>
+                    </div>
+                    <button class="deny" onclick="handleDeny()">Deny</button>
+                    <button class="allow" onclick="handleAllow()">Allow</button>
+
+                </div>
+                <button class="back" onclick="shinkDialog()">Back</button>
+            </div>
         </div>
         <p class="disclaimer">Safety checks are based on the permissions the application is asking for, and not the
-            trustworthiness of the app itself.</p>
+            trustworthiness of the app itself. Make sure you trust the app & developer before continuing.</p>
     </div>
 
     <script>

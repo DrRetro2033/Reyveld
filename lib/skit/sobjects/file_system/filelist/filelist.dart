@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:arceus/extensions.dart';
 import 'package:arceus/skit/sobject.dart';
 import 'package:glob/glob.dart';
 
@@ -12,19 +13,22 @@ part 'filelist.g.dart';
 sealed class Globs extends SObject {
   Globs(super._node);
 
-  List<Glob> get _list => utf8
+  List<Glob> get globs => utf8
       .decode(base64Decode(innerText!))
       .split("\n")
       .toSet() // Removes duplicates
       .where((e) => e.isNotEmpty)
       .map((e) => Glob(e))
       .toList();
-  set _list(List<Glob> value) => innerText =
+  set globs(List<Glob> value) => innerText =
       base64Encode(utf8.encode(value.map((e) => e.pattern).toSet().join("\n")));
 
-  void add(String pattern) => _list = _list..add(Glob(pattern));
+  void add(String pattern) => globs = globs..add(Glob(pattern));
 
-  void remove(String pattern) => _list = _list..remove(Glob(pattern));
+  void addAll(List<String> patterns) =>
+      globs = globs..addAll(patterns.map((e) => Glob(e)));
+
+  void remove(String pattern) => globs = globs..remove(Glob(pattern));
 
   /// Returns a list of filepaths that are allowed by the list.
   List<String> filter(List<String> filepaths) =>
@@ -39,7 +43,8 @@ final class Whitelist extends Globs {
   Whitelist(super._node);
 
   @override
-  bool included(String filepath) => _list.any((f) => f.matches(filepath));
+  bool included(String filepath) =>
+      globs.any((f) => f.matches(filepath.resolvePath()));
 }
 
 @SGen("blacklist")
@@ -47,5 +52,6 @@ final class Blacklist extends Globs {
   Blacklist(super._node);
 
   @override
-  bool included(String filepath) => !_list.any((f) => f.matches(filepath));
+  bool included(String filepath) =>
+      !globs.any((f) => f.matches(filepath.resolvePath()));
 }

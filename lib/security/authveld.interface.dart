@@ -22,5 +22,17 @@ class AuthVeldInterface extends SInterface<AuthVeld> {
             (String name, List permissions) async =>
                 await AuthVeld.getAuthorization(
                     name, permissions.whereType<SPolicy>().toList())),
+        LEntry(
+            name: "loadCertificate",
+            descr: "Loads an application's certificate, using a token.",
+            args: const {
+              "token": LArg<String>(
+                  descr: "The token to use to load the certificate."),
+            },
+            isAsync: true,
+            passLua: true, (Lua lua, String token) async {
+          lua.certificate = await AuthVeld.loadCertificate(token);
+          Arceus.talker.log("Loaded certificate: ${lua.certificate!.hash}");
+        }),
       };
 }

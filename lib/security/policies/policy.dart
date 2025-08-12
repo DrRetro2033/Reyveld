@@ -24,16 +24,22 @@ enum SPermissionType {
   deleteSKits,
 
   /// The permission to read binary data from files outside of SKits.
-  externalRead,
+  readFiles,
 
   /// The permission to write binary data to files outside of SKits.
-  externalWrite,
+  writeFiles,
 
   /// The permission to create files outside of SKits.
   createFiles,
 
   /// The permission to delete files outside of SKits.
   deleteFiles,
+
+  /// The permission to open folders outside of SKits.
+  openFolders,
+
+  /// The permission to edit folders outside of SKits.
+  editFolders,
 
   /// The permission to create folders outside of SKits.
   createFolders,
@@ -63,4 +69,6 @@ abstract class SPolicy extends SObject {
     if (check == null) return false;
     return check(toCheck);
   }
+
+  void details(XmlBuilder builder);
 }

@@ -6,6 +6,7 @@ import "dart:io";
 import "dart:typed_data";
 import "package:arceus/arceus.dart";
 import "package:arceus/extensions.dart";
+import "package:arceus/security/certificate/certificate.dart";
 import "package:arceus/security/policies/policies.dart";
 import "package:arceus/uuid.dart";
 import "package:pointycastle/pointycastle.dart" show RSAPublicKey;
@@ -28,7 +29,8 @@ part 'skit.interface.dart';
 enum SKitType {
   unspecified,
   constellation,
-  library,
+  authveld,
+  authors,
 }
 
 /// Represents a compressed, encrypted, and signed XML file.

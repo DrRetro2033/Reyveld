@@ -1,8 +1,16 @@
 part of 'files.dart';
 
-class SPolicyFilesInterface extends SInterface<SPolicyFiles> {
+class SPolicyExterFilesInterface extends SInterface<SPolicyExterFiles> {
   @override
-  get className => "SPolicyFiles";
+  get className => "SPolicyExterFiles";
+
+  @override
+  get parent => SPolicyInterface();
+}
+
+class SPolicyInterFilesInterface extends SInterface<SPolicyInterFiles> {
+  @override
+  get className => "SPolicyInterFiles";
 
   @override
   get parent => SPolicyInterface();

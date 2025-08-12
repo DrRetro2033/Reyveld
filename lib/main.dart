@@ -122,54 +122,47 @@ Future<void> main(List<String> args) async {
             await server.close();
             exit(0);
           case "lua":
+            final id = request.session.id;
             if (WebSocketTransformer.isUpgradeRequest(request)) {
               final socket = await WebSocketTransformer.upgrade(request);
-              sessions[request.session.id] = (Lua(socket: socket), socket);
-              Arceus.printToConsole(
-                  'Client (${request.session.id}) connected.'.skyBlue);
-              Arceus.talker.info("Client (${request.session.id}) connected.");
+              sessions[id] = (Lua(socket: socket), socket);
+              Arceus.printToConsole('Client ($id) connected.'.skyBlue);
+              Arceus.talker.info("Client ($id) connected.");
               socket.listen((data) async {
-                final requestProgress = CliSpin(spinner: CliSpinners.bounce).start(
-                    "Processing request from client (${request.session.id})..."
-                        .aqua);
+                final requestProgress = CliSpin(spinner: CliSpinners.bounce)
+                    .start("Processing request from client ($id)...".aqua);
+                Arceus.talker.info("Request from client ($id):\n$data");
                 try {
-                  await sessions[request.session.id]!.$1.init();
-                  final result =
-                      await sessions[request.session.id]!.$1.run(data);
+                  await sessions[id]!.$1.init();
+                  final result = await sessions[id]!.$1.run(data);
                   socket.add(jsonEncode({
                     "type": "response",
                     "successful": true,
-                    "processTime": sessions[request.session.id]!
-                        .$1
-                        .stopwatch
-                        .elapsedMilliseconds,
+                    "processTime":
+                        sessions[id]!.$1.stopwatch.elapsedMilliseconds,
                     "return": result
                   }));
                   requestProgress.success(
-                      "Completed request in ${sessions[request.session.id]!.$1.stopwatch.elapsedMilliseconds}ms (${request.session.id})!"
+                      "Completed request in ${sessions[id]!.$1.stopwatch.elapsedMilliseconds}ms ($id)!"
                           .limeGreen);
                 } catch (e, st) {
                   requestProgress.fail(
-                      "There was a crash on this request (Session ID: ${request.session.id}), please check the log folder (${Arceus.appDataPath}/logs) for more information."
+                      "There was a crash on this request (Session ID: $id), please check the log folder (${Arceus.appDataPath}/logs) for more information."
                           .red);
                   Arceus.talker.critical("Crash Handler", e, st);
                   socket.add(jsonEncode({
                     "type": "response",
                     "successful": false,
-                    "processTime": sessions[request.session.id]!
-                        .$1
-                        .stopwatch
-                        .elapsedMilliseconds,
+                    "processTime":
+                        sessions[id]!.$1.stopwatch.elapsedMilliseconds,
                     "return": null
                   }));
                 }
               }, onDone: () {
-                Arceus.printToConsole(
-                    'Client (${request.session.id}) disconnected'.skyBlue);
-                Arceus.talker
-                    .info("Client (${request.session.id}) disconnected.");
+                Arceus.printToConsole('Client ($id) disconnected'.skyBlue);
+                Arceus.talker.info("Client ($id) disconnected.");
                 socket.close();
-                sessions.remove(request.session.id);
+                sessions.remove(id);
                 return;
               }, onError: (error, stack) {
                 Arceus.talker.error("Error", error, stack);

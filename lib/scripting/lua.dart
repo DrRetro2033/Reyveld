@@ -21,7 +21,7 @@ class Lua {
 
   final WebSocket? socket;
 
-  final SCertificate? certificate;
+  SCertificate? certificate;
 
   Lua({this.socket, this.certificate}) : state = LuaState.newState();
 
@@ -53,7 +53,8 @@ class Lua {
         TalkerInterface(),
         AuthVeldInterface(),
         SPolicyInterface(),
-        SPolicyFilesInterface(),
+        SPolicyInterFilesInterface(),
+        SPolicyExterFilesInterface(),
         SPolicySKitInterface(),
         SPolicyAllInterface(),
       };
@@ -281,6 +282,7 @@ class Lua {
           final finalArgs = args.reversed.toList()
             ..removeWhere((e) => e == null);
 
+          Arceus.talker.log("Running ${value.name} with args: $finalArgs");
           // Log the arguments for debugging.
           // Arceus.talker.debug("Args: $finalArgs");
           // Arceus.talker.debug("Before:\n$stack");

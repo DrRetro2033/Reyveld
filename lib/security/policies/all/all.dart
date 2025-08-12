@@ -19,4 +19,8 @@ class SPolicyAll extends SPolicy {
 
   @override
   get description => "Give all permissions to this application.";
+
+  @override
+  void details(XmlBuilder builder) =>
+      builder.element("h2", nest: () => builder.text(description));
 }

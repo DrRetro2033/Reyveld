@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:arceus/scripting/sinterface.dart';
+import 'package:arceus/arceus.dart';
 import 'package:arceus/security/authorize_ticket.dart';
+import 'package:arceus/security/certificate/certificate.dart';
 import 'package:arceus/security/policies/policy.dart';
+import 'package:arceus/skit/skit.dart';
 import 'package:open_url/open_url.dart';
-import 'package:xml/xml.dart';
 
 part 'authveld.interface.dart';
 part 'authveld.website.dart';
@@ -13,6 +14,8 @@ part 'authveld.website.dart';
 typedef AuthorizeEvent = (AuthorizeTicket, bool);
 
 class AuthVeld {
+  static final SKit _kit = SKit("${Arceus.appDataPath}/authveld.skit");
+
   static final Set<AuthorizeTicket> _authorizationTickets = {};
 
   static final StreamController<AuthorizeEvent> _authorizationController =
@@ -20,22 +23,29 @@ class AuthVeld {
 
   static Future<String?> getAuthorization(
       String name, List<SPolicy> permissions) async {
-    final ticket = AuthorizeTicket(generateToken(), name, permissions);
+    final ticket = AuthorizeTicket(generateTicketID(), name, permissions);
     _authorizationTickets.add(ticket);
     await openUrl(
         "http://127.0.0.1:7274/authveld?ticket=${Uri.encodeQueryComponent(ticket.ticket)}");
     await for (final event in _authorizationController.stream) {
       if (event.$1 == ticket) {
-        if (event.$2) return ticket.ticket;
+        if (event.$2) return ticket.token;
         return null;
       }
     }
     return null;
   }
 
-  static void authorize(String tokenToAuthorize) {
+  static Future<void> authorize(String tokenToAuthorize) async {
     final ticket = _authorizationTickets[tokenToAuthorize];
     if (ticket == null) return;
+    if (!await _kit.exists()) {
+      await _kit.create(type: SKitType.authveld);
+    }
+    final certificate = await SCertificateCreator(ticket.policies).create();
+    await _kit.addRoot(certificate);
+    await _kit.save(encryptKey: "AuthVeld");
+    ticket.token = certificate.hash;
     _authorizationController.add((ticket, true));
     _authorizationTickets.remove(ticket);
   }
@@ -70,7 +80,7 @@ class AuthVeld {
     );
   }
 
-  static String generateToken([int length = 32]) {
+  static String generateTicketID([int length = 32]) {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
     final rand = Random.secure();
     return List.generate(length, (_) => chars[rand.nextInt(chars.length)])
@@ -79,6 +89,7 @@ class AuthVeld {
 
   static String getDetailsPage(String ticketId) {
     final XmlBuilder builder = XmlBuilder();
+    final ticket = _authorizationTickets[ticketId];
     builder.doctype('html');
     builder.element('html', nest: () {
       builder.attribute('lang', 'en');
@@ -88,23 +99,56 @@ class AuthVeld {
     <style>
         body {
             margin: 0;
+            padding: 0;
             background: #181a1b;
             font-family: sans-serif;
-            height: 100vh;
             display: flex;
             align-items: left;
             justify-content: left;
             text-align: left;
             color: white;
         }
+
+        .parent-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+        }
     </style>
 </head>""");
       builder.element('body', nest: () {
-        builder.element('h1', nest: () {
-          builder.text('Your Ticket ID is: $ticketId');
+        builder.element('div', attributes: {"class": "parent-container"},
+            nest: () {
+          builder.element('h1', nest: () {
+            builder.text('Permissions Requested:');
+          });
+          for (final policy in ticket!.policies) {
+            policy.details(builder);
+          }
         });
       });
     });
     return builder.buildDocument().toXmlString(pretty: true, newLine: "\n");
   }
+
+  static Future<SCertificate> loadCertificate(String hash) async {
+    if (await _kit.exists()) {
+      await _kit.exportToXMLFile("${Arceus.appDataPath}/exports/authveld.xml");
+      return await _kit.getRoot<SCertificate>(
+            filterRoots: (root) => root.hash == hash,
+            addToCache: true,
+          ) ??
+          await SCertificateCreator([]).create();
+    }
+    return await SCertificateCreator([]).create();
+  }
+}
+
+class AuthVeldException implements Exception {
+  final String message;
+  AuthVeldException(this.message);
+
+  @override
+  String toString() => message;
 }

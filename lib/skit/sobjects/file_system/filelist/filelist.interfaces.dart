@@ -37,6 +37,13 @@ class GlobsInterface<T extends Globs> extends SInterface<Globs> {
           },
         ),
         LEntry(
+            name: "addAll",
+            descr: "Adds multiple globs to the whitelist.",
+            args: const {"globs": LArg<List>(descr: "The globs to add.")},
+            returnType: T,
+            (List globs) async =>
+                object!..addAll(globs.whereType<String>().toList())),
+        LEntry(
           name: "remove",
           descr: "Removes a glob from the whitelist.",
           args: const {"glob": LArg<String>(descr: "The glob to remove.")},

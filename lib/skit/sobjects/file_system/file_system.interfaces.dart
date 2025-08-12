@@ -123,7 +123,10 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             },
             returnType: int,
             isAsync: true,
-            (int index) async => await object!.getU8(index)),
+            passLua: true, (Lua lua, int index) async {
+          lua.certificate!.permitted(SPermissionType.readFiles, object!);
+          await object!.getU8(index);
+        }),
         LEntry(
             name: "get8",
             descr: "Returns a signed 8 bit value at the specified index.",
@@ -134,7 +137,10 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             },
             returnType: int,
             isAsync: true,
-            (int index) async => await object!.get8(index)),
+            passLua: true, (Lua lua, int index) async {
+          lua.certificate!.permitted(SPermissionType.readFiles, object!);
+          await object!.get8(index);
+        }),
         LEntry(
             name: "set8",
             descr:
@@ -147,7 +153,9 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
                 descr: "The value to set.",
               ),
             },
-            isAsync: true, (int index, int value) async {
+            isAsync: true,
+            passLua: true, (Lua lua, int index, int value) async {
+          lua.certificate!.permitted(SPermissionType.writeFiles, object!);
           await object!.set8(index, value);
         }),
         LEntry(
@@ -164,8 +172,10 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             },
             returnType: int,
             isAsync: true,
-            (int index, [bool? littleEndian]) async =>
-                await object!.getU16(index, littleEndian: littleEndian)),
+            passLua: true, (Lua lua, int index, [bool? littleEndian]) async {
+          lua.certificate!.permitted(SPermissionType.readFiles, object!);
+          return await object!.getU16(index, littleEndian: littleEndian);
+        }),
         LEntry(
             name: "get16",
             descr: "Returns a signed 16 bit value at the specified index.",
@@ -180,8 +190,10 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             },
             returnType: int,
             isAsync: true,
-            (int index, [bool? littleEndian]) async =>
-                await object!.get16(index, littleEndian: littleEndian)),
+            passLua: true, (Lua lua, int index, [bool? littleEndian]) async {
+          lua.certificate!.permitted(SPermissionType.readFiles, object!);
+          return await object!.get16(index, littleEndian: littleEndian);
+        }),
         LEntry(
             name: "set16",
             descr:

@@ -47,4 +47,8 @@ class SPolicySKit extends SPolicy {
     ];
     return "Allow the application to ${x.where((e) => e.$1).map((e) => e.$2).join(", ")} SKits.";
   }
+
+  @override
+  void details(XmlBuilder builder) =>
+      builder.element("h2", nest: () => builder.text(description));
 }

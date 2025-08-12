@@ -6,6 +6,7 @@ class AuthorizeTicket {
   final String ticket;
   final String applicationName;
   final List<SPolicy> policies;
+  String? token;
 
   AuthorizeTicket(this.ticket, this.applicationName, this.policies);
 

@@ -307,7 +307,7 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
       if (export.hasNamedArgs) {
         // Document the named arguments
         method.writeln(
-            "---@param named {${export.args.entries.where((e) => !e.value.positional).map((e) => "${e.key}: ${(e.value.docTypeOverride ?? _convertDartToLua(e.value.type))}${e.value.required ? "" : "?"}").join(", ")}}? Put any named arguments in a table here. See description below for more info.");
+            "---@param named {${export.args.entries.where((e) => !e.value.positional).map((e) => "${e.key}: ${(e.value.docTypeOverride ?? _convertDartToLua(e.value.type))}${e.value.required ? "" : "?"}").join(", ")}}${export.args.entries.any((e) => e.value.required && !e.value.positional) ? "" : "?"} Put any named arguments in a table here. See description below for more info.");
       }
     }
     if (export.returnGeneric && export.returnType != null) {

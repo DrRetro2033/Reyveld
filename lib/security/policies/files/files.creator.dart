@@ -1,6 +1,6 @@
 part of 'files.dart';
 
-class SPolicyFilesCreator extends SCreator<SPolicyFiles> {
+class SPolicyExterFilesCreator extends SCreator<SPolicyExterFiles> {
   final bool read;
   final bool write;
 
@@ -9,7 +9,7 @@ class SPolicyFilesCreator extends SCreator<SPolicyFiles> {
   final bool delete;
 
   final Whitelist whitelist;
-  SPolicyFilesCreator(
+  SPolicyExterFilesCreator(
       {required this.read,
       required this.write,
       required this.init,
@@ -22,5 +22,28 @@ class SPolicyFilesCreator extends SCreator<SPolicyFiles> {
         builder.boolAttri("create", init);
         builder.boolAttri("delete", delete);
         builder.sobject(whitelist);
+      };
+}
+
+class SPolicyInterFilesCreator extends SCreator<SPolicyInterFiles> {
+  final bool read;
+  final bool write;
+
+  /// Also known as "create".
+  final bool init;
+  final bool delete;
+
+  SPolicyInterFilesCreator({
+    required this.read,
+    required this.write,
+    required this.init,
+    required this.delete,
+  });
+  @override
+  get creator => (builder) {
+        builder.boolAttri("read", read);
+        builder.boolAttri("write", write);
+        builder.boolAttri("create", init);
+        builder.boolAttri("delete", delete);
       };
 }
