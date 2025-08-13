@@ -242,6 +242,14 @@ class Lua {
       });
     } else if (value is LEntry) {
       state.pushDartFunction((state) async {
+        if (value.requiredPermission != null) {
+          if (certificate == null) {
+            throw AuthVeldException(
+                "Certificate not found, so assuming no access.");
+          }
+          certificate!
+              .permitted(value.requiredPermission!, value.interface_!.object);
+        }
         try {
           List<dynamic> args = [];
           Map<dynamic, dynamic> namedArgs = {};
@@ -282,7 +290,7 @@ class Lua {
           final finalArgs = args.reversed.toList()
             ..removeWhere((e) => e == null);
 
-          Arceus.talker.log("Running ${value.name} with args: $finalArgs");
+          // Arceus.talker.log("Running ${value.name} with args: $finalArgs");
           // Log the arguments for debugging.
           // Arceus.talker.debug("Args: $finalArgs");
           // Arceus.talker.debug("Before:\n$stack");

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:arceus/arceus.dart';
+import 'package:arceus/security/policies/policies.dart';
 import 'package:arceus/skit/sobject.dart';
 
 /// An export for Lua.
@@ -8,7 +9,10 @@ import 'package:arceus/skit/sobject.dart';
 abstract class LExport {
   final String name;
   final String descr;
-  const LExport({required this.name, this.descr = ""});
+  final SPermissionType? requiredPermission;
+  SInterface? interface_;
+
+  LExport({required this.name, this.requiredPermission, this.descr = ""});
 }
 
 /// This is a lua entrypoint.
@@ -45,8 +49,9 @@ class LEntry extends LExport {
   /// The actual function of the entrypoint.
   final Function func;
 
-  const LEntry(this.func,
+  LEntry(this.func,
       {required super.name,
+      super.requiredPermission,
       super.descr,
       this.args = const {},
       this.isAsync = false,
@@ -127,7 +132,8 @@ final class LArg<T> {
 class LField<T> extends LExport {
   final dynamic value;
   Type get type => T;
-  const LField(this.value, {required super.name, super.descr});
+  LField(this.value,
+      {required super.name, super.requiredPermission, super.descr});
 }
 
 /// This is a helper function to check if a value is of type [T].
@@ -155,7 +161,7 @@ abstract class SInterface<T> {
   Map<String, dynamic> toLua(Lua state, String luaHash) {
     Map<String, LExport> exportTable = {};
     for (final export in allExports) {
-      exportTable[export.name] = export;
+      exportTable[export.name] = export..interface_ = this;
     }
     return {"class": className, "objHash": luaHash, ...exportTable};
   }

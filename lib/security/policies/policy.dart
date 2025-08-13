@@ -23,7 +23,7 @@ enum SPermissionType {
   /// The permission to delete SKits.
   deleteSKits,
 
-  /// The permission to read binary data from files outside of SKits.
+  /// The permission to read binary data from files.
   readFiles,
 
   /// The permission to write binary data to files outside of SKits.
@@ -34,6 +34,9 @@ enum SPermissionType {
 
   /// The permission to delete files outside of SKits.
   deleteFiles,
+
+  /// The permission to copy (i.e. both read, create, and write) files outside of SKits.
+  copyFiles,
 
   /// The permission to open folders outside of SKits.
   openFolders,
