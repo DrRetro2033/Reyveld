@@ -47,7 +47,9 @@ Rollback to earlier versions of a folder or file, preserving any previous action
 ```lua
 function Rollback(path)
     local skit = SKit.open(path)
-    skit.header().getChild({tag=Constellation.tag()}).current().back(2).makeCurrent()
+    local const = skit.header().getChild({tag=Constellation.tag()})
+    const.current().back(2).makeCurrent()
+    const.sync()
     skit.save()
 end
 ```
@@ -73,17 +75,21 @@ Anyone can use Arceus in their projects, yes even you! Just remember to give cre
 
 # Why use Arceus?
 
-## Quick & Dirty Scripting
+## Quick & Dirty Scripting ✍️
 
 Ever needed to quickly write to a binary file, or build a backup of your project? Arceus can help without needing to install Python.
 
-## Minimal Boilerplate
+## Minimal Boilerplate 🥣
 
 You don't need logic to modify files, convert data, or create version control from scratch; Arceus will take care of all that!
 
-## Unified Code
+## Unified Code 🔗
 
 Arceus scripts can be used in many different projects and be shared others easly, so learning different packages or libraries is not needed!
+
+## Transparent Authorization 🥂
+
+Developers can ask for permissions from their users easily with AuthVeld, an modern, auto-formatting, and detailed authorization form.
 
 > [!NOTE]
 > If you want an example of what you can do with Arceus, check out my other project [MudkiPC](https://github.com/Pokemon-Manager/MudkiPC).
@@ -121,7 +127,7 @@ Binary files can be challenging to analyze, but Arceus is designed to detect the
 ---
 # SKits
 
-Arceus uses a brand new file format called SKit. SKit uses XML, GZip, Fernet, and RSA to store everything Arceus could ever need, replacing the need of ZIP files.
+Arceus uses a brand new file format called SKit. SKit uses XML, GZip, Fernet, and RSA to store everything Arceus could ever need in small, secure, and verifiable file format; replacing the need of ZIP files.
 
 ## Blazingly Fast ⚡
 
@@ -154,28 +160,6 @@ Click the badge below to download the latest artifact.
 # Consider Sponsoring ❤️
 
 Consider sponsoring me on GitHub to help support this project! If you can’t, no worries— spreading the word about Arceus is equally appreciated. Thank you!
-
-# Planned Features for the Future
-
-## Frontend GUI 🖱️
-
-Create a GUI frontend for Arceus to make it even simpler to use.
-
-## Save on Close ❌
-
-Whenever you close a game, Arceus will grow a star from the current, ensuring you can return to a previous save without lifting a finger.
-
-## Cloud Backups ☁️
-
-Transfer files between devices and keep them safe from data loss.
-
-| Planned     | Service      |
-| ----------- | ------------ |
-| ✅ Yes      | Google Drive |
-| ✅ Yes      | OneDrive     |
-| ⚠️ Maybe    | Dropbox      |
-| ⚠️ Maybe    | Self-hosted  |
-| ❌ Unlikely | iCloud       |
 
 # Development Q&A
 
