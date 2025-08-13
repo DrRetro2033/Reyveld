@@ -250,25 +250,25 @@ class Lua {
               state.isTable(state.getTop())) {
             namedArgs = await getFromTop();
           }
-          for (final arg in value.args.entries
+          for (final arg in value.args
               .where(
-                (element) => element.value.positional,
+                (element) => element.positional,
               )
               .toList()
               .reversed) {
             final argValue = await getFromTop(pop: false);
             // Attempt to cast the argument to the expected type.
             // It will return null if the cast fails.
-            final trueValue = arg.value.cast(argValue);
+            final trueValue = arg.cast(argValue);
             if (trueValue == null) {
-              if (!arg.value.required) {
+              if (!arg.required) {
                 continue;
               } else {
                 // Report the before and after stack and throw an error.
                 Arceus.talker.error("Before:\n$stack");
                 Arceus.talker.error("After:\n${_formatStack()}");
                 throw Exception(
-                    "Expected ${arg.value.type} but got ${argValue.runtimeType}");
+                    "Expected ${arg.type} but got ${argValue.runtimeType}");
               }
             }
             args.add(trueValue);

@@ -24,9 +24,10 @@ class SessionInterface extends SInterface<WebSocket> {
                 "The operating system of the server. (\"${Platform.operatingSystem}\")",
             Platform.operatingSystem),
         LEntry(name: "send", descr: "Send data through the web socket.", args: {
-          "data":
-              LArg<Object>(descr: "The data to send through the web socket."),
-          "message": LArg<String>(
+          LArg<Object>(
+              name: "data", descr: "The data to send through the web socket."),
+          LArg<String>(
+              name: "message",
               descr: "The message with the data to send with the data.",
               kind: ArgKind.optionalNamed),
         }, (Object data, {String message = ""}) {

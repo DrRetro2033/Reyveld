@@ -128,9 +128,7 @@ class Constellation extends SObject {
 
   /// Syncs the tracked folder to the current star.
   Future<Stream<String>> sync() async {
-    return await getCurrentStar()
-        .archive
-        .then((e) async => e!.extract(path.resolvePath()));
+    return await getCurrentStar().checkout(path);
   }
 
   /// Returns an archive with unsaved changes in the tracked folder.

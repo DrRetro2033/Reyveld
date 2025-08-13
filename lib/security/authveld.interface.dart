@@ -12,8 +12,9 @@ class AuthVeldInterface extends SInterface<AuthVeld> {
                 """Makes an authorization request with AuthVeld. Will open the user's browser to the authorization page, 
                 where they will decide if they allow the application to access Arceus with the given permissions.""",
             args: {
-              "name": LArg<String>(descr: "The name of the application."),
-              "permissions": LArg<List>(
+              LArg<String>(name: "name", descr: "The name of the application."),
+              LArg<List>(
+                  name: "permissions",
                   descr: "The permissions to request.",
                   docTypeOverride: "SPolicy[]"),
             },
@@ -26,7 +27,8 @@ class AuthVeldInterface extends SInterface<AuthVeld> {
             name: "loadCertificate",
             descr: "Loads an application's certificate, using a token.",
             args: const {
-              "token": LArg<String>(
+              LArg<String>(
+                  name: "token",
                   descr: "The token to use to load the certificate."),
             },
             isAsync: true,

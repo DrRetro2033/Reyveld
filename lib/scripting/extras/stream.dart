@@ -19,7 +19,11 @@ class StreamInterface extends SInterface<Stream> {
         LEntry(
             name: "fromIterable",
             descr: "Creates a stream from an iterable.",
-            args: {"iterable": LArg<List>()},
+            args: const {
+              LArg<List>(
+                  name: "iterable",
+                  descr: "The iterable to create the stream from.")
+            },
             returnType: Stream, (List iterable) {
           // Arceus.talker.debug("Creating stream from iterable. $iterable");
           return Stream.fromIterable(iterable);
@@ -32,8 +36,9 @@ class StreamInterface extends SInterface<Stream> {
             name: "complete",
             descr: "Completes the stream, with the given functions.",
             isAsync: true,
-            args: {
-              "onData": LArg<LuaFuncRef>(
+            args: const {
+              LArg<LuaFuncRef>(
+                  name: "onData",
                   descr: "The function to call when data is received.",
                   docTypeOverride: "fun(data: any):nil",
                   kind: ArgKind.optionalNamed),
@@ -47,8 +52,9 @@ class StreamInterface extends SInterface<Stream> {
           name: "merge",
           descr:
               "Merge this stream with another stream. Both streams should be of the same type.",
-          args: {
-            "other": LArg<Stream>(
+          args: const {
+            LArg<Stream>(
+              name: "other",
               descr: "The other stream to merge with.",
             ),
           },
@@ -58,8 +64,9 @@ class StreamInterface extends SInterface<Stream> {
         LEntry(
             name: "transform",
             descr: "Transforms data in a stream with a function.",
-            args: {
-              "method": LArg<LuaFuncRef>(
+            args: const {
+              LArg<LuaFuncRef>(
+                  name: "method",
                   descr: "The function to call on each data event.",
                   docTypeOverride: "fun(data: any):any",
                   kind: ArgKind.requiredPositional)

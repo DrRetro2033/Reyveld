@@ -13,7 +13,8 @@ class UserInterface extends SInterface<SUser> {
             name: "name",
             descr: "Sets and gets the name of the user.",
             args: const {
-              "name": LArg<String>(
+              LArg<String>(
+                  name: "name",
                   descr: "The new name of the user.",
                   kind: ArgKind.optionalPositional),
             },

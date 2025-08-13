@@ -124,6 +124,9 @@ class Star extends SObject {
     constellation.currentHash = hash;
   }
 
+  Future<Stream<String>> checkout(String path) async =>
+      archive.then((e) async => e!.extract(path.resolvePath()));
+
   /// Checks for changes from the current star, and returns true if there are changes, false if there are none.
   Future<bool> checkForChanges() async {
     return await archive.then<bool>((value) => value!.checkForChanges(

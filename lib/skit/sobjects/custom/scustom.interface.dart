@@ -14,10 +14,12 @@ class SCustomInterface extends SInterface<SCustom> {
             descr: "Create a custom SObject",
             returnType: SCustom,
             args: const {
-              "type": LArg<String>(
+              LArg<String>(
+                name: "type",
                 descr: "Type of the SCustom object to create",
               ),
-              "attribs": LArg<Map>(
+              LArg<Map>(
+                  name: "attribs",
                   descr: "Attributes to set on the SCustom object",
                   kind: ArgKind.optionalNamed)
             }, (String type, {Map? attribs}) async {
@@ -36,7 +38,7 @@ class SCustomInterface extends SInterface<SCustom> {
         LEntry(
           name: "getInt",
           args: const {
-            "key": LArg<String>(descr: "Key to get the integer value for")
+            LArg<String>(name: "key", descr: "Key to get the integer value for")
           },
           returnType: int,
           (String key) {
@@ -46,14 +48,14 @@ class SCustomInterface extends SInterface<SCustom> {
         LEntry(
             name: "setInt",
             args: const {
-              "key": LArg<String>(descr: "Key of the attribute to set."),
-              "value": LArg<int>(descr: "The value to set.")
+              LArg<String>(name: "key", descr: "Key of the attribute to set."),
+              LArg<int>(name: "value", descr: "The value to set.")
             },
             (String key, int value) => object!.setInt(key, value)),
         LEntry(
           name: "getString",
           args: const {
-            "key": LArg<String>(descr: "Key to get the string value for")
+            LArg<String>(name: "key", descr: "Key to get the string value for")
           },
           returnType: String,
           (String key) {
@@ -63,8 +65,8 @@ class SCustomInterface extends SInterface<SCustom> {
         LEntry(
             name: "setString",
             args: const {
-              "key": LArg<String>(descr: "Key of the attribute to set."),
-              "value": LArg<String>(descr: "The value to set.")
+              LArg<String>(name: "key", descr: "Key of the attribute to set."),
+              LArg<String>(name: "value", descr: "The value to set.")
             },
             (String key, String value) => object!.setString(key, value)),
       };

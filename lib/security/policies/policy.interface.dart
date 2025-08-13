@@ -11,19 +11,26 @@ class SPolicyInterface extends SInterface<SPolicy> {
             descr: "The SKit policy.",
             returnType: SPolicySKit,
             args: const {
-              "read": LArg<bool>(
-                  descr: "Require permission to read SKit files?",
-                  kind: ArgKind.requiredNamed),
-              "write": LArg<bool>(
-                  descr: "Require permission to write SKit files?",
+              LArg<bool>(
+                  name: "read",
+                  descr: "Require permission to read SKits?",
                   kind: ArgKind.optionalNamed,
                   docDefaultValue: "false"),
-              "create": LArg<bool>(
-                  descr: "Require permission to create SKit files?",
-                  kind: ArgKind.requiredNamed),
-              "delete": LArg<bool>(
-                  descr: "Require permission to delete SKit files?",
-                  kind: ArgKind.requiredNamed),
+              LArg<bool>(
+                  name: "write",
+                  descr: "Require permission to write SKits?",
+                  kind: ArgKind.optionalNamed,
+                  docDefaultValue: "false"),
+              LArg<bool>(
+                  name: "create",
+                  descr: "Require permission to create new SKits?",
+                  kind: ArgKind.optionalNamed,
+                  docDefaultValue: "false"),
+              LArg<bool>(
+                  name: "delete",
+                  descr: "Require permission to delete SKits?",
+                  kind: ArgKind.optionalNamed,
+                  docDefaultValue: "false"),
             },
             (
                     {bool read = false,
@@ -38,23 +45,28 @@ class SPolicyInterface extends SInterface<SPolicy> {
             descr: "The external files policy.",
             returnType: SPolicyExterFiles,
             args: const {
-              "read": LArg<bool>(
+              LArg<bool>(
+                  name: "read",
                   descr: "Require permission to read external files?",
                   kind: ArgKind.optionalNamed,
                   docDefaultValue: "false"),
-              "write": LArg<bool>(
+              LArg<bool>(
+                  name: "write",
                   descr: "Require permission to write external files?",
                   kind: ArgKind.optionalNamed,
                   docDefaultValue: "false"),
-              "create": LArg<bool>(
+              LArg<bool>(
+                  name: "create",
                   descr: "Require permission to create external files?",
                   kind: ArgKind.optionalNamed,
                   docDefaultValue: "false"),
-              "delete": LArg<bool>(
+              LArg<bool>(
+                  name: "delete",
                   descr: "Require permission to delete external files?",
                   kind: ArgKind.optionalNamed,
                   docDefaultValue: "false"),
-              "whitelist": LArg<Whitelist>(
+              LArg<Whitelist>(
+                  name: "whitelist",
                   descr: "The whitelist of files to allow access to.",
                   kind: ArgKind.requiredNamed),
             },
@@ -76,20 +88,24 @@ class SPolicyInterface extends SInterface<SPolicy> {
             descr: "The internal files policy.",
             returnType: SPolicyInterFiles,
             args: const {
-              "read": LArg<bool>(
-                  descr: "Require permission to read external files?",
+              LArg<bool>(
+                  name: "read",
+                  descr: "Require permission to read files inside of SKits?",
                   kind: ArgKind.optionalNamed,
                   docDefaultValue: "false"),
-              "write": LArg<bool>(
-                  descr: "Require permission to write external files?",
+              LArg<bool>(
+                  name: "write",
+                  descr: "Require permission to write files inside of SKits?",
                   kind: ArgKind.optionalNamed,
                   docDefaultValue: "false"),
-              "create": LArg<bool>(
-                  descr: "Require permission to create external files?",
+              LArg<bool>(
+                  name: "create",
+                  descr: "Require permission to create files inside of SKits?",
                   kind: ArgKind.optionalNamed,
                   docDefaultValue: "false"),
-              "delete": LArg<bool>(
-                  descr: "Require permission to delete external files?",
+              LArg<bool>(
+                  name: "delete",
+                  descr: "Require permission to delete files inside of SKits?",
                   kind: ArgKind.optionalNamed,
                   docDefaultValue: "false"),
             },

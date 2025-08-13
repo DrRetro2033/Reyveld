@@ -33,7 +33,8 @@ An archive in a SKit. Contains files.
             name: "getFile",
             descr: "Returns the file with the path provided",
             args: {
-              "path": LArg<String>(
+              LArg<String>(
+                name: "path",
                 descr: "The path of the file",
               )
             },
@@ -43,7 +44,8 @@ An archive in a SKit. Contains files.
             name: "extract",
             descr: "Extracts the archive to the specified path",
             args: const {
-              "path": LArg<String>(
+              LArg<String>(
+                name: "path",
                 descr: "The path to extract the archive to",
               ),
             },
@@ -74,7 +76,8 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             descr: "Opens a file externally.",
             returnType: SFile,
             args: const {
-              "path": LArg<String>(
+              LArg<String>(
+                name: "path",
                 descr: "The path to open the file at.",
               )
             },
@@ -89,7 +92,8 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             name: "extract",
             descr: "Extracts the file to the specified path",
             args: const {
-              "path": LArg<String>(
+              LArg<String>(
+                name: "path",
                 descr: "The path to extract the file to.",
               ),
             },
@@ -105,7 +109,8 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
           descr: "Returns the filename of the file",
           returnType: String,
           args: const {
-            "extension": LArg<bool>(
+            LArg<bool>(
+                name: "extension",
                 descr:
                     "Whether to include the file extension in the filename. (default: true)",
                 kind: ArgKind.optionalNamed)
@@ -117,7 +122,8 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             name: "getU8",
             descr: "Returns a unsigned 8 bit value at the specified index.",
             args: const {
-              "index": LArg<int>(
+              LArg<int>(
+                name: "index",
                 descr: "The index to get the value at.",
               ),
             },
@@ -131,7 +137,8 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             name: "get8",
             descr: "Returns a signed 8 bit value at the specified index.",
             args: const {
-              "index": LArg<int>(
+              LArg<int>(
+                name: "index",
                 descr: "The index to get the value at.",
               ),
             },
@@ -146,10 +153,12 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             descr:
                 "Sets a 8 bit value at the specified index. It does not matter if the value is signed or unsigned, only that it fits into 8 bits.",
             args: const {
-              "index": LArg<int>(
+              LArg<int>(
+                name: "index",
                 descr: "The index to set the value at.",
               ),
-              "value": LArg<int>(
+              LArg<int>(
+                name: "value",
                 descr: "The value to set.",
               ),
             },
@@ -162,10 +171,12 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             name: "getU16",
             descr: "Returns a unsigned 16 bit value at the specified index.",
             args: const {
-              "index": LArg<int>(
+              LArg<int>(
+                name: "index",
                 descr: "The index to get the value at.",
               ),
-              "littleEndian": LArg<bool>(
+              LArg<bool>(
+                  name: "littleEndian",
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
                   kind: ArgKind.optionalPositional)
@@ -180,10 +191,12 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             name: "get16",
             descr: "Returns a signed 16 bit value at the specified index.",
             args: const {
-              "index": LArg<int>(
+              LArg<int>(
+                name: "index",
                 descr: "The index to get the value at.",
               ),
-              "littleEndian": LArg<bool>(
+              LArg<bool>(
+                  name: "littleEndian",
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
                   kind: ArgKind.optionalPositional)
@@ -199,13 +212,16 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             descr:
                 "Sets a 16 bit value at the specified index. It does not matter if the value is signed or unsigned, only that it fits into 16 bits.",
             args: const {
-              "index": LArg<int>(
+              LArg<int>(
+                name: "index",
                 descr: "The index to set the value at.",
               ),
-              "value": LArg<int>(
+              LArg<int>(
+                name: "value",
                 descr: "The value to set.",
               ),
-              "littleEndian": LArg<bool>(
+              LArg<bool>(
+                  name: "littleEndian",
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
                   kind: ArgKind.optionalPositional)
@@ -217,10 +233,12 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             name: "getU32",
             descr: "Returns a unsigned 32 bit value at the specified index.",
             args: const {
-              "index": LArg<int>(
+              LArg<int>(
+                name: "index",
                 descr: "The index to get the value at.",
               ),
-              "littleEndian": LArg<bool>(
+              LArg<bool>(
+                  name: "littleEndian",
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
                   kind: ArgKind.optionalPositional)
@@ -233,10 +251,12 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             name: "get32",
             descr: "Returns a signed 32 bit value at the specified index.",
             args: const {
-              "index": LArg<int>(
+              LArg<int>(
+                name: "index",
                 descr: "The index to get the value at.",
               ),
-              "littleEndian": LArg<bool>(
+              LArg<bool>(
+                  name: "littleEndian",
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
                   kind: ArgKind.optionalPositional)
@@ -250,13 +270,16 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             descr:
                 "Sets a 32 bit value at the specified index. It does not matter if the value is signed or unsigned, only that it fits into 32 bits.",
             args: const {
-              "index": LArg<int>(
+              LArg<int>(
+                name: "index",
                 descr: "The index to set the value at.",
               ),
-              "value": LArg<int>(
+              LArg<int>(
+                name: "value",
                 descr: "The value to set.",
               ),
-              "littleEndian": LArg<bool>(
+              LArg<bool>(
+                  name: "littleEndian",
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
                   kind: ArgKind.optionalPositional)
@@ -268,10 +291,12 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             name: "getU64",
             descr: "Returns a unsigned 64 bit value at the specified index.",
             args: const {
-              "index": LArg<int>(
+              LArg<int>(
+                name: "index",
                 descr: "The index to get the value at.",
               ),
-              "littleEndian": LArg<bool>(
+              LArg<bool>(
+                  name: "littleEndian",
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
                   kind: ArgKind.optionalPositional)
@@ -284,10 +309,12 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             name: "get64",
             descr: "Returns a signed 64 bit value at the specified index.",
             args: const {
-              "index": LArg<int>(
+              LArg<int>(
+                name: "index",
                 descr: "The index to get the value at.",
               ),
-              "littleEndian": LArg<bool>(
+              LArg<bool>(
+                  name: "littleEndian",
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
                   kind: ArgKind.optionalPositional)
@@ -301,13 +328,16 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             descr:
                 "Sets a 64 bit value at the specified index. It does not matter if the value is signed or unsigned, only that it fits into 64 bits.",
             args: const {
-              "index": LArg<int>(
+              LArg<int>(
+                name: "index",
                 descr: "The index to set the value at.",
               ),
-              "value": LArg<int>(
+              LArg<int>(
+                name: "value",
                 descr: "The value to set.",
               ),
-              "littleEndian": LArg<bool>(
+              LArg<bool>(
+                  name: "littleEndian",
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
                   kind: ArgKind.optionalPositional)
@@ -319,10 +349,12 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             name: "getF32",
             descr: "Returns a 32 bit float value at the specified index.",
             args: const {
-              "index": LArg<int>(
+              LArg<int>(
+                name: "index",
                 descr: "The index to get the value at.",
               ),
-              "littleEndian": LArg<bool>(
+              LArg<bool>(
+                  name: "littleEndian",
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
                   kind: ArgKind.optionalPositional)
@@ -335,10 +367,12 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             name: "getF64",
             descr: "Returns a 64 bit float value at the specified index.",
             args: const {
-              "index": LArg<int>(
+              LArg<int>(
+                name: "index",
                 descr: "The index to get the value at.",
               ),
-              "littleEndian": LArg<bool>(
+              LArg<bool>(
+                  name: "littleEndian",
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
                   kind: ArgKind.optionalPositional)
@@ -351,13 +385,16 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             name: "setF32",
             descr: "Sets a 32 bit float value at the specified index.",
             args: const {
-              "index": LArg<int>(
+              LArg<int>(
+                name: "index",
                 descr: "The index to set the value at.",
               ),
-              "value": LArg<double>(
+              LArg<double>(
+                name: "value",
                 descr: "The value to set.",
               ),
-              "littleEndian": LArg<bool>(
+              LArg<bool>(
+                  name: "littleEndian",
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
                   kind: ArgKind.optionalPositional)
@@ -370,13 +407,16 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             name: "setF64",
             descr: "Sets a 64 bit float value at the specified index.",
             args: const {
-              "index": LArg<int>(
+              LArg<int>(
+                name: "index",
                 descr: "The index to set the value at.",
               ),
-              "value": LArg<double>(
+              LArg<double>(
+                name: "value",
                 descr: "The value to set.",
               ),
-              "littleEndian": LArg<bool>(
+              LArg<bool>(
+                  name: "littleEndian",
                   descr:
                       "If true, the value will be little endian, otherwise it will be big endian.",
                   kind: ArgKind.optionalPositional)
@@ -386,7 +426,8 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
           await object!.set64Float(index, value, littleEndian: littleEndian);
         }),
         LEntry(name: "defaultEndian", returnType: bool, args: {
-          "littleEndian": LArg<bool>(
+          LArg<bool>(
+              name: "littleEndian",
               descr:
                   "If true, the default endian will be little endian, otherwise it will be big endian.",
               kind: ArgKind.optionalPositional)
@@ -400,13 +441,16 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             name: "getUtf16",
             descr: "Returns a utf-16 string at the specified index and length.",
             args: const {
-              "index": LArg<int>(
+              LArg<int>(
+                name: "index",
                 descr: "The index to get the string at.",
               ),
-              "length": LArg<int>(
+              LArg<int>(
+                name: "length",
                 descr: "The length of the string.",
               ),
-              "stopAtNull": LArg<bool>(
+              LArg<bool>(
+                  name: "stopAtNull",
                   descr:
                       "Whether to stop at the first null character while getting the string.",
                   kind: ArgKind.optionalNamed),
@@ -420,13 +464,16 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             name: "getUtf8",
             descr: "Returns a utf-8 string at the specified index and length.",
             args: const {
-              "index": LArg<int>(
+              LArg<int>(
+                name: "index",
                 descr: "The index to get the string at.",
               ),
-              "length": LArg<int>(
+              LArg<int>(
+                name: "length",
                 descr: "The length of the string.",
               ),
-              "stopAtNull": LArg<bool>(
+              LArg<bool>(
+                  name: "stopAtNull",
                   descr:
                       "Whether to stop at the first null character while getting the string.",
                   kind: ArgKind.optionalNamed),
@@ -446,10 +493,12 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
           name: "saveAs",
           descr: "Saves the file to the specified path.",
           args: const {
-            "path": LArg<String>(
+            LArg<String>(
+              name: "path",
               descr: "The path to save the file to.",
             ),
-            "overwrite": LArg<bool>(
+            LArg<bool>(
+                name: "overwrite",
                 descr: "Whether to overwrite the file if it already exists.",
                 kind: ArgKind.optionalPositional),
           },

@@ -16,11 +16,14 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
             name: "open",
             descr: "Opens an SKit file.",
             args: const {
-              "path": LArg<String>(
+              LArg<String>(
+                name: "path",
                 descr: "The path to the SKit file.",
               ),
-              "key": LArg<String>(
-                  descr: "The encryption key.", kind: ArgKind.optionalNamed),
+              LArg<String>(
+                  name: "key",
+                  descr: "The encryption key.",
+                  kind: ArgKind.optionalNamed),
             },
             returnType: SKit,
             isAsync: true,
@@ -30,7 +33,8 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
             name: "exists",
             descr: "Checks if an SKit exists.",
             args: const {
-              "path": LArg<String>(
+              LArg<String>(
+                name: "path",
                 descr: "The path to the SKit file.",
               )
             },
@@ -42,16 +46,22 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
             name: "create",
             descr: "Creates a new SKit file.",
             args: const {
-              "path": LArg<String>(
+              LArg<String>(
+                name: "path",
                 descr: "The path to the SKit file.",
               ),
-              "overwrite": LArg<bool>(
+              LArg<bool>(
+                  name: "overwrite",
                   descr: "Whether to overwrite the file if it already exists.",
                   kind: ArgKind.optionalNamed),
-              "type": LArg<int>(
-                  descr: "The type of the SKit.", kind: ArgKind.optionalNamed),
-              "key": LArg<String>(
-                  descr: "The encryption key.", kind: ArgKind.optionalNamed),
+              LArg<int>(
+                  name: "type",
+                  descr: "The type of the SKit.",
+                  kind: ArgKind.optionalNamed),
+              LArg<String>(
+                  name: "key",
+                  descr: "The encryption key.",
+                  kind: ArgKind.optionalNamed),
             },
             returnType: SKit,
             isAsync: true, (String path,
@@ -75,7 +85,9 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
         LEntry(
             name: "isType",
             descr: "Returns whether the SKit is of the specified type.",
-            args: const {"type": LArg<int>(descr: "The type to check for.")},
+            args: const {
+              LArg<int>(name: "type", descr: "The type to check for.")
+            },
             returnType: bool,
             isAsync: true, (int type) async {
           return await object!.isType(SKitType.values[type]);
@@ -106,7 +118,8 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
             name: "key",
             descr: "Sets and Gets the encryption key of the SKit.",
             args: const {
-              "key": LArg<String>(
+              LArg<String>(
+                  name: "key",
                   descr: "The encryption key.",
                   kind: ArgKind.optionalPositional),
             },
@@ -132,8 +145,10 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
             name: "usedHashes",
             descr: "Returns the hashes used by the roots in the SKit.",
             args: const {
-              "tag": LArg<String>(
-                  descr: "The tag to filter by.", kind: ArgKind.optionalNamed),
+              LArg<String>(
+                  name: "tag",
+                  descr: "The tag to filter by.",
+                  kind: ArgKind.optionalNamed),
             },
             returnType: List,
             isAsync: true, ({String? tag}) async {
@@ -151,7 +166,9 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
         LEntry(
             name: "exportAs",
             descr: "Exports the SKit as an uncompressed, decrypted xml file.",
-            args: const {"path": LArg<String>(descr: "The path to export to.")},
+            args: const {
+              LArg<String>(name: "path", descr: "The path to export to.")
+            },
             isAsync: true,
             (String path) async => await object!.exportToXMLFile(path))
       };

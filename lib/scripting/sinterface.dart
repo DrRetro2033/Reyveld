@@ -15,7 +15,7 @@ abstract class LExport {
 /// A entrypoint is a function with a description, arguments, and return type.
 class LEntry extends LExport {
   /// The arguments of the entrypoint.
-  final Map<String, LArg> args;
+  final Set<LArg> args;
 
   /// This is used to define if the entrypoint is async.
   final bool isAsync;
@@ -36,12 +36,11 @@ class LEntry extends LExport {
   /// This is used to determine if the entrypoint has named arguments.
   /// Named arguments are arguments that are accessed by name by adding a table
   /// to the end of the argument list.
-  bool get hasNamedArgs => args.entries.any((e) => !e.value.positional);
+  bool get hasNamedArgs => args.any((e) => !e.positional);
 
   /// This is used to determine the number of positional arguments.
   /// Used to determine if the named arguments table is provided.
-  int get numOfPositionalArgs =>
-      args.entries.where((e) => e.value.positional).length;
+  int get numOfPositionalArgs => args.where((e) => e.positional).length;
 
   /// The actual function of the entrypoint.
   final Function func;
@@ -80,6 +79,8 @@ enum ArgKind {
 
 /// This is a lua argument.
 final class LArg<T> {
+  final String name;
+
   final String descr;
 
   final ArgKind kind;
@@ -110,7 +111,8 @@ final class LArg<T> {
   Type get type => T;
 
   const LArg(
-      {this.descr = "",
+      {required this.name,
+      this.descr = "",
       this.kind = ArgKind.requiredPositional,
       this.docDefaultValue,
       this.docTypeOverride});
@@ -297,17 +299,17 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
           .writeln("---@generic T : ${_convertDartToLua(export.returnType!)}");
     }
     if (export.args.isNotEmpty) {
-      for (final arg in export.args.entries) {
-        if (arg.value.positional) {
+      for (final arg in export.args) {
+        if (arg.positional) {
           method.writeln(
-              "---@param ${arg.key} ${(arg.value.docTypeOverride ?? _convertDartToLua(arg.value.type)) + (arg.value.required ? "" : "?")} ${arg.value.descr}${arg.value.docDefaultValue != null ? " (default: ${arg.value.docDefaultValue})" : ""}");
+              "---@param ${arg.name} ${(arg.docTypeOverride ?? _convertDartToLua(arg.type)) + (arg.required ? "" : "?")} ${arg.descr.replaceAll("\n", " ")}${arg.docDefaultValue != null ? " (default: ${arg.docDefaultValue})" : ""}");
         }
         // Document the argument
       }
       if (export.hasNamedArgs) {
         // Document the named arguments
         method.writeln(
-            "---@param named {${export.args.entries.where((e) => !e.value.positional).map((e) => "${e.key}: ${(e.value.docTypeOverride ?? _convertDartToLua(e.value.type))}${e.value.required ? "" : "?"}").join(", ")}}${export.args.entries.any((e) => e.value.required && !e.value.positional) ? "" : "?"} Put any named arguments in a table here. See description below for more info.");
+            "---@param named {${export.args.where((e) => !e.positional).map((e) => "${e.name}: ${(e.docTypeOverride ?? _convertDartToLua(e.type))}${e.required ? "" : "?"}").join(", ")}}${export.args.any((e) => e.required && !e.positional) ? "" : "?"} Put any named arguments in a table here. See description below for more info.");
       }
     }
     if (export.returnGeneric && export.returnType != null) {
@@ -327,14 +329,14 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
     if (export.hasNamedArgs) {
       method.writeln("---");
       method.writeln("---## Named arguments:");
-      for (final arg in export.args.entries.where((e) => !e.value.positional)) {
+      for (final arg in export.args.where((e) => !e.positional)) {
         method.writeln("---");
         method.writeln(
-            "---- ${arg.key}: `${(arg.value.docTypeOverride ?? _convertDartToLua(arg.value.type))}${arg.value.required ? "" : "?"}` - ${arg.value.descr}");
+            "---- ${arg.name}: `${(arg.docTypeOverride ?? _convertDartToLua(arg.type))}${arg.required ? "" : "?"}` - ${arg.descr}");
       }
     }
     method.writeln("function $className.${export.name}(${[
-      ...export.args.entries.where((e) => e.value.positional).map((e) => e.key),
+      ...export.args.where((e) => e.positional).map((e) => e.name),
       export.hasNamedArgs ? "named" : null
     ].whereType<String>().join(", ")}) end");
     return method.toString();

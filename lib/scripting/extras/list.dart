@@ -23,7 +23,8 @@ class ListInterface extends SInterface<List> {
             name: "add",
             descr: "Adds an object to the list.",
             args: const {
-              "object": LArg<Object>(
+              LArg<Object>(
+                name: "object",
                 descr: "The object to add.",
               )
             },
@@ -35,7 +36,8 @@ class ListInterface extends SInterface<List> {
             name: "remove",
             descr: "Removes an object from the list.",
             args: const {
-              "object": LArg<Object>(
+              LArg<Object>(
+                name: "object",
                 descr: "The object to remove.",
               )
             },
@@ -63,7 +65,8 @@ class ListInterface extends SInterface<List> {
             name: "contains",
             descr: "Returns true if the list contains the object.",
             args: const {
-              "object": LArg<Object>(
+              LArg<Object>(
+                name: "object",
                 descr: "The object to check for.",
               )
             },
@@ -73,7 +76,8 @@ class ListInterface extends SInterface<List> {
             name: "get",
             descr: "Returns the object at the given index.",
             args: const {
-              "index": LArg<int>(
+              LArg<int>(
+                name: "index",
                 descr: "The index to get.",
               )
             },
@@ -83,7 +87,8 @@ class ListInterface extends SInterface<List> {
           name: "forEach",
           descr: "Runs a function for each object in the list.",
           args: const {
-            "func": LArg<LuaFuncRef>(
+            LArg<LuaFuncRef>(
+                name: "function",
                 descr: "The function to run.",
                 docTypeOverride: "fun(object: any):nil")
           },
@@ -99,7 +104,8 @@ class ListInterface extends SInterface<List> {
           descr:
               "Returns the first object in the list that passes the given function, or null if none match.",
           args: const {
-            "check": LArg<LuaFuncRef>(
+            LArg<LuaFuncRef>(
+                name: "check",
                 descr: "The function to check.",
                 docTypeOverride: "fun(object: any):boolean")
           },
@@ -119,7 +125,8 @@ class ListInterface extends SInterface<List> {
           descr:
               "Returns the last object in the list that passes the given function, or null if none match.",
           args: const {
-            "check": LArg<LuaFuncRef>(
+            LArg<LuaFuncRef>(
+                name: "check",
                 descr: "The function to check.",
                 docTypeOverride: "fun(object: any):boolean"),
           },
@@ -138,7 +145,8 @@ class ListInterface extends SInterface<List> {
             name: "where",
             descr: "Returns a filtered copy of the list.",
             args: const {
-              "check": LArg<LuaFuncRef>(
+              LArg<LuaFuncRef>(
+                  name: "check",
                   descr: "The function to check.",
                   docTypeOverride: "fun(object: any):boolean")
             },

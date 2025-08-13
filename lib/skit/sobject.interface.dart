@@ -28,7 +28,8 @@ A base class for all objects in the kit.
           name: "addChild",
           descr: "Adds a child SObject to the xml node.",
           args: const {
-            "child": LArg<SObject>(
+            LArg<SObject>(
+              name: "child",
               descr: "The child SObject to add.",
             )
           },
@@ -38,7 +39,8 @@ A base class for all objects in the kit.
           name: "removeChild",
           descr: "Removes a child SObject from the xml node.",
           args: const {
-            "child": LArg<SObject>(
+            LArg<SObject>(
+              name: "child",
               descr: "The child SObject to remove.",
             )
           },
@@ -49,7 +51,8 @@ A base class for all objects in the kit.
           descr:
               "Returns a child of the SObject by tag. If multiple children have the same tag, only the first one will be returned.",
           args: const {
-            "tag": LArg<String>(
+            LArg<String>(
+              name: "tag",
               descr: "The tag of the child to get.",
             ),
           },
@@ -64,7 +67,8 @@ A base class for all objects in the kit.
             descr:
                 "Returns a child of the SObject by a filter. Returns the first child that matches the filter.",
             args: const {
-              "filter": LArg<LuaFuncRef>(
+              LArg<LuaFuncRef>(
+                name: "filter",
                 descr: "The filter to apply to the children.",
                 docTypeOverride: "fun(child: SObject): boolean",
               )
@@ -81,7 +85,8 @@ A base class for all objects in the kit.
             name: "getChildren",
             descr: "Returns a list of all the children of the SObject.",
             args: const {
-              "filter": LArg<LuaFuncRef>(
+              LArg<LuaFuncRef>(
+                  name: "filter",
                   descr: "The filter to apply to the children.",
                   docTypeOverride: "fun(child: SObject): boolean",
                   kind: ArgKind.optionalPositional),

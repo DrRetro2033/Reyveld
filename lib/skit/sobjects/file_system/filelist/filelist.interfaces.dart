@@ -30,7 +30,7 @@ class GlobsInterface<T extends Globs> extends SInterface<Globs> {
         LEntry(
           name: "add",
           descr: "Adds a glob to the whitelist.",
-          args: const {"glob": LArg<String>(descr: "The glob to add.")},
+          args: const {LArg<String>(name: "glob", descr: "The glob to add.")},
           returnType: T,
           (String glob) async {
             return object!..add(glob);
@@ -39,14 +39,16 @@ class GlobsInterface<T extends Globs> extends SInterface<Globs> {
         LEntry(
             name: "addAll",
             descr: "Adds multiple globs to the whitelist.",
-            args: const {"globs": LArg<List>(descr: "The globs to add.")},
+            args: const {LArg<List>(name: "globs", descr: "The globs to add.")},
             returnType: T,
             (List globs) async =>
                 object!..addAll(globs.whereType<String>().toList())),
         LEntry(
           name: "remove",
           descr: "Removes a glob from the whitelist.",
-          args: const {"glob": LArg<String>(descr: "The glob to remove.")},
+          args: const {
+            LArg<String>(name: "glob", descr: "The glob to remove.")
+          },
           returnType: T,
           (String glob) async {
             return object!..remove(glob);

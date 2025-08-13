@@ -16,7 +16,9 @@ class DirectoryInterface extends SInterface<Directory> {
         LEntry(
           name: "new",
           descr: "Creates a new directory handler.",
-          args: {"path": LArg<String>(descr: "The path to the directory.")},
+          args: const {
+            LArg<String>(name: "path", descr: "The path to the directory.")
+          },
           returnType: Directory,
           (String path) => Directory(path),
         ),
@@ -24,8 +26,9 @@ class DirectoryInterface extends SInterface<Directory> {
           name: "appdata",
           descr:
               "Returns the path to the appdata directory of the current user.",
-          args: {
-            "relative": LArg<String>(
+          args: const {
+            LArg<String>(
+                name: "relative",
                 descr:
                     "Provide a relative path inside the appdata directory to get a specific directory.",
                 kind: ArgKind.optionalNamed)
@@ -49,8 +52,9 @@ class DirectoryInterface extends SInterface<Directory> {
         LEntry(
             name: "documents",
             descr: "Returns the path to the documents directory.",
-            args: {
-              "relative": LArg<String>(
+            args: const {
+              LArg<String>(
+                  name: "relative",
                   descr:
                       "Provide a relative path inside the documents directory to get a specific directory.",
                   kind: ArgKind.optionalNamed)
@@ -80,8 +84,9 @@ class DirectoryInterface extends SInterface<Directory> {
             descr:
                 "Returns a stream of the files in the directory (files will be of type SFiles).",
             returnType: Stream,
-            args: {
-              "recursive": LArg<bool>(
+            args: const {
+              LArg<bool>(
+                  name: "recursive",
                   descr:
                       "Whether to list recursively (i.e. include subdirectories) (default: false).",
                   kind: ArgKind.optionalNamed)
@@ -99,7 +104,6 @@ class DirectoryInterface extends SInterface<Directory> {
           descr: "Checks if the directory exists.",
           returnType: bool,
           isAsync: true,
-          args: {},
           () async => await object!.exists(),
         ),
         LEntry(
@@ -107,8 +111,9 @@ class DirectoryInterface extends SInterface<Directory> {
             descr: "Creates the directory.",
             returnType: bool,
             isAsync: true,
-            args: {
-              "recursive": LArg<bool>(
+            args: const {
+              LArg<bool>(
+                  name: "recursive",
                   descr: "Whether to create recursively (default: false).",
                   kind: ArgKind.optionalNamed)
             },

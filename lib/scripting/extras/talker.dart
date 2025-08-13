@@ -17,12 +17,14 @@ all the pertinent information is in one file and not spread across multiple logs
             name: "log",
             descr: "Send a log message.",
             args: const {
-              "message": LArg<Object>(descr: "The message to send"),
-              "prefix": LArg<String>(
+              LArg<Object>(name: "message", descr: "The message to send"),
+              LArg<String>(
+                  name: "prefix",
                   descr: "The prefix to add to the message.",
                   docDefaultValue: "",
                   kind: ArgKind.optionalNamed),
-              "suffix": LArg<String>(
+              LArg<String>(
+                  name: "suffix",
                   descr: "The suffix to add to the message.",
                   docDefaultValue: "",
                   kind: ArgKind.optionalNamed),
@@ -33,12 +35,14 @@ all the pertinent information is in one file and not spread across multiple logs
             name: "debug",
             descr: "Send a debug message.",
             args: const {
-              "message": LArg<Object>(descr: "The message to send"),
-              "prefix": LArg<String>(
+              LArg<Object>(name: "message", descr: "The message to send"),
+              LArg<String>(
+                  name: "prefix",
                   descr: "The prefix to add to the message.",
                   docDefaultValue: "",
                   kind: ArgKind.optionalNamed),
-              "suffix": LArg<String>(
+              LArg<String>(
+                  name: "suffix",
                   descr: "The suffix to add to the message.",
                   docDefaultValue: "",
                   kind: ArgKind.optionalNamed),
@@ -49,12 +53,14 @@ all the pertinent information is in one file and not spread across multiple logs
             name: "error",
             descr: "Send an error message.",
             args: const {
-              "message": LArg<Object>(descr: "The message to send"),
-              "prefix": LArg<String>(
+              LArg<Object>(name: "message", descr: "The message to send"),
+              LArg<String>(
+                  name: "prefix",
                   descr: "The prefix to add to the message.",
                   docDefaultValue: "",
                   kind: ArgKind.optionalNamed),
-              "suffix": LArg<String>(
+              LArg<String>(
+                  name: "suffix",
                   descr: "The suffix to add to the message.",
                   docDefaultValue: "",
                   kind: ArgKind.optionalNamed),
@@ -65,12 +71,14 @@ all the pertinent information is in one file and not spread across multiple logs
             name: "warning",
             descr: "Send a warning message.",
             args: const {
-              "message": LArg<Object>(descr: "The message to send"),
-              "prefix": LArg<String>(
+              LArg<Object>(name: "message", descr: "The message to send"),
+              LArg<String>(
+                  name: "prefix",
                   descr: "The prefix to add to the message.",
                   docDefaultValue: "",
                   kind: ArgKind.optionalNamed),
-              "suffix": LArg<String>(
+              LArg<String>(
+                  name: "suffix",
                   descr: "The suffix to add to the message.",
                   docDefaultValue: "",
                   kind: ArgKind.optionalNamed),
@@ -81,12 +89,14 @@ all the pertinent information is in one file and not spread across multiple logs
             name: "info",
             descr: "Send an info message.",
             args: const {
-              "message": LArg<Object>(descr: "The message to send"),
-              "prefix": LArg<String>(
+              LArg<Object>(name: "message", descr: "The message to send"),
+              LArg<String>(
+                  name: "prefix",
                   descr: "The prefix to add to the message.",
                   docDefaultValue: "",
                   kind: ArgKind.optionalNamed),
-              "suffix": LArg<String>(
+              LArg<String>(
+                  name: "suffix",
                   descr: "The suffix to add to the message.",
                   docDefaultValue: "",
                   kind: ArgKind.optionalNamed),

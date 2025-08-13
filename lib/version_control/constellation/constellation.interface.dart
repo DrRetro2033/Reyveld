@@ -19,10 +19,12 @@ A collection of Stars, with a root star, and a current star.
             name: "new",
             descr: "Creates a new constellation.",
             args: const {
-              "name": LArg<String>(
+              LArg<String>(
+                name: "name",
                 descr: "The name of the constellation.",
               ),
-              "path": LArg<String>(
+              LArg<String>(
+                name: "path",
                 descr: "The path of the constellation.",
               )
             },
@@ -54,7 +56,8 @@ A collection of Stars, with a root star, and a current star.
             descr:
                 "Starts the constellation by creating the root star. Call after adding the constellation to the kit.",
             args: const {
-              "throwIfExists": LArg<bool>(
+              LArg<bool>(
+                name: "throwIfExists",
                 descr:
                     "Throws an exception if the constellation already has a root star.",
                 kind: ArgKind.optionalPositional,
@@ -82,8 +85,10 @@ A collection of Stars, with a root star, and a current star.
             descr:
                 "Gets and sets the globs of the constellation. Used to specify which files to track, and which files to ignore.",
             args: const {
-              "globs": LArg<Globs>(
-                  descr: "The globs to set.", kind: ArgKind.optionalPositional)
+              LArg<Globs>(
+                  name: "filelist",
+                  descr: "The globs to set.",
+                  kind: ArgKind.optionalPositional)
             },
             returnType: Globs, ([Globs? filelist]) {
           if (filelist != null) {
@@ -102,7 +107,7 @@ A collection of Stars, with a root star, and a current star.
           name: "getStem",
           descr: "Get the start of a named branch.",
           args: const {
-            "branch": LArg<String>(descr: "The name of the branch.")
+            LArg<String>(name: "branch", descr: "The name of the branch.")
           },
           returnType: Star,
           (String branch) => object?.getStartOfBranch(branch),
@@ -112,5 +117,18 @@ A collection of Stars, with a root star, and a current star.
             descr: "Get all of the branches.",
             returnType: List,
             () => object?.getAllBranches().toList()),
+        LEntry(
+            name: "sync",
+            descr: "Syncs the tracked folder to the current star.",
+            returnType: Stream,
+            isAsync: true,
+            () async => await object!.sync()),
+        LEntry(
+            name: "checkForChanges",
+            descr:
+                "Checks for changes in the tracked folder against the current star.",
+            returnType: bool,
+            isAsync: true,
+            () async => await object!.checkForChanges()),
       };
 }

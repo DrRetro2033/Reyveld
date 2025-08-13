@@ -24,7 +24,8 @@ A star is a point in time that represents a snapshot of an folder.
             name: "name",
             descr: "Gets or sets the name of the star.",
             args: const {
-              "name": LArg<String>(
+              LArg<String>(
+                  name: "name",
                   descr: "The new name of the star.",
                   kind: ArgKind.optionalPositional)
             },
@@ -37,21 +38,27 @@ A star is a point in time that represents a snapshot of an folder.
             () => object!.constellation),
         LEntry(
             name: "makeCurrent",
-            descr: "Sets the star as the current star.",
+            descr:
+                """Sets the star as the current star. This method does not sync the tracked folder (i.e. it does not extract the contents of this star into the tracked folder), 
+it just updates the current star in the constellation. If you want to sync the tracked folder, use [sync()](lua://Constellation.sync) to sync the tracked folder to this star.""",
+            () {
+          object!.makeCurrent();
+        }),
+        LEntry(
+            name: "checkout",
+            descr:
+                "Extracts the contents of this star into the tracked folder, without updating the current star.",
             args: const {
-              "syncFolder": LArg<bool>(
+              LArg<String>(
+                  name: "path",
                   descr:
-                      "If true, the folder will be synced to the current star.",
-                  docDefaultValue: "true",
+                      """The path to extract the contents of this star into. If not provided, the tracked folder will be used, just be sure not to overwrite any changes to the 
+tracked folder by calling [checkForChanges()](lua://Constellation.checkForChanges) in the constellation.""",
                   kind: ArgKind.optionalPositional)
             },
             isAsync: true,
-            returnType: Stream, ([bool syncFolder = false]) async {
-          object!.makeCurrent();
-          if (syncFolder) {
-            return await object!.constellation.sync();
-          }
-        }),
+            ([String? path]) async =>
+                await object!.checkout(path ?? object!.constellation.path)),
         LEntry(
             name: "archive",
             descr: "Gets the archive of the star.",
@@ -67,10 +74,12 @@ A star is a point in time that represents a snapshot of an folder.
             name: "grow",
             descr: "Grows a new star from this star.",
             args: const {
-              "name": LArg<String>(
+              LArg<String>(
+                name: "name",
                 descr: "The name of the new star.",
               ),
-              "branch": LArg<String>(
+              LArg<String>(
+                  name: "branchName",
                   descr: "Makes this star the new stem for a new branch.",
                   kind: ArgKind.optionalNamed)
             },
@@ -110,7 +119,8 @@ A star is a point in time that represents a snapshot of an folder.
             descr:
                 "Gets the star forward to this star X times, also known as children/descendants. When encountering a fork, the top most star will be chosen.",
             args: const {
-              "x": LArg<int>(
+              LArg<int>(
+                  name: "x",
                   descr: "The number of stars to move forward.",
                   docDefaultValue: "1",
                   kind: ArgKind.optionalPositional)
@@ -128,7 +138,8 @@ A star is a point in time that represents a snapshot of an folder.
             descr:
                 "Gets the star backward to this star X times, also known as parents/ancestors.",
             args: const {
-              "x": LArg<int>(
+              LArg<int>(
+                  name: "x",
                   descr: "The number of stars to move backward.",
                   docDefaultValue: "1",
                   kind: ArgKind.optionalPositional)
@@ -146,7 +157,8 @@ A star is a point in time that represents a snapshot of an folder.
             descr:
                 "Gets the star above this star X times, also known as siblings.",
             args: const {
-              "x": LArg<int>(
+              LArg<int>(
+                  name: "x",
                   descr: "The number of stars to move up. Defaults to 1.",
                   kind: ArgKind.optionalPositional)
             },
@@ -163,7 +175,8 @@ A star is a point in time that represents a snapshot of an folder.
             descr:
                 "Gets the star below this star X times, also known as siblings.",
             args: const {
-              "x": LArg<int>(
+              LArg<int>(
+                  name: "x",
                   descr: "The number of stars to move down. Defaults to 1.",
                   kind: ArgKind.optionalPositional)
             },
@@ -178,7 +191,9 @@ A star is a point in time that represents a snapshot of an folder.
         LEntry(
             name: "next",
             descr: "Gets the Xth child of the star.",
-            args: const {"x": LArg<int>(descr: "The Xth of the child to get.")},
+            args: const {
+              LArg<int>(name: "x", descr: "The Xth of the child to get.")
+            },
             returnType: Star, (int x) {
           List<Star?> stars = object!.getChildren<Star>();
           Star star = stars[(x - 1) % stars.length] ?? object!;
@@ -203,7 +218,8 @@ A star is a point in time that represents a snapshot of an folder.
           name: "branch",
           descr: "Sets and gets the branch name the star is located in.",
           args: const {
-            "name": LArg<String>(
+            LArg<String>(
+                name: "name",
                 descr: "The new name of the branch.",
                 kind: ArgKind.optionalPositional)
           },
@@ -220,7 +236,8 @@ A star is a point in time that represents a snapshot of an folder.
             name: "anchor",
             descr: "Makes this star the new stem for a new branch.",
             args: const {
-              "name": LArg<String>(
+              LArg<String>(
+                name: "name",
                 descr: "The name of the new branch.",
               )
             },
