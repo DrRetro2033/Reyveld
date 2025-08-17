@@ -242,13 +242,14 @@ class Lua {
       });
     } else if (value is LEntry) {
       state.pushDartFunction((state) async {
-        if (value.requiredPermission != null) {
+        if (value.requiredPermissions.isNotEmpty) {
           if (certificate == null) {
             throw AuthVeldException(
                 "Certificate not found, so assuming no access.");
           }
-          certificate!
-              .permitted(value.requiredPermission!, value.interface_!.object);
+          for (final permission in value.requiredPermissions) {
+            certificate!.permitted(permission, value.interface_!.object);
+          }
         }
         try {
           List<dynamic> args = [];

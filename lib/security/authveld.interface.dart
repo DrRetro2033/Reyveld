@@ -5,12 +5,15 @@ class AuthVeldInterface extends SInterface<AuthVeld> {
   String get className => "AuthVeld";
 
   @override
+  get staticDescription =>
+      """AuthVeld is a service that allows users to authorize applications to access Arceus.
+This interface provides methods to make authorization requests and load certificates. These certificates describe what an application can and cannot do inside of the constrained environment of Arceus.""";
+  @override
   get statics => {
         LEntry(
             name: "authorize",
-            descr:
-                """Makes an authorization request with AuthVeld. Will open the user's browser to the authorization page, 
-                where they will decide if they allow the application to access Arceus with the given permissions.""",
+            descr: """Makes an authorization request with AuthVeld.
+Will open the user's browser to the authorization page, where they will decide if they allow the application to access Arceus with the given permissions.""",
             args: {
               LArg<String>(name: "name", descr: "The name of the application."),
               LArg<List>(
@@ -35,6 +38,15 @@ class AuthVeldInterface extends SInterface<AuthVeld> {
             passLua: true, (Lua lua, String token) async {
           lua.certificate = await AuthVeld.loadCertificate(token);
           Arceus.talker.log("Loaded certificate: ${lua.certificate!.hash}");
+        }),
+        LEntry(
+            name: "currentPolicies",
+            descr:
+                "The policies of the currently loaded certificate. Will return null if no certificate has been loaded.",
+            returnType: List,
+            passLua: true, (Lua lua) {
+          if (lua.certificate == null) return null;
+          return lua.certificate!.policies;
         }),
       };
 }

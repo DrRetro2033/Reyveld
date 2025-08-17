@@ -9,10 +9,13 @@ import 'package:arceus/skit/sobject.dart';
 abstract class LExport {
   final String name;
   final String descr;
-  final SPermissionType? requiredPermission;
+  final Set<SPermissionType> requiredPermissions;
   SInterface? interface_;
 
-  LExport({required this.name, this.requiredPermission, this.descr = ""});
+  LExport(
+      {required this.name,
+      this.requiredPermissions = const {},
+      this.descr = ""});
 }
 
 /// This is a lua entrypoint.
@@ -51,7 +54,7 @@ class LEntry extends LExport {
 
   LEntry(this.func,
       {required super.name,
-      super.requiredPermission,
+      super.requiredPermissions,
       super.descr,
       this.args = const {},
       this.isAsync = false,
@@ -133,7 +136,7 @@ class LField<T> extends LExport {
   final dynamic value;
   Type get type => T;
   LField(this.value,
-      {required super.name, super.requiredPermission, super.descr});
+      {required super.name, super.requiredPermissions, super.descr});
 }
 
 /// This is a helper function to check if a value is of type [T].
@@ -331,6 +334,12 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
     for (final line in export.descr.split("\n")) {
       // if (line.isEmpty) continue;
       method.writeln("---$line");
+    }
+    if (export.requiredPermissions.isNotEmpty) {
+      method.writeln("---## Required permissions:");
+      for (final permission in export.requiredPermissions) {
+        method.writeln("---- ${permission.name}");
+      }
     }
     if (export.hasNamedArgs) {
       method.writeln("---");

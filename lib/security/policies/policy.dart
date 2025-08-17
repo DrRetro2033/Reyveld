@@ -35,9 +35,6 @@ enum SPermissionType {
   /// The permission to delete files outside of SKits.
   deleteFiles,
 
-  /// The permission to copy (i.e. both read, create, and write) files outside of SKits.
-  copyFiles,
-
   /// The permission to open folders outside of SKits.
   openFolders,
 
