@@ -40,7 +40,7 @@ extension Pathing on String {
   ///  - mac - for macos
   ///  - any - default
   String resolvePath() {
-    String path = replaceAll("\\", "/");
+    String path = removeWindowsSlashes();
     final platformTagExp = RegExp(r"<((?:\w{3},?)+)>'([\w\s\d:/-_]+)'");
 
     final parts = path.split("/");
@@ -81,6 +81,8 @@ extension Pathing on String {
     }
     return resolvedParts.join("/");
   }
+
+  String removeWindowsSlashes() => replaceAll("\\", "/");
 
   /// Makes the path relative to another path.
   String relativeTo(String relativeTo) {

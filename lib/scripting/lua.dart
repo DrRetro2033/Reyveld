@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:arceus/arceus.dart';
+import 'package:arceus/extensions.dart';
 import 'package:arceus/scripting/extras/extras.dart';
 import 'package:arceus/security/authveld.dart';
 import 'package:arceus/security/certificate/certificate.dart';
@@ -20,6 +21,8 @@ class Lua {
   final Stopwatch stopwatch = Stopwatch();
 
   final WebSocket? socket;
+
+  String? processId;
 
   SCertificate? certificate;
 
@@ -111,7 +114,7 @@ class Lua {
             code = code.replaceRange(match.start, match.end, match.group(1)!);
           }
           return code;
-        }
+        },
       ];
 
   /// Initializes the lua state.
@@ -423,10 +426,18 @@ class Lua {
 
     while (compiled.contains(stringPlaceholder)) {
       compiled = compiled.replaceFirst(
-          stringPlaceholder, "\"${strings.removeAt(0)}\"");
+          stringPlaceholder, "\"${_formatPaths(strings.removeAt(0))}\"");
     }
     // Arceus.talker.debug("Compiled:\n$compiled");
     return compiled;
+  }
+
+  /// This is done so that windows paths backslashes are converted to forward slashes.
+  String _formatPaths(String path) {
+    if (Uri.tryParse(path) != null) {
+      return path.removeWindowsSlashes();
+    }
+    return path;
   }
 
   Future<bool> awaitForCompletion() async {
@@ -437,9 +448,10 @@ class Lua {
   }
 
   /// Runs a lua script.
-  Future<dynamic> run(String entrypoint) async {
+  Future<dynamic> run(String entrypoint, {String processId = ""}) async {
     /// Resets the stopwatch and starts it, to track process time,
     /// and to notify if its done.
+    this.processId = processId;
     stopwatch.reset();
     stopwatch.start();
     final code = await _compile(entrypoint).then((value) => value.trim());

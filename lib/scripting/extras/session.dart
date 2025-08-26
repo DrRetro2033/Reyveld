@@ -1,7 +1,8 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:arceus/arceus.dart';
+import 'package:arceus/event.dart';
+import 'package:arceus/scripting/lua.dart';
 import 'package:arceus/scripting/sinterface.dart';
 import 'package:talker/talker.dart';
 
@@ -23,20 +24,20 @@ class SessionInterface extends SInterface<WebSocket> {
             descr:
                 "The operating system of the server. (\"${Platform.operatingSystem}\")",
             Platform.operatingSystem),
-        LEntry(name: "send", descr: "Send data through the web socket.", args: {
-          LArg<Object>(
-              name: "data", descr: "The data to send through the web socket."),
-          LArg<String>(
-              name: "message",
-              descr: "The message with the data to send with the data.",
-              kind: ArgKind.optionalNamed),
-        }, (Object data, {String message = ""}) {
-          object!.add(jsonEncode({
-            "type": "data",
-            "message": message,
-            "timesent": DateTime.now().toIso8601String(),
-            "data": data,
-          }));
+        LEntry(
+            name: "send",
+            descr: "Send data through the web socket.",
+            args: {
+              LArg<Object>(
+                  name: "data",
+                  descr: "The data to send through the web socket."),
+              LArg<String>(
+                  name: "message",
+                  descr: "The message with the data to send with the data.",
+                  kind: ArgKind.optionalNamed),
+            },
+            passLua: true, (Lua lua, Object data, {String message = ""}) {
+          object!.add(SocketEvent.data(lua.processId!, data).toString());
         }),
         LEntry(
             name: "talk",

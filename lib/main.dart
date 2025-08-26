@@ -3,9 +3,11 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:arceus/arceus.dart';
+import 'package:arceus/event.dart';
 import 'package:arceus/scripting/lua.dart';
 import 'package:arceus/security/authveld.dart';
 import 'package:arceus/skit/skit.dart';
+import 'package:arceus/uuid.dart';
 import 'package:chalkdart/chalkstrings.dart';
 import 'package:cli_spin/cli_spin.dart';
 import 'package:rxdart/rxdart.dart';
@@ -122,7 +124,10 @@ Future<void> main(List<String> args) async {
             await server.close();
             exit(0);
           case "lua":
+
+            /// We save the client's session ID here, as once the Garbage Collector collects the request, the ID will be gone as well.
             final id = request.session.id;
+            final processIds = <String>{};
             if (WebSocketTransformer.isUpgradeRequest(request)) {
               final socket = await WebSocketTransformer.upgrade(request);
               sessions[id] = (Lua(socket: socket), socket);
@@ -132,16 +137,21 @@ Future<void> main(List<String> args) async {
                 final requestProgress = CliSpin(spinner: CliSpinners.bounce)
                     .start("Processing request from client ($id)...".aqua);
                 Arceus.talker.info("Request from client ($id):\n$data");
+                final processId = generateUniqueHash(processIds);
+                processIds.add(processId);
                 try {
+                  socket.add(SocketEvent.starting(processId, data).toString());
+
+                  /// Initialize the session's lua environment.
                   await sessions[id]!.$1.init();
-                  final result = await sessions[id]!.$1.run(data);
-                  socket.add(jsonEncode({
-                    "type": "response",
-                    "successful": true,
-                    "processTime":
-                        sessions[id]!.$1.stopwatch.elapsedMilliseconds,
-                    "return": result
-                  }));
+
+                  /// Run the request and get the result.
+                  final result =
+                      await sessions[id]!.$1.run(data, processId: processId);
+                  socket.add(SocketEvent.completed(
+                    processId,
+                    result,
+                  ).toString());
                   requestProgress.success(
                       "Completed request in ${sessions[id]!.$1.stopwatch.elapsedMilliseconds}ms ($id)!"
                           .limeGreen);
@@ -150,14 +160,9 @@ Future<void> main(List<String> args) async {
                       "There was a crash on this request (Session ID: $id), please check the log folder (${Arceus.appDataPath}/logs) for more information."
                           .red);
                   Arceus.talker.critical("Crash Handler", e, st);
-                  socket.add(jsonEncode({
-                    "type": "response",
-                    "successful": false,
-                    "processTime":
-                        sessions[id]!.$1.stopwatch.elapsedMilliseconds,
-                    "return": null
-                  }));
+                  socket.add(SocketEvent.error(processId, e).toString());
                 }
+                processIds.remove(processId);
               }, onDone: () {
                 Arceus.printToConsole('Client ($id) disconnected'.skyBlue);
                 Arceus.talker.info("Client ($id) disconnected.");
