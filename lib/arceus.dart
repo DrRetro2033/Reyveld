@@ -103,7 +103,8 @@ class Arceus {
   /// Verifies that the user has a signature.
   static Future<void> verifySignature() async {
     if (!await signatureFile.exists()) {
-      await generateRSAKeys();
+      final keys = await generateRSAKeys();
+      await saveMe(keys);
       print(
           """me.keys was not found, so new keys were generated. This is normal on the first run.
 Never share your keys file with anyone, as it contains your secret private key. Your private key is used to sign your kits to verify that it was created by you.
@@ -114,9 +115,9 @@ In the unlikely event that your private key is compromised, you can generate a n
     }
   }
 
-  /// Generates a new RSA key pair and saves it to me.signature file.
+  /// Generates a new RSA key pair.
   /// [bitLength] defaults to 2048.
-  static Future<void> generateRSAKeys({int bitLength = 2048}) async {
+  static Future<SKitKeyPair> generateRSAKeys({int bitLength = 2048}) async {
     final keyParams =
         RSAKeyGeneratorParameters(BigInt.parse('65537'), bitLength, 64);
     final secureRandom = FortunaRandom();
@@ -127,24 +128,19 @@ In the unlikely event that your private key is compromised, you can generate a n
     final generator = RSAKeyGenerator()
       ..init(ParametersWithRandom(keyParams, secureRandom));
     final pair = generator.generateKeyPair();
-
-    pair.publicKey as RSAPublicKey;
-    pair.privateKey as RSAPrivateKey;
-    await saveMe(
-        privateKey: pair.privateKey as RSAPrivateKey,
-        publicKey: pair.publicKey as RSAPublicKey);
+    return (
+      private: pair.privateKey as RSAPrivateKey,
+      public: pair.publicKey as RSAPublicKey
+    );
   }
 
-  /// WAKE ME UP, WAKE ME UP INSIDE, CAN'T WAKE UP, SAVE ME!!!
-  /// Saves the private and public keys to the me.signature file.
-  static Future<void> saveMe(
-      {required RSAPrivateKey privateKey,
-      required RSAPublicKey publicKey}) async {
+  /// Saves the private and public keys to the me.keys file.
+  static Future<void> saveMe(SKitKeyPair keys) async {
     if (!signatureFile.existsSync()) {
       await signatureFile.create(recursive: true);
     }
-    final privateKeyPem = CryptoUtils.encodeRSAPrivateKeyToPem(privateKey);
-    final publicKeyPem = CryptoUtils.encodeRSAPublicKeyToPem(publicKey);
+    final privateKeyPem = CryptoUtils.encodeRSAPrivateKeyToPem(keys.private!);
+    final publicKeyPem = CryptoUtils.encodeRSAPublicKeyToPem(keys.public);
     await signatureFile.writeAsString("""$privateKeyPem
 ${String.fromCharCode(0)}
 $publicKeyPem""");

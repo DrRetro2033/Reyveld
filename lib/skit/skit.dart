@@ -9,7 +9,8 @@ import "package:arceus/extensions.dart";
 import "package:arceus/security/certificate/certificate.dart";
 import "package:arceus/security/policies/policies.dart";
 import "package:arceus/uuid.dart";
-import "package:pointycastle/pointycastle.dart" show RSAPublicKey;
+import "package:pointycastle/pointycastle.dart"
+    show RSAPublicKey, RSAPrivateKey;
 import "package:rxdart/rxdart.dart";
 import 'package:xml/xml_events.dart';
 
@@ -33,6 +34,8 @@ enum SKitType {
   authors,
 }
 
+typedef SKitKeyPair = ({RSAPrivateKey? private, RSAPublicKey public});
+
 /// Represents a compressed, encrypted, and signed XML file.
 /// [SKit] is an abrivation for SERE kit, which is a reference to titanfall 2.
 /// [SKit]s can contain any data that Arceus would ever need.
@@ -44,8 +47,11 @@ enum SKitType {
 /// [SKit]s are first compressed using GZip, then encrypted using Fernet, and finally is signed using RSA.
 class SKit {
   /// Opens a kit file.
-  static Future<SKit> open(String path,
-      {SKitType? type, String encryptKey = "Arceus"}) async {
+  static Future<SKit> open(
+    String path, {
+    SKitType? type,
+    String encryptKey = "Arceus",
+  }) async {
     final kit = SKit(path, encryptKey: encryptKey);
     if (!await kit.exists()) {
       throw Exception("SKit file does not exist!");
@@ -111,27 +117,32 @@ class SKit {
         await Arceus.author.then((e) => e!.toSAuthor());
   }
 
-  Future<Signer> get _signer async => Signer(RSASigner(RSASignDigest.SHA256,
-      privateKey: await Arceus.privateKey, publicKey: await Arceus.publicKey));
+  Future<Signer> _buildSigner([SKitKeyPair? keyPair]) async => Signer(RSASigner(
+        RSASignDigest.SHA256,
+        privateKey: keyPair?.private ?? await Arceus.privateKey,
+        publicKey: keyPair?.public ?? await Arceus.publicKey,
+      ));
 
   Future<Signer> get _verifier async =>
       Signer(RSASigner(RSASignDigest.SHA256, publicKey: await kitPublicKey));
 
-  Stream<List<int>> _sign(Stream<List<int>> data) async* {
+  Stream<List<int>> _sign(Stream<List<int>> data,
+      {SKitKeyPair? keyPair}) async* {
     await for (final bytes in data) {
-      final signer = await _signer;
+      final signer = await _buildSigner(keyPair);
       final signature = signer.signBytes(bytes);
       yield [...signature.bytes, ...bytes];
     }
   }
 
   /// Verifies the signature of the current kit file.
-  Future<bool> verify() async {
+  Future<bool> verify({bool onTempFile = false}) async {
     final verifier = await _verifier;
-    if (!await _file.exists()) {
+    final file = onTempFile ? File("$path.tmp") : _file;
+    if (!await file.exists()) {
       return true;
     }
-    final stream = _file.openRead();
+    final stream = file.openRead();
     await for (final bytes in stream
         .rechunk(SFile.chunkSize + _encryptionExtraSize + _signExtraSize)) {
       final signature =
@@ -396,7 +407,7 @@ class SKit {
   /// This will save the kit header and all of the archives to the kit file.
   /// The header is saved to the top of the file, and the archives are saved to the bottom of the file.
   /// This will save all of the changes to the file.
-  Future<void> save({String? encryptKey}) async {
+  Future<void> save({String? encryptKey, SKitKeyPair? keyPair}) async {
     if (!await isVerifiedAndTrusted()) {
       throw TrustException(this, await kitPublicKey);
     }
@@ -427,7 +438,7 @@ class SKit {
     ]);
 
     // Will override the kit file's public key if it has one.
-    final publicKey = await Arceus.publicKey;
+    final publicKey = keyPair?.public ?? await Arceus.publicKey;
 
     _cachedKitPublicKey =
         publicKey; // Cache our own public key. Used when signing another person's kit file with our own keys.
@@ -438,7 +449,8 @@ class SKit {
         .rechunk(SFile.chunkSize) // Using chunk size in SFile, for consistency.
         .transform(
             StreamTransformer.fromHandlers(handleData: _encryptTransformer))
-        .transform(StreamTransformer.fromBind(_sign));
+        .transform(
+            StreamTransformer.fromBind((e) => _sign(e, keyPair: keyPair)));
 
     await tempSink.addStream(byteStream);
     // Flush and Close the sink for the temp file.
@@ -449,6 +461,11 @@ class SKit {
     if (_newKey != null) {
       _key = _newKey!;
       _newKey = null;
+    }
+
+    // Verify the temp file.
+    if (!await verify(onTempFile: true)) {
+      throw "Save verification failed! The kit file may be corrupted!";
     }
 
     // Replace the old data in the file with the temp file's data.
@@ -463,10 +480,6 @@ class SKit {
     await temp.delete();
 
     discardChanges(); // Clear everything from memory.
-
-    if (!await verify()) {
-      throw "Save verification failed! The kit file might be corrupted!";
-    }
 
     stopwatch.stop();
     // Arceus.talker.info(

@@ -2,13 +2,16 @@ part of 'policy.dart';
 
 class SPolicyInterface extends SInterface<SPolicy> {
   @override
-  String get className => "SPolicy";
+  get className => "SPolicy";
+
+  @override
+  get parent => SObjectInterface();
 
   @override
   get statics => {
         LEntry(
-            name: "skit",
-            descr: "The SKit policy.",
+            name: "skits",
+            descr: "The SKits policy.",
             returnType: SPolicySKit,
             args: const {
               LArg<bool>(

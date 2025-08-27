@@ -23,10 +23,6 @@ class SCertificate extends SRoot {
     throw AuthVeldException("Access denied.");
   }
 
-  /// If any policy allows access, allow access.
-  bool isAllowed(SPermissionType type, Object toCheck) =>
-      policies.any((element) => element.isAllowed(type, toCheck));
-
   @override
   Future<SIndent<SRoot>> newIndent() async =>
       await SISCertificateCreator(hash).create();
@@ -36,4 +32,5 @@ class SCertificateIndent extends SIndent<SCertificate> {
   SCertificateIndent(super.hash);
 }
 
+/// Creates [SCertificateIndent]s.
 typedef SISCertificateCreator = SIndentCreator<SCertificateIndent>;

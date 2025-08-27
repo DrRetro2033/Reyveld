@@ -62,13 +62,19 @@ abstract class SPolicy extends SObject {
   SPolicy(super._node);
   String get description;
   SPolicySafetyLevel get safetyLevel;
+
+  /// These are the checks that will be used to determine if the action is allowed.
+  /// Do not use this directly, use the [isAllowed] function instead.
   Map<SPermissionType, bool Function(Object)> get checks;
 
+  /// This is used to determine if the action is allowed, based on the [SPermissionType] and the object that is being checked.
+  /// Returns true if the action is allowed, false otherwise.
   bool isAllowed(SPermissionType type, Object toCheck) {
     final check = checks[type];
     if (check == null) return false;
     return check(toCheck);
   }
 
+  /// This is used to display the details of the policy to the user.
   void details(XmlBuilder builder);
 }
