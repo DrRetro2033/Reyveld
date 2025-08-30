@@ -134,7 +134,6 @@ class AuthVeld {
 
   static Future<SCertificate> loadCertificate(String hash) async {
     if (await _kit.exists()) {
-      await _kit.exportToXMLFile("${Arceus.appDataPath}/exports/authveld.xml");
       return await _kit.getRoot<SCertificate>(
             filterRoots: (root) => root.hash == hash,
             addToCache: true,

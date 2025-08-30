@@ -22,7 +22,7 @@ class Lua {
 
   final WebSocket? socket;
 
-  String? processId;
+  String processId = "";
 
   SCertificate? certificate;
 
@@ -448,10 +448,10 @@ class Lua {
   }
 
   /// Runs a lua script.
-  Future<dynamic> run(String entrypoint, {String processId = ""}) async {
+  Future<dynamic> run(String entrypoint) async {
     /// Resets the stopwatch and starts it, to track process time,
     /// and to notify if its done.
-    this.processId = processId;
+    processId = "";
     stopwatch.reset();
     stopwatch.start();
     final code = await _compile(entrypoint).then((value) => value.trim());

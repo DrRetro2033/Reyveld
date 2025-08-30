@@ -7,7 +7,6 @@ import 'package:arceus/event.dart';
 import 'package:arceus/scripting/lua.dart';
 import 'package:arceus/security/authveld.dart';
 import 'package:arceus/skit/skit.dart';
-import 'package:arceus/uuid.dart';
 import 'package:chalkdart/chalkstrings.dart';
 import 'package:cli_spin/cli_spin.dart';
 import 'package:rxdart/rxdart.dart';
@@ -127,7 +126,6 @@ Future<void> main(List<String> args) async {
 
             /// We save the client's session ID here, as once the Garbage Collector collects the request, the ID will be gone as well.
             final id = request.session.id;
-            final processIds = <String>{};
             if (WebSocketTransformer.isUpgradeRequest(request)) {
               final socket = await WebSocketTransformer.upgrade(request);
               sessions[id] = (Lua(socket: socket), socket);
@@ -137,21 +135,15 @@ Future<void> main(List<String> args) async {
                 final requestProgress = CliSpin(spinner: CliSpinners.bounce)
                     .start("Processing request from client ($id)...".aqua);
                 Arceus.talker.info("Request from client ($id):\n$data");
-                final processId = generateUniqueHash(processIds);
-                processIds.add(processId);
                 try {
-                  socket.add(SocketEvent.starting(processId, data).toString());
-
                   /// Initialize the session's lua environment.
                   await sessions[id]!.$1.init();
 
                   /// Run the request and get the result.
-                  final result =
-                      await sessions[id]!.$1.run(data, processId: processId);
-                  socket.add(SocketEvent.completed(
-                    processId,
-                    result,
-                  ).toString());
+                  final result = await sessions[id]!.$1.run(data);
+                  socket.add(SocketEvent.completed(result,
+                          pid: sessions[id]!.$1.processId)
+                      .toString());
                   requestProgress.success(
                       "Completed request in ${sessions[id]!.$1.stopwatch.elapsedMilliseconds}ms ($id)!"
                           .limeGreen);
@@ -160,9 +152,10 @@ Future<void> main(List<String> args) async {
                       "There was a crash on this request (Session ID: $id), please check the log folder (${Arceus.appDataPath}/logs) for more information."
                           .red);
                   Arceus.talker.critical("Crash Handler", e, st);
-                  socket.add(SocketEvent.error(processId, e).toString());
+                  socket.add(
+                      SocketEvent.error(e, pid: sessions[id]!.$1.processId)
+                          .toString());
                 }
-                processIds.remove(processId);
               }, onDone: () {
                 Arceus.printToConsole('Client ($id) disconnected'.skyBlue);
                 Arceus.talker.info("Client ($id) disconnected.");

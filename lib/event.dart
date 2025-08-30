@@ -14,20 +14,17 @@ class SocketEvent {
   final dynamic data;
   final DateTime timestamp;
 
-  SocketEvent(this.type, this.processId, this.data)
+  SocketEvent(this.type, this.data, {this.processId = ""})
       : timestamp = DateTime.now();
 
-  factory SocketEvent.starting(String id, String code) =>
-      SocketEvent(EventType.starting, id, code);
+  factory SocketEvent.completed(dynamic data, {String pid = ""}) =>
+      SocketEvent(EventType.completed, data, processId: pid);
 
-  factory SocketEvent.completed(String id, dynamic data) =>
-      SocketEvent(EventType.completed, id, data);
+  factory SocketEvent.data(dynamic data, {String pid = ""}) =>
+      SocketEvent(EventType.data, data, processId: pid);
 
-  factory SocketEvent.data(String id, dynamic data) =>
-      SocketEvent(EventType.data, id, data);
-
-  factory SocketEvent.error(String id, Object exception) =>
-      SocketEvent(EventType.error, id, exception.toString());
+  factory SocketEvent.error(Object exception, {String pid = ""}) =>
+      SocketEvent(EventType.error, exception.toString(), processId: pid);
 
   @override
   String toString() => jsonEncode({

@@ -37,7 +37,23 @@ class SessionInterface extends SInterface<WebSocket> {
                   kind: ArgKind.optionalNamed),
             },
             passLua: true, (Lua lua, Object data, {String message = ""}) {
-          object!.add(SocketEvent.data(lua.processId!, data).toString());
+          object!.add(SocketEvent.data(data, pid: lua.processId).toString());
+        }),
+        LEntry(
+            name: "pid",
+            descr:
+                "Set and returns the process id of this current session. Empty by default.",
+            args: const {
+              LArg<String>(
+                  name: "processId",
+                  descr: "The process id to set.",
+                  kind: ArgKind.optionalPositional),
+            },
+            passLua: true, (Lua lua, [String? processId]) {
+          if (processId != null) {
+            lua.processId = processId;
+          }
+          return lua.processId;
         }),
         LEntry(
             name: "talk",
