@@ -11,10 +11,6 @@ class SPolicyAll extends SPolicy {
   SPolicyAll(super._node);
 
   @override
-  get checks =>
-      Map.fromIterable(SPermissionType.values, value: (_) => (_) => true);
-
-  @override
   get safetyLevel => SPolicySafetyLevel.unsafe;
 
   @override

@@ -62,7 +62,7 @@ final class SFileInterface extends SInterface<SFile> {
 
   @override
   get classDescription => """
-A file in a SArchive. Contains the path of the file, and its data in the form of compressed base64.
+A file either stored on disk or in an SArchive. Contains the path of the file, and its data in the form of compressed base64.
 """;
 
   @override
@@ -86,24 +86,38 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
         }),
       };
 
+  /// The default read check for files.
+  bool readCheck(SCertificate cert, LuaArgs args) {
+    if (object!.isExternal) {
+      if (cert.getPolicy<SPolicyExterFiles>()?.readAllowed(object!.path) ??
+          false) {
+        return true;
+      }
+    } else {
+      if (cert.getPolicy<SPolicyInterFiles>()?.read ?? false) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// The default write check for files.
+  bool writeCheck(SCertificate cert, LuaArgs args) {
+    if (object!.isExternal) {
+      if (cert.getPolicy<SPolicyExterFiles>()?.writeAllowed(object!.path) ??
+          false) {
+        return true;
+      }
+    } else {
+      if (cert.getPolicy<SPolicyInterFiles>()?.write ?? false) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   @override
   get exports => {
-        LEntry(
-            name: "extract",
-            descr:
-                "Extracts the file to the specified path (must be internal for this to work).",
-            requiredPermissions: {
-              SPermissionType.writeFiles,
-              SPermissionType.openSKits
-            },
-            args: const {
-              LArg<String>(
-                name: "path",
-                descr: "The path to extract the file to.",
-              ),
-            },
-            isAsync: true,
-            (String path) async => await object!.extractTo(path)),
         LEntry(
             name: "path",
             descr: "Returns the path of the file",
@@ -126,7 +140,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
         LEntry(
             name: "getU8",
             descr: "Returns a unsigned 8 bit value at the specified index.",
-            requiredPermissions: {SPermissionType.readFiles},
+            securityCheck: readCheck,
             args: const {
               LArg<int>(
                 name: "index",
@@ -140,7 +154,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
         LEntry(
             name: "get8",
             descr: "Returns a signed 8 bit value at the specified index.",
-            requiredPermissions: {SPermissionType.readFiles},
+            securityCheck: readCheck,
             args: const {
               LArg<int>(
                 name: "index",
@@ -155,7 +169,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             name: "set8",
             descr:
                 "Sets a 8 bit value at the specified index. It does not matter if the value is signed or unsigned, only that it fits into 8 bits.",
-            requiredPermissions: {SPermissionType.writeFiles},
+            securityCheck: writeCheck,
             args: const {
               LArg<int>(
                 name: "index",
@@ -172,7 +186,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
         LEntry(
             name: "getU16",
             descr: "Returns a unsigned 16 bit value at the specified index.",
-            requiredPermissions: {SPermissionType.readFiles},
+            securityCheck: readCheck,
             args: const {
               LArg<int>(
                 name: "index",
@@ -191,7 +205,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
         LEntry(
             name: "get16",
             descr: "Returns a signed 16 bit value at the specified index.",
-            requiredPermissions: {SPermissionType.readFiles},
+            securityCheck: readCheck,
             args: const {
               LArg<int>(
                 name: "index",
@@ -211,7 +225,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             name: "set16",
             descr:
                 "Sets a 16 bit value at the specified index. It does not matter if the value is signed or unsigned, only that it fits into 16 bits.",
-            requiredPermissions: {SPermissionType.writeFiles},
+            securityCheck: writeCheck,
             args: const {
               LArg<int>(
                 name: "index",
@@ -233,7 +247,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
         LEntry(
             name: "getU32",
             descr: "Returns a unsigned 32 bit value at the specified index.",
-            requiredPermissions: {SPermissionType.readFiles},
+            securityCheck: readCheck,
             args: const {
               LArg<int>(
                 name: "index",
@@ -252,7 +266,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
         LEntry(
             name: "get32",
             descr: "Returns a signed 32 bit value at the specified index.",
-            requiredPermissions: {SPermissionType.readFiles},
+            securityCheck: readCheck,
             args: const {
               LArg<int>(
                 name: "index",
@@ -272,7 +286,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             name: "set32",
             descr:
                 "Sets a 32 bit value at the specified index. It does not matter if the value is signed or unsigned, only that it fits into 32 bits.",
-            requiredPermissions: {SPermissionType.writeFiles},
+            securityCheck: writeCheck,
             args: const {
               LArg<int>(
                 name: "index",
@@ -294,7 +308,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
         LEntry(
             name: "getU64",
             descr: "Returns a unsigned 64 bit value at the specified index.",
-            requiredPermissions: {SPermissionType.readFiles},
+            securityCheck: readCheck,
             args: const {
               LArg<int>(
                 name: "index",
@@ -313,7 +327,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
         LEntry(
             name: "get64",
             descr: "Returns a signed 64 bit value at the specified index.",
-            requiredPermissions: {SPermissionType.readFiles},
+            securityCheck: readCheck,
             args: const {
               LArg<int>(
                 name: "index",
@@ -333,7 +347,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
             name: "set64",
             descr:
                 "Sets a 64 bit value at the specified index. It does not matter if the value is signed or unsigned, only that it fits into 64 bits.",
-            requiredPermissions: {SPermissionType.writeFiles},
+            securityCheck: writeCheck,
             args: const {
               LArg<int>(
                 name: "index",
@@ -355,7 +369,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
         LEntry(
             name: "getF32",
             descr: "Returns a 32 bit float value at the specified index.",
-            requiredPermissions: {SPermissionType.readFiles},
+            securityCheck: readCheck,
             args: const {
               LArg<int>(
                 name: "index",
@@ -374,7 +388,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
         LEntry(
             name: "getF64",
             descr: "Returns a 64 bit float value at the specified index.",
-            requiredPermissions: {SPermissionType.readFiles},
+            securityCheck: readCheck,
             args: const {
               LArg<int>(
                 name: "index",
@@ -393,7 +407,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
         LEntry(
             name: "setF32",
             descr: "Sets a 32 bit float value at the specified index.",
-            requiredPermissions: {SPermissionType.writeFiles},
+            securityCheck: writeCheck,
             args: const {
               LArg<int>(
                 name: "index",
@@ -416,7 +430,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
         LEntry(
             name: "setF64",
             descr: "Sets a 64 bit float value at the specified index.",
-            requiredPermissions: {SPermissionType.writeFiles},
+            securityCheck: writeCheck,
             args: const {
               LArg<int>(
                 name: "index",
@@ -451,7 +465,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
         LEntry(
             name: "getUtf16",
             descr: "Returns a utf-16 string at the specified index and length.",
-            requiredPermissions: {SPermissionType.readFiles},
+            securityCheck: readCheck,
             args: const {
               LArg<int>(
                 name: "index",
@@ -475,7 +489,7 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
         LEntry(
             name: "getUtf8",
             descr: "Returns a utf-8 string at the specified index and length.",
-            requiredPermissions: {SPermissionType.readFiles},
+            securityCheck: readCheck,
             args: const {
               LArg<int>(
                 name: "index",
@@ -499,17 +513,48 @@ A file in a SArchive. Contains the path of the file, and its data in the form of
         LEntry(
             name: "save",
             descr: "Saves the file to disk if path is external.",
-            requiredPermissions: {SPermissionType.writeFiles},
-            isAsync: true, () async {
-          await object!.save();
-        }),
+            securityCheck: (cert, args) {
+              if (object!.isExternal) {
+                if (cert
+                        .getPolicy<SPolicyExterFiles>()
+                        ?.writeAllowed(object!.path) ??
+                    false) {
+                  return true;
+                }
+              }
+              return false;
+            },
+            isAsync: true,
+            () async {
+              await object!.save();
+            }),
         LEntry(
           name: "saveAs",
           descr: "Saves the file to the specified path.",
-          requiredPermissions: {
-            SPermissionType.readFiles,
-            SPermissionType.writeFiles,
-            SPermissionType.createFiles
+          securityCheck: (cert, args) {
+            final externalPolicy = cert.getPolicy<SPolicyExterFiles>();
+            if (!object!.isExternal) {
+              /// If the file is internal, check if reading is allowed.
+              if (!(cert.getPolicy<SPolicyInterFiles>()?.read ?? false)) {
+                return false;
+              }
+            } else {
+              /// If the file is external, check if reading is allowed for the filename.
+              if (!(externalPolicy?.readAllowed(object!.path) ?? false)) {
+                return false;
+              }
+            }
+            if (args.positional.length == 2) {
+              if (args.positional[1]) {
+                if (!(cert.getPolicy<SPolicyInterFiles>()?.write ?? false)) {
+                  return false;
+                }
+              }
+            }
+            if (externalPolicy?.createAllowed(args.positional[0]) ?? false) {
+              return true;
+            }
+            return false;
           },
           args: const {
             LArg<String>(

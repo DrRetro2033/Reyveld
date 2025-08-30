@@ -14,6 +14,8 @@ import 'package:arceus/version_control/star/star.dart';
 import 'package:lua_dardo_async/lua.dart';
 import '../skit/skit.dart';
 
+typedef LuaArgs = ({List positional, Map named});
+
 /// The main class for running lua scripts.
 class Lua {
   final LuaState state;
@@ -245,15 +247,6 @@ class Lua {
       });
     } else if (value is LEntry) {
       state.pushDartFunction((state) async {
-        if (value.requiredPermissions.isNotEmpty) {
-          if (certificate == null) {
-            throw AuthVeldException(
-                "Certificate not found, so assuming no access.");
-          }
-          for (final permission in value.requiredPermissions) {
-            certificate!.permitted(permission, value.interface_!.object);
-          }
-        }
         try {
           List<dynamic> args = [];
           Map<dynamic, dynamic> namedArgs = {};
@@ -293,6 +286,19 @@ class Lua {
 
           final finalArgs = args.reversed.toList()
             ..removeWhere((e) => e == null);
+
+          if (value.securityCheck != null) {
+            if (certificate == null) {
+              throw AuthVeldException(
+                  "Certificate not found, so assuming no access.");
+            }
+            if (!(certificate?.completeAccess ?? false)) {
+              if (!value.securityCheck!(
+                  certificate!, (positional: finalArgs, named: namedArgs))) {
+                throw AuthVeldException("Access denied.");
+              }
+            }
+          }
 
           // Arceus.talker.log("Running ${value.name} with args: $finalArgs");
           // Log the arguments for debugging.

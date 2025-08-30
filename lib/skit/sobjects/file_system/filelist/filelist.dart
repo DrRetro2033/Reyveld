@@ -44,7 +44,7 @@ final class Whitelist extends Globs {
 
   @override
   bool included(String filepath) =>
-      globs.any((f) => f.matches(filepath.resolvePath()));
+      globs.any((f) => f.matches(filepath.resolvePath().getFilename()));
 }
 
 @SGen("blacklist")
@@ -53,5 +53,5 @@ final class Blacklist extends Globs {
 
   @override
   bool included(String filepath) =>
-      !globs.any((f) => f.matches(filepath.resolvePath()));
+      !globs.any((f) => f.matches(filepath.resolvePath().getFilename()));
 }

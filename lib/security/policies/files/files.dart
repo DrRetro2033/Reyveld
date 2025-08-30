@@ -1,4 +1,3 @@
-import 'package:arceus/extensions.dart';
 import 'package:arceus/security/policies/policy.dart';
 import 'package:arceus/skit/sobject.dart';
 import 'package:arceus/skit/sobjects/sobjects.dart';
@@ -18,6 +17,16 @@ class SPolicyExterFiles extends SPolicy {
 
   Whitelist? get whitelist => getChild<Whitelist>();
 
+  bool readAllowed(String filepath) => read && whitelist!.included(filepath);
+
+  bool writeAllowed(String filepath) => write && whitelist!.included(filepath);
+
+  bool createAllowed(String filepath) =>
+      create && whitelist!.included(filepath);
+
+  bool deleteAllowed(String filepath) =>
+      delete && whitelist!.included(filepath);
+
   @override
   get safetyLevel {
     if (write || delete) {
@@ -28,34 +37,6 @@ class SPolicyExterFiles extends SPolicy {
       return SPolicySafetyLevel.safe;
     }
   }
-
-  @override
-  get checks => {
-        SPermissionType.readFiles: (Object toCheck) {
-          if (toCheck is SFile && toCheck.isExternal && read) {
-            return whitelist?.included(toCheck.path.getFilename()) ?? false;
-          }
-          return false;
-        },
-        SPermissionType.writeFiles: (Object toCheck) {
-          if (toCheck is SFile && toCheck.isExternal && write) {
-            return whitelist?.included(toCheck.path.getFilename()) ?? false;
-          }
-          return false;
-        },
-        SPermissionType.createFiles: (Object toCheck) {
-          if (toCheck is SFile && toCheck.isExternal && create) {
-            return whitelist?.included(toCheck.path.getFilename()) ?? false;
-          }
-          return false;
-        },
-        SPermissionType.deleteFiles: (Object toCheck) {
-          if (toCheck is SFile && toCheck.isExternal && delete) {
-            return whitelist?.included(toCheck.path.getFilename()) ?? false;
-          }
-          return false;
-        },
-      };
 
   @override
   get description {
@@ -98,18 +79,6 @@ class SPolicyInterFiles extends SPolicy {
 
   @override
   get safetyLevel => SPolicySafetyLevel.safe;
-
-  @override
-  get checks => {
-        SPermissionType.readFiles: (Object toCheck) =>
-            toCheck is SFile && !toCheck.isExternal && read,
-        SPermissionType.writeFiles: (Object toCheck) =>
-            toCheck is SFile && !toCheck.isExternal && write,
-        SPermissionType.createFiles: (Object toCheck) =>
-            toCheck is SFile && !toCheck.isExternal && create,
-        SPermissionType.deleteFiles: (Object toCheck) =>
-            toCheck is SFile && !toCheck.isExternal && delete
-      };
 
   @override
   get description {

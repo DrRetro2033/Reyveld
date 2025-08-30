@@ -15,6 +15,11 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
         LEntry(
             name: "open",
             descr: "Opens an SKit file.",
+            securityCheck: (cert, args) =>
+                cert
+                    .getPolicy<SPolicySKit>()
+                    ?.readAllowed(args.positional[0]) ??
+                false,
             args: const {
               LArg<String>(
                 name: "path",

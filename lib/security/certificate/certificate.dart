@@ -1,4 +1,3 @@
-import 'package:arceus/security/authveld.dart';
 import 'package:arceus/security/policies/policies.dart';
 import 'package:arceus/skit/sobject.dart';
 
@@ -13,15 +12,9 @@ class SCertificate extends SRoot {
   List<SPolicy> get policies =>
       getChildren<SPolicy>().whereType<SPolicy>().toList();
 
-  /// Throws an [AuthVeldException] if no policy allows access.
-  void permitted(SPermissionType type, Object toCheck) {
-    for (final policy in policies) {
-      if (policy.isAllowed(type, toCheck)) {
-        return;
-      }
-    }
-    throw AuthVeldException("Access denied.");
-  }
+  bool get completeAccess => policies.any((policy) => policy is SPolicyAll);
+
+  T? getPolicy<T extends SPolicy>() => policies.whereType<T>().firstOrNull;
 
   @override
   Future<SIndent<SRoot>> newIndent() async =>

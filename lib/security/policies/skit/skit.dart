@@ -1,3 +1,4 @@
+import 'package:arceus/extensions.dart';
 import 'package:arceus/security/policies/policy.dart';
 import 'package:arceus/skit/skit.dart';
 
@@ -7,6 +8,7 @@ part 'skit.interface.dart';
 
 @SGen("polskit")
 class SPolicySKit extends SPolicy {
+  static const Set<String> _protectedSKits = {"authveld.skit"};
   SPolicySKit(super._node);
 
   bool get read => get("read") == "1";
@@ -14,25 +16,19 @@ class SPolicySKit extends SPolicy {
   bool get create => get("create") == "1";
   bool get delete => get("delete") == "1";
 
-  @override
-  get checks => {
-        SPermissionType.openSKits: (Object toCheck) {
-          if (toCheck is SKit) return read;
-          return false;
-        },
-        SPermissionType.editSKits: (Object toCheck) {
-          if (toCheck is SKit) return write;
-          return false;
-        },
-        SPermissionType.createSKits: (Object toCheck) {
-          if (toCheck is SKit) return create;
-          return false;
-        },
-        SPermissionType.deleteSKits: (Object toCheck) {
-          if (toCheck is SKit) return delete;
-          return false;
-        }
-      };
+  bool isProtectedSKit(String path) {
+    if (_protectedSKits.contains(path.getFilename())) {
+      return true;
+    }
+    return false;
+  }
+
+  bool readAllowed(String path) {
+    if (isProtectedSKit(path)) {
+      return false;
+    }
+    return read;
+  }
 
   @override
   get safetyLevel => SPolicySafetyLevel.safe;

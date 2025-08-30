@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:arceus/arceus.dart';
-import 'package:arceus/security/policies/policies.dart';
+import 'package:arceus/security/certificate/certificate.dart';
 import 'package:arceus/skit/sobject.dart';
 
 /// An export for Lua.
@@ -9,13 +9,14 @@ import 'package:arceus/skit/sobject.dart';
 abstract class LExport {
   final String name;
   final String descr;
-  final Set<SPermissionType> requiredPermissions;
+  final bool Function(SCertificate, LuaArgs)? securityCheck;
   SInterface? interface_;
 
-  LExport(
-      {required this.name,
-      this.requiredPermissions = const {},
-      this.descr = ""});
+  LExport({
+    required this.name,
+    this.descr = "",
+    this.securityCheck,
+  });
 }
 
 /// This is a lua entrypoint.
@@ -54,7 +55,7 @@ class LEntry extends LExport {
 
   LEntry(this.func,
       {required super.name,
-      super.requiredPermissions,
+      super.securityCheck,
       super.descr,
       this.args = const {},
       this.isAsync = false,
@@ -135,8 +136,7 @@ final class LArg<T> {
 class LField<T> extends LExport {
   final dynamic value;
   Type get type => T;
-  LField(this.value,
-      {required super.name, super.requiredPermissions, super.descr});
+  LField(this.value, {required super.name, super.securityCheck, super.descr});
 }
 
 /// This is a helper function to check if a value is of type [T].
@@ -334,12 +334,6 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
     for (final line in export.descr.split("\n")) {
       // if (line.isEmpty) continue;
       method.writeln("---$line");
-    }
-    if (export.requiredPermissions.isNotEmpty) {
-      method.writeln("---## Required permissions:");
-      for (final permission in export.requiredPermissions) {
-        method.writeln("---- ${permission.name}");
-      }
     }
     if (export.hasNamedArgs) {
       method.writeln("---");
