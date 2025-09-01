@@ -2,25 +2,24 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:arceus/arceus.dart';
-import 'package:arceus/event.dart';
-import 'package:arceus/scripting/lua.dart';
-import 'package:arceus/security/authveld.dart';
-import 'package:arceus/skit/skit.dart';
+import 'package:reyveld/reyveld.dart';
+import 'package:reyveld/event.dart';
+import 'package:reyveld/scripting/lua.dart';
+import 'package:reyveld/security/authveld.dart';
 import 'package:chalkdart/chalkstrings.dart';
 import 'package:cli_spin/cli_spin.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:version/version.dart';
-import 'package:arceus/extensions.dart';
+import 'package:reyveld/extensions.dart';
 import 'package:http/http.dart' as http;
 
-typedef ArceusSession = (Lua, WebSocket);
+typedef ReyveldSession = (Lua, WebSocket);
 
 Future<void> main(List<String> args) async {
-  /// Check if the version of this Arceus executable is already running.
+  /// Check if the version of this Reyveld executable is already running.
   final isRunningSpinner = CliSpin(spinner: CliSpinners.bounce)
       .start("Checking if running...".skyBlue);
-  if (await isRunning(Arceus.version)) {
+  if (await isRunning(Reyveld.version)) {
     isRunningSpinner.fail('Already Running.'.skyBlue);
     exit(0);
   }
@@ -30,9 +29,9 @@ Future<void> main(List<String> args) async {
 
   isRunningSpinner.success("Ready to Start!".skyBlue);
 
-  /// If not, create a lock file to indicate that this version of Arceus is running.
+  /// If not, create a lock file to indicate that this version of Reyveld is running.
   File lockFile =
-      File("${Arceus.appDataPath}/locks/${Arceus.version.toString()}.lock");
+      File("${Reyveld.appDataPath}/locks/${Reyveld.version.toString()}.lock");
 
   final spinner =
       CliSpin(spinner: CliSpinners.bounce).start("Generating Docs...".skyBlue);
@@ -43,11 +42,11 @@ Future<void> main(List<String> args) async {
   }).asFuture();
 
   spinner.success(
-      "Generated Lua Docs at \"${Arceus.appDataPath}/docs/${Arceus.version.toString()}/\""
+      "Generated Lua Docs at \"${Reyveld.appDataPath}/docs/${Reyveld.version.toString()}/\""
           .skyBlue);
 
   /// Verify the signature of the user.
-  await Arceus.verifySignature();
+  await Reyveld.verifySignature();
 
   final serverSpinner =
       CliSpin(spinner: CliSpinners.bounce).start("Starting Server...".skyBlue);
@@ -55,7 +54,7 @@ Future<void> main(List<String> args) async {
   final server = await HttpServer.bind(InternetAddress.anyIPv4, 7274);
   serverSpinner.success("Server Started!".skyBlue);
 
-  Map<String, ArceusSession> sessions = {};
+  Map<String, ReyveldSession> sessions = {};
 
   await for (HttpRequest request in server) {
     try {
@@ -68,7 +67,7 @@ Future<void> main(List<String> args) async {
       }
 
       /// Check if the requested version is the same as this program's version.
-      if (requestedVersion != Arceus.version) {
+      if (requestedVersion != Reyveld.version) {
         /// If not, check if the requested version is running.
         if (await isRunning(requestedVersion)) {
           /// The requested version is running.
@@ -79,7 +78,7 @@ Future<void> main(List<String> args) async {
           /// The requested version is not running.
           request.response.statusCode = HttpStatus.notFound;
           await request.response.close();
-          Arceus.talker.error(
+          Reyveld.talker.error(
               "Version not found. ${request.uri.pathSegments.firstOrNull} not found.");
           continue;
         }
@@ -95,7 +94,7 @@ Future<void> main(List<String> args) async {
       final requestUrl =
           request.uri.pathSegments.sublist(definedVersion ? 1 : 0).join('/');
 
-      Arceus.talker
+      Reyveld.talker
           .log("Requested: ${request.method} ${request.uri.toString()}");
 
       /// If the requested version is the same as this program's version, continue as normal.
@@ -109,7 +108,7 @@ Future<void> main(List<String> args) async {
             await request.response.close();
           case "heartbeat":
             request.response.statusCode = HttpStatus.ok;
-            Arceus.talker.info(
+            Reyveld.talker.info(
                 "Heartbeat checked at ${DateTime.now().toIso8601String()}.");
             await request.response.close();
           case "close":
@@ -129,8 +128,8 @@ Future<void> main(List<String> args) async {
             if (WebSocketTransformer.isUpgradeRequest(request)) {
               final socket = await WebSocketTransformer.upgrade(request);
               sessions[id] = (Lua(socket: socket), socket);
-              Arceus.printToConsole('Client ($id) connected.'.skyBlue);
-              Arceus.talker.info("Client ($id) connected.");
+              Reyveld.printToConsole('Client ($id) connected.'.skyBlue);
+              Reyveld.talker.info("Client ($id) connected.");
               socket.listen((data) async {
                 final requestProgress = CliSpin(spinner: CliSpinners.bounce)
                     .start("Processing request from client ($id)...".aqua);
@@ -148,21 +147,21 @@ Future<void> main(List<String> args) async {
                           .limeGreen);
                 } catch (e, st) {
                   requestProgress.fail(
-                      "There was a crash on this request (Session ID: $id), please check the log folder (${Arceus.appDataPath}/logs) for more information."
+                      "There was a crash on this request ($id), please check the log folder (${Reyveld.appDataPath}/logs) for more information."
                           .red);
-                  Arceus.talker.critical("Crash Handler", e, st);
+                  Reyveld.talker.critical("Crash Handler", e, st);
                   socket.add(
                       SocketEvent.error(e, pid: sessions[id]!.$1.processId)
                           .toString());
                 }
               }, onDone: () {
-                Arceus.printToConsole('Client ($id) disconnected'.skyBlue);
-                Arceus.talker.info("Client ($id) disconnected.");
+                Reyveld.printToConsole('Client ($id) disconnected'.skyBlue);
+                Reyveld.talker.info("Client ($id) disconnected.");
                 socket.close();
                 sessions.remove(id);
                 return;
               }, onError: (error, stack) {
-                Arceus.talker.error("Error", error, stack);
+                Reyveld.talker.error("Error", error, stack);
               }, cancelOnError: false);
             } else {
               request.response
@@ -205,22 +204,22 @@ Future<void> main(List<String> args) async {
         }
       }
     } catch (e, st) {
-      Arceus.printToConsole(
-          "There was a crash on a websocket, please check the log folder (${Arceus.appDataPath}/logs) for more information."
+      Reyveld.printToConsole(
+          "There was a crash on a websocket, please check the log folder (${Reyveld.appDataPath}/logs) for more information."
               .red);
-      Arceus.talker.critical("Crash Handler", e, st);
+      Reyveld.talker.critical("Crash Handler", e, st);
     }
   }
   await lockFile.delete();
   exit(0);
 }
 
-/// This function checks if the version of this Arceus executable is already running.
+/// This function checks if the version of this Reyveld executable is already running.
 /// If it is, it will return true, otherwise it will return false.
 Future<bool> isRunning(Version version) async {
   /// If the file does exist, double check to see if the version has a heartbeat.
   File lockFile =
-      File("${Arceus.appDataPath}/locks/${version.toString()}.lock");
+      File("${Reyveld.appDataPath}/locks/${version.toString()}.lock");
   if (await lockFile.exists()) {
     final uri = Uri.http("127.0.0.1:7274", "${version.toString()}/heatbeat");
     try {
@@ -228,7 +227,7 @@ Future<bool> isRunning(Version version) async {
       if (response.statusCode == 200) return true;
       return false;
     } catch (e) {
-      Arceus.talker
+      Reyveld.talker
           .info("Failed to check heartbeat. Assuming it's not running.");
       return false;
     }
@@ -238,8 +237,8 @@ Future<bool> isRunning(Version version) async {
 }
 
 Future<Version> getMostRecentVersion() async {
-  Directory lockDir = Directory("${Arceus.appDataPath}/locks/");
-  Version currentVersion = Arceus.version;
+  Directory lockDir = Directory("${Reyveld.appDataPath}/locks/");
+  Version currentVersion = Reyveld.version;
   await for (final lockFile in lockDir.list().whereType<File>()) {
     Version version =
         Version.parse(lockFile.path.getFilename(withExtension: false));

@@ -50,9 +50,8 @@ An archive in a SKit. Contains files.
               ),
             },
             isAsync: true,
-            (String path) async => await object!.extract(path).listen((state) {
-                  // Arceus.talker.info("Extracted file: $state");
-                }).asFuture()),
+            (String path) async =>
+                await object!.extract(path).listen((state) {}).asFuture()),
       };
 }
 

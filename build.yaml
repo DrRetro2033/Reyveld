@@ -1,12 +1,12 @@
 targets:
   $default:
     builders:
-      arceus|sgen:
+      reyveld|sgen:
         enabled: true
 
 builders:
   sgen:
-    import: "package:arceus/builder.dart"
+    import: "package:reyveld/builder.dart"
     builder_factories: ["sgenBuilder"]
     build_extensions: { ".dart": [".g.dart"] }
     auto_apply: dependents

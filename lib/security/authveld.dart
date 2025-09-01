@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:arceus/arceus.dart';
-import 'package:arceus/security/authorize_ticket.dart';
-import 'package:arceus/security/certificate/certificate.dart';
-import 'package:arceus/security/policies/policy.dart';
-import 'package:arceus/skit/skit.dart';
+import 'package:reyveld/reyveld.dart';
+import 'package:reyveld/security/authorize_ticket.dart';
+import 'package:reyveld/security/certificate/certificate.dart';
+import 'package:reyveld/security/policies/policy.dart';
+import 'package:reyveld/skit/skit.dart';
 import 'package:open_url/open_url.dart';
 
 part 'authveld.interface.dart';
@@ -14,7 +14,7 @@ part 'authveld.website.dart';
 typedef AuthorizeEvent = (AuthorizeTicket, bool);
 
 class AuthVeld {
-  static final SKit _kit = SKit("${Arceus.appDataPath}/authveld.skit");
+  static final SKit _kit = SKit("${Reyveld.appDataPath}/authveld.skit");
 
   static final Set<AuthorizeTicket> _authorizationTickets = {};
 

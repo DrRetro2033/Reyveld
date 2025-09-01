@@ -1,12 +1,12 @@
-import 'package:arceus/arceus.dart';
-import 'package:arceus/skit/sobject.dart';
+import 'package:reyveld/reyveld.dart';
+import 'package:reyveld/skit/sobject.dart';
 import 'package:basic_utils/basic_utils.dart';
 
 part 'author.creator.dart';
 part 'author.g.dart';
 part 'author.interface.dart';
 
-/// Repersents an author of an Arceus library.
+/// Repersents an author of an Reyveld library.
 @SGen("author")
 class SAuthor extends SRoot {
   String get name => get("name")!;
@@ -22,8 +22,8 @@ class SAuthor extends SRoot {
 
   SAuthor(super._node);
 
-  Future<bool> isTrusted() async => Arceus.isTrustedAuthor(this);
-  Future<void> trust() async => Arceus.trustAuthor(this);
+  Future<bool> isTrusted() async => Reyveld.isTrustedAuthor(this);
+  Future<void> trust() async => Reyveld.trustAuthor(this);
 }
 
 @SGen("rauthor")

@@ -31,7 +31,7 @@ if '%errorlevel%' NEQ '0' (
 SETLOCAL
 
 REM Define variables
-SET APP_NAME=arceus
+SET APP_NAME=reyveld
 SET VERSION=1.0.0-beta
 SET INSTALL_DIR=%AppData%\%APP_NAME%\server\%VERSION%
 

@@ -1,8 +1,8 @@
 import 'dart:io';
 
-import 'package:arceus/arceus.dart';
-import 'package:arceus/security/certificate/certificate.dart';
-import 'package:arceus/skit/sobject.dart';
+import 'package:reyveld/reyveld.dart';
+import 'package:reyveld/security/certificate/certificate.dart';
+import 'package:reyveld/skit/sobject.dart';
 
 /// An export for Lua.
 /// An export is a function or field for a [SInterface].
@@ -143,13 +143,12 @@ class LField<T> extends LExport {
 /// If it is, it returns the value, otherwise it returns null.
 T? typeCheck<T>(dynamic value) {
   if (value is T) {
-    // Arceus.talker.info("Type check passed: $T -> $value");
     return value;
   }
   return null;
 }
 
-/// This acts as an interface between Lua and Arceus.
+/// This acts as an interface between Lua and Reyveld.
 abstract class SInterface<T> {
   /// This is the name of the interface.
   String get className;
@@ -232,7 +231,7 @@ abstract class SInterface<T> {
   /// This generates the docs for the interface.
   Future<void> generateDocs() async {
     final doc = File(
-        "${Arceus.appDataPath}/docs/${Arceus.version.toString()}/${className.toLowerCase()}.lua");
+        "${Reyveld.appDataPath}/docs/${Reyveld.version.toString()}/${className.toLowerCase()}.lua");
     await doc.create(recursive: true);
     await doc.writeAsString("""
 ---@meta _

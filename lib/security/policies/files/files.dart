@@ -1,6 +1,6 @@
-import 'package:arceus/security/policies/policy.dart';
-import 'package:arceus/skit/sobject.dart';
-import 'package:arceus/skit/sobjects/sobjects.dart';
+import 'package:reyveld/security/policies/policy.dart';
+import 'package:reyveld/skit/sobject.dart';
+import 'package:reyveld/skit/sobjects/sobjects.dart';
 
 part 'files.creator.dart';
 part 'files.g.dart';

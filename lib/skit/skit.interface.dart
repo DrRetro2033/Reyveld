@@ -7,7 +7,7 @@ class SKitInterface extends SInterface<SKit> {
 
   @override
   get classDescription => """
-SKits are the bread and butter of Arceus. They store a SHeader and any number of SRoots in a single file.
+SKits are the bread and butter of Reyveld. They store a SHeader and any number of SRoots in a single file.
 """;
 
   @override

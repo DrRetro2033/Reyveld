@@ -1,5 +1,5 @@
-import 'package:arceus/security/policies/policies.dart';
-import 'package:arceus/skit/sobject.dart';
+import 'package:reyveld/security/policies/policies.dart';
+import 'package:reyveld/skit/sobject.dart';
 
 part 'certificate.g.dart';
 part 'certificate.interface.dart';

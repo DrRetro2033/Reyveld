@@ -1,4 +1,4 @@
-import 'package:arceus/scripting/sinterface.dart';
+import 'package:reyveld/scripting/sinterface.dart';
 import 'package:talker/talker.dart';
 
 class TalkerInterface extends SInterface<Talker> {
@@ -7,7 +7,7 @@ class TalkerInterface extends SInterface<Talker> {
 
   @override
   get classDescription =>
-      """Talker is Arceus's logging interface. It is used to log debugging and error messages to a log file.
+      """Talker is Reyveld's logging interface. It is used to log debugging and error messages to a log file.
 The log file is created in the application data directory, and a new log will be generated each day. The reason for this behavior is so that if the log needs to be sent for debugging, 
 all the pertinent information is in one file and not spread across multiple logs.""";
 

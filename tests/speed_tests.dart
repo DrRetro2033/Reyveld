@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'dart:math';
 
-import 'package:arceus/scripting/lua.dart';
+import 'package:reyveld/scripting/lua.dart';
 import 'package:chalkdart/chalkstrings.dart';
 import 'package:cli_spin/cli_spin.dart';
-import 'package:arceus/extensions.dart';
+import 'package:reyveld/extensions.dart';
 import 'package:hashlib/random.dart';
 
 /// Number of times each test will be run.
@@ -26,7 +26,7 @@ final tests = <SpeedTest>[
 end
 
 CreateConstellation(
-    ":appdata:/arceus/constellations/Test.skit", 
+    ":appdata:/reyveld/constellations/Test.skit", 
     "Test Constellation",
     "${dir.path.resolvePath()}"
 )"""
@@ -40,7 +40,7 @@ CreateConstellation(
 end
 
 Grow(
-    ":appdata:/arceus/constellations/Test.skit", 
+    ":appdata:/reyveld/constellations/Test.skit", 
     "Test Star"
 )"""
   ),
@@ -60,7 +60,7 @@ function Grow(skit, starname)
 end
 
 local skit = CreateConstellation(
-    ":appdata:/arceus/constellations/Test.skit", 
+    ":appdata:/reyveld/constellations/Test.skit", 
     "Test Constellation",
     "${dir.path.resolvePath()}"
 )
@@ -78,7 +78,7 @@ Future<void> main(List<String> args) async {
   final spin =
       CliSpin(text: "Creating test files...", spinner: CliSpinners.bounce)
           .start();
-  final dir = await Directory.systemTemp.createTemp("arceus_test_").then(
+  final dir = await Directory.systemTemp.createTemp("reyveld_test_").then(
       (tempDir) async {
     final testFile = File("${tempDir.path}/test_file_1");
     await testFile.writeAsBytes(randomBytes(1024));

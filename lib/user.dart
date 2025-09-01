@@ -1,6 +1,6 @@
 import 'dart:io';
-import 'package:arceus/arceus.dart';
-import 'package:arceus/skit/sobjects/author/author.dart';
+import 'package:reyveld/reyveld.dart';
+import 'package:reyveld/skit/sobjects/author/author.dart';
 import 'package:yaml/yaml.dart';
 
 class Author {
@@ -9,7 +9,7 @@ class Author {
   const Author(this._file);
 
   static Future<Author> initialize() async {
-    final file = File("${Arceus.appDataPath}/me.yaml");
+    final file = File("${Reyveld.appDataPath}/me.yaml");
     if (!await file.exists()) {
       await file.writeAsString(
           """# This file contains everything about you, and is used to indentify your kit files.
@@ -22,7 +22,7 @@ name: Default Author
   Future<SAuthor> toSAuthor() async {
     YamlMap doc = loadYaml(await _file.readAsString());
     final author = await SAuthorCreator(
-            name: doc["name"], publicKey: await Arceus.publicKey)
+            name: doc["name"], publicKey: await Reyveld.publicKey)
         .create();
     return author;
   }

@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:arceus/scripting/lua.dart';
-import 'package:arceus/scripting/sinterface.dart';
+import 'package:reyveld/scripting/lua.dart';
+import 'package:reyveld/scripting/sinterface.dart';
 import 'package:rxdart/rxdart.dart';
 
 class StreamInterface extends SInterface<Stream> {
@@ -25,7 +25,6 @@ class StreamInterface extends SInterface<Stream> {
                   descr: "The iterable to create the stream from.")
             },
             returnType: Stream, (List iterable) {
-          // Arceus.talker.debug("Creating stream from iterable. $iterable");
           return Stream.fromIterable(iterable);
         })
       };

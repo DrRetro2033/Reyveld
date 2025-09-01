@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:arceus/skit/skit.dart';
+import 'package:reyveld/skit/skit.dart';
 
 export 'package:xml/xml.dart';
-export 'package:arceus/skit/skit.dart';
-export 'package:arceus/build_runner/annotations.dart';
-export 'package:arceus/scripting/lua.dart';
-export 'package:arceus/scripting/sinterface.dart';
+export 'package:reyveld/skit/skit.dart';
+export 'package:reyveld/build_runner/annotations.dart';
+export 'package:reyveld/scripting/lua.dart';
+export 'package:reyveld/scripting/sinterface.dart';
 
 part 'sroot.dart';
 part 'sindent.dart';
@@ -36,7 +36,6 @@ class SObject {
   }
 
   set kit(SKit? kit) {
-    // Arceus.talker.info("SObject kit set to: ${kit?.path}");
     _kit = kit;
   }
 

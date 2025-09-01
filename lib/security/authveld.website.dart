@@ -3,11 +3,11 @@ part of 'authveld.dart';
 /// Builds an authorization page that will be displayed to the user.
 ///
 /// The page will ask the user if they want to allow the application to access
-/// Arceus with the given permissions. If the user clicks the "Allow" button,
+/// Reyveld with the given permissions. If the user clicks the "Allow" button,
 /// the application will be authorized and the user will be redirected to the
-/// Arceus application. If the user clicks the "Deny" button, the application
+/// Reyveld application. If the user clicks the "Deny" button, the application
 /// will be denied authorization and the user will be redirected to the
-/// Arceus application.
+/// Reyveld application.
 ///
 /// The page is built using a HTML template and the [formattedPermissions] set
 /// is used to generate the list of permissions that the application is
@@ -347,7 +347,7 @@ String buildAuthPage(
             <h1>AuthVeld</h1>
             <h2>$applicationName wants Access</h2>
             <div class="summary" id="summary" onclick="expandDialog()">
-                <strong>$applicationName</strong> is requesting access to Arceus.
+                <strong>$applicationName</strong> is requesting access to Reyveld.
                 <p><strong>Requested permissions:</strong></p>
                 <ul class="permission-list">
                     ${permissions.map((p) => '<li>${p.description}</li>').join('\n')}

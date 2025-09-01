@@ -9,7 +9,7 @@ class SHeaderCreator extends SCreator<SHeader> {
   get creator => (builder) {
         builder.attribute("createdOn", DateTime.now().toIso8601String());
         builder.attribute("lastModified", DateTime.now().toIso8601String());
-        builder.attribute("version", Arceus.version.toString());
+        builder.attribute("version", Reyveld.version.toString());
         builder.attribute("type", type.index.toString());
       };
 }

@@ -3,11 +3,11 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 import 'dart:typed_data';
-import 'package:arceus/extensions.dart';
-import 'package:arceus/security/certificate/certificate.dart';
-import 'package:arceus/security/policies/files/files.dart';
-import 'package:arceus/skit/sobject.dart';
-import 'package:arceus/skit/sobjects/file_system/filelist/filelist.dart';
+import 'package:reyveld/extensions.dart';
+import 'package:reyveld/security/certificate/certificate.dart';
+import 'package:reyveld/security/policies/files/files.dart';
+import 'package:reyveld/skit/sobject.dart';
+import 'package:reyveld/skit/sobjects/file_system/filelist/filelist.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:async/async.dart';
 
@@ -53,9 +53,7 @@ class SArchive extends SRoot {
   /// Returns true if there are changes, false if there are none.
   /// This check includes new files, deleted files, and changes in files.
   Future<bool> checkForChanges(String path, {Globs? includeList}) async {
-    final stopwatch = Stopwatch(); // track process time.
-    // Arceus.talker.debug("Attempting to check for changes at $path");
-    stopwatch.start();
+    final stopwatch = Stopwatch(); // track process time.    stopwatch.start();
     final files = getFiles();
 
     /// Gets the files in the archive
@@ -71,14 +69,7 @@ class SArchive extends SRoot {
     final changes = results.any((e) => e);
 
     stopwatch.stop();
-    if (changes) {
-      // Arceus.talker
-      //     .info("Changes found in ${stopwatch.elapsdMillisecondse}ms! ($path)");
-      return true;
-    }
-    // Arceus.talker.info(
-    //     "No changes found in ${stopwatch.elapsedMilliseconds}ms! ($path)");
-    return false;
+    return changes;
   }
 
   /// Checks for new files, by comparing the files in the archive with the files in the path provided.

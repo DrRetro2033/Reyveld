@@ -2,10 +2,7 @@
 # Created by `dart pub`
 .dart_tool/
 .vscode/
-.arceus/
 build/
-squirrel.dll
-gravityapi.dll
 test_builds/
 CMakeLists.txt.user
 CMakeCache.txt

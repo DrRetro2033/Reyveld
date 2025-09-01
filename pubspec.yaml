@@ -1,4 +1,4 @@
-name: arceus
+name: reyveld
 description: A sample command-line application with basic argument parsing.
 # repository: https://github.com/my_org/my_repo
 
@@ -9,7 +9,7 @@ dependencies:
   uuid: any # Used for generating unique hashes.
   hashlib: ^1.21.0 # TODO: Use this in Lua.
   talker: ^4.5.1 # Used for logging. Seriously, this logger is really good. Go check it out.
-  version: ^3.0.2 # Used for versioning of Arceus.
+  version: ^3.0.2 # Used for versioning of Reyveld.
   xml: ^6.5.0 # The xml package is used as the building blocks of SKit.
   yaml: ^3.1.3 
   rxdart: ^0.28.0 # Used specifically for merging streams (the header, unloaded & loaded archives) when saving a skit.

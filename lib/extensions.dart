@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:hashlib/hashlib.dart';
-// import 'package:arceus/scripting/addon.dart';
 
 Map<String, String> environment() {
   final env = <String, String>{};

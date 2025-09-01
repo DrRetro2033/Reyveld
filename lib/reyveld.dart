@@ -1,20 +1,20 @@
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
-import 'package:arceus/extensions.dart';
-import 'package:arceus/skit/skit.dart';
-import 'package:arceus/skit/sobjects/author/author.dart';
-import 'package:arceus/user.dart';
+import 'package:reyveld/extensions.dart';
+import 'package:reyveld/skit/skit.dart';
+import 'package:reyveld/skit/sobjects/author/author.dart';
+import 'package:reyveld/user.dart';
 import 'package:pointycastle/export.dart';
 import 'package:basic_utils/basic_utils.dart';
 import 'package:version/version.dart';
 import 'package:talker/talker.dart';
-import 'package:arceus/version.dart' as versi;
+import 'package:reyveld/version.dart' as versi;
 
-part "arceus.interface.dart";
+part "reyveld.interface.dart";
 
-/// Contains global functions for Arceus, for example, settings, paths, etc.
-class Arceus {
+/// Contains global functions for Reyveld, for example, settings, paths, etc.
+class Reyveld {
   static Version get version => versi.currentVersion;
   static late String _currentPath;
   static String get currentPath => _currentPath;
@@ -42,7 +42,7 @@ class Arceus {
     if (_cachedPrivateKey == null) {
       if (!await signatureFile.exists()) {
         throw Exception(
-            "Signature file not found! Please rerun Arceus to generate it.");
+            "Signature file not found! Please rerun Reyveld to generate it.");
       }
       final pem =
           (await signatureFile.readAsString()).split(String.fromCharCode(0))[0];
@@ -55,7 +55,7 @@ class Arceus {
     if (_cachedPublicKey == null) {
       if (!await signatureFile.exists()) {
         throw Exception(
-            "Signature file not found! Please rerun Arceus to generate it.");
+            "Signature file not found! Please rerun Reyveld to generate it.");
       }
       final pem =
           (await signatureFile.readAsString()).split(String.fromCharCode(0))[1];
@@ -66,33 +66,33 @@ class Arceus {
 
   static Future<Author?> get author async => await Author.initialize();
 
-  /// The logger for Arceus.
+  /// The logger for Reyveld.
   /// If the logger is not initialized, it will be initialized.
   static Talker get talker {
     _logger ??= Talker(
       logger: TalkerLogger(
-          formatter: ArceusLogFormatter(),
-          output: ArceusLogger(
-                  "$appDataPath/logs/$version/arceus-$version-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log")
+          formatter: ReyveldLogFormatter(),
+          output: ReyveldLogger(
+                  "$appDataPath/logs/$version/reyveld-$version-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log")
               .output,
-          filter: ArceusLogFilter()),
+          filter: ReyveldLogFilter()),
     );
     return _logger!;
   }
 
   static File get mostRecentLog => File(
-      "$appDataPath/logs/$version/arceus-$version-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log");
+      "$appDataPath/logs/$version/reyveld-$version-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log");
 
   /// The path to the application data directory.
   static String get appDataPath {
     if (!Platform.environment.containsKey("APPDATA")) {
       return Directory.current.path;
     } else {
-      return "${Platform.environment["APPDATA"]!.resolvePath()}/arceus";
+      return "${Platform.environment["APPDATA"]!.resolvePath()}/reyveld";
     }
   }
 
-  /// Prints the message to console, only if Arceus is a developer build.
+  /// Prints the message to console, only if Reyveld is a developer build.
   static void printToConsole(Object message) {
     print(message);
     // if (isDev) {
@@ -110,7 +110,7 @@ class Arceus {
 Never share your keys file with anyone, as it contains your secret private key. Your private key is used to sign your kits to verify that it was created by you.
 If you share your private key, anyone can create kits that appear to be created by you, which could lead to them injecting malicious code into your kits.
 
-In the unlikely event that your private key is compromised, you can generate a new one by deleting the me.keys file and running Arceus again.
+In the unlikely event that your private key is compromised, you can generate a new one by deleting the me.keys file and running Reyveld again.
 """);
     }
   }
@@ -165,7 +165,7 @@ $publicKeyPem""");
 
   static Future<void> trustAuthor(SAuthor author) async {
     if (await isTrustedAuthor(author)) {
-      Arceus.talker.warning("Author was already trusted.");
+      Reyveld.talker.warning("Author was already trusted.");
       return;
     }
     final kit = await _trustedAuthorsKit;
@@ -174,17 +174,15 @@ $publicKeyPem""");
   }
 }
 
-/// # `class` ArceusLogger
-/// ## A class that logs messages to a file.
 /// The log file is created in the application data directory.
 /// Each message is appended to the file.
 /// A new log file is created each day, and will log all of the messages for that day.
 /// The reason for this behavior is so that if the log needs to be sent for debugging,
 /// all the pertinent information is in one file and not spread across multiple logs.
-class ArceusLogger {
+class ReyveldLogger {
   final File logFile;
 
-  ArceusLogger(String path) : logFile = File(path) {
+  ReyveldLogger(String path) : logFile = File(path) {
     if (!logFile.existsSync()) {
       logFile.createSync(recursive: true);
       logFile.writeAsStringSync("""
@@ -194,7 +192,7 @@ class ArceusLogger {
   Locale                ${Platform.localeName}
   
 [App Info]
-  Version               ${Arceus.version.toString()}
+  Version               ${Reyveld.version.toString()}
 
 [Log]
   Date                  ${DateTime.now().year}/${DateTime.now().month}/${DateTime.now().day}
@@ -204,7 +202,7 @@ class ArceusLogger {
     logFile.writeAsStringSync("""
 
 Run at ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, "0")}:${DateTime.now().second.toString().padLeft(2, "0")}.${DateTime.now().millisecond.toString().padLeft(3, "0")}
-Version ${Arceus.version.toString()}
+Version ${Reyveld.version.toString()}
 ───────────────────────────────────────────────────────────────
 """, mode: FileMode.append);
   }
@@ -214,17 +212,17 @@ Version ${Arceus.version.toString()}
   }
 }
 
-class ArceusLogFormatter extends LoggerFormatter {
+class ReyveldLogFormatter extends LoggerFormatter {
   @override
   String fmt(LogDetails details, TalkerLoggerSettings settings) {
     return "${details.message}";
   }
 }
 
-class ArceusLogFilter extends LoggerFilter {
+class ReyveldLogFilter extends LoggerFilter {
   @override
   bool shouldLog(msg, LogLevel level) {
-    if (level == LogLevel.debug && !Arceus.isDev) {
+    if (level == LogLevel.debug && !Reyveld.isDev) {
       return false;
     }
     return true;

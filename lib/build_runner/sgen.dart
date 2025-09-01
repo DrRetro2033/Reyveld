@@ -1,6 +1,6 @@
 // ignore_for_file: depend_on_referenced_packages
 
-part of 'package:arceus/builder.dart';
+part of 'package:reyveld/builder.dart';
 
 class SGenGenerator extends GeneratorForAnnotation<SGen> {
   @override

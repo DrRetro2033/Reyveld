@@ -1,6 +1,6 @@
-import 'package:arceus/security/policies/policy.dart';
+import 'package:reyveld/security/policies/policy.dart';
 
-/// Repersents a ticket for authorizing an application wanting to use Arceus.
+/// Repersents a ticket for authorizing an application wanting to use Reyveld.
 /// The ticket contains its own unique id, the application name, and the permissions the application wants to use.
 class AuthorizeTicket {
   /// The unique id of the ticket.

@@ -1,7 +1,7 @@
-import 'package:arceus/extensions.dart';
-import 'package:arceus/skit/sobject.dart';
-import 'package:arceus/skit/sobjects/file_system/file_system.dart';
-import 'package:arceus/version_control/constellation/constellation.dart';
+import 'package:reyveld/extensions.dart';
+import 'package:reyveld/skit/sobject.dart';
+import 'package:reyveld/skit/sobjects/file_system/file_system.dart';
+import 'package:reyveld/version_control/constellation/constellation.dart';
 
 part 'star.g.dart';
 part 'star.interface.dart';

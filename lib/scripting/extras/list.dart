@@ -1,5 +1,5 @@
-import 'package:arceus/scripting/lua.dart';
-import 'package:arceus/scripting/sinterface.dart';
+import 'package:reyveld/scripting/lua.dart';
+import 'package:reyveld/scripting/sinterface.dart';
 
 class ListInterface extends SInterface<List> {
   @override

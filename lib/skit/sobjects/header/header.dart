@@ -1,6 +1,6 @@
-import 'package:arceus/arceus.dart';
-import 'package:arceus/skit/sobject.dart';
-import 'package:arceus/skit/sobjects/file_system/file_system.dart';
+import 'package:reyveld/reyveld.dart';
+import 'package:reyveld/skit/sobject.dart';
+import 'package:reyveld/skit/sobjects/file_system/file_system.dart';
 
 part 'header.g.dart';
 part 'header.interface.dart';
@@ -28,8 +28,8 @@ class SHeader extends SObject {
     set("lastModified", value.toIso8601String());
   }
 
-  /// Which version of arceus was this kit file packaged in?
-  String get version => get("version") ?? Arceus.version.toString();
+  /// Which version of Reyveld was this kit file packaged in?
+  String get version => get("version") ?? Reyveld.version.toString();
 
   /// What kind of kit is this?
   /// See [SKitType] for more info.

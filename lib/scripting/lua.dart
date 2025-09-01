@@ -1,16 +1,16 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:arceus/arceus.dart';
-import 'package:arceus/extensions.dart';
-import 'package:arceus/scripting/extras/extras.dart';
-import 'package:arceus/security/authveld.dart';
-import 'package:arceus/security/certificate/certificate.dart';
-import 'package:arceus/security/policies/policies.dart';
-import 'package:arceus/skit/sobjects/sobjects.dart';
-import 'package:arceus/uuid.dart';
-import 'package:arceus/version_control/constellation/constellation.dart';
-import 'package:arceus/version_control/star/star.dart';
+import 'package:reyveld/reyveld.dart';
+import 'package:reyveld/extensions.dart';
+import 'package:reyveld/scripting/extras/extras.dart';
+import 'package:reyveld/security/authveld.dart';
+import 'package:reyveld/security/certificate/certificate.dart';
+import 'package:reyveld/security/policies/policies.dart';
+import 'package:reyveld/skit/sobjects/sobjects.dart';
+import 'package:reyveld/uuid.dart';
+import 'package:reyveld/version_control/constellation/constellation.dart';
+import 'package:reyveld/version_control/star/star.dart';
 import 'package:lua_dardo_async/lua.dart';
 import '../skit/skit.dart';
 
@@ -18,7 +18,7 @@ typedef LuaArgs = ({List positional, Map named});
 
 /// The main class for running lua scripts.
 class Lua {
-  LuaState state;
+  final LuaState state;
 
   final Stopwatch stopwatch = Stopwatch();
 
@@ -38,7 +38,7 @@ class Lua {
 
   /// A set of all interfaces in the lua state.
   static Set<SInterface> get _interfaces => {
-        ArceusInterface(),
+        ReyveldInterface(),
         ListInterface(),
         SHeaderInterface(),
         SKitInterface(),
@@ -122,8 +122,6 @@ class Lua {
   /// Initializes the lua state.
   /// This includes opening all libraries and adding all enums and statics to the global table.
   Future<void> init() async {
-    state = LuaState.newState();
-
     /// Add all enums.
     for (final enum_ in enums.entries) {
       final table = <String, dynamic>{};
@@ -234,7 +232,6 @@ class Lua {
       for (final key in value.keys) {
         await _pushToStack(key);
         await _pushToStack(value[key]);
-        // Arceus.talker.debug(_formatStack());
         await state.setTable(state.getTop() - 2);
       }
     } else if (value is Object && getInterface(value) != null) {
@@ -272,8 +269,8 @@ class Lua {
                 continue;
               } else {
                 // Report the before and after stack and throw an error.
-                Arceus.talker.error("Before:\n$stack");
-                Arceus.talker.error("After:\n${_formatStack()}");
+                Reyveld.talker.error("Before:\n$stack");
+                Reyveld.talker.error("After:\n${_formatStack()}");
                 throw Exception(
                     "Expected ${arg.type} but got ${argValue.runtimeType}");
               }
@@ -301,12 +298,6 @@ class Lua {
               }
             }
           }
-
-          // Arceus.talker.log("Running ${value.name} with args: $finalArgs");
-          // Log the arguments for debugging.
-          // Arceus.talker.debug("Args: $finalArgs");
-          // Arceus.talker.debug("Before:\n$stack");
-          // Arceus.talker.debug("After:\n${_formatStack()}");
           if (value.returnType == null) {
             // Means that the function doesn't return anything, so just call it.
             await Function.apply(value.func, finalArgs,
@@ -323,10 +314,9 @@ class Lua {
             ));
             await _pushToStack(result);
           }
-          // Arceus.talker.debug("Successfully ran ${value.name}.");
           return 1;
         } catch (e, st) {
-          Arceus.talker.error("", e, st);
+          Reyveld.talker.error("", e, st);
           rethrow;
         }
       });
@@ -335,9 +325,7 @@ class Lua {
     } else if (value == null) {
       state.pushNil();
     } else {
-      Arceus.talker.error("Could not push to stack: $value");
-      // Arceus.talker.debug("Before:\n$stack");
-      // Arceus.talker.debug("After:\n${_formatStack()}");
+      Reyveld.talker.error("Could not push to stack: $value");
     }
   }
 
@@ -382,7 +370,7 @@ class Lua {
         result = null;
       }
     } catch (e, st) {
-      Arceus.talker.error(e, st);
+      Reyveld.talker.error(e, st);
     }
 
     if (pop) {
@@ -436,7 +424,6 @@ class Lua {
       compiled = compiled.replaceFirst(
           stringPlaceholder, "\"${_formatPaths(strings.removeAt(0))}\"");
     }
-    // Arceus.talker.debug("Compiled:\n$compiled");
     return compiled;
   }
 
@@ -463,7 +450,6 @@ class Lua {
     stopwatch.reset();
     stopwatch.start();
     final code = await _compile(entrypoint).then((value) => value.trim());
-    // Arceus.printToConsole(code.rebeccaPurple);
 
     /// Run the lua code and see if it was successful
     final successful = await state.doString(code);
@@ -476,8 +462,6 @@ class Lua {
 
     /// If it was successful, return the result.
     final result = await getFromTop();
-    // Arceus.talker
-    //     .info("Lua result in ${stopwatch.elapsedMilliseconds}ms: $result");
     return result;
   }
 
@@ -503,7 +487,7 @@ class Lua {
   /// Generates a docs file for all of the interfaces.
   static Stream<String> generateDocs() async* {
     final dir =
-        Directory("${Arceus.appDataPath}/docs/${Arceus.version.toString()}");
+        Directory("${Reyveld.appDataPath}/docs/${Reyveld.version.toString()}");
     if (await dir.exists()) {
       await dir.delete(recursive: true);
     }
@@ -521,7 +505,7 @@ class Lua {
   /// Generates a docs file for all of the globals.
   static Future<void> _generateGlobalDocs() async {
     final doc = File(
-        "${Arceus.appDataPath}/docs/${Arceus.version.toString()}/globals.lua");
+        "${Reyveld.appDataPath}/docs/${Reyveld.version.toString()}/globals.lua");
     await doc.create(recursive: true);
     await doc.writeAsString("""
 ---@meta _
@@ -545,7 +529,7 @@ ${global.key} = {}
   // Generates a docs file for all of the enums.
   static Future<void> _generateEnumDocs() async {
     final doc = File(
-        "${Arceus.appDataPath}/docs/${Arceus.version.toString()}/enums.lua");
+        "${Reyveld.appDataPath}/docs/${Reyveld.version.toString()}/enums.lua");
     await doc.create(recursive: true);
     await doc.writeAsString("""
 ---@meta _
@@ -585,13 +569,11 @@ final class LuaFuncRef {
   Future<T?> call<T>(List<dynamic> args) async {
     await lua.state.rawGetI(luaRegistryIndex, ref);
     for (final arg in args) {
-      // Arceus.talker.debug(arg);
       await lua._pushToStack(arg);
     }
     if (lua.state.isNil(lua.state.getTop())) {
       return null;
     }
-    // Arceus.talker.debug(lua._formatStack());
     await lua.state.call(args.length, 1);
     return await lua.getFromTop();
   }

@@ -29,7 +29,6 @@ A collection of Stars, with a root star, and a current star.
               )
             },
             returnType: Constellation, (String name, String path) async {
-          // Arceus.talker.info("Creating new constellation: $name");
           return await ConstellationCreator(name, path).create();
         })
       };
@@ -137,7 +136,7 @@ A collection of Stars, with a root star, and a current star.
               LArg<String>(name: "hash", descr: "The hash of the star.")
             },
             returnType: Star, (String hash) {
-          Arceus.talker.info("Getting star by hash: $hash");
+          Reyveld.talker.info("Getting star by hash: $hash");
           return object?.getStarByHash(hash);
         })
       };

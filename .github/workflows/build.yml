@@ -39,14 +39,14 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux
-            output: arceus.elf
+            output: reyveld.elf
             add-install-command: "cp -r ./scripts/installers/linux/ ./build/releases/"
           - os: windows-latest
             platform: windows
-            output: arceus.exe
+            output: reyveld.exe
             add-install-command: "Copy-Item -Recurse -Path ./scripts/installers/windows/ -Destination ./build/releases/ -Force"
           # - os: macos-latest
           #   platform: macos
-          #   output: arceus.app
+          #   output: reyveld.app
           #   path-to-squirrel-library: ./src/squirrel3/squirrel/libsquirrel.so
           #   rename-squirrel-to: squirrel.dylib

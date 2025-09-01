@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:arceus/arceus.dart';
-import 'package:arceus/event.dart';
-import 'package:arceus/scripting/lua.dart';
-import 'package:arceus/scripting/sinterface.dart';
+import 'package:reyveld/reyveld.dart';
+import 'package:reyveld/event.dart';
+import 'package:reyveld/scripting/lua.dart';
+import 'package:reyveld/scripting/sinterface.dart';
 import 'package:talker/talker.dart';
 
 /// This is the socket interface.
@@ -59,6 +59,6 @@ class SessionInterface extends SInterface<WebSocket> {
             name: "talk",
             descr: "Returns the logger (aka. talker) of this session.",
             returnType: Talker,
-            () => Arceus.talker)
+            () => Reyveld.talker)
       };
 }

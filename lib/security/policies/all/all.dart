@@ -1,4 +1,4 @@
-import 'package:arceus/skit/sobject.dart';
+import 'package:reyveld/skit/sobject.dart';
 
 import '../policy.dart';
 

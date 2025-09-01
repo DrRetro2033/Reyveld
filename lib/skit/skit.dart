@@ -4,23 +4,23 @@ import "dart:async";
 import "dart:convert";
 import "dart:io";
 import "dart:typed_data";
-import "package:arceus/arceus.dart";
-import "package:arceus/extensions.dart";
-import "package:arceus/security/certificate/certificate.dart";
-import "package:arceus/security/policies/policies.dart";
-import "package:arceus/uuid.dart";
+import "package:reyveld/reyveld.dart";
+import "package:reyveld/extensions.dart";
+import "package:reyveld/security/certificate/certificate.dart";
+import "package:reyveld/security/policies/policies.dart";
+import "package:reyveld/uuid.dart";
 import "package:pointycastle/pointycastle.dart"
     show RSAPublicKey, RSAPrivateKey;
 import "package:rxdart/rxdart.dart";
 import 'package:xml/xml_events.dart';
 
-import 'package:arceus/skit/sobject.dart' hide SInterface;
-import 'package:arceus/skit/sobjects/sobjects.dart';
-import 'package:arceus/version_control/version_control.dart';
-import 'package:arceus/scripting/sinterface.dart' show SInterface;
+import 'package:reyveld/skit/sobject.dart' hide SInterface;
+import 'package:reyveld/skit/sobjects/sobjects.dart';
+import 'package:reyveld/version_control/version_control.dart';
+import 'package:reyveld/scripting/sinterface.dart' show SInterface;
 
 import 'package:encrypt/encrypt.dart';
-export "package:arceus/skit/sobject.dart";
+export "package:reyveld/skit/sobject.dart";
 
 part 'skit.factories.dart';
 part 'skit.interface.dart';
@@ -38,10 +38,10 @@ typedef SKitKeyPair = ({RSAPrivateKey? private, RSAPublicKey public});
 
 /// Represents a compressed, encrypted, and signed XML file.
 /// [SKit] is an abrivation for SERE kit, which is a reference to titanfall 2.
-/// [SKit]s can contain any data that Arceus would ever need.
+/// [SKit]s can contain any data that Reyveld would ever need.
 ///
 /// The two core [SObject]s which are tightly knit into [SKit]s are the [SHeader] and [SRoot]s.
-/// The [SHeader] contains information about the kit (e.g. name of kit, version of arceus, the author of the kit, constellations, etc),
+/// The [SHeader] contains information about the kit (e.g. name of kit, version of Reyveld, the author of the kit, constellations, etc),
 /// while the [SRoot]s can contain much larger sets of data (e.g. save data, scripts, images, users, etc).
 ///
 /// [SKit]s are first compressed using GZip, then encrypted using Fernet, and finally is signed using RSA.
@@ -95,11 +95,11 @@ class SKit {
 
   /// Returns the public key of the kit file.
   /// The public key is used to verify the signature of the kit file.
-  /// If the file does not exist yet, it will return the public key of Arceus.
+  /// If the file does not exist yet, it will return the public key of Reyveld.
   Future<RSAPublicKey> get kitPublicKey async {
     if (_cachedKitPublicKey == null) {
       if (!await _file.exists()) {
-        _cachedKitPublicKey = await Arceus.publicKey;
+        _cachedKitPublicKey = await Reyveld.publicKey;
       } else {
         final header = await getHeader();
         if (header != null) {
@@ -114,7 +114,7 @@ class SKit {
   Future<SAuthor> get author async {
     final header = await getHeader();
     return (await header?.getChild<SRAuthor>()?.getRef()) ??
-        await Arceus.author.then((e) => e!.toSAuthor());
+        await Reyveld.author.then((e) => e!.toSAuthor());
   }
 
   Future<SKitType> get type async =>
@@ -122,8 +122,8 @@ class SKit {
 
   Future<Signer> _buildSigner([SKitKeyPair? keyPair]) async => Signer(RSASigner(
         RSASignDigest.SHA256,
-        privateKey: keyPair?.private ?? await Arceus.privateKey,
-        publicKey: keyPair?.public ?? await Arceus.publicKey,
+        privateKey: keyPair?.private ?? await Reyveld.privateKey,
+        publicKey: keyPair?.public ?? await Reyveld.publicKey,
       ));
 
   Future<Signer> get _verifier async =>
@@ -210,8 +210,6 @@ class SKit {
 
   void _encryptTransformer(List<int> data, EventSink<List<int>> sink) {
     final encrypted = _encrypter.encryptBytes(data);
-    // Arceus.talker.debug(
-    //     "Encrypted ${e.length} bytes to ${encrypted.bytes.length} bytes.");
     sink.add(encrypted.bytes);
   }
 
@@ -227,7 +225,7 @@ class SKit {
           .transform(StreamTransformer.fromHandlers(
             handleData: _decryptTransformer,
             handleError: (er, st, sink) =>
-                Arceus.talker.error("Error decrypting kit file", er, st),
+                Reyveld.talker.error("Error decrypting kit file", er, st),
           ))
           .transform(gzip.decoder)
       : null;
@@ -253,7 +251,7 @@ class SKit {
     }
     discardChanges(); // clear the current kit from memory.
     _header = await SHeaderCreator(type: type).create();
-    final author = await Arceus.author.then((e) => e!.toSAuthor());
+    final author = await Reyveld.author.then((e) => e!.toSAuthor());
     await addRoot(author);
     final ref = await author.newIndent();
     _header!.addChild(ref);
@@ -336,8 +334,6 @@ class SKit {
   Future<void> addRoot(SRoot root) async {
     // Generate a unique hash for the root
     root.hash = generateUniqueHash(await usedRootHashes());
-    // Arceus.talker.debug(
-    //     "New ${root.runtimeType} added to ${path.getFilename(withExtension: false)}! ($path)");
 
     // Adding the root to [_loadedRoots] is necessary for the [save] function to work.
     _loadedRoots.add(root);
@@ -422,9 +418,6 @@ class SKit {
       // if the temp file exists, delete it.
       await temp.delete(); // delete the temp file.
     }
-    // Write the new kit header to the temp file.
-    // Arceus.talker.debug("Attempting to save SKit. ($path)");
-
     // Ensure that the parent directory exists.
     await temp.ensureParentDirectory();
 
@@ -441,7 +434,7 @@ class SKit {
     ]);
 
     // Will override the kit file's public key if it has one.
-    final publicKey = keyPair?.public ?? await Arceus.publicKey;
+    final publicKey = keyPair?.public ?? await Reyveld.publicKey;
 
     _cachedKitPublicKey =
         publicKey; // Cache our own public key. Used when signing another person's kit file with our own keys.
@@ -485,8 +478,6 @@ class SKit {
     discardChanges(); // Clear everything from memory.
 
     stopwatch.stop();
-    // Arceus.talker.info(
-    //     "Successfully saved SKit in ${stopwatch.elapsedMilliseconds}ms! ($path)");
   }
 
   Future<void> exportToXMLFile(String path) async {
