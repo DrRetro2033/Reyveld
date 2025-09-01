@@ -134,7 +134,6 @@ Future<void> main(List<String> args) async {
               socket.listen((data) async {
                 final requestProgress = CliSpin(spinner: CliSpinners.bounce)
                     .start("Processing request from client ($id)...".aqua);
-                Arceus.talker.info("Request from client ($id):\n$data");
                 try {
                   /// Initialize the session's lua environment.
                   await sessions[id]!.$1.init();

@@ -98,6 +98,12 @@ SKits are the bread and butter of Arceus. They store a SHeader and any number of
           return await object!.isType(SKitType.values[type]);
         }),
         LEntry(
+            name: "type",
+            descr: "Returns the type of the SKit.",
+            returnType: int,
+            isAsync: true,
+            () async => (await object!.type).index),
+        LEntry(
             name: "header",
             descr: "Returns the SHeader of the SKit.",
             returnType: SHeader,

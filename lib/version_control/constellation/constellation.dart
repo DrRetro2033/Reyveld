@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:arceus/arceus.dart';
 import 'package:arceus/extensions.dart';
 import 'package:arceus/skit/sobject.dart';
 import 'package:arceus/skit/sobjects/file_system/file_system.dart';
@@ -139,4 +140,7 @@ class Constellation extends SObject {
     }
     return archive;
   }
+
+  Star? getStarByHash(String hash) =>
+      getDescendants<Star>(filter: (star) => star.hash == hash).firstOrNull;
 }

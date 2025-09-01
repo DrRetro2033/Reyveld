@@ -246,6 +246,13 @@ tracked folder by calling [checkForChanges()](lua://Constellation.checkForChange
           return object!;
         }),
         LEntry(
+          name: "tree",
+          descr:
+              "Returns a json representation of this star and its children as a tree.",
+          returnType: Map,
+          () => object!.tree(),
+        ),
+        LEntry(
             name: "unanchor",
             descr:
                 """If this star is an stem, it will become a regular star, and the branch will no longer exist. 
@@ -254,5 +261,11 @@ Will never work on the root star, as it cannot be unanchored.""",
           object!.unmakeStem();
           return object!;
         }),
+        LEntry(
+          name: "info",
+          descr: "Returns a string of information about this star.",
+          returnType: String,
+          () => object!.info(),
+        )
       };
 }

@@ -117,6 +117,9 @@ class SKit {
         await Arceus.author.then((e) => e!.toSAuthor());
   }
 
+  Future<SKitType> get type async =>
+      (await getHeader())?.type ?? SKitType.unspecified;
+
   Future<Signer> _buildSigner([SKitKeyPair? keyPair]) async => Signer(RSASigner(
         RSASignDigest.SHA256,
         privateKey: keyPair?.private ?? await Arceus.privateKey,

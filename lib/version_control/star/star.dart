@@ -119,6 +119,27 @@ class Star extends SObject {
     unparent();
   }
 
+  /// Gets a more detailed tree view of the star.
+  Map<String, dynamic> tree() {
+    return {
+      ...info(),
+      "children": getChildren<Star>().map((child) => child!.tree()).toList(),
+    };
+  }
+
+  /// Gets a summary of the star.
+  Map<String, dynamic> info() => {
+        "name": name,
+        "id": hash,
+        "branch": branchName,
+        "datetime": createdOn.toIso8601String(),
+        "isRoot": isRoot,
+        "isCurrent": isCurrent,
+        "isSingleChild": isSingleChild,
+        "isLeaf": isLeaf,
+        "isStem": isStem,
+      };
+
   /// Makes this star the current star.
   void makeCurrent() async {
     constellation.currentHash = hash;

@@ -18,7 +18,7 @@ typedef LuaArgs = ({List positional, Map named});
 
 /// The main class for running lua scripts.
 class Lua {
-  final LuaState state;
+  LuaState state;
 
   final Stopwatch stopwatch = Stopwatch();
 
@@ -122,6 +122,8 @@ class Lua {
   /// Initializes the lua state.
   /// This includes opening all libraries and adding all enums and statics to the global table.
   Future<void> init() async {
+    state = LuaState.newState();
+
     /// Add all enums.
     for (final enum_ in enums.entries) {
       final table = <String, dynamic>{};

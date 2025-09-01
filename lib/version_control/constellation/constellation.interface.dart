@@ -130,5 +130,15 @@ A collection of Stars, with a root star, and a current star.
             returnType: bool,
             isAsync: true,
             () async => await object!.checkForChanges()),
+        LEntry(
+            name: "starByHash",
+            descr: "Get a star by hash.",
+            args: const {
+              LArg<String>(name: "hash", descr: "The hash of the star.")
+            },
+            returnType: Star, (String hash) {
+          Arceus.talker.info("Getting star by hash: $hash");
+          return object?.getStarByHash(hash);
+        })
       };
 }
