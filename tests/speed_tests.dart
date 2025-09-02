@@ -90,7 +90,6 @@ Future<void> main(List<String> args) async {
     spin.fail("Failed to create test files: $e");
   });
   final lua = Lua();
-  await lua.init();
   for (final test in tests) {
     List<int> times = [];
 
@@ -101,8 +100,8 @@ Future<void> main(List<String> args) async {
     ).start();
 
     for (var i = 0; i < amountOfTests; i++) {
-      await lua.run(test.$2(dir));
-      times.add(lua.stopwatch.elapsedMilliseconds);
+      final luaResult = await lua.run(test.$2(dir));
+      times.add(luaResult.processTime.elapsedMilliseconds);
       testSpin.suffixText = "(${i + 1}/$amountOfTests)";
       // testSpin.render();
     }

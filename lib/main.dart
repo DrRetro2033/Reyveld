@@ -134,16 +134,13 @@ Future<void> main(List<String> args) async {
                 final requestProgress = CliSpin(spinner: CliSpinners.bounce)
                     .start("Processing request from client ($id)...".aqua);
                 try {
-                  /// Initialize the session's lua environment.
-                  await sessions[id]!.$1.init();
-
                   /// Run the request and get the result.
                   final result = await sessions[id]!.$1.run(data);
-                  socket.add(SocketEvent.completed(result,
+                  socket.add(SocketEvent.completed(result.result,
                           pid: sessions[id]!.$1.processId)
                       .toString());
                   requestProgress.success(
-                      "Completed request in ${sessions[id]!.$1.stopwatch.elapsedMilliseconds}ms ($id)!"
+                      "Completed request in ${result.processTime.elapsedMilliseconds}ms ($id)!"
                           .limeGreen);
                 } catch (e, st) {
                   requestProgress.fail(
@@ -238,6 +235,9 @@ Future<bool> isRunning(Version version) async {
 
 Future<Version> getMostRecentVersion() async {
   Directory lockDir = Directory("${Reyveld.appDataPath}/locks/");
+  if (!await lockDir.exists()) {
+    await lockDir.create(recursive: true);
+  }
   Version currentVersion = Reyveld.version;
   await for (final lockFile in lockDir.list().whereType<File>()) {
     Version version =

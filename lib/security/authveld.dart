@@ -132,15 +132,21 @@ class AuthVeld {
     return builder.buildDocument().toXmlString(pretty: true, newLine: "\n");
   }
 
-  static Future<SCertificate> loadCertificate(String hash) async {
+  static Future<SCertificate?> loadCertificate(String hash) async {
     if (await _kit.exists()) {
       return await _kit.getRoot<SCertificate>(
-            filterRoots: (root) => root.hash == hash,
-            addToCache: true,
-          ) ??
-          await SCertificateCreator([]).create();
+        filterRoots: (root) => root.hash == hash,
+        addToCache: true,
+      );
     }
-    return await SCertificateCreator([]).create();
+    return null;
+  }
+
+  static Future<bool> hasCertificate(String hash) async {
+    if (await _kit.exists()) {
+      return await _kit.hasRoot(hash);
+    }
+    return false;
   }
 }
 

@@ -339,6 +339,9 @@ class SKit {
     _loadedRoots.add(root);
   }
 
+  Future<bool> hasRoot<T extends SRoot>(String hash) async =>
+      (await getRoots<T>(filterRoots: (root) => root.hash == hash)).isNotEmpty;
+
   /// Removes a root from the kit file.
   /// This will remove the root from the kit file in memory, and will not save its changes to the file.
   /// To save the changes to the file, use [save].

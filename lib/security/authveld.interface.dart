@@ -40,6 +40,18 @@ Will open the user's browser to the authorization page, where they will decide i
           Reyveld.talker.log("Loaded certificate: ${lua.certificate!.hash}");
         }),
         LEntry(
+            name: "hasCertificate",
+            descr:
+                "Checks if the certificate exists in AuthVeld. Should be checked before trying to load a certificate, as the user might have deleted it.",
+            args: const {
+              LArg<String>(
+                  name: "token",
+                  descr: "The token to use to load the certificate."),
+            },
+            returnType: bool,
+            isAsync: true,
+            (String token) async => await AuthVeld.hasCertificate(token)),
+        LEntry(
             name: "currentPolicies",
             descr:
                 "The policies of the currently loaded certificate. Will return null if no certificate has been loaded.",

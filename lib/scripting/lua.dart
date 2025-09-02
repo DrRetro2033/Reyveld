@@ -15,20 +15,19 @@ import 'package:lua_dardo_async/lua.dart';
 import '../skit/skit.dart';
 
 typedef LuaArgs = ({List positional, Map named});
+typedef LuaResult = ({dynamic result, Stopwatch processTime});
 
 /// The main class for running lua scripts.
 class Lua {
-  final LuaState state;
-
-  final Stopwatch stopwatch = Stopwatch();
-
   final WebSocket? socket;
+
+  final Set<Stopwatch> _stopwatches = {};
 
   String processId = "";
 
   SCertificate? certificate;
 
-  Lua({this.socket, this.certificate}) : state = LuaState.newState();
+  Lua({this.socket, this.certificate});
 
   /// A map of all objects in the lua state.
   ///
@@ -121,26 +120,26 @@ class Lua {
 
   /// Initializes the lua state.
   /// This includes opening all libraries and adding all enums and statics to the global table.
-  Future<void> init() async {
+  Future<void> _init(LuaState state) async {
     /// Add all enums.
     for (final enum_ in enums.entries) {
       final table = <String, dynamic>{};
       for (final value in enum_.value) {
         table[value.name] = value.index;
       }
-      await addGlobal(enum_.key, table);
+      await addGlobal(state, enum_.key, table);
     }
 
     // Add all static exports as global object.
     for (final interface_ in interfaces) {
       if (interface_.statics.isNotEmpty) {
-        await addGlobal(interface_.className, interface_.staticTable);
+        await addGlobal(state, interface_.className, interface_.staticTable);
       }
     }
 
     // Add all globals
     for (final global in globals.entries) {
-      await addGlobal(global.key, await global.value.$2(this));
+      await addGlobal(state, global.key, await global.value.$2(this));
     }
   }
 
@@ -153,7 +152,7 @@ class Lua {
   }
 
   /// Formats the entire stack for logging.
-  String _formatStack() {
+  String _formatStack(LuaState state) {
     StringBuffer buffer = StringBuffer();
     buffer.writeln(">------  stack  top  ------<");
     var len = state.getTop();
@@ -208,17 +207,17 @@ class Lua {
   /// [table] is the table to add as the global.
   ///
   /// This will push the table to the stack and then set the global with the given name.
-  Future<void> addGlobal(String name, dynamic table) async {
+  Future<void> addGlobal(LuaState state, String name, dynamic table) async {
     // if (table == null) {
     //   return;
     // }
-    await _pushToStack(table);
+    await _pushToStack(state, table);
     await state.setGlobal(name);
   }
 
   /// Pushes a value to the stack.
-  Future<void> _pushToStack(dynamic value) async {
-    final stack = _formatStack();
+  Future<void> _pushToStack(LuaState state, dynamic value) async {
+    final stack = _formatStack(state);
     if (value is String) {
       state.pushString(value);
     } else if (value is int) {
@@ -230,18 +229,18 @@ class Lua {
     } else if (value is Map) {
       state.newTable();
       for (final key in value.keys) {
-        await _pushToStack(key);
-        await _pushToStack(value[key]);
+        await _pushToStack(state, key);
+        await _pushToStack(state, value[key]);
         await state.setTable(state.getTop() - 2);
       }
     } else if (value is Object && getInterface(value) != null) {
       final interface_ = getInterface(value)!..object = value;
       final hash = _createUniqueObjectHash();
       _objects[hash] = interface_;
-      await _pushToStack(interface_.toLua(this, hash));
+      await _pushToStack(state, interface_.toLua(this, hash));
     } else if (value is FutureOr<dynamic> Function(Lua)) {
       state.pushDartFunction((state) async {
-        await _pushToStack(await value(this));
+        await _pushToStack(state, await value(this));
         return 1;
       });
     } else if (value is LEntry) {
@@ -252,7 +251,7 @@ class Lua {
           if (value.hasNamedArgs &&
               state.getTop() > value.numOfPositionalArgs &&
               state.isTable(state.getTop())) {
-            namedArgs = await getFromTop();
+            namedArgs = await getFromTop(state);
           }
           for (final arg in value.args
               .where(
@@ -260,7 +259,7 @@ class Lua {
               )
               .toList()
               .reversed) {
-            final argValue = await getFromTop(pop: false);
+            final argValue = await getFromTop(state, pop: false);
             // Attempt to cast the argument to the expected type.
             // It will return null if the cast fails.
             final trueValue = arg.cast(argValue);
@@ -270,7 +269,7 @@ class Lua {
               } else {
                 // Report the before and after stack and throw an error.
                 Reyveld.talker.error("Before:\n$stack");
-                Reyveld.talker.error("After:\n${_formatStack()}");
+                Reyveld.talker.error("After:\n${_formatStack(state)}");
                 throw Exception(
                     "Expected ${arg.type} but got ${argValue.runtimeType}");
               }
@@ -312,7 +311,7 @@ class Lua {
                 return MapEntry(Symbol(key), value);
               },
             ));
-            await _pushToStack(result);
+            await _pushToStack(state, result);
           }
           return 1;
         } catch (e, st) {
@@ -321,7 +320,7 @@ class Lua {
         }
       });
     } else if (value is LField) {
-      await _pushToStack(value.value);
+      await _pushToStack(state, value.value);
     } else if (value == null) {
       state.pushNil();
     } else {
@@ -330,7 +329,7 @@ class Lua {
   }
 
   /// Gets a value from the top of the stack.
-  Future<T?> getFromTop<T>({bool pop = true}) async {
+  Future<T?> getFromTop<T>(LuaState state, {bool pop = true}) async {
     dynamic result;
     try {
       if (state.isString(state.getTop())) {
@@ -349,11 +348,11 @@ class Lua {
       } else if (state.isBoolean(state.getTop())) {
         result = state.toBoolean(state.getTop());
       } else if (state.isFunction(state.getTop())) {
-        result = LuaFuncRef(this, await state.ref(luaRegistryIndex));
+        result = LuaFuncRef(this, state, await state.ref(luaRegistryIndex));
         await state.rawGetI(luaRegistryIndex, (result as LuaFuncRef).ref);
       } else if (state.isTable(state.getTop())) {
         /// If the top of the stack is a table, get the table and check if it has an objHash key.
-        final table = await _getTableFromState();
+        final table = await _getTableFromState(state);
         if (table.containsKey("objHash") &&
             _objects[table["objHash"]] != null) {
           /// If the table has an objHash key, then it means it is an interface for an object,
@@ -385,19 +384,19 @@ class Lua {
   String _createUniqueObjectHash() => generateUniqueHash(_objects.keys.toSet());
 
   /// Returns a table from the lua state.
-  Future<Map> _getTableFromState() async {
+  Future<Map> _getTableFromState(LuaState state) async {
     Map? resultTable;
     state.pushNil();
     while (state.next(state.getTop() - 1)) {
-      dynamic value = await getFromTop();
-      dynamic key = await getFromTop();
+      dynamic value = await getFromTop(state);
+      dynamic key = await getFromTop(state);
       if (key is String && resultTable == null) {
         resultTable = <String, dynamic>{};
       } else if (key is int && resultTable == null) {
         resultTable = <int, dynamic>{};
       }
       resultTable![key] = value;
-      await _pushToStack(key);
+      await _pushToStack(state, key);
     }
     return resultTable!;
   }
@@ -436,20 +435,25 @@ class Lua {
   }
 
   Future<bool> awaitForCompletion() async {
-    while (stopwatch.isRunning) {
+    while (_stopwatches.any((stopwatch) => stopwatch.isRunning)) {
       await Future.delayed(Duration(milliseconds: 100));
     }
     return true;
   }
 
   /// Runs a lua script.
-  Future<dynamic> run(String entrypoint) async {
+  Future<LuaResult> run(String entrypoint) async {
     /// Resets the stopwatch and starts it, to track process time,
     /// and to notify if its done.
     processId = "";
-    stopwatch.reset();
+    final stopwatch = Stopwatch();
+    _stopwatches.add(stopwatch);
     stopwatch.start();
     final code = await _compile(entrypoint).then((value) => value.trim());
+
+    final state = LuaState.newState();
+
+    await _init(state);
 
     /// Run the lua code and see if it was successful
     final successful = await state.doString(code);
@@ -457,12 +461,12 @@ class Lua {
     if (!successful) {
       /// If it wasn't successful, print the error and return null
       state.error();
-      return null;
+      return (result: null, processTime: stopwatch);
     }
 
     /// If it was successful, return the result.
-    final result = await getFromTop();
-    return result;
+    final result = await getFromTop(state);
+    return (result: result, processTime: stopwatch);
   }
 
   /// Gets the interface for an object.
@@ -562,25 +566,25 @@ ${enum_.key} = {
 /// Should always be done, as it will prevent memory leaks or overflows.
 final class LuaFuncRef {
   final Lua lua;
+  final LuaState state;
   final int ref;
 
-  const LuaFuncRef(this.lua, this.ref);
+  const LuaFuncRef(this.lua, this.state, this.ref);
 
   Future<T?> call<T>(List<dynamic> args) async {
-    await lua.state.rawGetI(luaRegistryIndex, ref);
+    await state.rawGetI(luaRegistryIndex, ref);
     for (final arg in args) {
-      await lua._pushToStack(arg);
+      await lua._pushToStack(state, arg);
     }
-    if (lua.state.isNil(lua.state.getTop())) {
+    if (state.isNil(state.getTop())) {
       return null;
     }
-    await lua.state.call(args.length, 1);
-    return await lua.getFromTop();
+    await state.call(args.length, 1);
+    return await lua.getFromTop(state);
   }
 
   /// Unregisters the function from the registry.
   ///
   /// This should always be called when the reference is no longer needed.
-  Future<void> unregister() async =>
-      await lua.state.unRef(luaRegistryIndex, ref);
+  Future<void> unregister() async => await state.unRef(luaRegistryIndex, ref);
 }
