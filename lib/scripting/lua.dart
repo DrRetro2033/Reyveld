@@ -15,7 +15,11 @@ import 'package:lua_dardo_async/lua.dart';
 import '../skit/skit.dart';
 
 typedef LuaArgs = ({List positional, Map named});
-typedef LuaResult = ({dynamic result, Stopwatch processTime});
+typedef LuaResult = ({
+  dynamic result,
+  Stopwatch processTime,
+  String? processId
+});
 
 /// The main class for running lua scripts.
 class Lua {
@@ -23,7 +27,7 @@ class Lua {
 
   final Set<Stopwatch> _stopwatches = {};
 
-  String processId = "";
+  final Map<LuaState, String?> _processIds = {};
 
   SCertificate? certificate;
 
@@ -278,13 +282,21 @@ class Lua {
             state.pop(1);
           }
 
+          /// Pass the state to the function?
+          if (value.passState) {
+            args.add(state);
+          }
+
+          /// Pass the lua object (i.e. this) to the function?
           if (value.passLua) {
             args.add(this);
           }
 
+          /// Reverse the args so that they are in the correct order.
           final finalArgs = args.reversed.toList()
             ..removeWhere((e) => e == null);
 
+          /// If the function has a security check, check it with the arguments.
           if (value.securityCheck != null) {
             if (certificate == null) {
               throw AuthVeldException(
@@ -401,6 +413,9 @@ class Lua {
     return resultTable!;
   }
 
+  String? getPID(LuaState state) => _processIds[state];
+  void setPID(LuaState state, String? pid) => _processIds[state] = pid;
+
   /// Compiles a lua project.
   Future<String> _compile(String entrypoint) async {
     final stringPlaceholder = "⭐🌃✨🌟";
@@ -445,13 +460,14 @@ class Lua {
   Future<LuaResult> run(String entrypoint) async {
     /// Resets the stopwatch and starts it, to track process time,
     /// and to notify if its done.
-    processId = "";
     final stopwatch = Stopwatch();
     _stopwatches.add(stopwatch);
     stopwatch.start();
     final code = await _compile(entrypoint).then((value) => value.trim());
 
     final state = LuaState.newState();
+
+    _processIds[state] = null;
 
     await _init(state);
 
@@ -461,12 +477,20 @@ class Lua {
     if (!successful) {
       /// If it wasn't successful, print the error and return null
       state.error();
-      return (result: null, processTime: stopwatch);
+      return (
+        result: null,
+        processTime: stopwatch,
+        processId: _processIds[state]
+      );
     }
 
     /// If it was successful, return the result.
     final result = await getFromTop(state);
-    return (result: result, processTime: stopwatch);
+    return (
+      result: result,
+      processTime: stopwatch,
+      processId: _processIds[state]
+    );
   }
 
   /// Gets the interface for an object.

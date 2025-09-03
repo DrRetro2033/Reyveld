@@ -41,6 +41,10 @@ class LEntry extends LExport {
   /// Pass the [Lua] object to the entrypoint as the first argument.
   final bool passLua;
 
+  /// Pass the [LuaState] object to the entrypoint, just after passing the [Lua] argument if [passLua] is true.
+  /// This is used to pass the state to the entrypoint, if needed.
+  final bool passState;
+
   /// This is used to determine if the entrypoint has named arguments.
   /// Named arguments are arguments that are accessed by name by adding a table
   /// to the end of the argument list.
@@ -60,6 +64,7 @@ class LEntry extends LExport {
       this.args = const {},
       this.isAsync = false,
       this.passLua = false,
+      this.passState = false,
       this.returnType,
       this.returnNullable = false,
       this.returnGeneric = false});

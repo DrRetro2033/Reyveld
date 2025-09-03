@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:lua_dardo_async/lua.dart';
 import 'package:reyveld/reyveld.dart';
 import 'package:reyveld/event.dart';
 import 'package:reyveld/scripting/lua.dart';
@@ -36,8 +37,11 @@ class SessionInterface extends SInterface<WebSocket> {
                   descr: "The message with the data to send with the data.",
                   kind: ArgKind.optionalNamed),
             },
-            passLua: true, (Lua lua, Object data, {String message = ""}) {
-          object!.add(SocketEvent.data(data, pid: lua.processId).toString());
+            passLua: true,
+            passState: true, (Lua lua, LuaState state, Object data,
+                {String message = ""}) {
+          object!.add(
+              SocketEvent.data(data, pid: lua.getPID(state) ?? "").toString());
         }),
         LEntry(
             name: "pid",
@@ -49,11 +53,12 @@ class SessionInterface extends SInterface<WebSocket> {
                   descr: "The process id to set.",
                   kind: ArgKind.optionalPositional),
             },
-            passLua: true, (Lua lua, [String? processId]) {
+            passLua: true,
+            passState: true, (Lua lua, LuaState state, [String? processId]) {
           if (processId != null) {
-            lua.processId = processId;
+            lua.setPID(state, processId);
           }
-          return lua.processId;
+          return lua.getPID(state);
         }),
         LEntry(
             name: "talk",

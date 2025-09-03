@@ -23,12 +23,12 @@ An archive in a SKit. Contains files.
             name: "filepaths",
             descr: "Returns the filepaths of the files in the archive",
             returnType: List,
-            (state) => object!.getFiles().map<String>((e) => e!.path).toList()),
+            () => object!.getFiles().map<String>((e) => e!.path).toList()),
         LEntry(
             name: "files",
             descr: "Returns the files in the archive",
             returnType: List,
-            (state) => object!.getFiles()),
+            () => object!.getFiles()),
         LEntry(
             name: "getFile",
             descr: "Returns the file with the path provided",
@@ -135,6 +135,18 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
           },
           ({bool extension = true}) =>
               object!.path.getFilename(withExtension: extension),
+        ),
+        LEntry(
+            name: "checksum",
+            descr: "Returns the checksum of the file",
+            returnType: String,
+            () => object!.checksum),
+        LEntry(
+          name: "bytesize",
+          descr: "Returns the size of the file in bytes",
+          returnType: int,
+          // securityCheck: readCheck,
+          () => object!.bytesize,
         ),
         LEntry(
             name: "getU8",

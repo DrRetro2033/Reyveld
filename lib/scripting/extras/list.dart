@@ -164,5 +164,22 @@ class ListInterface extends SInterface<List> {
             descr: "Returns a reversed copy of the list.",
             returnType: List,
             () => object!.reversed.toList()),
+        LEntry(
+            name: "map",
+            descr: "Returns a mapped copy of the list.",
+            args: const {
+              LArg<LuaFuncRef>(
+                  name: "function",
+                  descr: "The function to map.",
+                  docTypeOverride: "fun(object: any):any")
+            },
+            returnType: List, (LuaFuncRef function) async {
+          List mapped = [];
+          for (var e in object!) {
+            mapped.add(await function.call([e]));
+          }
+          await function.unregister();
+          return mapped;
+        }),
       };
 }

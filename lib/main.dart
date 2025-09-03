@@ -137,7 +137,7 @@ Future<void> main(List<String> args) async {
                   /// Run the request and get the result.
                   final result = await sessions[id]!.$1.run(data);
                   socket.add(SocketEvent.completed(result.result,
-                          pid: sessions[id]!.$1.processId)
+                          pid: result.processId ?? "")
                       .toString());
                   requestProgress.success(
                       "Completed request in ${result.processTime.elapsedMilliseconds}ms ($id)!"
@@ -147,9 +147,7 @@ Future<void> main(List<String> args) async {
                       "There was a crash on this request ($id), please check the log folder (${Reyveld.appDataPath}/logs) for more information."
                           .red);
                   Reyveld.talker.critical("Crash Handler", e, st);
-                  socket.add(
-                      SocketEvent.error(e, pid: sessions[id]!.$1.processId)
-                          .toString());
+                  socket.add(SocketEvent.error(e).toString());
                 }
               }, onDone: () {
                 Reyveld.printToConsole('Client ($id) disconnected'.skyBlue);
