@@ -24,6 +24,14 @@ class SAuthor extends SRoot {
 
   Future<bool> isTrusted() async => Reyveld.isTrustedAuthor(this);
   Future<void> trust() async => Reyveld.trustAuthor(this);
+  Future<bool> isMe() async => await Reyveld.publicKey == publicKey;
+
+  @override
+  int get hashCode => publicKey.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      other is SAuthor && other.publicKey == publicKey;
 }
 
 @SGen("rauthor")

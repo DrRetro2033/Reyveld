@@ -127,7 +127,7 @@ class SObject {
   /// If [filter] is provided, it will only return the first child that matches the filter.
   T? getChild<T extends SObject>({bool Function(T)? filter}) {
     for (var child in _node.childElements) {
-      final factory = getSFactory(child.name.local);
+      final factory = getSFactory(child.localName);
       if (factory is! SFactory<T>) {
         continue;
       }

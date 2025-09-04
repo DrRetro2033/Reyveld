@@ -128,11 +128,11 @@ Future<void> main(List<String> args) async {
             if (WebSocketTransformer.isUpgradeRequest(request)) {
               final socket = await WebSocketTransformer.upgrade(request);
               sessions[id] = (Lua(socket: socket), socket);
-              Reyveld.printToConsole('Client ($id) connected.'.skyBlue);
-              Reyveld.talker.info("Client ($id) connected.");
+              Reyveld.printToConsole('(SID:$id) Client connected.'.skyBlue);
+              Reyveld.talker.info("(SID:$id) Client connected.");
               socket.listen((data) async {
                 final requestProgress = CliSpin(spinner: CliSpinners.bounce)
-                    .start("Processing request from client ($id)...".aqua);
+                    .start("(SID:$id) Processing request from client ...".aqua);
                 try {
                   /// Run the request and get the result.
                   final result = await sessions[id]!.$1.run(data);
@@ -140,18 +140,18 @@ Future<void> main(List<String> args) async {
                           pid: result.processId ?? "")
                       .toString());
                   requestProgress.success(
-                      "Completed request in ${result.processTime.elapsedMilliseconds}ms ($id)!"
+                      "(SID:$id, PID:${result.processId}) Completed request in ${result.processTime.elapsedMilliseconds}ms!"
                           .limeGreen);
                 } catch (e, st) {
                   requestProgress.fail(
-                      "There was a crash on this request ($id), please check the log folder (${Reyveld.appDataPath}/logs) for more information."
+                      "(SID:$id) There was a crash on this request, please check the log folder (${Reyveld.appDataPath}/logs) for more information."
                           .red);
                   Reyveld.talker.critical("Crash Handler", e, st);
                   socket.add(SocketEvent.error(e).toString());
                 }
               }, onDone: () {
-                Reyveld.printToConsole('Client ($id) disconnected'.skyBlue);
-                Reyveld.talker.info("Client ($id) disconnected.");
+                Reyveld.printToConsole('(SID:$id) Client disconnected'.skyBlue);
+                Reyveld.talker.info("(SID:$id) Client disconnected.");
                 socket.close();
                 sessions.remove(id);
                 return;

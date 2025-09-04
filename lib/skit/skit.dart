@@ -89,26 +89,21 @@ class SKit {
   Encrypter get _decrypter => Encrypter(Fernet(_decryptKey));
   Encrypter get _encrypter => Encrypter(Fernet(_encryptKey));
 
-  /// The cached version of the public key.
-  /// This is used to verify the signature of the kit file.
-  RSAPublicKey? _cachedKitPublicKey;
-
   /// Returns the public key of the kit file.
   /// The public key is used to verify the signature of the kit file.
   /// If the file does not exist yet, it will return the public key of Reyveld.
   Future<RSAPublicKey> get kitPublicKey async {
-    if (_cachedKitPublicKey == null) {
-      if (!await _file.exists()) {
-        _cachedKitPublicKey = await Reyveld.publicKey;
+    if (!await _file.exists()) {
+      return await Reyveld.publicKey;
+    } else {
+      final header = await getHeader();
+      if (header != null) {
+        final author = await header.getChild<SRAuthor>()!.getRef();
+        return author!.publicKey;
       } else {
-        final header = await getHeader();
-        if (header != null) {
-          final author = await header.getChild<SRAuthor>()!.getRef();
-          _cachedKitPublicKey = author!.publicKey;
-        }
+        return await Reyveld.publicKey;
       }
     }
-    return _cachedKitPublicKey!;
   }
 
   Future<SAuthor> get author async {
@@ -171,10 +166,13 @@ class SKit {
 
   Future<bool> isVerifiedAndTrusted() async {
     if (await verify()) {
-      return await author.then((e) => e.isTrusted());
+      return await author.then((e) async => await e.isTrusted());
     }
     return false;
   }
+
+  /// Returns whether the user is the author of the kit file.
+  Future<bool> isSignedByMe() async => await (await author).isMe();
 
   /// The additional bytes which are added to the kit file after encrypting.
   /// Used to chunk data properly when decrypting.
@@ -265,7 +263,7 @@ class SKit {
   /// If the header has already been loaded, it will return the cached header.
   Future<SHeader?> getHeader() async {
     if (_header == null) {
-      if (!_file.existsSync()) {
+      if (!await exists()) {
         return await SHeaderCreator().create();
       }
       final factory = getSFactory<SHeader>();
@@ -299,8 +297,8 @@ class SKit {
         filterEvents: filterEvents,
         addToCache: false);
     final root = roots.singleOrNull;
-    if (addToCache) {
-      _loadedRoots.add(root!);
+    if (addToCache && root != null) {
+      _loadedRoots.add(root);
     }
     return root;
   }
@@ -413,6 +411,14 @@ class SKit {
     if (!await isVerifiedAndTrusted()) {
       throw TrustException(this, await kitPublicKey);
     }
+    // If the kit file has not been signed by the user, sign it with their keys.
+    if (!await isSignedByMe()) {
+      final header = await getHeader();
+      header!.getChild<SRAuthor>()!.markForDeletion();
+      final root = await Reyveld.author.then((e) => e!.toSAuthor());
+      await addRoot(root);
+      header.addChild(await root.newIndent());
+    }
     final stopwatch =
         Stopwatch(); // initialize a stopwatch for checking how long it takes to save.
     stopwatch.start();
@@ -429,18 +435,11 @@ class SKit {
 
     // Calls onSave on the header to do any necessary changes before saving.
     await getHeader().then((header) => header!.onSave(this));
-
     // Write the new XML to temp file.
     final stringStream = Rx.merge<String>([
       Stream.fromFuture(getHeader().then((e) => e!.toXmlString())),
       _streamRootsAsXml()
     ]);
-
-    // Will override the kit file's public key if it has one.
-    final publicKey = keyPair?.public ?? await Reyveld.publicKey;
-
-    _cachedKitPublicKey =
-        publicKey; // Cache our own public key. Used when signing another person's kit file with our own keys.
 
     final byteStream = stringStream
         .transform(utf8.encoder)
@@ -450,7 +449,6 @@ class SKit {
             StreamTransformer.fromHandlers(handleData: _encryptTransformer))
         .transform(
             StreamTransformer.fromBind((e) => _sign(e, keyPair: keyPair)));
-
     await tempSink.addStream(byteStream);
     // Flush and Close the sink for the temp file.
     await tempSink.flush();

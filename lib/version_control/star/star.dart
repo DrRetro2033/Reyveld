@@ -21,6 +21,8 @@ class Star extends SObject {
   String get hash => get("hash")!;
   set hash(String value) => set("hash", value);
 
+  SRArchive? get archiveRef => getChild<SRArchive>();
+
   /// Returns the archive of the star.
   Future<SArchive?> get archive async => await getChild<SRArchive>()?.getRef();
 
@@ -111,11 +113,14 @@ class Star extends SObject {
       throw Exception("Cannot trim root star!");
     }
     getParent<Star>()!.makeCurrent();
-    await constellation.sync();
-    await archive.then((e) => e!.markForDeletion());
-    for (final archiveReference in getDescendants<SRArchive>()) {
-      archiveReference!.markForDeletion();
+    if (getAncestors<Star>()
+        .every((e) => e!.archiveRef!.hash != archiveRef!.hash)) {
+      await archive.then((e) => e!.markForDeletion());
+      for (final archiveReference in getDescendants<SRArchive>()) {
+        archiveReference!.markForDeletion();
+      }
     }
+
     unparent();
   }
 
@@ -146,7 +151,7 @@ class Star extends SObject {
   }
 
   Future<Stream<String>> checkout(String path) async =>
-      archive.then((e) async => e!.extract(path.resolvePath()));
+      await archive.then((e) async => e!.extract(path.resolvePath()));
 
   /// Checks for changes from the current star, and returns true if there are changes, false if there are none.
   Future<bool> checkForChanges() async {

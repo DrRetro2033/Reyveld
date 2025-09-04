@@ -136,7 +136,6 @@ A collection of Stars, with a root star, and a current star.
               LArg<String>(name: "hash", descr: "The hash of the star.")
             },
             returnType: Star, (String hash) {
-          Reyveld.talker.info("Getting star by hash: $hash");
           return object?.getStarByHash(hash);
         })
       };

@@ -125,10 +125,11 @@ class SArchive extends SRoot {
   /// Returns a stream that emits the path of the file currently being extracted.
   Stream<String> extract(String path, {bool temp = false}) {
     final files = getFiles();
-    return Stream.fromFutures(files.map((e) => Isolate.run(() async {
-          await e!.extractTo(path, temp: temp);
-          return e.path;
-        })));
+    return Stream.fromFutures(
+        files.map<Future<String>>((e) async => await Isolate.run(() async {
+              await e!.extractTo(path, temp: temp);
+              return e.path;
+            })));
   }
 
   @override

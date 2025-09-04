@@ -60,6 +60,11 @@ tracked folder by calling [checkForChanges()](lua://Constellation.checkForChange
             ([String? path]) async =>
                 await object!.checkout(path ?? object!.constellation.path)),
         LEntry(
+            name: "checkForChanges",
+            descr: "Checks for changes in the tracked folder.",
+            isAsync: true,
+            () async => await object!.checkForChanges()),
+        LEntry(
             name: "archive",
             descr: "Gets the archive of the star.",
             returnType: SArchive,
