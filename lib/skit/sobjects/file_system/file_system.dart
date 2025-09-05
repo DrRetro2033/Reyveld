@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:math';
 import 'dart:typed_data';
 import 'package:reyveld/extensions.dart';
 import 'package:reyveld/security/certificate/certificate.dart';
@@ -163,9 +164,6 @@ class SFile extends SObject {
   /// Can be set to false to force big endian as the default.
   bool defaultEndian = true;
 
-  Future<int> get bytesize async =>
-      (await bytes).map((e) => e.length).reduce((a, b) => a + b);
-
   /// Returns a stream of the bytes stored, uncompressing along the way.
   FutureOr<Stream<List<int>>> get bytes =>
       Stream.fromIterable(base64Decode(innerText!))
@@ -210,8 +208,10 @@ class SFile extends SObject {
   }
 
   /// Returns a stream of the bytes at the specified range.
-  Future<Stream<int>> getRange(int start, int end) async =>
-      (await singleBytes).defaultIfEmpty(0).skip(start).take(end - start);
+  Future<Stream<int>> getRange(int start, int end) async => (await singleBytes)
+      .defaultIfEmpty(0)
+      .skip(start)
+      .take(min(end, await length) - start);
 
   Future<void> setRange(
       int start, int end, Iterable<int> data, bool? littleEndian) async {

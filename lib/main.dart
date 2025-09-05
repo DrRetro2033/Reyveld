@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:args/args.dart';
 import 'package:reyveld/reyveld.dart';
 import 'package:reyveld/event.dart';
 import 'package:reyveld/scripting/lua.dart';
@@ -24,7 +25,12 @@ Future<void> main(List<String> args) async {
     exit(0);
   }
 
-  /// The reroute version is the version that
+  final parser = ArgParser();
+  parser.addFlag("verbose", abbr: "v", help: "Run Arceus in verbose mode.");
+  final results = parser.parse(args);
+  Reyveld.verbose = results.flag("verbose");
+
+  /// The reroute version is the version that this Reyveld executable is rerouting to.
   Version rerouteVersion = await getMostRecentVersion();
 
   isRunningSpinner.success("Ready to Start!".skyBlue);
@@ -94,9 +100,6 @@ Future<void> main(List<String> args) async {
       final requestUrl =
           request.uri.pathSegments.sublist(definedVersion ? 1 : 0).join('/');
 
-      Reyveld.talker
-          .log("Requested: ${request.method} ${request.uri.toString()}");
-
       /// If the requested version is the same as this program's version, continue as normal.
       if (request.method == "GET") {
         switch (requestUrl) {
@@ -108,7 +111,7 @@ Future<void> main(List<String> args) async {
             await request.response.close();
           case "heartbeat":
             request.response.statusCode = HttpStatus.ok;
-            Reyveld.talker.info(
+            Reyveld.talker.verbose(
                 "Heartbeat checked at ${DateTime.now().toIso8601String()}.");
             await request.response.close();
           case "close":
@@ -131,21 +134,17 @@ Future<void> main(List<String> args) async {
               Reyveld.printToConsole('(SID:$id) Client connected.'.skyBlue);
               Reyveld.talker.info("(SID:$id) Client connected.");
               socket.listen((data) async {
-                final requestProgress = CliSpin(spinner: CliSpinners.bounce)
-                    .start("(SID:$id) Processing request from client ...".aqua);
                 try {
                   /// Run the request and get the result.
+                  Reyveld.talker.info("(SID:$id) Received request.");
+                  Reyveld.talker.verbose("(SID:$id) Request: $data");
                   final result = await sessions[id]!.$1.run(data);
                   socket.add(SocketEvent.completed(result.result,
                           pid: result.processId ?? "")
                       .toString());
-                  requestProgress.success(
-                      "(SID:$id, PID:${result.processId}) Completed request in ${result.processTime.elapsedMilliseconds}ms!"
-                          .limeGreen);
+                  Reyveld.talker.info(
+                      "(SID:$id, PID:${result.processId ?? ""}) Completed request.");
                 } catch (e, st) {
-                  requestProgress.fail(
-                      "(SID:$id) There was a crash on this request, please check the log folder (${Reyveld.appDataPath}/logs) for more information."
-                          .red);
                   Reyveld.talker.critical("Crash Handler", e, st);
                   socket.add(SocketEvent.error(e).toString());
                 }

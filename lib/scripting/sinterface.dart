@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:reyveld/reyveld.dart';
@@ -135,6 +136,15 @@ final class LArg<T> {
   /// If it is, it returns the value, otherwise it returns null.
   /// It is used to check if the argument is of the correct type.
   T? cast(dynamic value) => typeCheck<T>(value);
+
+  @override
+  String toString() => jsonEncode({
+        "name": name,
+        "descr": descr,
+        "kind": kind.toString(),
+        "docDefaultValue": docDefaultValue,
+        "docTypeOverride": docTypeOverride
+      });
 }
 
 /// This is a lua field.

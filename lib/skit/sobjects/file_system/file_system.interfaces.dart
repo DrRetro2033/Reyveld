@@ -142,13 +142,6 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
             returnType: String,
             () => object!.checksum),
         LEntry(
-          name: "bytesize",
-          descr: "Returns the size of the file in bytes",
-          returnType: int,
-          // securityCheck: readCheck,
-          () => object!.bytesize,
-        ),
-        LEntry(
             name: "getU8",
             descr: "Returns a unsigned 8 bit value at the specified index.",
             securityCheck: readCheck,
@@ -521,6 +514,35 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
                 {bool stopAtNull = false}) async {
           return await object!.getUtf8(index, length, stopAtNull: stopAtNull);
         }),
+        LEntry(
+          name: "length",
+          descr: "Returns the length of the file in bytes.",
+          securityCheck: readCheck,
+          returnType: int,
+          isAsync: true,
+          () async => await object!.length,
+        ),
+        LEntry(
+          name: "getSpan",
+          descr:
+              "Returns a span of bytes at the specified range, or the entire file if no end is specified.",
+          securityCheck: readCheck,
+          args: const {
+            LArg<int>(
+              name: "start",
+              descr: "The start index.",
+            ),
+            LArg<int>(
+                name: "end",
+                descr: "The end index.",
+                kind: ArgKind.optionalPositional),
+          },
+          returnType: Stream,
+          isAsync: true,
+          (int start, [int? end]) async {
+            return await object!.getRange(start, end ?? await object!.length);
+          },
+        ),
         LEntry(
             name: "save",
             descr: "Saves the file to disk if path is external.",

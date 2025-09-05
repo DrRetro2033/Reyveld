@@ -42,7 +42,9 @@ class AuthVeld {
     if (!await _kit.exists()) {
       await _kit.create(type: SKitType.authveld);
     }
-    final certificate = await SCertificateCreator(ticket.policies).create();
+    final certificate =
+        await SCertificateCreator(ticket.applicationName, ticket.policies)
+            .create();
     await _kit.addRoot(certificate);
     await _kit.save(encryptKey: "AuthVeld");
     ticket.token = certificate.hash;

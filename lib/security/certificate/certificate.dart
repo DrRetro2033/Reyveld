@@ -14,6 +14,8 @@ class SCertificate extends SRoot {
 
   bool get completeAccess => policies.any((policy) => policy is SPolicyAll);
 
+  String get appname => get("appname") ?? "Default";
+
   T? getPolicy<T extends SPolicy>() => policies.whereType<T>().firstOrNull;
 
   @override

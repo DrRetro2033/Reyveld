@@ -23,6 +23,7 @@ class Reyveld {
   static late bool isInternal;
   static bool get isDev =>
       const bool.fromEnvironment('DEBUG', defaultValue: true);
+  static bool verbose = false;
 
   static Talker? _logger;
 
@@ -222,7 +223,7 @@ class ReyveldLogFormatter extends LoggerFormatter {
 class ReyveldLogFilter extends LoggerFilter {
   @override
   bool shouldLog(msg, LogLevel level) {
-    if (level == LogLevel.debug && !Reyveld.isDev) {
+    if (!Reyveld.verbose && level == LogLevel.verbose) {
       return false;
     }
     return true;

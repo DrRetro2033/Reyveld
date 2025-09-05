@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:reyveld/reyveld.dart';
 import 'package:reyveld/extensions.dart';
 import 'package:reyveld/scripting/extras/extras.dart';
+import 'package:reyveld/scripting/extras/stringbuffer.dart';
 import 'package:reyveld/security/authveld.dart';
 import 'package:reyveld/security/certificate/certificate.dart';
 import 'package:reyveld/security/policies/policies.dart';
@@ -65,6 +66,7 @@ class Lua {
         SPolicyExterFilesInterface(),
         SPolicySKitInterface(),
         SPolicyAllInterface(),
+        StringBufferInterface(),
       };
 
   /// A set of all interfaces in the lua state, sorted by priority.
@@ -147,63 +149,6 @@ class Lua {
     }
   }
 
-  /// Formats a single stack item for logging.
-  /// It includes the index, type, and value.
-  String _formatStackItem(int i, LuaType type, [String? value]) {
-    var msg = "index:$i -> $type";
-    if (value != null) msg += " value:$value";
-    return msg;
-  }
-
-  /// Formats the entire stack for logging.
-  String _formatStack(LuaState state) {
-    StringBuffer buffer = StringBuffer();
-    buffer.writeln(">------  stack  top  ------<");
-    var len = state.getTop();
-    for (int i = len; i >= 1; i--) {
-      LuaType t = state.type(i);
-      switch (state.type(i)) {
-        case LuaType.luaNone:
-          buffer.writeln(_formatStackItem(i, t));
-
-        case LuaType.luaNil:
-          buffer.writeln(_formatStackItem(i, t));
-
-        case LuaType.luaBoolean:
-          buffer.writeln(
-              _formatStackItem(i, t, state.toBoolean(i) ? "true" : "false"));
-
-        case LuaType.luaLightUserdata:
-          buffer.writeln(_formatStackItem(i, t));
-
-        case LuaType.luaNumber:
-          if (state.isInteger(i)) {
-            buffer.writeln(
-                _formatStackItem(i, t, "(integer)${state.toInteger(i)}"));
-          } else if (state.isNumber(i)) {
-            buffer.writeln(_formatStackItem(i, t, "${state.toNumber(i)}"));
-          }
-
-        case LuaType.luaString:
-          buffer.writeln(_formatStackItem(i, t, "${state.toStr(i)}"));
-
-        case LuaType.luaTable:
-          buffer.writeln(_formatStackItem(i, t));
-
-        case LuaType.luaFunction:
-          buffer.writeln(_formatStackItem(i, t));
-
-        case LuaType.luaUserdata:
-          buffer.writeln(_formatStackItem(i, t));
-
-        case LuaType.luaThread:
-          buffer.writeln(_formatStackItem(i, t));
-      }
-    }
-    buffer.writeln(">------ stack bottom ------<");
-    return buffer.toString();
-  }
-
   /// Adds a global to the Lua state.
   ///
   /// [name] is the name of the global.
@@ -221,7 +166,6 @@ class Lua {
 
   /// Pushes a value to the stack.
   Future<void> _pushToStack(LuaState state, dynamic value) async {
-    final stack = _formatStack(state);
     if (value is String) {
       state.pushString(value);
     } else if (value is int) {
@@ -251,50 +195,36 @@ class Lua {
       state.pushDartFunction((state) async {
         try {
           List<dynamic> args = [];
-          Map<dynamic, dynamic> namedArgs = {};
-          if (value.hasNamedArgs &&
-              state.getTop() > value.numOfPositionalArgs &&
-              state.isTable(state.getTop())) {
-            namedArgs = await getFromTop(state);
-          }
-          for (final arg in value.args
-              .where(
-                (element) => element.positional,
-              )
-              .toList()
-              .reversed) {
-            final argValue = await getFromTop(state, pop: false);
-            // Attempt to cast the argument to the expected type.
-            // It will return null if the cast fails.
-            final trueValue = arg.cast(argValue);
-            if (trueValue == null) {
-              if (!arg.required) {
-                continue;
-              } else {
-                // Report the before and after stack and throw an error.
-                Reyveld.talker.error("Before:\n$stack");
-                Reyveld.talker.error("After:\n${_formatStack(state)}");
-                throw Exception(
-                    "Expected ${arg.type} but got ${argValue.runtimeType}");
-              }
+
+          while (state.getTop() > 0) {
+            args.add(await getFromTop(state));
+            if (args.length >= value.args.length) {
+              break;
             }
-            args.add(trueValue);
-            state.pop(1);
-          }
-
-          /// Pass the state to the function?
-          if (value.passState) {
-            args.add(state);
-          }
-
-          /// Pass the lua object (i.e. this) to the function?
-          if (value.passLua) {
-            args.add(this);
           }
 
           /// Reverse the args so that they are in the correct order.
           final finalArgs = args.reversed.toList()
             ..removeWhere((e) => e == null);
+
+          Map<String, dynamic> namedArgs = {};
+
+          if (value.hasNamedArgs && args.length >= value.args.length) {
+            if (finalArgs.lastOrNull is Map) {
+              namedArgs = finalArgs.removeLast();
+            }
+          }
+
+          for (int i = 0; i < finalArgs.length; i++) {
+            final argValue = finalArgs[i];
+            final argType = value.args.elementAt(i);
+            if (argType.cast(argValue) == null && argType.required) {
+              throw Exception(
+                  "Type Mismatch for argument $argType at position $i! Expected ${argType.type} but got ${argValue.runtimeType}");
+            } else {
+              finalArgs[i] = argType.cast(argValue);
+            }
+          }
 
           /// If the function has a security check, check it with the arguments.
           if (value.securityCheck != null) {
@@ -309,16 +239,28 @@ class Lua {
               }
             }
           }
+          Reyveld.talker.verbose(
+              "Calling function '${value.name}' with $finalArgs$namedArgs.");
           if (value.returnType == null) {
             // Means that the function doesn't return anything, so just call it.
-            await Function.apply(value.func, finalArgs,
-                namedArgs.map((key, value) {
+            await Function.apply(
+                value.func,
+                [
+                  value.passLua ? this : null,
+                  value.passState ? state : null,
+                  ...finalArgs
+                ]..removeWhere((e) => e == null), namedArgs.map((key, value) {
               return MapEntry(Symbol(key), value);
             }));
           } else {
             // Means that the function returns something, so call it and push the result to the stack.
-            final result =
-                await Function.apply(value.func, finalArgs, namedArgs.map(
+            final result = await Function.apply(
+                value.func,
+                [
+                  value.passLua ? this : null,
+                  value.passState ? state : null,
+                  ...finalArgs
+                ]..removeWhere((e) => e == null), namedArgs.map(
               (key, value) {
                 return MapEntry(Symbol(key), value);
               },
