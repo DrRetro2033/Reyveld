@@ -135,7 +135,8 @@ A collection of Stars, with a root star, and a current star.
             args: const {
               LArg<String>(name: "hash", descr: "The hash of the star.")
             },
-            returnType: Star, (String hash) {
+            returnType: Star,
+            returnNullable: true, (String hash) {
           return object?.getStarByHash(hash);
         })
       };

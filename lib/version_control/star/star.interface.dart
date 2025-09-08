@@ -269,7 +269,7 @@ Will never work on the root star, as it cannot be unanchored.""",
         LEntry(
           name: "info",
           descr: "Returns a string of information about this star.",
-          returnType: String,
+          returnType: Map,
           () => object!.info(),
         )
       };

@@ -22,6 +22,7 @@ abstract class LExport {
 
 /// This is a lua entrypoint.
 /// A entrypoint is a function with a description, arguments, and return type.
+/// Do not forget to use [returnType], [returnGeneric], and [returnNullable] to define the return type of the entrypoint.
 class LEntry extends LExport {
   /// The arguments of the entrypoint.
   final Set<LArg> args;

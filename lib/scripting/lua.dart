@@ -38,7 +38,7 @@ class Lua {
   ///
   /// When pushing a object to the stack, an unique hash is generated and
   /// a duplicate of the SInterface with the object as its value is added to this map.
-  final Map<String, SInterface> _objects = {};
+  final Map<LuaState, Map<String, SInterface>> _objects = {};
 
   /// A set of all interfaces in the lua state.
   static Set<SInterface> get _interfaces => {
@@ -183,8 +183,8 @@ class Lua {
       }
     } else if (value is Object && getInterface(value) != null) {
       final interface_ = getInterface(value)!..object = value;
-      final hash = _createUniqueObjectHash();
-      _objects[hash] = interface_;
+      final hash = _createUniqueObjectHash(state);
+      _objects[state]![hash] = interface_;
       await _pushToStack(state, interface_.toLua(this, hash));
     } else if (value is FutureOr<dynamic> Function(Lua)) {
       state.pushDartFunction((state) async {
@@ -311,7 +311,7 @@ class Lua {
             _objects[table["objHash"]] != null) {
           /// If the table has an objHash key, then it means it is an interface for an object,
           /// so get the object and return it.
-          result = _objects[table["objHash"]]!.object;
+          result = _objects[state]![table["objHash"]]!.object;
         } else if (table.keys.every((key) => key is int)) {
           result = table.values.toList();
         } else {
@@ -335,7 +335,8 @@ class Lua {
   }
 
   /// Creates a unique hash for an object.
-  String _createUniqueObjectHash() => generateUniqueHash(_objects.keys.toSet());
+  String _createUniqueObjectHash(LuaState state) =>
+      generateUniqueHash(_objects[state]!.keys.toSet());
 
   /// Returns a table from the lua state.
   Future<Map> _getTableFromState(LuaState state) async {
@@ -410,12 +411,15 @@ class Lua {
     final state = LuaState.newState();
 
     _processIds[state] = null;
+    _objects[state] = {};
 
     await _init(state);
 
-    /// Run the lua code and see if it was successful
+    // Run the lua code and see if it was successful
     final successful = await state.doString(code);
     stopwatch.stop();
+    // Remove the objects from memory
+    _objects.remove(state);
     if (!successful) {
       /// If it wasn't successful, print the error and return null
       state.error();
@@ -445,6 +449,8 @@ class Lua {
     return null;
   }
 
+  /// Gets the interface for a type.
+  /// Used for generating docs.
   static SInterface? getInterfaceFromType(Type type) {
     for (final interface_ in interfaces) {
       if (interface_.equalsType(type)) {

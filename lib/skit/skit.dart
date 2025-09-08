@@ -212,7 +212,7 @@ class SKit {
   }
 
   /// Returns the stream of [_file].
-  /// Do not use directly, and use [_eventStream] instead.
+  /// Do not use directly.
   Stream<List<int>>? get _byteStream => _file.existsSync()
       ? _file
           .openRead()

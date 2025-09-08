@@ -145,6 +145,10 @@ Future<void> main(List<String> args) async {
                   Reyveld.talker.info(
                       "(SID:$id, PID:${result.processId ?? ""}) Completed request.");
                 } catch (e, st) {
+                  Reyveld.printToConsole(
+                      "There was a crash on a request, please check the log folder (${Reyveld.appDataPath}/logs) for more information."
+                          .red);
+                  Reyveld.talker.debug("(SID:$id) Request: $data");
                   Reyveld.talker.critical("Crash Handler", e, st);
                   socket.add(SocketEvent.error(e).toString());
                 }
@@ -154,8 +158,6 @@ Future<void> main(List<String> args) async {
                 socket.close();
                 sessions.remove(id);
                 return;
-              }, onError: (error, stack) {
-                Reyveld.talker.error("Error", error, stack);
               }, cancelOnError: false);
             } else {
               request.response
