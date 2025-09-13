@@ -27,6 +27,8 @@ class LEntry extends LExport {
   /// The arguments of the entrypoint.
   final Set<LArg> args;
 
+  int get positionalArgCount => args.where((e) => e.positional).length;
+
   /// This is used to define if the entrypoint is async.
   final bool isAsync;
 

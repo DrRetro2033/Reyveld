@@ -26,7 +26,7 @@ part 'skit.factories.dart';
 part 'skit.interface.dart';
 
 /// The type of a [SKit].
-/// [constellation] is the default type.
+/// [unspecified] is the default type.
 enum SKitType {
   unspecified,
   constellation,
@@ -46,12 +46,17 @@ typedef SKitKeyPair = ({RSAPrivateKey? private, RSAPublicKey public});
 ///
 /// [SKit]s are first compressed using GZip, then encrypted using Fernet, and finally is signed using RSA.
 class SKit {
+  static final Set<SKit> _loadedKits = {};
+
   /// Opens a kit file.
   static Future<SKit> open(
     String path, {
     SKitType? type,
     String encryptKey = "Arceus",
   }) async {
+    if (_loadedKits.any((e) => e.path == path)) {
+      return _loadedKits.firstWhere((e) => e.path == path);
+    }
     final kit = SKit(path, encryptKey: encryptKey);
     if (!await kit.exists()) {
       throw Exception("SKit file does not exist!");
@@ -326,6 +331,23 @@ class SKit {
     return rootsList;
   }
 
+  /// Retains the kit file in memory.
+  void retain() {
+    _loadedKits.add(this);
+  }
+
+  /// Releases the kit file from memory.
+  void release() {
+    _loadedKits.remove(this);
+  }
+
+  Stream get _stringStream => Rx.merge<String>([
+        Stream.fromFuture(getHeader().then((e) => e!.toXmlString())),
+        _streamRootsAsXml()
+      ]);
+
+  bool get hasChanged => _loadedKits.contains(this);
+
   /// Adds a root to the kit file.
   /// This will add the root to the kit file in memory, but will not save the changes to the file.
   /// To save the changes to the file, use [save].
@@ -436,12 +458,7 @@ class SKit {
     // Calls onSave on the header to do any necessary changes before saving.
     await getHeader().then((header) => header!.onSave(this));
     // Write the new XML to temp file.
-    final stringStream = Rx.merge<String>([
-      Stream.fromFuture(getHeader().then((e) => e!.toXmlString())),
-      _streamRootsAsXml()
-    ]);
-
-    final byteStream = stringStream
+    final byteStream = _stringStream
         .transform(utf8.encoder)
         .transform(gzip.encoder)
         .rechunk(SFile.chunkSize) // Using chunk size in SFile, for consistency.
@@ -477,6 +494,8 @@ class SKit {
     await temp.delete();
 
     discardChanges(); // Clear everything from memory.
+
+    release(); // Release the kit from memory.
 
     stopwatch.stop();
   }

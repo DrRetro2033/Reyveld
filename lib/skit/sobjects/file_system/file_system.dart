@@ -179,10 +179,17 @@ class SFile extends SObject {
       (await bytes).map((e) => String.fromCharCodes(e)).join();
 
   /// Attempts to get the length of the file. If it fails, then it will return a 0;
-  Future<int> get length async => (await bytes)
-      .map<int>((chunk) => chunk.length)
-      .reduce((a, b) => a + b)
-      .catchError((e) => 0);
+  Future<int> get length async {
+    if (!has("length")) {
+      set(
+          "length",
+          await (await bytes)
+              .map<int>((chunk) => chunk.length)
+              .reduce((a, b) => a + b)
+              .catchError((e) => 0));
+    }
+    return int.parse(get("length")!);
+  }
 
   String get checksum => get("checksum")!;
 

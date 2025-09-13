@@ -16,7 +16,8 @@ class SessionInterface extends SInterface<WebSocket> {
 
   @override
   String get classDescription =>
-      "Send data through the web socket of the current session during script execution.";
+      """Cotains methods for the current session with Reyveld. 
+This can be used to send data through the web socket, log messages, etc.""";
 
   @override
   get exports => {

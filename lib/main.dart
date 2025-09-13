@@ -136,13 +136,13 @@ Future<void> main(List<String> args) async {
               socket.listen((data) async {
                 try {
                   /// Run the request and get the result.
-                  Reyveld.talker.info("(SID:$id) Received request.");
+                  Reyveld.talker.verbose("(SID:$id) Received request.");
                   Reyveld.talker.verbose("(SID:$id) Request: $data");
                   final result = await sessions[id]!.$1.run(data);
                   socket.add(SocketEvent.completed(result.result,
                           pid: result.processId ?? "")
                       .toString());
-                  Reyveld.talker.info(
+                  Reyveld.talker.verbose(
                       "(SID:$id, PID:${result.processId ?? ""}) Completed request.");
                 } catch (e, st) {
                   Reyveld.printToConsole(

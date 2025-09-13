@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
 
 import 'package:reyveld/reyveld.dart';
@@ -164,6 +165,10 @@ class Lua {
     await state.setGlobal(name);
   }
 
+  SInterface? _getObject(LuaState state, String hash) => _objects[state]?[hash];
+  void _setObject(LuaState state, String hash, SInterface interface_) =>
+      _objects[state]![hash] = interface_;
+
   /// Pushes a value to the stack.
   Future<void> _pushToStack(LuaState state, dynamic value) async {
     if (value is String) {
@@ -184,7 +189,7 @@ class Lua {
     } else if (value is Object && getInterface(value) != null) {
       final interface_ = getInterface(value)!..object = value;
       final hash = _createUniqueObjectHash(state);
-      _objects[state]![hash] = interface_;
+      _setObject(state, hash, interface_);
       await _pushToStack(state, interface_.toLua(this, hash));
     } else if (value is FutureOr<dynamic> Function(Lua)) {
       state.pushDartFunction((state) async {
@@ -207,13 +212,17 @@ class Lua {
           final finalArgs = args.reversed.toList()
             ..removeWhere((e) => e == null);
 
-          Map<String, dynamic> namedArgs = {};
+          Map namedArgs = {};
 
-          if (value.hasNamedArgs && args.length >= value.args.length) {
+          if (value.hasNamedArgs &&
+              finalArgs.length > value.positionalArgCount) {
             if (finalArgs.lastOrNull is Map) {
               namedArgs = finalArgs.removeLast();
             }
           }
+
+          Reyveld.talker.verbose(
+              "Calling function '${value.name}' with $finalArgs$namedArgs.");
 
           for (int i = 0; i < finalArgs.length; i++) {
             final argValue = finalArgs[i];
@@ -308,10 +317,10 @@ class Lua {
         /// If the top of the stack is a table, get the table and check if it has an objHash key.
         final table = await _getTableFromState(state);
         if (table.containsKey("objHash") &&
-            _objects[table["objHash"]] != null) {
+            _getObject(state, table["objHash"]) != null) {
           /// If the table has an objHash key, then it means it is an interface for an object,
           /// so get the object and return it.
-          result = _objects[state]![table["objHash"]]!.object;
+          result = _getObject(state, table["objHash"])!.object;
         } else if (table.keys.every((key) => key is int)) {
           result = table.values.toList();
         } else {
@@ -399,10 +408,17 @@ class Lua {
     return true;
   }
 
+  final Queue<LuaState> _removeObjsQueue = Queue<LuaState>();
+
   /// Runs a lua script.
   Future<LuaResult> run(String entrypoint) async {
     /// Resets the stopwatch and starts it, to track process time,
     /// and to notify if its done.
+
+    while (_removeObjsQueue.isNotEmpty) {
+      final state = _removeObjsQueue.removeFirst();
+      _objects.remove(state);
+    }
     final stopwatch = Stopwatch();
     _stopwatches.add(stopwatch);
     stopwatch.start();
@@ -418,8 +434,7 @@ class Lua {
     // Run the lua code and see if it was successful
     final successful = await state.doString(code);
     stopwatch.stop();
-    // Remove the objects from memory
-    _objects.remove(state);
+    _removeObjsQueue.add(state);
     if (!successful) {
       /// If it wasn't successful, print the error and return null
       state.error();

@@ -26,7 +26,6 @@ part 'sobject.interface.dart';
 class SObject {
   final XmlElement _node;
   SKit? _kit;
-
   SKit get kit {
     if (_kit == null) {
       throw Exception(

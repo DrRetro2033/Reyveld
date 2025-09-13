@@ -72,6 +72,9 @@ SKits are the bread and butter of Reyveld. They store a SHeader and any number o
             isAsync: true, (String path,
                 {bool overwrite = false, int? type, String key = ""}) async {
           final skit = SKit(path, encryptKey: key);
+          Reyveld.talker.log(type);
+          Reyveld.talker
+              .log(type != null ? SKitType.values[type] : SKitType.unspecified);
           await skit.create(
               overwrite: overwrite,
               type:
@@ -174,6 +177,23 @@ SKits are the bread and butter of Reyveld. They store a SHeader and any number o
             name: "discard",
             descr: "Discards changes to the SKit.",
             () => object!.discardChanges()),
+        LEntry(
+            name: "retain",
+            descr:
+                "Retain the SKit in memory (i.e. any changes will be carried over to any new requests for this SKit.)",
+            () => object!.retain()),
+        LEntry(
+            name: "hasChanges",
+            descr: "Returns whether the SKit has changes.",
+            returnType: bool,
+            () => object!.hasChanged),
+        LEntry(
+          name: "release",
+          descr:
+              "Release the SKit from memory (i.e. any changes before save will be kept.)",
+          isAsync: true,
+          () => object!.release(),
+        ),
         LEntry(
             name: "exportAs",
             descr: "Exports the SKit as an uncompressed, decrypted xml file.",
