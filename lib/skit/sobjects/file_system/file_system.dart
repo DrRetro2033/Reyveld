@@ -5,12 +5,12 @@ import 'dart:isolate';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:reyveld/extensions.dart';
+import 'package:reyveld/reyveld.dart';
 import 'package:reyveld/security/certificate/certificate.dart';
 import 'package:reyveld/security/policies/files/files.dart';
 import 'package:reyveld/skit/sobject.dart';
 import 'package:reyveld/skit/sobjects/file_system/filelist/filelist.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:async/async.dart';
 
 part 'file_system.g.dart';
 part 'file_system.creators.dart';
@@ -164,61 +164,38 @@ class SFile extends SObject {
   /// Can be set to false to force big endian as the default.
   bool defaultEndian = true;
 
-  /// Returns a stream of the bytes stored, uncompressing along the way.
-  FutureOr<Stream<List<int>>> get bytes =>
-      Stream.fromIterable(base64Decode(innerText!))
+  File? _openedFile;
+
+  Future<File> get file async {
+    _openedFile ??=
+        await Reyveld.findTempFile(checksum) ?? await Reyveld.newTempFile();
+    if (!await _openedFile!.exists()) {
+      await _openedFile!.create(recursive: true);
+      final write = _openedFile!.openWrite();
+      await write.addStream(Stream.fromIterable(base64Decode(innerText!))
           .chunk(chunkSize)
           .transform(gzip.decoder)
-          .rechunk(chunkSize);
-
-  /// A single byte version of [bytes].
-  Future<Stream<int>> get singleBytes async => (await bytes).expand((e) => e);
-
-  /// Returns a string version of the data in the file.
-  Future<String> get str async =>
-      (await bytes).map((e) => String.fromCharCodes(e)).join();
-
-  /// Attempts to get the length of the file. If it fails, then it will return a 0;
-  Future<int> get length async {
-    if (!has("length")) {
-      set(
-          "length",
-          await (await bytes)
-              .map<int>((chunk) => chunk.length)
-              .reduce((a, b) => a + b)
-              .catchError((e) => 0));
+          .rechunk(chunkSize));
+      await write.flush();
+      await write.close();
     }
-    return int.parse(get("length")!);
+    return _openedFile!;
   }
 
+  Future<RandomAccessFile> get ra async =>
+      await file.then((e) => e.open(mode: FileMode.append));
+
+  Future<int> get length async => await file.then((e) => e.length());
+
+  /// Returns the checksum of the file.
   String get checksum => get("checksum")!;
 
-  /// Returns a stream of the difference between this file and a data stream.
-  Stream<List<int>> streamDiff(Stream<List<int>> other) async* {
-    var queueA = StreamQueue(await bytes);
-    var queueB = StreamQueue(other);
-    while (await queueA.hasNext || await queueB.hasNext) {
-      List<int?> valueA =
-          await ((await queueA.hasNext) ? await queueA.next : Future.value([]));
-      List<int?> valueB =
-          await ((await queueB.hasNext) ? await queueB.next : Future.value([]));
-      int chunkSize =
-          valueA.length > valueB.length ? valueA.length : valueB.length;
-      List<int> diff = [];
-      for (int i = 0; i < chunkSize; i++) {
-        int byte1 = i < valueA.length ? valueA.elementAt(i)! : 0;
-        int byte2 = i < valueB.length ? valueB.elementAt(i)! : 0;
-        diff.add((byte1 - byte2) % 255);
-      }
-      yield diff;
-    }
-  }
-
   /// Returns a stream of the bytes at the specified range.
-  Future<Stream<int>> getRange(int start, int end) async => (await singleBytes)
-      .defaultIfEmpty(0)
-      .skip(start)
-      .take(min(end, await length) - start);
+  Future<List<int>> getRange(int start, int end) async {
+    return await ra
+        .then((e) => e.setPosition(start))
+        .then((e) => e.read(end - start));
+  }
 
   Future<void> setRange(
       int start, int end, Iterable<int> data, bool? littleEndian) async {
@@ -227,26 +204,22 @@ class SFile extends SObject {
           "Data is too large for the specified range of ${end - start} bytes! Please make sure the data is smaller than the range.");
     }
     if (!(littleEndian ?? defaultEndian)) data = data.toList().reversed;
-    innerText = await _setBytes(start, end, data.toList())
-        .chunk(chunkSize)
-        .transform(gzip.encoder)
-        .rechunk(chunkSize)
-        .transform(base64.encoder)
-        .reduce((a, b) => a + b);
-  }
-
-  Stream<int> _setBytes(int start, int end, List<int> data) async* {
-    int i = 0;
-    await for (final byte in await singleBytes) {
-      if (i >= start && i < end) {
-        yield data.lastOrNull ?? 0;
-        if (data.isNotEmpty) {
-          data.removeLast();
-        }
-      } else {
-        yield byte;
+    await ra
+        .then((e) => e.setPosition(start))
+        .then((e) => e.writeFrom(data.toList()))
+        .then((e) => e.flush())
+        .then((e) => e.close());
+    if (!isExternal) {
+      saveFile() async => innerText = await file.then((e) => e
+          .openRead()
+          .rechunk(chunkSize)
+          .transform(gzip.encoder)
+          .rechunk(chunkSize)
+          .transform(base64.encoder)
+          .reduce((a, b) => a + b));
+      if (!kit.beforeSave.contains(saveFile)) {
+        kit.beforeSave.add(saveFile);
       }
-      i++;
     }
   }
 
@@ -270,15 +243,11 @@ class SFile extends SObject {
 
   /// Forms a number from a stream of bytes.
   /// If littleEndian is true, then the stream will be reversed before merging.
-  Future<int> _formNumber(Stream<int> stream, bool? littleEndian) async {
+  Future<int> _formNumber(List<int> data, bool? littleEndian) async {
     if (!(littleEndian ?? defaultEndian)) {
-      return await stream
-          .toList()
-          .then((e) => e.isEmpty ? 0 : e.reduce(_mergeInt));
+      return data.isEmpty ? 0 : data.reduce(_mergeInt);
     }
-    return await stream
-        .toList()
-        .then((e) => e.isEmpty ? 0 : e.reversed.reduce(_mergeInt));
+    return data.isEmpty ? 0 : data.reversed.reduce(_mergeInt);
   }
 
   /// Forms a unsigned number from a stream of bytes.
@@ -351,7 +320,7 @@ class SFile extends SObject {
       {bool stopAtNull = false}) async {
     final bytes = await getRange(index, index + (length * 2));
     final buffer = StringBuffer();
-    await for (final char in bytes.chunk(2)) {
+    for (final char in bytes.chunk(2)) {
       if (stopAtNull && char[0] == 0 && char[1] == 0) break;
       buffer.writeCharCode(_mergeInt(char[1], char[0]));
     }
@@ -362,7 +331,7 @@ class SFile extends SObject {
       {bool stopAtNull = false}) async {
     final bytes = await getRange(index, index + length);
     final buffer = StringBuffer();
-    await for (final char in bytes) {
+    for (final char in bytes) {
       if (stopAtNull && char == 0) break;
       buffer.writeCharCode(char);
     }
@@ -377,9 +346,10 @@ class SFile extends SObject {
     }
     final filePath = "$folderPath/$path${temp ? ".tmp" : ""}";
     final extFile = File(filePath);
+
     await extFile.create(recursive: true);
     final sink = extFile.openWrite();
-    await sink.addStream(await bytes);
+    await sink.addStream((await file).openRead());
     await sink.flush();
     await sink.close();
   }
@@ -390,14 +360,14 @@ class SFile extends SObject {
       throw TrustException(kit, await kit.kitPublicKey);
     }
     if (!isExternal) throw Exception("Cannot save an internal file!");
-    final file = File(path);
-    if (!file.isAbsolute) {
+    final fileTo = File(path);
+    if (!fileTo.isAbsolute) {
       throw Exception(
           "File path is not absolute! To save a SFile onto disk using save(), its path must be absolute. See saveAs() instead.");
     }
-    await file.create(recursive: true);
-    final sink = file.openWrite();
-    await sink.addStream(await bytes);
+    await fileTo.create(recursive: true);
+    final sink = fileTo.openWrite();
+    await sink.addStream((await file).openRead());
     await sink.flush();
     await sink.close();
   }
@@ -407,11 +377,11 @@ class SFile extends SObject {
     if (!await kit.isVerifiedAndTrusted()) {
       throw TrustException(kit, await kit.kitPublicKey);
     }
-    final file = File(path);
-    if (overwrite && await file.exists()) await file.delete();
-    await file.create(recursive: true, exclusive: true);
-    final sink = file.openWrite();
-    await sink.addStream(await bytes);
+    final fileAs = File(path);
+    if (overwrite && await fileAs.exists()) await fileAs.delete();
+    await fileAs.create(recursive: true, exclusive: true);
+    final sink = fileAs.openWrite();
+    await sink.addStream((await file).openRead());
     await sink.flush();
     await sink.close();
   }
@@ -425,20 +395,17 @@ class SFile extends SObject {
 /// A reference to an [SArchive].
 @SGen("rarchive")
 class SRArchive extends SIndent<SArchive> {
-  SRArchive(super._node);
+  SRArchive(super._node) {
+    kit.beforeSave.add(() async {
+      if (kit.isMarkedForDeletion(hash)) {
+        unparent();
+      }
+    });
+  }
 
   @override
   Future<SArchive?> getRef() async {
     return await kit.getArchive(hash);
-  }
-
-  @override
-  void onSave(SKit kit) {
-    /// Check if the referenced archive is marked for deletion.
-    /// If it is, unparent this reference.
-    if (kit.isMarkedForDeletion(hash)) {
-      unparent();
-    }
   }
 }
 
@@ -449,24 +416,20 @@ class SRFile extends SFile {
   String get filePath => get("path")!;
 
   @override
-  Future<Stream<List<int>>> get bytes => kit
+  Future<File> get file async => kit
       .getArchive(archiveHash)
-      .then((value) async => await value!.getFile(filePath)!.bytes);
+      .then((value) async => await value!.getFile(filePath)!.file);
 
-  SRFile(super._node);
+  SRFile(super._node) {
+    kit.beforeSave.add(() async {
+      if (kit.isMarkedForDeletion(archiveHash)) {
+        unparent();
+      }
+    });
+  }
 
   @override
   Future<SRFile> getRef() async {
     return await SRFileCreator(archiveHash, filePath, checksum).create();
-  }
-
-  @override
-  void onSave(SKit kit) {
-    /// Check if the orgin archive is marked for deletion.
-    /// If it is, unparent this reference.
-    /// Not doing this could result in references to missing files.
-    if (kit.isMarkedForDeletion(archiveHash)) {
-      unparent();
-    }
   }
 }

@@ -37,6 +37,9 @@ Will open the user's browser to the authorization page, where they will decide i
             isAsync: true,
             passLua: true, (Lua lua, String token) async {
           lua.certificate = await AuthVeld.loadCertificate(token);
+          if (lua.certificate == null) {
+            Reyveld.talker.warning("No certificate with that token was found!");
+          }
           Reyveld.talker.verbose(
               "Loaded certificate for ${lua.certificate!.appname}: ${lua.certificate!.hash}");
         }),

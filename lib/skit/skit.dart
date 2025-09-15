@@ -1,6 +1,7 @@
 library skit;
 
 import "dart:async";
+import "dart:collection";
 import "dart:convert";
 import "dart:io";
 import "dart:typed_data";
@@ -175,6 +176,8 @@ class SKit {
     }
     return false;
   }
+
+  Queue<Future<void> Function()> beforeSave = Queue();
 
   /// Returns whether the user is the author of the kit file.
   Future<bool> isSignedByMe() async => await (await author).isMe();
@@ -455,8 +458,10 @@ class SKit {
     // Open the temp file for writing.
     final tempSink = temp.openWrite();
 
-    // Calls onSave on the header to do any necessary changes before saving.
-    await getHeader().then((header) => header!.onSave(this));
+    for (final func in beforeSave) {
+      await func();
+    }
+
     // Write the new XML to temp file.
     final byteStream = _stringStream
         .transform(utf8.encoder)
@@ -520,6 +525,7 @@ class SKit {
     _header = null;
     _loadedRoots.clear();
     _indents.clear();
+    beforeSave.clear();
   }
 }
 

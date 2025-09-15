@@ -123,6 +123,22 @@ extension ChunkStream on Stream<int> {
   }
 }
 
+extension ChunkIterable on Iterable<int> {
+  Iterable<List<int>> chunk(int chunkSize) sync* {
+    final List<int> buffer = [];
+    for (final byte in this) {
+      buffer.add(byte);
+      if (buffer.length == chunkSize) {
+        yield buffer;
+        buffer.clear();
+      }
+    }
+    if (buffer.isNotEmpty) {
+      yield buffer;
+    }
+  }
+}
+
 extension ReChunkStream on Stream<List<int>> {
   Stream<List<int>> rechunk(int chunkSize) async* {
     final List<int> buffer = [];

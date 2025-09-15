@@ -41,6 +41,7 @@ This can be used to send data through the web socket, log messages, etc.""";
             passLua: true,
             passState: true, (Lua lua, LuaState state, Object data,
                 {String message = ""}) {
+          if (object!.closeCode != null) return;
           object!.add(
               SocketEvent.data(data, pid: lua.getPID(state) ?? "").toString());
         }),

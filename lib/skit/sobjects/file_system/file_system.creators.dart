@@ -38,8 +38,7 @@ class SArchiveCreator extends SCreator<SArchive> {
             return await ref.getFile(filePath)!.getRef();
           }
         }
-        return await SFileCreator(
-                filePath, await e.checksum, await e.length(), e.openRead())
+        return await SFileCreator(filePath, await e.checksum, e.openRead())
             .create();
       });
     }
@@ -55,15 +54,14 @@ class SFileCreator extends SCreator<SFile> {
   final Stream<List<int>> stream;
   final bool isExternal;
   late String data;
-  final int length;
   final String checksum;
 
-  SFileCreator(this.path, this.checksum, this.length, this.stream,
+  SFileCreator(this.path, this.checksum, this.stream,
       {this.isExternal = false});
 
   static Future<SFile> open(String path) async {
-    final file = SFileCreator(path, await File(path).checksum,
-        await File(path).length(), File(path).openRead(),
+    final file = SFileCreator(
+        path, await File(path).checksum, File(path).openRead(),
         isExternal: true);
     return await file.create();
   }
@@ -78,7 +76,6 @@ class SFileCreator extends SCreator<SFile> {
   get creator => (builder) {
         builder.attribute("path", path);
         builder.attribute("checksum", checksum);
-        builder.attribute("length", length.toString());
         builder.attribute("extern", isExternal ? "1" : "0");
         builder.text(data);
       };

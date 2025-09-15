@@ -230,12 +230,6 @@ class SObject {
     return factory.load(_node.copy())..kit = _kit;
   }
 
-  void onSave(SKit kit) {
-    for (var child in getChildren()) {
-      child!.onSave(kit);
-    }
-  }
-
   @override
   int get hashCode => _node.hashCode;
 

@@ -57,6 +57,8 @@ Future<void> main(List<String> args) async {
   final serverSpinner =
       CliSpin(spinner: CliSpinners.bounce).start("Starting Server...".skyBlue);
 
+  await Reyveld.deleteTempFiles();
+
   final server = await HttpServer.bind(InternetAddress.anyIPv4, 7274);
   serverSpinner.success("Server Started!".skyBlue);
 
@@ -123,6 +125,7 @@ Future<void> main(List<String> args) async {
                   .close(WebSocketStatus.goingAway, "Server closed.");
             }
             await server.close();
+            await Reyveld.deleteTempFiles();
             exit(0);
           case "lua":
 

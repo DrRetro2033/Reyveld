@@ -173,6 +173,38 @@ $publicKeyPem""");
     await kit.addRoot(author.copy());
     await kit.save();
   }
+
+  static Directory get _tempFileDirectory {
+    final dir = Directory("$appDataPath/temp/${version.toString()}/");
+    if (!dir.existsSync()) {
+      dir.createSync(recursive: true);
+    }
+    return dir;
+  }
+
+  /// Creates a new temporary file.
+  /// This is used to make reading and writing to files inside of SKits faster.
+  static Future<File> newTempFile() async {
+    final dir = _tempFileDirectory;
+    final file = File("${dir.path}/${DateTime.now().millisecondsSinceEpoch}");
+    return file;
+  }
+
+  static Future<File?> findTempFile(String checksum) async {
+    final dir = _tempFileDirectory;
+    final files = dir.listSync(recursive: true, followLinks: false);
+    for (final file in files.whereType<File>()) {
+      if (await (file).checksum == checksum) return file;
+    }
+    return null;
+  }
+
+  static Future<void> deleteTempFiles() async {
+    final dir = _tempFileDirectory;
+    if (dir.existsSync()) {
+      await dir.delete(recursive: true);
+    }
+  }
 }
 
 /// The log file is created in the application data directory.

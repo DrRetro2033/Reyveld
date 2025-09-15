@@ -70,19 +70,6 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
   @override
   get statics => {
         tagEntry(SFileFactory()),
-        LEntry(
-            name: "open",
-            descr: "Opens a file externally.",
-            returnType: SFile,
-            args: const {
-              LArg<String>(
-                name: "path",
-                descr: "The path to open the file at.",
-              )
-            },
-            isAsync: true, (path) async {
-          return await SFileCreator.open(path);
-        }),
       };
 
   /// The default read check for files.
