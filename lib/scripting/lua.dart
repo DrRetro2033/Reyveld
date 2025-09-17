@@ -401,11 +401,10 @@ class Lua {
     return path;
   }
 
-  Future<bool> awaitForCompletion() async {
+  Future<void> awaitForCompletion() async {
     while (_stopwatches.any((stopwatch) => stopwatch.isRunning)) {
       await Future.delayed(Duration(milliseconds: 100));
     }
-    return true;
   }
 
   final Queue<LuaState> _removeObjsQueue = Queue<LuaState>();
@@ -479,18 +478,22 @@ class Lua {
   static Stream<String> generateDocs() async* {
     final dir =
         Directory("${Reyveld.appDataPath}/docs/${Reyveld.version.toString()}");
-    if (await dir.exists()) {
-      await dir.delete(recursive: true);
+    try {
+      if (await dir.exists()) {
+        await dir.delete(recursive: true);
+      }
+      await dir.create(recursive: true);
+      for (final interface_ in interfaces) {
+        yield interface_.className;
+        await interface_.generateDocs();
+      }
+      yield "Enums";
+      await _generateEnumDocs();
+      yield "Globals";
+      await _generateGlobalDocs();
+    } catch (e) {
+      Reyveld.talker.error(e.toString());
     }
-    await dir.create(recursive: true);
-    for (final interface_ in interfaces) {
-      yield interface_.className;
-      await interface_.generateDocs();
-    }
-    yield "Enums";
-    await _generateEnumDocs();
-    yield "Globals";
-    await _generateGlobalDocs();
   }
 
   /// Generates a docs file for all of the globals.

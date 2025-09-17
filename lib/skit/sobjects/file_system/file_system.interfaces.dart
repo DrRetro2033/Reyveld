@@ -520,7 +520,7 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
               descr: "The start index.",
             ),
             LArg<int>(
-                name: "end",
+                name: "to",
                 descr: "The end index.",
                 kind: ArgKind.optionalPositional),
           },

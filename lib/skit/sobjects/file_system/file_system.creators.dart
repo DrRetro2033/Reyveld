@@ -38,8 +38,8 @@ class SArchiveCreator extends SCreator<SArchive> {
             return await ref.getFile(filePath)!.getRef();
           }
         }
-        return await SFileCreator(filePath, await e.checksum, e.openRead())
-            .create();
+        return await SFileCreator(filePath, await e.checksum).create()
+          .._openedFile = e;
       });
     }
   }
@@ -51,33 +51,23 @@ class SArchiveCreator extends SCreator<SArchive> {
 /// Creates [SFile]s.
 class SFileCreator extends SCreator<SFile> {
   final String path;
-  final Stream<List<int>> stream;
   final bool isExternal;
-  late String data;
   final String checksum;
 
-  SFileCreator(this.path, this.checksum, this.stream,
-      {this.isExternal = false});
+  SFileCreator(this.path, this.checksum, {this.isExternal = false});
 
   static Future<SFile> open(String path) async {
-    final file = SFileCreator(
-        path, await File(path).checksum, File(path).openRead(),
-        isExternal: true);
-    return await file.create();
+    final file =
+        SFileCreator(path, await File(path).checksum, isExternal: true);
+    return await file.create()
+      .._openedFile = File(path);
   }
-
-  @override
-  get beforeCreate => () async {
-        final bytes = stream.transform(gzip.encoder).transform(base64.encoder);
-        data = await bytes.reduce((a, b) => a + b);
-      };
 
   @override
   get creator => (builder) {
         builder.attribute("path", path);
         builder.attribute("checksum", checksum);
         builder.attribute("extern", isExternal ? "1" : "0");
-        builder.text(data);
       };
 }
 

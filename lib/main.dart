@@ -102,6 +102,8 @@ Future<void> main(List<String> args) async {
       final requestUrl =
           request.uri.pathSegments.sublist(definedVersion ? 1 : 0).join('/');
 
+      Reyveld.talker.verbose("Request: $requestUrl; ${request.method}");
+
       /// If the requested version is the same as this program's version, continue as normal.
       if (request.method == "GET") {
         switch (requestUrl) {
@@ -116,17 +118,6 @@ Future<void> main(List<String> args) async {
             Reyveld.talker.verbose(
                 "Heartbeat checked at ${DateTime.now().toIso8601String()}.");
             await request.response.close();
-          case "close":
-            request.response.statusCode = HttpStatus.ok;
-            await request.response.close();
-            for (final session in sessions.entries) {
-              await session.value.$1.awaitForCompletion();
-              await session.value.$2
-                  .close(WebSocketStatus.goingAway, "Server closed.");
-            }
-            await server.close();
-            await Reyveld.deleteTempFiles();
-            exit(0);
           case "lua":
 
             /// We save the client's session ID here, as once the Garbage Collector collects the request, the ID will be gone as well.
@@ -200,6 +191,23 @@ Future<void> main(List<String> args) async {
             request.response.headers.contentType = ContentType.json;
             request.response.add(jsonEncode({"allowed": false}).codeUnits);
             await request.response.close();
+        }
+      } else if (request.method == "OPTIONS") {
+        switch (requestUrl) {
+          case "close":
+            for (final session in sessions.entries) {
+              await session.value.$1.awaitForCompletion().then((_) async {
+                await session.value.$2
+                    .close(WebSocketStatus.goingAway, "Server closed.");
+              });
+            }
+            request.response.statusCode = HttpStatus.ok;
+            request.response.headers.contentType = ContentType.json;
+            request.response.add(jsonEncode({}).codeUnits);
+            await request.response.close();
+            await server.close();
+            await Reyveld.deleteTempFiles();
+            exit(0);
         }
       }
     } catch (e, st) {

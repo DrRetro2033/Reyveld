@@ -88,7 +88,7 @@ class ListInterface extends SInterface<List> {
           descr: "Runs a function for each object in the list.",
           args: const {
             LArg<LuaFuncRef>(
-                name: "function",
+                name: "func",
                 descr: "The function to run.",
                 docTypeOverride: "fun(object: any):nil")
           },
@@ -169,7 +169,7 @@ class ListInterface extends SInterface<List> {
             descr: "Returns a mapped copy of the list.",
             args: const {
               LArg<LuaFuncRef>(
-                  name: "function",
+                  name: "func",
                   descr: "The function to map.",
                   docTypeOverride: "fun(object: any):any")
             },
