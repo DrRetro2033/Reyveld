@@ -188,7 +188,7 @@ class Lua {
       }
     } else if (value is Object && getInterface(value) != null) {
       final interface_ = getInterface(value)!..object = value;
-      final hash = _createUniqueObjectHash(state);
+      final hash = generateUUIDv4();
       _setObject(state, hash, interface_);
       await _pushToStack(state, interface_.toLua(this, hash));
     } else if (value is FutureOr<dynamic> Function(Lua)) {
@@ -342,10 +342,6 @@ class Lua {
     }
     return result;
   }
-
-  /// Creates a unique hash for an object.
-  String _createUniqueObjectHash(LuaState state) =>
-      generateUniqueHash(_objects[state]!.keys.toSet());
 
   /// Returns a table from the lua state.
   Future<Map> _getTableFromState(LuaState state) async {

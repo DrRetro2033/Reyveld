@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/args.dart';
+import 'package:pool/pool.dart';
 import 'package:reyveld/reyveld.dart';
 import 'package:reyveld/event.dart';
 import 'package:reyveld/scripting/lua.dart';
@@ -63,6 +64,10 @@ Future<void> main(List<String> args) async {
   serverSpinner.success("Server Started!".skyBlue);
 
   Map<String, ReyveldSession> sessions = {};
+  Pool luaPool = Pool(
+    int.parse(await Reyveld.getPerformanceOption("LUAPOOL")),
+    timeout: Duration(seconds: 30),
+  );
 
   await for (HttpRequest request in server) {
     try {
@@ -132,7 +137,8 @@ Future<void> main(List<String> args) async {
                   /// Run the request and get the result.
                   Reyveld.talker.verbose("(SID:$id) Received request.");
                   Reyveld.talker.verbose("(SID:$id) Request: $data");
-                  final result = await sessions[id]!.$1.run(data);
+                  final result = await luaPool.withResource(
+                      () async => await sessions[id]!.$1.run(data));
                   socket.add(SocketEvent.completed(result.result,
                           pid: result.processId ?? "")
                       .toString());

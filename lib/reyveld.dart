@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:ini/ini.dart';
+import 'package:pool/pool.dart';
 import 'package:reyveld/extensions.dart';
 import 'package:reyveld/skit/skit.dart';
 import 'package:reyveld/skit/sobjects/author/author.dart';
@@ -93,11 +94,8 @@ class Reyveld {
 
   static const String _defaultConfig = """
 [performance]
-DIRCHECKSUMPOOL=5
-ROOTPOOL=2
-READPOOL=10
-WRITEPOOL=10
-LUAPOOL=10
+READ&WRITEPOOL=20
+LUAPOOL=2
 """;
 
   static Future<Config> get _config async {
@@ -113,6 +111,15 @@ LUAPOOL=10
     final config = await _config;
     return config.get("performance", option) ??
         Config.fromString(_defaultConfig).get("performance", option)!;
+  }
+
+  static Pool? _readAndWritePool;
+
+  static Future<Pool> get readAndWritePool async => _readAndWritePool ??=
+      Pool(int.parse(await Reyveld.getPerformanceOption("READ&WRITEPOOL")));
+
+  static Future<R> withReadAndWritePool<R>(Future<R> Function() f) async {
+    return await readAndWritePool.then((e) => e.withResource(f));
   }
 
   /// Prints the message to console, only if Reyveld is a developer build.

@@ -199,9 +199,9 @@ class SFile extends SObject {
 
   /// Returns a stream of the bytes at the specified range.
   Future<List<int>> getRange(int start, int end) async {
-    return await ra
+    return await Reyveld.withReadAndWritePool(() async => await ra
         .then((e) => e.setPosition(start))
-        .then((e) => e.read(end - start));
+        .then((e) => e.read(end - start)));
   }
 
   Future<void> setRange(
@@ -211,20 +211,23 @@ class SFile extends SObject {
           "Data is too large for the specified range of ${end - start} bytes! Please make sure the data is smaller than the range.");
     }
     if (!(littleEndian ?? defaultEndian)) data = data.toList().reversed;
-    await ra
-        .then((e) => e.setPosition(start))
-        .then((e) => e.writeFrom(data.toList()))
-        .then((e) => e.flush())
-        .then((e) => e.close());
+    await Reyveld.withReadAndWritePool(() async {
+      await ra
+          .then((e) => e.setPosition(start))
+          .then((e) => e.writeFrom(data.toList()))
+          .then((e) => e.flush())
+          .then((e) => e.close());
+    });
   }
 
-  Future<void> refreshData() async => innerText = await file.then((e) => e
-      .openRead()
-      .rechunk(chunkSize)
-      .transform(gzip.encoder)
-      .rechunk(chunkSize)
-      .transform(base64.encoder)
-      .reduce((a, b) => a + b));
+  Future<void> refreshData() async => await Reyveld.readAndWritePool.then(
+      (e) async => innerText = await file.then((e) => e
+          .openRead()
+          .rechunk(chunkSize)
+          .transform(gzip.encoder)
+          .rechunk(chunkSize)
+          .transform(base64.encoder)
+          .reduce((a, b) => a + b)));
 
   Future<int> getU8(int index) async =>
       await _formNumber(await getRange(index, index + 1), false);

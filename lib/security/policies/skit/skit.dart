@@ -8,7 +8,10 @@ part 'skit.interface.dart';
 
 @SGen("polskit")
 class SPolicySKit extends SPolicy {
-  static const Set<String> _protectedSKits = {"authveld.skit"};
+  static const Set<String> _protectedSKits = {
+    "authveld.skit",
+    "trusted_authors.skit"
+  };
   SPolicySKit(super._node);
 
   bool get read => get("read") == "1";

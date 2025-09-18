@@ -1,8 +1,8 @@
 library skit;
 
 import "dart:async";
-import "dart:collection";
 import "dart:convert";
+import "dart:core";
 import "dart:io";
 import "dart:typed_data";
 import "package:reyveld/reyveld.dart";
@@ -268,21 +268,23 @@ class SKit {
   /// Gets the header of the kit file.
   /// If the header has already been loaded, it will return the cached header.
   Future<SHeader?> getHeader() async {
-    if (_header == null) {
-      if (!await exists()) {
-        return await SHeaderCreator().create();
-      }
-      final factory = getSFactory<SHeader>();
+    return await Reyveld.withReadAndWritePool(() async {
+      if (_header == null) {
+        if (!await exists()) {
+          return await SHeaderCreator().create();
+        }
+        final factory = getSFactory<SHeader>();
 
-      _header = await (_eventStream!
-          .selectSubtreeEvents((e) => e.localName == factory.tag)
-          .toXmlNodes()
-          .expand((e) => e)
-          .whereType<XmlElement>()
-          .map((e) => factory.load(e))
-          .first);
-    }
-    return _header!..kit = this;
+        _header = await (_eventStream!
+            .selectSubtreeEvents((e) => e.localName == factory.tag)
+            .toXmlNodes()
+            .expand((e) => e)
+            .whereType<XmlElement>()
+            .map((e) => factory.load(e))
+            .first);
+      }
+      return _header!..kit = this;
+    });
   }
 
   /// Returns true if the kit file is of the specified type.
@@ -322,14 +324,16 @@ class SKit {
       {bool Function(T root)? filterRoots,
       bool Function(XmlStartElementEvent)? filterEvents,
       bool addToCache = true}) async {
-    final roots = _streamRoots(filterEvents: filterEvents)
-        .whereType<T>()
-        .where((e) => filterRoots == null || filterRoots(e));
-    Set<T> rootsList = await roots.toSet();
-    if (addToCache) {
-      _loadedRoots.addAll(rootsList);
-    }
-    return rootsList;
+    return await Reyveld.withReadAndWritePool(() async {
+      final roots = _streamRoots(filterEvents: filterEvents)
+          .whereType<T>()
+          .where((e) => filterRoots == null || filterRoots(e));
+      Set<T> rootsList = await roots.toSet();
+      if (addToCache) {
+        _loadedRoots.addAll(rootsList);
+      }
+      return rootsList;
+    });
   }
 
   /// Retains the kit file in memory.
@@ -354,7 +358,7 @@ class SKit {
   /// To save the changes to the file, use [save].
   Future<void> addRoot(SRoot root) async {
     // Generate a unique hash for the root
-    root.hash = generateUniqueHash(await usedRootHashes());
+    root.hash = generateUUIDv4();
 
     // Adding the root to [_loadedRoots] is necessary for the [save] function to work.
     _loadedRoots.add(root);
@@ -431,11 +435,15 @@ class SKit {
     return _indents.any((e) => e.hash == hash && e.isDeleted);
   }
 
+  Future<void> save({String? encryptKey, SKitKeyPair? keyPair}) async =>
+      await Reyveld.withReadAndWritePool(
+          () async => await _save(encryptKey: encryptKey, keyPair: keyPair));
+
   /// Saves the kit file.
   /// This will save the kit header and all of the archives to the kit file.
   /// The header is saved to the top of the file, and the archives are saved to the bottom of the file.
   /// This will save all of the changes to the file.
-  Future<void> save({String? encryptKey, SKitKeyPair? keyPair}) async {
+  Future<void> _save({String? encryptKey, SKitKeyPair? keyPair}) async {
     if (!await isVerifiedAndTrusted()) {
       throw TrustException(this, await kitPublicKey);
     }

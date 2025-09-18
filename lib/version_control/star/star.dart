@@ -1,6 +1,7 @@
 import 'package:reyveld/extensions.dart';
 import 'package:reyveld/skit/sobject.dart';
 import 'package:reyveld/skit/sobjects/file_system/file_system.dart';
+import 'package:reyveld/uuid.dart';
 import 'package:reyveld/version_control/constellation/constellation.dart';
 
 part 'star.g.dart';
@@ -83,8 +84,8 @@ class Star extends SObject {
     /// If there are no changes, create a new star with the exact same archive reference.
     /// If there are changes, create a new star with a new archive that references the old archive.
     if (!await checkForChanges()) {
-      star = await StarCreator(name, constellation.newStarHash(),
-              getChild<SRArchive>()!.copy() as SRArchive)
+      star = await StarCreator(
+              name, generateUUIDv4(), getChild<SRArchive>()!.copy())
           .create();
     } else {
       final newArchive = await SArchiveCreator.archiveFolder(
@@ -93,7 +94,7 @@ class Star extends SObject {
           includeList: constellation.globs);
       await kit.addRoot(newArchive);
       star = await StarCreator(
-              name, constellation.newStarHash(), await newArchive.newIndent())
+              name, generateUUIDv4(), await newArchive.newIndent())
           .create();
     }
     addChild(star);

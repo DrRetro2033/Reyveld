@@ -66,7 +66,7 @@ class Constellation extends SObject {
         includeList: globs);
     await kit.addRoot(archive);
     final rootStar = await StarCreator(
-            "Initial Star", newStarHash(), await archive.newIndent(),
+            "Initial Star", generateUUIDv4(), await archive.newIndent(),
             branch: "main")
         .create();
     addChild(rootStar);
@@ -95,15 +95,6 @@ class Constellation extends SObject {
       hashes.add(star!.hash);
     }
     return hashes;
-  }
-
-  /// Generates a new unique hash that is not used by any of the stars in the constellation.
-  /// This is used when creating a new star.
-  ///
-  /// Returns a new unique hash.
-  String newStarHash() {
-    final hashes = getStarHashes();
-    return generateUniqueHash(hashes);
   }
 
   /// Get the start of a branch.
