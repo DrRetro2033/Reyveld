@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
+import 'package:ini/ini.dart';
 import 'package:reyveld/extensions.dart';
 import 'package:reyveld/skit/skit.dart';
 import 'package:reyveld/skit/sobjects/author/author.dart';
@@ -15,12 +16,9 @@ part "reyveld.interface.dart";
 
 /// Contains global functions for Reyveld, for example, settings, paths, etc.
 class Reyveld {
+  /// The current version of Reyveld
   static Version get version => versi.currentVersion;
-  static late String _currentPath;
-  static String get currentPath => _currentPath;
-  static set currentPath(String path) => _currentPath = path.resolvePath();
-  static String get libraryPath => "$appDataPath/libraries";
-  static late bool isInternal;
+
   static bool get isDev =>
       const bool.fromEnvironment('DEBUG', defaultValue: true);
   static bool verbose = false;
@@ -91,6 +89,30 @@ class Reyveld {
     } else {
       return "${Platform.environment["APPDATA"]!.resolvePath()}/reyveld";
     }
+  }
+
+  static const String _defaultConfig = """
+[performance]
+DIRCHECKSUMPOOL=5
+ROOTPOOL=2
+READPOOL=10
+WRITEPOOL=10
+LUAPOOL=10
+""";
+
+  static Future<Config> get _config async {
+    final file = File("$appDataPath/config.ini");
+    if (!await file.exists()) {
+      await file.create(recursive: true);
+      await file.writeAsString(_defaultConfig);
+    }
+    return Config.fromString(await file.readAsString());
+  }
+
+  static Future<String> getPerformanceOption(String option) async {
+    final config = await _config;
+    return config.get("performance", option) ??
+        Config.fromString(_defaultConfig).get("performance", option)!;
   }
 
   /// Prints the message to console, only if Reyveld is a developer build.

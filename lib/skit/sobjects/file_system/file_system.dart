@@ -156,13 +156,10 @@ class SFile extends SObject {
   SFile(super._node);
 
   @override
-  set kit(SKit? kit) {
-    super.kit = kit;
-    kit!.beforeSave.add(() async {
-      if (innerText == null || checksum != await file.then((e) => e.checksum)) {
-        await refreshData();
-      }
-    });
+  onSave(kit) async {
+    if (innerText == null || checksum != await file.then((e) => e.checksum)) {
+      await refreshData();
+    }
   }
 
   /// Returns the path of the file.
@@ -174,14 +171,14 @@ class SFile extends SObject {
   /// Can be set to false to force big endian as the default.
   bool defaultEndian = true;
 
-  File? _openedFile;
+  File? externalVersion;
 
   Future<File> get file async {
-    _openedFile ??=
+    externalVersion ??=
         await Reyveld.findTempFile(checksum) ?? await Reyveld.newTempFile();
-    if (!await _openedFile!.exists()) {
-      await _openedFile!.create(recursive: true);
-      final write = _openedFile!.openWrite();
+    if (!await externalVersion!.exists()) {
+      await externalVersion!.create(recursive: true);
+      final write = externalVersion!.openWrite();
       await write.addStream(Stream.fromIterable(base64Decode(innerText!))
           .chunk(chunkSize)
           .transform(gzip.decoder)
@@ -189,7 +186,7 @@ class SFile extends SObject {
       await write.flush();
       await write.close();
     }
-    return _openedFile!;
+    return externalVersion!;
   }
 
   Future<RandomAccessFile> get ra async =>
@@ -221,7 +218,7 @@ class SFile extends SObject {
         .then((e) => e.close());
   }
 
-  refreshData() async => innerText = await file.then((e) => e
+  Future<void> refreshData() async => innerText = await file.then((e) => e
       .openRead()
       .rechunk(chunkSize)
       .transform(gzip.encoder)
@@ -394,7 +391,8 @@ class SFile extends SObject {
 
   Future<SRFile> getRef() async {
     return await SRFileCreator(getParent<SArchive>()!.hash, path, checksum)
-        .create();
+        .create()
+      ..kit = kit;
   }
 }
 
@@ -402,13 +400,10 @@ class SFile extends SObject {
 @SGen("rarchive")
 class SRArchive extends SIndent<SArchive> {
   @override
-  set kit(SKit? value) {
-    super.kit = value;
-    kit.beforeSave.add(() async {
-      if (kit.isMarkedForDeletion(hash)) {
-        unparent();
-      }
-    });
+  onSave(kit) async {
+    if (kit.isMarkedForDeletion(hash)) {
+      unparent();
+    }
   }
 
   SRArchive(super._node);
@@ -426,23 +421,20 @@ class SRFile extends SFile {
   String get filePath => get("path")!;
 
   @override
-  set kit(SKit? value) {
-    super.kit = value;
-    kit.beforeSave.add(() async {
-      if (kit.isMarkedForDeletion(archiveHash)) {
-        unparent();
-      }
-    });
+  onSave(kit) async {
+    if (kit.isMarkedForDeletion(archiveHash)) {
+      unparent();
+    }
   }
 
   @override
-  Future<File> get file async => kit
+  Future<File> get file async => await kit
       .getArchive(archiveHash)
-      .then((value) async => await value!.getFile(filePath)!.file);
+      .then((value) async => value!.getFile(filePath)!.file);
 
   SRFile(super._node);
   @override
   Future<SRFile> getRef() async {
-    return await SRFileCreator(archiveHash, filePath, checksum).create();
+    return copy();
   }
 }

@@ -1,7 +1,8 @@
 import 'dart:io';
-import 'dart:isolate';
 
 import 'package:hashlib/hashlib.dart';
+import 'package:pool/pool.dart';
+import 'package:reyveld/reyveld.dart';
 
 Map<String, String> environment() {
   final env = <String, String>{};
@@ -175,9 +176,18 @@ extension FileChecksum on File {
 extension DirectoryChecksum on Directory {
   Future<String> get checksum async {
     final files = listSync(recursive: true).whereType<File>();
-    final digests = await Future.wait(files.map((file) => Isolate.run(() async {
-          return await file.checksum;
-        })));
+    final pool = Pool(
+        int.tryParse(await Reyveld.getPerformanceOption("DIRCHECKSUMPOOL")) ??
+            5,
+        timeout: Duration(seconds: 30));
+    final digests = [];
+    for (final file in files) {
+      pool.withResource(() async {
+        digests.add(await file.checksum);
+      });
+    }
+    await pool.close();
+    await pool.done;
     return md5.convert(digests.join().codeUnits).toString();
   }
 }

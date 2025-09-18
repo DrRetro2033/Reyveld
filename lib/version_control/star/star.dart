@@ -102,6 +102,8 @@ class Star extends SObject {
       star.makeStem(branchName);
     }
 
+    star.makeCurrent();
+
     return star;
   }
 

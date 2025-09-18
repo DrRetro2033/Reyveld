@@ -177,8 +177,6 @@ class SKit {
     return false;
   }
 
-  Queue<Future<void> Function()> beforeSave = Queue();
-
   /// Returns whether the user is the author of the kit file.
   Future<bool> isSignedByMe() async => await (await author).isMe();
 
@@ -344,7 +342,7 @@ class SKit {
     _loadedKits.remove(this);
   }
 
-  Stream get _stringStream => Rx.merge<String>([
+  Stream<String> get _stringStream => Rx.merge<String>([
         Stream.fromFuture(getHeader().then((e) => e!.toXmlString())),
         _streamRootsAsXml()
       ]);
@@ -360,6 +358,8 @@ class SKit {
 
     // Adding the root to [_loadedRoots] is necessary for the [save] function to work.
     _loadedRoots.add(root);
+
+    root.kit = this;
   }
 
   Future<bool> hasRoot<T extends SRoot>(String hash) async =>
@@ -368,7 +368,10 @@ class SKit {
   /// Removes a root from the kit file.
   /// This will remove the root from the kit file in memory, and will not save its changes to the file.
   /// To save the changes to the file, use [save].
-  void unloadRoot(SRoot root) => _loadedRoots.remove(root);
+  Future<void> unloadRoot(SRoot root) async {
+    await root.onUnload(this);
+    _loadedRoots.remove(root);
+  }
 
   /// Streams the roots of the kit file, getting their cached version if possible.
   /// This is used when saving or reading the kit file. Will not cache anything, but will stream the roots.
@@ -396,7 +399,7 @@ class SKit {
           sending.delete) {
         continue;
       }
-      yield sending;
+      yield sending..kit = this;
     }
     yield* Stream.fromIterable(
         loads.where((e) => !_indents.any((i) => i.isFor(e) && i.isDeleted)));
@@ -458,8 +461,11 @@ class SKit {
     // Open the temp file for writing.
     final tempSink = temp.openWrite();
 
-    for (final func in beforeSave) {
-      await func();
+    // Do any actions that should be done before the kit header is saved.
+    await getHeader().then((e) => e!.onSave(this));
+
+    for (final root in _loadedRoots) {
+      await root.onSave(this);
     }
 
     // Write the new XML to temp file.
@@ -525,7 +531,6 @@ class SKit {
     _header = null;
     _loadedRoots.clear();
     _indents.clear();
-    beforeSave.clear();
   }
 }
 

@@ -38,6 +38,28 @@ class SObject {
     _kit = kit;
   }
 
+  bool get hasKit => _kit != null;
+
+  /// Called when the [SObject] is saved to xml.
+  Future<void> onSave(SKit kit) async {
+    for (final child in getChildren()) {
+      await child!.onSave(kit);
+    }
+  }
+
+  /// Called when the [SObject] is loaded from xml.
+  Future<void> onLoad(SKit kit) async {
+    for (final child in getChildren()) {
+      await child!.onLoad(kit);
+    }
+  }
+
+  Future<void> onUnload(SKit kit) async {
+    for (final child in getChildren()) {
+      await child!.onUnload(kit);
+    }
+  }
+
   SObject(this._node);
 
   /// Sets an attribute of the xml node.
@@ -108,6 +130,7 @@ class SObject {
 
   /// Removes the [SObject] from its current parent.
   void unparent() {
+    if (_parent == null) return;
     _node.remove();
   }
 
@@ -134,6 +157,7 @@ class SObject {
       if (filter != null && !filter(obj)) {
         continue;
       }
+
       return obj;
     }
     return null;
@@ -225,8 +249,8 @@ class SObject {
       .map((attr) => MapEntry(attr.name.local, decodeText(attr.value))));
 
   /// Creates a copy of the [SObject].
-  SObject copy() {
-    final factory = getSFactory(_node.name.local);
+  T copy<T extends SObject>() {
+    final factory = getSFactory<T>();
     return factory.load(_node.copy())..kit = _kit;
   }
 

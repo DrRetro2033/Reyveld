@@ -30,9 +30,4 @@ abstract class SRoot extends SObject {
   }
 
   Future<SIndent> newIndent();
-
-  @override
-  SRoot copy() {
-    return super.copy() as SRoot;
-  }
 }
