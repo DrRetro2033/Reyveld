@@ -18,18 +18,21 @@ import 'package:http/http.dart' as http;
 typedef ReyveldSession = (Lua, WebSocket);
 
 Future<void> main(List<String> args) async {
-  /// Check if the version of this Reyveld executable is already running.
-  final isRunningSpinner = CliSpin(spinner: CliSpinners.bounce)
-      .start("Checking if running...".skyBlue);
-  if (await isRunning(Reyveld.version)) {
-    isRunningSpinner.fail('Already Running.'.skyBlue);
-    exit(0);
-  }
-
   final parser = ArgParser();
   parser.addFlag("verbose", abbr: "v", help: "Run Arceus in verbose mode.");
   final results = parser.parse(args);
   Reyveld.verbose = results.flag("verbose");
+
+  /// Check if the version of this Reyveld executable is already running.
+  Reyveld.talker.verbose("Arceus is in verbose mode.");
+  final isRunningSpinner = CliSpin(spinner: CliSpinners.bounce)
+      .start("Checking if running...".skyBlue);
+
+  if (await isRunning(Reyveld.version)) {
+    isRunningSpinner.fail(
+        'Already running version "${Reyveld.version.toString()}".'.skyBlue);
+    exit(0);
+  }
 
   /// The reroute version is the version that this Reyveld executable is rerouting to.
   Version rerouteVersion = await getMostRecentVersion();
@@ -116,12 +119,18 @@ Future<void> main(List<String> args) async {
         switch (requestUrl) {
           case "authveld":
             request.response.headers.contentType = ContentType.html;
+            if (!request.uri.queryParameters.containsKey("ticket")) {
+              request.response.statusCode = HttpStatus.badRequest;
+              await request.response.close();
+              continue;
+            }
             request.response.add(
                 AuthVeld.authorizePage(request.uri.queryParameters["ticket"]!)
                     .codeUnits);
             await request.response.close();
           case "heartbeat":
             request.response.statusCode = HttpStatus.ok;
+            request.response.add("OK".codeUnits);
             Reyveld.talker.verbose(
                 "Heartbeat checked at ${DateTime.now().toIso8601String()}.");
             await request.response.close();
@@ -172,6 +181,9 @@ Future<void> main(List<String> args) async {
                 AuthVeld.getDetailsPage(request.uri.queryParameters["ticket"]!)
                     .codeUnits);
             await request.response.close();
+          default:
+            request.response.statusCode = HttpStatus.notFound;
+            await request.response.close();
         }
       } else if (request.method == "POST") {
         switch (requestUrl) {
@@ -199,6 +211,9 @@ Future<void> main(List<String> args) async {
             request.response.headers.contentType = ContentType.json;
             request.response.add(jsonEncode({"allowed": false}).codeUnits);
             await request.response.close();
+          default:
+            request.response.statusCode = HttpStatus.notFound;
+            await request.response.close();
         }
       } else if (request.method == "OPTIONS") {
         switch (requestUrl) {
@@ -216,6 +231,9 @@ Future<void> main(List<String> args) async {
             await server.close();
             await Reyveld.deleteTempFiles();
             exit(0);
+          default:
+            request.response.statusCode = HttpStatus.notFound;
+            await request.response.close();
         }
       }
     } catch (e, st) {
@@ -236,9 +254,11 @@ Future<bool> isRunning(Version version) async {
   File lockFile =
       File("${Reyveld.appDataPath}/locks/${version.toString()}.lock");
   if (await lockFile.exists()) {
-    final uri = Uri.http("127.0.0.1:7274", "${version.toString()}/heatbeat");
+    final uri = Uri.http("127.0.0.1:7274", "${version.toString()}/heartbeat");
+    Reyveld.talker.verbose("Checking for Heartbeat at '$uri'.");
     try {
-      var response = await http.get(uri);
+      final response = await http.get(uri);
+      Reyveld.talker.verbose("Heartbeat response: ${response.statusCode}");
       if (response.statusCode == 200) return true;
       return false;
     } catch (e) {
