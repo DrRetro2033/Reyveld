@@ -96,6 +96,7 @@ class Reyveld {
 [performance]
 READ&WRITEPOOL=20
 LUAPOOL=2
+LUAPOOL_TIMEOUT=300
 """;
 
   static Future<Config> get _config async {

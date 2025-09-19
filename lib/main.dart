@@ -66,7 +66,9 @@ Future<void> main(List<String> args) async {
   Map<String, ReyveldSession> sessions = {};
   Pool luaPool = Pool(
     int.parse(await Reyveld.getPerformanceOption("LUAPOOL")),
-    timeout: Duration(seconds: 30),
+    timeout: Duration(
+        seconds:
+            int.parse(await Reyveld.getPerformanceOption("LUAPOOL_TIMEOUT"))),
   );
 
   await for (HttpRequest request in server) {
