@@ -96,7 +96,10 @@ class Reyveld {
 [performance]
 READ&WRITEPOOL=20
 LUAPOOL=2
-LUAPOOL_TIMEOUT=300
+LUAPOOL_TIMEOUT=1h
+
+[other]
+DISABLE_WELCOME_MESSAGE=0
 """;
 
   static Future<Config> get _config async {
@@ -112,6 +115,12 @@ LUAPOOL_TIMEOUT=300
     final config = await _config;
     return config.get("performance", option) ??
         Config.fromString(_defaultConfig).get("performance", option)!;
+  }
+
+  static Future<String> getOtherOption(String option) async {
+    final config = await _config;
+    return config.get("other", option) ??
+        Config.fromString(_defaultConfig).get("other", option)!;
   }
 
   static Pool? _readAndWritePool;

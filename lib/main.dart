@@ -13,6 +13,7 @@ import 'package:cli_spin/cli_spin.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:version/version.dart';
 import 'package:reyveld/extensions.dart';
+import 'package:reyveld/extras.dart';
 import 'package:http/http.dart' as http;
 
 typedef ReyveldSession = (Lua, WebSocket);
@@ -39,7 +40,6 @@ Future<void> main(List<String> args) async {
 
   isRunningSpinner.success("Ready to Start!".skyBlue);
 
-  /// If not, create a lock file to indicate that this version of Reyveld is running.
   File lockFile =
       File("${Reyveld.appDataPath}/locks/${Reyveld.version.toString()}.lock");
 
@@ -66,13 +66,27 @@ Future<void> main(List<String> args) async {
   final server = await HttpServer.bind(InternetAddress.anyIPv4, 7274);
   serverSpinner.success("Server Started!".skyBlue);
 
+  if (await Reyveld.getOtherOption("DISABLE_WELCOME_MESSAGE") != "1") {
+    Reyveld.printToConsole("""
+Dear user/developer,
+Thank you for using Reyveld! ❤️
+
+If you do not know what this is application does, you can read more about Reyveld here: https://github.com/DrRetro2033/Reyveld.
+If you have any questions, problems, or suggestions, please open an issue on GitHub: https://github.com/DrRetro2033/Reyveld/issues/new.
+If you want to support Reyveld, you can consider sponsoring me on GitHub: https://github.com/sponsors/DrRetro2033.
+
+Sincerely,
+DrRetro2033 - Creator of Reyveld.
+
+P.S. If you want to disable this message, you can go to ${Reyveld.appDataPath}/config.ini and set "DISABLE_WELCOME_MESSAGE" to "1", in the "other" section.
+"""
+        .orange);
+  }
+
   Map<String, ReyveldSession> sessions = {};
-  Pool luaPool = Pool(
-    int.parse(await Reyveld.getPerformanceOption("LUAPOOL")),
-    timeout: Duration(
-        seconds:
-            int.parse(await Reyveld.getPerformanceOption("LUAPOOL_TIMEOUT"))),
-  );
+  Pool luaPool = Pool(int.parse(await Reyveld.getPerformanceOption("LUAPOOL")),
+      timeout: parseDurationFromString(
+          await Reyveld.getPerformanceOption("LUAPOOL_TIMEOUT")));
 
   await for (HttpRequest request in server) {
     try {
