@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 import 'dart:math';
@@ -157,7 +156,8 @@ class SFile extends SObject {
 
   @override
   onSave(kit) async {
-    if (innerText == null || checksum != await file.then((e) => e.checksum)) {
+    if (cdata == null || checksum != await file.then((e) => e.checksum)) {
+      clearInnerText();
       await refreshData();
     }
   }
@@ -179,13 +179,13 @@ class SFile extends SObject {
     if (!await externalVersion!.exists()) {
       await externalVersion!.create(recursive: true);
       final write = externalVersion!.openWrite();
-      await write.addStream(Stream.fromIterable(base64Decode(innerText!))
-          .chunk(chunkSize)
+      await write.addStream(Stream.fromIterable(cdata!.chunk(chunkSize))
           .transform(gzip.decoder)
           .rechunk(chunkSize));
       await write.flush();
       await write.close();
     }
+
     return externalVersion!;
   }
 
@@ -220,14 +220,14 @@ class SFile extends SObject {
     });
   }
 
-  Future<void> refreshData() async => await Reyveld.readAndWritePool.then(
-      (e) async => innerText = await file.then((e) => e
-          .openRead()
-          .rechunk(chunkSize)
-          .transform(gzip.encoder)
-          .rechunk(chunkSize)
-          .transform(base64.encoder)
-          .reduce((a, b) => a + b)));
+  Future<void> refreshData() async =>
+      await Reyveld.readAndWritePool.then((e) async => cdata = await file
+          .then((e) => e
+              .openRead()
+              .rechunk(chunkSize)
+              .transform(gzip.encoder)
+              .rechunk(chunkSize))
+          .then((e) => e.expand((e) => e).toList()));
 
   Future<int> getU8(int index) async =>
       await _formNumber(await getRange(index, index + 1), false);

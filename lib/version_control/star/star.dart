@@ -118,10 +118,7 @@ class Star extends SObject {
     getParent<Star>()!.makeCurrent();
     if (getAncestors<Star>()
         .every((e) => e!.archiveRef!.hash != archiveRef!.hash)) {
-      await archive.then((e) => e!.markForDeletion());
-      for (final archiveReference in getDescendants<SRArchive>()) {
-        archiveReference!.markForDeletion();
-      }
+      archiveRef!.markForDeletion();
     }
 
     unparent();

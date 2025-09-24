@@ -1,15 +1,17 @@
 part of 'author.dart';
 
 class SAuthorCreator extends SCreator<SAuthor> {
+  /// The name of the author.
   final String name;
+
+  /// The public key of the author.
   final RSAPublicKey publicKey;
   SAuthorCreator({required this.name, required this.publicKey});
 
   @override
   get creator => (builder) {
         builder.attribute("name", name);
-        builder
-            .text(encodeText(CryptoUtils.encodeRSAPublicKeyToPem(publicKey)));
+        builder.cdata(CryptoUtils.encodeRSAPublicKeyToPem(publicKey));
       };
 }
 

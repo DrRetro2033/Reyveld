@@ -90,12 +90,16 @@ class SKit {
       Key.fromUtf8(_newKey?.padRight(32, ".").substring(0, 32) ??
           _key.padRight(32, ".").substring(0, 32));
 
-  /// The encrypter and decrypter used to encrypt and decrypt the kit file.
-  /// Separated to decrypt with the current key and encrypt with the new key.
+  /// The decrypter used to decrypt the kit file.
   Encrypter get _decrypter => Encrypter(Fernet(_decryptKey));
+
+  /// The encrypter used to encrypt the kit file.
+  ///
+  /// This is used when creating a new kit file.
   Encrypter get _encrypter => Encrypter(Fernet(_encryptKey));
 
   /// Returns the public key of the kit file.
+  ///
   /// The public key is used to verify the signature of the kit file.
   /// If the file does not exist yet, it will return the public key of Reyveld.
   Future<RSAPublicKey> get kitPublicKey async {
@@ -112,24 +116,29 @@ class SKit {
     }
   }
 
+  /// Gets the author of the kit file.
   Future<SAuthor> get author async {
     final header = await getHeader();
     return (await header?.getChild<SRAuthor>()?.getRef()) ??
         await Reyveld.author.then((e) => e!.toSAuthor());
   }
 
+  /// Gets the type of the kit file.
   Future<SKitType> get type async =>
       (await getHeader())?.type ?? SKitType.unspecified;
 
+  /// Creates a new signer for the kit file.
   Future<Signer> _buildSigner([SKitKeyPair? keyPair]) async => Signer(RSASigner(
         RSASignDigest.SHA256,
         privateKey: keyPair?.private ?? await Reyveld.privateKey,
         publicKey: keyPair?.public ?? await Reyveld.publicKey,
       ));
 
+  /// Gets the verifier for the kit file.
   Future<Signer> get _verifier async =>
       Signer(RSASigner(RSASignDigest.SHA256, publicKey: await kitPublicKey));
 
+  /// Signs the kit file.
   Stream<List<int>> _sign(Stream<List<int>> data,
       {SKitKeyPair? keyPair}) async* {
     await for (final bytes in data) {
@@ -160,6 +169,9 @@ class SKit {
     return true;
   }
 
+  /// Removes the signature from the kit file.
+  ///
+  /// Used after verifying the signature, and we now want to read the contents of the kit file.
   Stream<List<int>> _removeSign(Stream<List<int>> data) async* {
     await for (final bytes in data) {
       if (bytes.length < _signExtraSize) {
@@ -170,6 +182,7 @@ class SKit {
     }
   }
 
+  /// Returns whether the kit file is verified and trusted.
   Future<bool> isVerifiedAndTrusted() async {
     if (await verify()) {
       return await author.then((e) async => await e.isTrusted());
@@ -195,15 +208,18 @@ class SKit {
   File get _file => File(path);
 
   /// The currently loaded [SHeader] of the kit file.
+  ///
   /// This will be null if no header has been got yet by calling [getHeader].
   /// This is seperate from the [SRoot]s because the header is always at the top of the file, and there is only one header.
   SHeader? _header;
 
   /// The currently loaded [SArchive]s of the kit file.
+  ///
   /// This will be empty if no archive has been got yet by calling [getArchive].
   final Set<SRoot> _loadedRoots = {};
 
   /// This is used to store any deletion requests for any root in the file.
+  ///
   /// To add a deletion request, use [addIndent].
   final Set<SIndent> _indents = {};
 
@@ -212,12 +228,14 @@ class SKit {
     sink.add(_decrypter.decryptBytes(Encrypted(Uint8List.fromList(data))));
   }
 
+  /// Encrypts the data and sends it to the sink.
   void _encryptTransformer(List<int> data, EventSink<List<int>> sink) {
     final encrypted = _encrypter.encryptBytes(data);
     sink.add(encrypted.bytes);
   }
 
   /// Returns the stream of [_file].
+  ///
   /// Do not use directly.
   Stream<List<int>>? get _byteStream => _file.existsSync()
       ? _file
@@ -235,6 +253,7 @@ class SKit {
       : null;
 
   /// Returns a stream of [XmlEvent]s from the file.
+  ///
   /// This is used to parse the file data and get the xml events.
   Stream<List<XmlEvent>>? get _eventStream => _byteStream
       ?.transform<String>(utf8.decoder)
@@ -243,6 +262,7 @@ class SKit {
       .withParentEvents();
 
   /// Creates a new kit file.
+  ///
   /// If the kit file already exists, it will throw an exception unless [overwrite] is true.
   /// If [type] is unspecified, it will be set to [SKitType.unspecified].
   /// Returns a future that completes when the kit file is created and saved.
@@ -266,6 +286,7 @@ class SKit {
   Future<bool> exists() => _file.exists();
 
   /// Gets the header of the kit file.
+  ///
   /// If the header has already been loaded, it will return the cached header.
   Future<SHeader?> getHeader() async {
     return await Reyveld.withReadAndWritePool(() async {
@@ -346,11 +367,13 @@ class SKit {
     _loadedKits.remove(this);
   }
 
+  /// Returns a stream of the kit file as a string.
   Stream<String> get _stringStream => Rx.merge<String>([
         Stream.fromFuture(getHeader().then((e) => e!.toXmlString())),
         _streamRootsAsXml()
       ]);
 
+  /// Returns true if the kit file has changed.
   bool get hasChanged => _loadedKits.contains(this);
 
   /// Adds a root to the kit file.
@@ -366,6 +389,7 @@ class SKit {
     root.kit = this;
   }
 
+  /// Returns true if the kit file has a root of the specified type and hash.
   Future<bool> hasRoot<T extends SRoot>(String hash) async =>
       (await getRoots<T>(filterRoots: (root) => root.hash == hash)).isNotEmpty;
 
@@ -378,6 +402,7 @@ class SKit {
   }
 
   /// Streams the roots of the kit file, getting their cached version if possible.
+  ///
   /// This is used when saving or reading the kit file. Will not cache anything, but will stream the roots.
   /// To cache roots, use [getRoots] or [getRoot].
   Stream<SRoot> _streamRoots(
@@ -399,8 +424,7 @@ class SKit {
         loads.remove(loaded);
       }
       SRoot sending = loaded ?? root;
-      if (_indents.any((e) => e.isFor(sending) && e.isDeleted) ||
-          sending.delete) {
+      if (_indents.any((e) => e.isFor(sending) && e.isDeleted)) {
         continue;
       }
       yield sending..kit = this;
@@ -410,6 +434,7 @@ class SKit {
   }
 
   /// Streams the roots of the kit file as xml strings.
+  ///
   /// This will stream all of the roots of the kit file as xml strings.
   /// The roots are streamed in the order they are stored in the kit file.
   /// This will cache the roots, so if you want to stream the roots without caching, use [_streamRoots].
@@ -440,6 +465,7 @@ class SKit {
           () async => await _save(encryptKey: encryptKey, keyPair: keyPair));
 
   /// Saves the kit file.
+  ///
   /// This will save the kit header and all of the archives to the kit file.
   /// The header is saved to the top of the file, and the archives are saved to the bottom of the file.
   /// This will save all of the changes to the file.
@@ -519,6 +545,7 @@ class SKit {
     stopwatch.stop();
   }
 
+  /// Will export the kit file to an XML file.
   Future<void> exportToXMLFile(String path) async {
     if (!await isVerifiedAndTrusted()) {
       throw TrustException(this, await kitPublicKey);
@@ -542,6 +569,7 @@ class SKit {
   }
 }
 
+/// Thrown when the author of a kit file is not trusted.
 class TrustException implements Exception {
   final RSAPublicKey publicKey;
   final SKit kit;

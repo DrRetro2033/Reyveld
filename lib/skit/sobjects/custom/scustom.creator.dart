@@ -1,7 +1,10 @@
 part of 'scustom.dart';
 
 class SCustomCreator extends SCreator<SCustom> {
+  /// The custom type to assign for this [SCustom].
   final String type;
+
+  /// The initial attributes of the [SCustom].
   final Map<String, dynamic>? attributes;
 
   SCustomCreator(this.type, this.attributes);

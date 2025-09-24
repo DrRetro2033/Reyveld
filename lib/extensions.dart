@@ -24,6 +24,7 @@ Map<String, String> environment() {
 
 extension Pathing on String {
   /// Fixes the path by converting windows formatting to an absolute path in unix format.
+  ///
   /// This will also replace environment variables (e.g.`:appdata:`) with their values.
   ///
   /// This also parses platform tags. Platform tags can be used to have parts only be used on a specific platform.

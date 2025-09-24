@@ -3,6 +3,7 @@ part of 'skit.dart';
 // This file contains all of the [SFactory]s for every [SObject] subclass.
 
 /// The set of all [SFactory] objects.
+///
 /// This is used to load [SObject]s from xml.
 Set<SFactory> get sobjectFactories => {
       ConstellationFactory(),
@@ -26,6 +27,7 @@ Set<SFactory> get sobjectFactories => {
     };
 
 /// Get the factory for the given [SObject] subclass.
+///
 /// Throws an exception if no factory is found.
 SFactory<T> getSFactory<T extends SObject>([String? tag]) {
   final factories = sobjectFactories.whereType<SFactory<T>?>();

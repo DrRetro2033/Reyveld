@@ -7,8 +7,6 @@ part of 'sobject.dart';
 abstract class SRoot extends SObject {
   SRoot(super._node);
 
-  bool delete = false;
-
   String get hash => get("hash") ?? "";
   set hash(String value) => set("hash", value);
 
@@ -24,10 +22,6 @@ abstract class SRoot extends SObject {
   @override
   int get hashCode => hash.hashCode;
 
-  void markForDeletion() {
-    kit.unloadRoot(this);
-    delete = true;
-  }
-
+  /// Create a new [SIndent] for this [SRoot].
   Future<SIndent> newIndent();
 }

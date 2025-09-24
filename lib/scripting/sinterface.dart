@@ -171,6 +171,9 @@ abstract class SInterface<T> {
   /// This is the name of the interface.
   String get className;
 
+  /// This is the description the type of the interface.
+  ///
+  /// By default, this will be the same as [staticDescription], unless overridden.
   String get staticDescription => classDescription;
 
   /// This is the description of the object interface.
@@ -215,6 +218,7 @@ abstract class SInterface<T> {
   }
 
   /// This is the static methods of the interface.
+  ///
   /// This will be added to a global Lua table with the same name as the interface.
   /// Used for constructors.
   Set<LEntry> get statics => {};
@@ -229,11 +233,13 @@ abstract class SInterface<T> {
   }
 
   /// This is the parent interface of this interface.
+  ///
   /// If this interface does not have a parent, then this will be null.
   /// Used when pushing a object to the stack, and when generating docs.
   SInterface? get parent => null;
 
   /// This is the priority of the interface.
+  ///
   /// The priority is determined by the number of parents the interface has.
   /// The higher the priority, the more specific the interface is, which in turn
   /// means that it should have a higher priority than its parents.

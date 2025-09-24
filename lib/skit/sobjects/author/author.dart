@@ -9,11 +9,21 @@ part 'author.interface.dart';
 /// Repersents an author of an Reyveld library.
 @SGen("author")
 class SAuthor extends SRoot {
+  /// The name of the author.
   String get name => get("name")!;
+
+  /// The github email of the author.
   String? get github => get("github");
+
+  /// The public key of the author.
   RSAPublicKey get publicKey {
+    if (cdata == null) {
+      final pub = innerText!;
+      clearInnerText();
+      cdata = decodeText(pub).codeUnits;
+    }
     return CryptoUtils.rsaPublicKeyFromPem(
-      decodeText(innerText!),
+      String.fromCharCodes(cdata!),
     );
   }
 
@@ -22,8 +32,13 @@ class SAuthor extends SRoot {
 
   SAuthor(super._node);
 
+  /// Returns whether the author is trusted by the user.
   Future<bool> isTrusted() async => Reyveld.isTrustedAuthor(this);
+
+  /// Trusts the author.
   Future<void> trust() async => Reyveld.trustAuthor(this);
+
+  /// Returns whether the author is the user.
   Future<bool> isMe() async => await Reyveld.publicKey == publicKey;
 
   @override

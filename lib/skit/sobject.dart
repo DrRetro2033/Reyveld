@@ -26,6 +26,8 @@ part 'sobject.interface.dart';
 class SObject {
   final XmlElement _node;
   SKit? _kit;
+
+  /// The kit file this [SObject] is current in.
   SKit get kit {
     if (_kit == null) {
       throw Exception(
@@ -38,6 +40,7 @@ class SObject {
     _kit = kit;
   }
 
+  /// Returns true if the [SObject] has a kit.
   bool get hasKit => _kit != null;
 
   /// Called when the [SObject] is saved to xml.
@@ -54,6 +57,7 @@ class SObject {
     }
   }
 
+  /// Called when the [SObject] is unloaded from the kit file.
   Future<void> onUnload(SKit kit) async {
     for (final child in getChildren()) {
       await child!.onUnload(kit);
@@ -63,6 +67,7 @@ class SObject {
   SObject(this._node);
 
   /// Sets an attribute of the xml node.
+  ///
   /// Should be used in a setter method:
   /// ```dart
   /// set name(String value) => set("name", value);
@@ -76,6 +81,7 @@ class SObject {
   }
 
   /// Gets an attribute of the xml node.
+  ///
   /// Should be used in a getter method:
   /// ```dart
   /// String get name => get("name");
@@ -88,18 +94,41 @@ class SObject {
   /// Returns the parent of the xml node, if it has one.
   XmlNode? get _parent => _node.parent;
 
+  /// Checks if the xml node has a parent.
   bool get hasParent => _parent != null;
 
   /// Returns the inner text of the xml node.
-  String? get innerText => _node.innerText;
-  set innerText(String? value) => _node.innerText = value ?? "";
+  @Deprecated("Use cdata instead.")
+  String? get innerText {
+    return _node.children.whereType<XmlText>().singleOrNull?.value;
+  }
+
+  /// Sets the inner text of the xml node.
+  set innerText(String? value) {
+    _node.children.whereType<XmlText>().singleOrNull?.remove();
+  }
+
   String get tag => _node.localName;
 
+  List<int>? get cdata =>
+      _node.children.whereType<XmlCDATA>().singleOrNull?.value.codeUnits;
+
+  set cdata(List<int>? value) {
+    if (value == null) {
+      _node.children.whereType<XmlText>().singleOrNull?.remove();
+    } else {
+      _node.children.whereType<XmlText>().singleOrNull?.remove();
+      _node.children.add(XmlCDATA(String.fromCharCodes(value)));
+    }
+  }
+
   /// Checks if the xml node has an attribute.
+  ///
   /// Should be used when checking if an attribute exists, if needed.
   bool has(String key) => _node.getAttribute(key) != null;
 
   /// Adds a child [SObject] to the xml node.
+  ///
   /// Removes the child from its current parent to safely move it to the new parent.
   void addChild(SObject child) {
     if (child._parent != null) child._node.remove();
@@ -110,6 +139,7 @@ class SObject {
     _node.children.add(child._node);
   }
 
+  /// Adds a list of children [SObject]s to the xml node.
   void addChildren(List<SObject?> children) {
     for (var child in children) {
       if (child!._parent != null) child._node.remove();
@@ -126,6 +156,10 @@ class SObject {
     if (_node.contains(child._node)) {
       child._node.remove();
     }
+  }
+
+  void clearInnerText() {
+    _node.innerText = '';
   }
 
   /// Removes the [SObject] from its current parent.
@@ -164,7 +198,6 @@ class SObject {
   }
 
   /// Returns the parent of the [SObject], if it has one.
-  /// If [filter] is provided, it will only return the parent that matches the filter.
   T? getParent<T extends SObject>() {
     if (_node.parentElement == null) return null;
     final factory = getSFactory(_node.parentElement!.name.local);
@@ -232,9 +265,12 @@ class SObject {
   }
 
   /// Returns the [SObject] as a xml String.
-  String toXmlString() => _node.toXmlString(pretty: true, newLine: "\n");
+  String toXmlString() {
+    return _node.toXmlString(pretty: true, newLine: "\n");
+  }
 
   /// Returns the [SObject] as a json map.
+  ///
   /// This is used to serialize the [SObject] for sending to clients.
   Map<String, dynamic> toJson() => {
         tag: {
@@ -265,10 +301,12 @@ class SObject {
           other._node.isEqualNode(_node));
 }
 
+/// Encodes a string to base64 so no conflicts happen with the xml parser.
 String encodeText(String text) {
   return base64.encode(utf8.encode(text));
 }
 
+/// Decodes a string from base64.
 String decodeText(String text) {
   return utf8.decode(base64.decode(text));
 }
