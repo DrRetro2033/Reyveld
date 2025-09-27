@@ -7,6 +7,9 @@ part 'scustom.interface.dart';
 /// Stores any custom data that is not covered by the other [SObject]s.
 @SGen("custom")
 class SCustom extends SObject {
+  @override
+  childAllowed(object) => SObject.zeroChildrenAllowed;
+
   /// This is the custom type assigned by the creator of this [SCustom].
   String get type => get("type")!;
 

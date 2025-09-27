@@ -21,6 +21,14 @@ part 'file_system.interfaces.dart';
 class SArchive extends SRoot {
   SArchive(super._node);
 
+  @override
+  childAllowed(object) {
+    if (object is SFile || object is SRFile) {
+      return (true, "");
+    }
+    return (false, "Cannot add a ${object.runtimeType} to an $runtimeType!");
+  }
+
   /// Returns the date the archive was archived/created on.
   DateTime get archivedOn => DateTime.parse(get("date")!);
 
@@ -153,6 +161,9 @@ class SFile extends SObject {
   /// The chunk size is used to chunk the bytes properly for decompression.
   static const chunkSize = 65536;
   SFile(super._node);
+
+  @override
+  childAllowed(object) => SObject.zeroChildrenAllowed;
 
   @override
   onSave(kit) async {
@@ -402,6 +413,9 @@ class SFile extends SObject {
 /// A reference to an [SArchive].
 @SGen("rarchive")
 class SRArchive extends SIndent<SArchive> {
+  @override
+  childAllowed(object) => SObject.zeroChildrenAllowed;
+
   @override
   onSave(kit) async {
     if (kit.isMarkedForDeletion(hash)) {

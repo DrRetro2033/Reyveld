@@ -7,6 +7,14 @@ part 'certificate.creator.dart';
 
 @SGen("cert")
 class SCertificate extends SRoot {
+  @override
+  childAllowed(object) {
+    if (object is SPolicy) {
+      return (true, "");
+    }
+    return (false, "Cannot add a ${object.runtimeType} to an $runtimeType!");
+  }
+
   SCertificate(super._node);
 
   List<SPolicy> get policies =>

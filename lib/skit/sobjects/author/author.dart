@@ -9,6 +9,9 @@ part 'author.interface.dart';
 /// Repersents an author of an Reyveld library.
 @SGen("author")
 class SAuthor extends SRoot {
+  @override
+  childAllowed(object) => SObject.zeroChildrenAllowed;
+
   /// The name of the author.
   String get name => get("name")!;
 

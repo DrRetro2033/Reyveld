@@ -8,6 +8,8 @@ part 'skit.interface.dart';
 
 @SGen("polskit")
 class SPolicySKit extends SPolicy {
+  @override
+  childAllowed(object) => SObject.zeroChildrenAllowed;
   static const Set<String> _protectedSKits = {
     "authveld.skit",
     "trusted_authors.skit"

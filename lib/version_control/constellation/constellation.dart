@@ -17,6 +17,14 @@ part 'constellation.creator.dart';
 class Constellation extends SObject {
   Constellation(super._node);
 
+  @override
+  childAllowed(object) {
+    if (object is Star || object is Globs) {
+      return (true, "");
+    }
+    return (false, "Cannot add a ${object.runtimeType} to an $runtimeType!");
+  }
+
   /// The name of the constellation.
   String get name => get("name") ?? "Constellation";
   set name(String value) => set("name", value);

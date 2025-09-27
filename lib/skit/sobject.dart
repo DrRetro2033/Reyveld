@@ -23,9 +23,14 @@ part 'sobject.interface.dart';
 /// SObjects must have a [SFactory] object inside [_sobjectFactories] (inside skit.factories.dart) in order to be parsed from xml properly.
 /// If there is no [SFactory] object found, then the [GenericFactory] will be used, which is not recommended as it will not have strict,
 /// predetermined behavior.
-class SObject {
+abstract class SObject {
+  static const (bool, String) zeroChildrenAllowed =
+      (false, "This SObject cannot have any children.");
+
   final XmlElement _node;
   SKit? _kit;
+
+  (bool, String) childAllowed(SObject object);
 
   /// The kit file this [SObject] is current in.
   SKit get kit {
@@ -132,22 +137,19 @@ class SObject {
   /// Removes the child from its current parent to safely move it to the new parent.
   void addChild(SObject child) {
     if (child._parent != null) child._node.remove();
-    if (child is SRoot) {
-      throw Exception("Cannot add a SRoot to a SObject!");
-    }
     child.kit = _kit;
+    if (child is SRoot) {
+      throw Exception("Root objects are not allowed as children.");
+    }
+    final result = childAllowed(child);
+    if (!result.$1) throw Exception(result.$2);
     _node.children.add(child._node);
   }
 
   /// Adds a list of children [SObject]s to the xml node.
   void addChildren(List<SObject?> children) {
     for (var child in children) {
-      if (child!._parent != null) child._node.remove();
-      if (child is SRoot) {
-        throw Exception("Cannot add a SRoot to a SObject!");
-      }
-      child.kit = _kit;
-      _node.children.add(child._node);
+      addChild(child!);
     }
   }
 

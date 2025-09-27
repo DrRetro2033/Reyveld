@@ -8,6 +8,9 @@ part 'user.interface.dart';
 /// A user can be created to associate a [SObject] with a specific user, allowing for multi-user support.
 @SGen("user")
 class SUser extends SRoot {
+  @override
+  childAllowed(object) => SObject.zeroChildrenAllowed;
+
   String get name => get("name") ?? "";
   set name(String value) => set("name", value);
 

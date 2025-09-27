@@ -9,6 +9,7 @@ part 'description.creator.dart';
 
 @SGen("descr")
 class SDescription extends SObject {
+  @override
+  childAllowed(object) => SObject.zeroChildrenAllowed;
   SDescription(super._node);
-  String get body => String.fromCharCodes(base64Decode(get("text") ?? ""));
 }

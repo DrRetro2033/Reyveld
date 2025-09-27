@@ -4,6 +4,9 @@ part of 'sobject.dart';
 /// The [hash] is the hash of the [SRoot] that is being referenced.
 /// The [hash] is unique to the type of [SRoot] that is being referenced.
 abstract class SIndent<T extends SRoot> extends SObject {
+  @override
+  childAllowed(object) => SObject.zeroChildrenAllowed;
+
   bool _delete = false;
 
   /// Returns true if the [SIndent] is marked for deletion.

@@ -10,6 +10,9 @@ part 'header.creator.dart';
 /// This is the top level node of the kit file, and contains information about the kit, like constellation structures, users, addon info, etc.
 @SGen("sere")
 class SHeader extends SObject {
+  @override
+  childAllowed(object) => (true, "");
+
   SHeader(super._node);
 
   /// When the kit file was created.

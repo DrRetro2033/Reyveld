@@ -161,7 +161,7 @@ P.S. If you want to disable this message, you can go to ${Reyveld.appDataPath}/c
                 try {
                   /// Run the request and get the result.
                   Reyveld.talker.verbose("(SID:$id) Received request.");
-                  Reyveld.talker.verbose("(SID:$id) Request: $data");
+                  Reyveld.talker.verbose("(SID:$id) Request:\n$data");
                   final result = await luaPool.withResource(
                       () async => await sessions[id]!.$1.run(data));
                   socket.add(SocketEvent.completed(result.result,
@@ -169,12 +169,10 @@ P.S. If you want to disable this message, you can go to ${Reyveld.appDataPath}/c
                       .toString());
                   Reyveld.talker.verbose(
                       "(SID:$id, PID:${result.processId ?? ""}) Completed request.");
-                } catch (e, st) {
+                } catch (e) {
                   Reyveld.printToConsole(
                       "There was a crash on a request, please check the log folder (${Reyveld.appDataPath}/logs) for more information."
                           .red);
-                  Reyveld.talker.debug("(SID:$id) Request: $data");
-                  Reyveld.talker.critical("Crash Handler", e, st);
                   socket.add(SocketEvent.error(e).toString());
                 }
               }, onDone: () {

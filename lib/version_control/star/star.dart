@@ -14,6 +14,14 @@ part 'star.creator.dart';
 class Star extends SObject {
   Star(super._node);
 
+  @override
+  childAllowed(object) {
+    if (object is Star || object is SRArchive) {
+      return (true, "");
+    }
+    return (false, "Cannot add a ${object.runtimeType} to an $runtimeType!");
+  }
+
   /// The name of the star.
   String get name => get("name") ?? "Initial Star";
   set name(String value) => set("name", value);

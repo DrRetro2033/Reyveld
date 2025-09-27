@@ -13,15 +13,14 @@ part 'filelist.g.dart';
 sealed class Globs extends SObject {
   Globs(super._node);
 
-  List<Glob> get globs => utf8
-      .decode(base64Decode(innerText!))
+  List<Glob> get globs => String.fromCharCodes(cdata!)
       .split("\n")
       .toSet() // Removes duplicates
       .where((e) => e.isNotEmpty)
       .map((e) => Glob(e))
       .toList();
-  set globs(List<Glob> value) => innerText =
-      base64Encode(utf8.encode(value.map((e) => e.pattern).toSet().join("\n")));
+  set globs(List<Glob> value) =>
+      cdata = value.map((e) => e.pattern).toSet().join("\n").codeUnits;
 
   void add(String pattern) => globs = globs..add(Glob(pattern));
 
@@ -40,6 +39,9 @@ sealed class Globs extends SObject {
 
 @SGen("whitelist")
 final class Whitelist extends Globs {
+  @override
+  childAllowed(object) => SObject.zeroChildrenAllowed;
+
   Whitelist(super._node);
 
   @override
@@ -49,6 +51,9 @@ final class Whitelist extends Globs {
 
 @SGen("blacklist")
 final class Blacklist extends Globs {
+  @override
+  childAllowed(object) => SObject.zeroChildrenAllowed;
+
   Blacklist(super._node);
 
   @override

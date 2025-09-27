@@ -8,6 +8,8 @@ part 'all.interface.dart';
 
 @SGen("polall")
 class SPolicyAll extends SPolicy {
+  @override
+  childAllowed(object) => SObject.zeroChildrenAllowed;
   SPolicyAll(super._node);
 
   @override

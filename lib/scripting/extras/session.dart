@@ -66,6 +66,11 @@ This can be used to send data through the web socket, log messages, etc.""";
             name: "talk",
             descr: "Returns the logger (aka. talker) of this session.",
             returnType: Talker,
-            () => Reyveld.talker)
+            () => Reyveld.talker),
+        LEntry(
+            name: "error",
+            descr:
+                "This function will always throw an error. Used for testing lua's tracing.",
+            () => throw Exception("This is an test error.")),
       };
 }

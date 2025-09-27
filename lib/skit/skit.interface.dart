@@ -72,9 +72,6 @@ SKits are the bread and butter of Reyveld. They store a SHeader and any number o
             isAsync: true, (String path,
                 {bool overwrite = false, int? type, String key = ""}) async {
           final skit = SKit(path, encryptKey: key);
-          Reyveld.talker.log(type);
-          Reyveld.talker
-              .log(type != null ? SKitType.values[type] : SKitType.unspecified);
           await skit.create(
               overwrite: overwrite,
               type:

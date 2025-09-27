@@ -10,6 +10,14 @@ part 'files.interface.dart';
 class SPolicyExterFiles extends SPolicy {
   SPolicyExterFiles(super._node);
 
+  @override
+  childAllowed(object) {
+    if (object is Whitelist) {
+      return (true, "");
+    }
+    return (false, "Cannot add a ${object.runtimeType} to an $runtimeType!");
+  }
+
   bool get read => get("read") == "1";
   bool get write => get("write") == "1";
   bool get create => get("create") == "1";
@@ -70,6 +78,8 @@ class SPolicyExterFiles extends SPolicy {
 
 @SGen("polinterfiles")
 class SPolicyInterFiles extends SPolicy {
+  @override
+  childAllowed(object) => SObject.zeroChildrenAllowed;
   SPolicyInterFiles(super._node);
 
   bool get read => get("read") == "1";
