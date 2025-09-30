@@ -9,6 +9,7 @@ import 'package:reyveld/skit/sobjects/author/author.dart';
 import 'package:reyveld/user.dart';
 import 'package:pointycastle/export.dart';
 import 'package:basic_utils/basic_utils.dart';
+import 'package:rxdart/transformers.dart';
 import 'package:version/version.dart';
 import 'package:talker/talker.dart';
 import 'package:reyveld/version.dart' as versi;
@@ -99,7 +100,7 @@ LUAPOOL=2
 LUAPOOL_TIMEOUT=1h
 
 [other]
-DISABLE_WELCOME_MESSAGE=0
+DISABLE_WELCOME_MESSAGE=False
 """;
 
   static Future<Config> get _config async {
@@ -223,16 +224,19 @@ $publicKeyPem""");
 
   /// Creates a new temporary file.
   /// This is used to make reading and writing to files inside of SKits faster.
-  static Future<File> newTempFile() async {
+  static Future<File> newTempFile(String name) async {
     final dir = _tempFileDirectory;
-    final file = File("${dir.path}/${DateTime.now().millisecondsSinceEpoch}");
+    final file =
+        File("${dir.path}/$name.${DateTime.now().millisecondsSinceEpoch}");
     return file;
   }
 
-  static Future<File?> findTempFile(String checksum) async {
+  static Future<File?> findTempFile(String name, String checksum) async {
     final dir = _tempFileDirectory;
-    final files = dir.listSync(recursive: true, followLinks: false);
-    for (final file in files.whereType<File>()) {
+    await for (final file in dir
+        .list(recursive: true, followLinks: false)
+        .whereType<File>()
+        .where((f) => f.path.getFilename().startsWith("$name."))) {
       if (await (file).checksum == checksum) return file;
     }
     return null;

@@ -87,16 +87,6 @@ class Lua {
         "SKitType": SKitType.values,
       };
 
-  static Map<String, (SInterface, Future<dynamic> Function(Lua))> get globals =>
-      {
-        "session": (
-          SessionInterface(),
-          (lua) async {
-            return lua.socket;
-          }
-        )
-      };
-
   /// Code effects are functions that are applied to the lua code before it is compiled.
   /// This is used to clean up the lua code before it is compiled, like
   /// replacing hex numbers with their decimal counterparts and removing type definitions.
@@ -142,11 +132,6 @@ class Lua {
       if (interface_.statics.isNotEmpty) {
         await addGlobal(state, interface_.className, interface_.staticTable);
       }
-    }
-
-    // Add all globals
-    for (final global in globals.entries) {
-      await addGlobal(state, global.key, await global.value.$2(this));
     }
   }
 
@@ -220,10 +205,6 @@ class Lua {
               namedArgs = finalArgs.removeLast();
             }
           }
-
-          Reyveld.talker.verbose(
-              "Calling function '${value.name}' with $finalArgs$namedArgs.");
-
           for (int i = 0; i < finalArgs.length; i++) {
             final argValue = finalArgs[i];
             final argType = value.args.elementAt(i);
@@ -274,12 +255,14 @@ class Lua {
                 return MapEntry(Symbol(key), value);
               },
             ));
+            Reyveld.talker.verbose(
+                "Result for call to '${value.name}'$finalArgs$namedArgs: $result");
             await _pushToStack(state, result);
           }
           return 1;
         } catch (e, st) {
           Reyveld.talker.error("", e, st);
-          rethrow;
+          return 0;
         }
       });
     } else if (value is LField) {
@@ -381,11 +364,12 @@ class Lua {
     for (final effect in codeEffects) {
       compiled = effect(compiled);
     }
-
+    Reyveld.talker.verbose("Compiled script:\n$compiled");
     while (compiled.contains(stringPlaceholder)) {
       compiled = compiled.replaceFirst(
           stringPlaceholder, "\"${_formatPaths(strings.removeAt(0))}\"");
     }
+
     return compiled;
   }
 
@@ -399,7 +383,7 @@ class Lua {
 
   Future<void> awaitForCompletion() async {
     while (_stopwatches.any((stopwatch) => stopwatch.isRunning)) {
-      await Future.delayed(Duration(milliseconds: 100));
+      await Future.delayed(Duration(milliseconds: 10));
     }
   }
 
@@ -485,35 +469,9 @@ class Lua {
       }
       yield "Enums";
       await _generateEnumDocs();
-      yield "Globals";
-      await _generateGlobalDocs();
     } catch (e) {
       Reyveld.talker.error(e.toString());
     }
-  }
-
-  /// Generates a docs file for all of the globals.
-  static Future<void> _generateGlobalDocs() async {
-    final doc = File(
-        "${Reyveld.appDataPath}/docs/${Reyveld.version.toString()}/globals.lua");
-    await doc.create(recursive: true);
-    await doc.writeAsString("""
----@meta _
-
-${_formatGlobals()}
-""");
-  }
-
-  // Formats all of the globals for the docs file.
-  static String _formatGlobals() {
-    List<String> formattedGlobals = [];
-    for (final global in globals.entries) {
-      formattedGlobals.add("""
----@type ${global.value.$1.className}
-${global.key} = {}
-""");
-    }
-    return formattedGlobals.join("\n\n");
   }
 
   // Generates a docs file for all of the enums.

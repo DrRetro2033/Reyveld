@@ -186,7 +186,8 @@ class SFile extends SObject {
 
   Future<File> get file async {
     externalVersion ??=
-        await Reyveld.findTempFile(checksum) ?? await Reyveld.newTempFile();
+        await Reyveld.findTempFile(path.getFilename(), checksum) ??
+            await Reyveld.newTempFile(path.getFilename());
     if (!await externalVersion!.exists()) {
       await externalVersion!.create(recursive: true);
       final write = externalVersion!.openWrite();

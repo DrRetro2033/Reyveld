@@ -16,19 +16,21 @@ class SessionInterface extends SInterface<WebSocket> {
 
   @override
   String get classDescription =>
-      """Cotains methods for the current session with Reyveld. 
+      """Contains methods for the current session with Reyveld. 
 This can be used to send data through the web socket, log messages, etc.""";
 
   @override
-  get exports => {
-        LField<String>(
+  get statics => {
+        LEntry(
             name: "os",
             descr:
                 "The operating system of the server. (\"${Platform.operatingSystem}\")",
-            Platform.operatingSystem),
+            returnType: String,
+            () => Platform.operatingSystem),
         LEntry(
             name: "send",
-            descr: "Send data through the web socket.",
+            descr:
+                "Send data through the web socket (or console if running in a terminal).",
             args: {
               LArg<Object>(
                   name: "data",
@@ -41,8 +43,13 @@ This can be used to send data through the web socket, log messages, etc.""";
             passLua: true,
             passState: true, (Lua lua, LuaState state, Object data,
                 {String message = ""}) {
-          if (object!.closeCode != null) return;
-          object!.add(
+          if (lua.socket == null) {
+            Reyveld.printToConsole(data);
+            return;
+          } else if (lua.socket!.closeCode != null) {
+            return;
+          }
+          lua.socket!.add(
               SocketEvent.data(data, pid: lua.getPID(state) ?? "").toString());
         }),
         LEntry(

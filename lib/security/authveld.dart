@@ -16,6 +16,7 @@ typedef AuthorizeEvent = (AuthorizeTicket, bool);
 class AuthVeld {
   static final SKit _kit = SKit("${Reyveld.appDataPath}/authveld.skit");
 
+  /// A list of all the tickets that are currently being authorized.
   static final Set<AuthorizeTicket> _authorizationTickets = {};
 
   static final StreamController<AuthorizeEvent> _authorizationController =
@@ -134,19 +135,19 @@ class AuthVeld {
     return builder.buildDocument().toXmlString(pretty: true, newLine: "\n");
   }
 
-  static Future<SCertificate?> loadCertificate(String hash) async {
+  static Future<SCertificate?> loadCertificate(String token) async {
     if (await _kit.exists()) {
       return await _kit.getRoot<SCertificate>(
-        filterRoots: (root) => root.hash == hash,
+        filterRoots: (root) => root.hash == token,
         addToCache: true,
       );
     }
     return null;
   }
 
-  static Future<bool> hasCertificate(String hash) async {
+  static Future<bool> hasCertificate(String token) async {
     if (await _kit.exists()) {
-      return await _kit.hasRoot(hash);
+      return await _kit.hasRoot(token);
     }
     return false;
   }
