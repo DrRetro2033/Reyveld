@@ -24,7 +24,7 @@ jobs:
         run: "mkdir -p build/releases/${{ matrix.platform }} &&
           mkdir ./scripts/installers/${{ matrix.platform }}/lib"
       - name: Build Executable
-        run: dart compile exe --define=DEBUG=false ./lib/main.dart --target-os ${{ matrix.platform }} -o build/releases/${{ matrix.platform }}/${{ matrix.output}}
+        run: dart compile exe --define=DEBUG=false ./bin/reyveld.dart --target-os ${{ matrix.platform }} -o build/releases/${{ matrix.platform }}/${{ matrix.output}}
       - name: Moving Installers
         run: ${{ matrix.add-install-command }}
       - name: Upload Artifact
