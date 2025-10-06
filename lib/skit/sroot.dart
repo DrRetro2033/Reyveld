@@ -22,6 +22,11 @@ abstract class SRoot extends SObject {
   @override
   int get hashCode => hash.hashCode;
 
+  Future<void> markForDeletion() async {
+    kit.addIndent(await newIndent()
+      ..markForDeletion());
+  }
+
   /// Create a new [SIndent] for this [SRoot].
   Future<SIndent> newIndent();
 }

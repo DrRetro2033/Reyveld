@@ -23,8 +23,9 @@ class AuthVeld {
       StreamController.broadcast();
 
   static Future<String?> getAuthorization(
-      String name, List<SPolicy> permissions) async {
-    final ticket = AuthorizeTicket(generateTicketID(), name, permissions);
+      String name, String reasoning, List<SPolicy> permissions) async {
+    final ticket =
+        AuthorizeTicket(generateTicketID(), name, reasoning, permissions);
     _authorizationTickets.add(ticket);
     await openUrl(
         "http://127.0.0.1:7274/authveld?ticket=${Uri.encodeQueryComponent(ticket.ticket)}");
@@ -37,27 +38,54 @@ class AuthVeld {
     return null;
   }
 
+  /// Authorizes a ticket by creating a certificate and adding it to the kit file.
+  ///
+  /// If the kit file does not exist, it will be created.
+  ///
+  /// If the certificate already exists inside the kit file, it will be reauthorized.
   static Future<void> authorize(String tokenToAuthorize) async {
     final ticket = _authorizationTickets[tokenToAuthorize];
-    if (ticket == null) return;
-    if (!await _kit.exists()) {
-      await _kit.create(type: SKitType.authveld);
+    if (ticket != null) {
+      if (!await _kit.exists()) {
+        await _kit.create(type: SKitType.authveld);
+      }
+      final certificate =
+          await SCertificateCreator(ticket.applicationName, ticket.policies)
+              .create();
+      await _kit.addRoot(certificate);
+      await _kit.save(encryptKey: "AuthVeld");
+      ticket.token = certificate.hash;
+      _authorizationController.add((ticket, true));
+      _authorizationTickets.remove(ticket);
+    } else if (await _kit.exists() &&
+        await AuthVeld.hasCertificate(tokenToAuthorize)) {
+      await _kit
+          .getRoot<SCertificate>(
+              filterRoots: (root) => root.hash == tokenToAuthorize)
+          .then((value) async => value!.reauthorize());
+      await _kit.save(encryptKey: "AuthVeld");
     }
-    final certificate =
-        await SCertificateCreator(ticket.applicationName, ticket.policies)
-            .create();
-    await _kit.addRoot(certificate);
-    await _kit.save(encryptKey: "AuthVeld");
-    ticket.token = certificate.hash;
-    _authorizationController.add((ticket, true));
-    _authorizationTickets.remove(ticket);
   }
 
-  static void unauthorize(String tokenToUnauthorize) {
+  /// Revokes the authorization of a ticket.
+  ///
+  /// If the ticket is currently being authorized, removes it from the authorization list.
+  ///
+  /// If the ticket is not currently being authorized, but the corresponding exists in the AuthVeld kit file,
+  /// then it will deauthorize the certificate.
+  static Future<void> deauthorize(String tokenToUnauthorize) async {
     final ticket = _authorizationTickets[tokenToUnauthorize];
-    if (ticket == null) return;
-    _authorizationController.add((ticket, false));
-    _authorizationTickets.remove(ticket);
+    if (ticket != null) {
+      _authorizationController.add((ticket, false));
+      _authorizationTickets.remove(ticket);
+    } else if (await _kit.exists() &&
+        await AuthVeld.hasCertificate(tokenToUnauthorize)) {
+      await _kit
+          .getRoot<SCertificate>(
+              filterRoots: (root) => root.hash == tokenToUnauthorize)
+          .then((value) async => value!.deauthorize());
+      await _kit.save(encryptKey: "AuthVeld");
+    }
   }
 
   /// Generates an authorization page for the given application.
@@ -91,48 +119,39 @@ class AuthVeld {
   }
 
   static String getDetailsPage(String ticketId) {
-    final XmlBuilder builder = XmlBuilder();
     final ticket = _authorizationTickets[ticketId];
-    builder.doctype('html');
-    builder.element('html', nest: () {
-      builder.attribute('lang', 'en');
-      builder.xml("""<head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    return """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Markdown in HTML</title>
+    <meta charset="utf-8"/>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         body {
-            margin: 0;
-            padding: 0;
-            background: #181a1b;
-            font-family: sans-serif;
-            display: flex;
-            align-items: left;
-            justify-content: left;
-            text-align: left;
-            color: white;
-        }
-
-        .parent-container {
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            height: 100%;
+            font-family: "Arial", sans-serif;
+            font-size: 16px;
         }
     </style>
-</head>""");
-      builder.element('body', nest: () {
-        builder.element('div', attributes: {"class": "parent-container"},
-            nest: () {
-          builder.element('h1', nest: () {
-            builder.text('Permissions Requested:');
-          });
-          for (final policy in ticket!.policies) {
-            policy.details(builder);
-          }
-        });
-      });
-    });
-    return builder.buildDocument().toXmlString(pretty: true, newLine: "\n");
+</head>
+<body>
+    <div id="markdown-content">
+        <!-- Markdown content will be rendered here -->
+    </div>
+
+    <script>
+        const markdownText = `
+# Requested Permissions
+${ticket?.policies.map((p) => p.details()).join('\n\n')}
+
+# Reasoning
+${ticket?.reasoning}
+`;
+        document.getElementById('markdown-content').innerHTML = marked.parse(markdownText);
+    </script>
+</body>
+</html>
+""";
   }
 
   static Future<SCertificate?> loadCertificate(String token) async {
@@ -150,6 +169,14 @@ class AuthVeld {
       return await _kit.hasRoot(token);
     }
     return false;
+  }
+
+  static Future<Iterable<SCertificate>> getCertificates() async {
+    if (await _kit.exists()) {
+      final certs = await _kit.getRoots<SCertificate>(addToCache: true);
+      return certs.whereType<SCertificate>();
+    }
+    return [];
   }
 }
 

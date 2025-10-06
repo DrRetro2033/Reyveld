@@ -9,13 +9,16 @@ class AuthorizeTicket {
   /// The name of the application that is requesting authorization.
   final String applicationName;
 
+  final String reasoning;
+
   /// The policies that the application is requesting.
   final List<SPolicy> policies;
 
   /// The token that will be given to the application if it's authorized.
   String? token;
 
-  AuthorizeTicket(this.ticket, this.applicationName, this.policies);
+  AuthorizeTicket(
+      this.ticket, this.applicationName, this.reasoning, this.policies);
 
   @override
   int get hashCode => ticket.hashCode;

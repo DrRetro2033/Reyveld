@@ -11,7 +11,8 @@ Future<void> main(List<String> args) async {
 A multi-purpose toolbox for working with files, with a focus on simplicity and ease of use.
 """)
     ..addCommand(RunCommand())
-    ..addCommand(StartCommand());
+    ..addCommand(StartCommand())
+    ..addCommand(AuthVeldCommand());
   runner.argParser
       .addFlag("verbose", abbr: "v", help: "Run Reyveld in verbose mode.");
   final results = runner.parse(args);

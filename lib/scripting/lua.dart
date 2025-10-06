@@ -183,54 +183,55 @@ class Lua {
       });
     } else if (value is LEntry) {
       state.pushDartFunction((state) async {
+        List<dynamic> args = [];
+
+        while (state.getTop() > 0) {
+          args.add(await getFromTop(state));
+          if (args.length >= value.args.length) {
+            break;
+          }
+        }
+
+        /// Reverse the args so that they are in the correct order.
+        final finalArgs = args.reversed.toList()..removeWhere((e) => e == null);
+
+        Map namedArgs = {};
+
+        if (value.hasNamedArgs && finalArgs.length > value.positionalArgCount) {
+          if (finalArgs.lastOrNull is Map) {
+            namedArgs = finalArgs.removeLast();
+          }
+        }
+        for (int i = 0; i < finalArgs.length; i++) {
+          final argValue = finalArgs[i];
+          final argType = value.args.elementAt(i);
+          if (argType.cast(argValue) == null && argType.required) {
+            throw Exception(
+                "Type Mismatch for argument $argType at position $i! Expected ${argType.type} but got ${argValue.runtimeType}");
+          } else {
+            finalArgs[i] = argType.cast(argValue);
+          }
+        }
+
+        /// If the function has a security check, check it with the arguments.
+        if (value.securityCheck != null) {
+          if (certificate == null) {
+            throw AuthVeldException(
+                "Certificate not found, so assuming no access.");
+          } else if (!certificate!.authorized) {
+            throw AuthVeldException(
+                "Certificate (Token: '${certificate!.hash}') not authorized!");
+          }
+          if (!(certificate?.completeAccess ?? false)) {
+            if (!value.securityCheck!(
+                certificate!, (positional: finalArgs, named: namedArgs))) {
+              throw AuthVeldException("Access denied.");
+            }
+          }
+        }
+        Reyveld.talker.verbose(
+            "Calling function '${value.name}' with $finalArgs$namedArgs.");
         try {
-          List<dynamic> args = [];
-
-          while (state.getTop() > 0) {
-            args.add(await getFromTop(state));
-            if (args.length >= value.args.length) {
-              break;
-            }
-          }
-
-          /// Reverse the args so that they are in the correct order.
-          final finalArgs = args.reversed.toList()
-            ..removeWhere((e) => e == null);
-
-          Map namedArgs = {};
-
-          if (value.hasNamedArgs &&
-              finalArgs.length > value.positionalArgCount) {
-            if (finalArgs.lastOrNull is Map) {
-              namedArgs = finalArgs.removeLast();
-            }
-          }
-          for (int i = 0; i < finalArgs.length; i++) {
-            final argValue = finalArgs[i];
-            final argType = value.args.elementAt(i);
-            if (argType.cast(argValue) == null && argType.required) {
-              throw Exception(
-                  "Type Mismatch for argument $argType at position $i! Expected ${argType.type} but got ${argValue.runtimeType}");
-            } else {
-              finalArgs[i] = argType.cast(argValue);
-            }
-          }
-
-          /// If the function has a security check, check it with the arguments.
-          if (value.securityCheck != null) {
-            if (certificate == null) {
-              throw AuthVeldException(
-                  "Certificate not found, so assuming no access.");
-            }
-            if (!(certificate?.completeAccess ?? false)) {
-              if (!value.securityCheck!(
-                  certificate!, (positional: finalArgs, named: namedArgs))) {
-                throw AuthVeldException("Access denied.");
-              }
-            }
-          }
-          Reyveld.talker.verbose(
-              "Calling function '${value.name}' with $finalArgs$namedArgs.");
           if (value.returnType == null) {
             // Means that the function doesn't return anything, so just call it.
             await Function.apply(
@@ -242,6 +243,7 @@ class Lua {
                 ]..removeWhere((e) => e == null), namedArgs.map((key, value) {
               return MapEntry(Symbol(key), value);
             }));
+            return 0;
           } else {
             // Means that the function returns something, so call it and push the result to the stack.
             final result = await Function.apply(
@@ -258,10 +260,13 @@ class Lua {
             Reyveld.talker.verbose(
                 "Result for call to '${value.name}'$finalArgs$namedArgs: $result");
             await _pushToStack(state, result);
+            return 1;
           }
-          return 1;
         } catch (e, st) {
-          Reyveld.talker.error("", e, st);
+          Reyveld.talker.error(
+              "Error when calling '${value.name}' with $finalArgs$namedArgs.",
+              e,
+              st);
           return 0;
         }
       });

@@ -118,6 +118,9 @@ abstract class SObject {
   List<int>? get cdata =>
       _node.children.whereType<XmlCDATA>().singleOrNull?.value.codeUnits;
 
+  String? get cdataString =>
+      _node.children.whereType<XmlCDATA>().singleOrNull?.value;
+
   set cdata(List<int>? value) {
     if (value == null) {
       _node.children.whereType<XmlText>().singleOrNull?.remove();
@@ -125,6 +128,10 @@ abstract class SObject {
       _node.children.whereType<XmlText>().singleOrNull?.remove();
       _node.children.add(XmlCDATA(String.fromCharCodes(value)));
     }
+  }
+
+  set cdataString(String? value) {
+    cdata = value?.codeUnits;
   }
 
   /// Checks if the xml node has an attribute.
@@ -160,6 +167,8 @@ abstract class SObject {
     }
   }
 
+  /// Clears the inner text of the xml node.
+  /// (NOTE: This will remove any child elements as well.)
   void clearInnerText() {
     _node.innerText = '';
   }

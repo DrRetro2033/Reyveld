@@ -50,6 +50,5 @@ class SPolicySKit extends SPolicy {
   }
 
   @override
-  void details(XmlBuilder builder) =>
-      builder.element("h2", nest: () => builder.text(description));
+  String details() => description;
 }

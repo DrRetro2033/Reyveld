@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:reyveld/skit/sobject.dart';
 
 part 'description.g.dart';
@@ -11,5 +9,8 @@ part 'description.creator.dart';
 class SDescription extends SObject {
   @override
   childAllowed(object) => SObject.zeroChildrenAllowed;
+
+  String get text => cdataString!;
+
   SDescription(super._node);
 }

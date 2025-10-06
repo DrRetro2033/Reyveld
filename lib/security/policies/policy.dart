@@ -21,5 +21,5 @@ abstract class SPolicy extends SObject {
   SPolicySafetyLevel get safetyLevel;
 
   /// This is used to display the details of the policy to the user.
-  void details(XmlBuilder builder);
+  String details();
 }

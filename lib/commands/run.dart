@@ -15,15 +15,15 @@ class RunCommand extends Command {
 
   RunCommand() {
     argParser.addOption('file', help: 'The file to run.', abbr: 'f');
-    argParser.addOption('cert',
-        help: 'The AuthVeld certificate token to use.', abbr: 'c');
+    argParser.addOption('token',
+        help: 'The AuthVeld certificate token to use.', abbr: 't');
   }
 
   @override
   Future<void> run() async {
     final script = argResults!.option("file");
     final scriptCertificate =
-        await AuthVeld.loadCertificate(argResults!.option("cert") ?? "");
+        await AuthVeld.loadCertificate(argResults!.option("token") ?? "");
 
     if (script != null) {
       final file = File(script);

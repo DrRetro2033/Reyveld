@@ -58,21 +58,17 @@ class SPolicyExterFiles extends SPolicy {
   }
 
   @override
-  void details(XmlBuilder builder) {
+  String details() {
     final x = [
       (read, "read"),
       (write, "write"),
       (create, "create"),
       (delete, "delete")
     ];
-    builder.element("h2",
-        nest: () => builder.text(
-            "Allow the application to ${x.where((e) => e.$1).map((e) => e.$2).join(", ")} the following external files:"));
-    builder.element("ul", nest: () {
-      for (final glob in whitelist!.globs) {
-        builder.element("li", nest: () => builder.text(glob.pattern));
-      }
-    });
+    return """
+## Allow the application to ${x.where((e) => e.$1).map((e) => e.$2).join(", ")} the following external files:
+${whitelist!.globs.map((e) => "- ${e.pattern}").join("\n")}
+""";
   }
 }
 
@@ -102,15 +98,13 @@ class SPolicyInterFiles extends SPolicy {
   }
 
   @override
-  void details(XmlBuilder builder) {
+  String details() {
     final x = [
       (read, "read"),
       (write, "write"),
       (create, "create"),
       (delete, "delete")
     ];
-    builder.element("h2",
-        nest: () => builder.text(
-            "Allow the application to ${x.where((e) => e.$1).map((e) => e.$2).join(", ")} every files inside of SKits."));
+    return "## Allow the application to ${x.where((e) => e.$1).map((e) => e.$2).join(", ")} every files inside of SKits.";
   }
 }

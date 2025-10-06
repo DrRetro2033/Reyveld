@@ -1,3 +1,4 @@
+import 'package:chalkdart/chalkstrings.dart';
 import 'package:reyveld/security/policies/policies.dart';
 import 'package:reyveld/skit/sobject.dart';
 
@@ -24,11 +25,20 @@ class SCertificate extends SRoot {
 
   String get appname => get("appname") ?? "Default";
 
+  bool get authorized => (get("authorized") ?? "1") == "1";
+  set authorized(bool value) => set("authorized", value ? "1" : "0");
+
   T? getPolicy<T extends SPolicy>() => policies.whereType<T>().firstOrNull;
 
   @override
   Future<SIndent<SRoot>> newIndent() async =>
       await SISCertificateCreator(hash).create();
+
+  String toDisplayString() =>
+      "Certificate for '$appname' | '$hash' | ${policies.length} policies | ${authorized ? "Authorized".green : "Deauthorized".red}";
+
+  void deauthorize() => authorized = false;
+  void reauthorize() => authorized = true;
 }
 
 class SCertificateIndent extends SIndent<SCertificate> {

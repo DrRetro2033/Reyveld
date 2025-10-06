@@ -16,6 +16,9 @@ This interface provides methods to make authorization requests and load certific
 Will open the user's browser to the authorization page, where they will decide if they allow the application to access Reyveld with the given permissions.""",
             args: {
               LArg<String>(name: "name", descr: "The name of the application."),
+              LArg<String>(
+                  name: "reasoning",
+                  descr: "The reasoning behind the request."),
               LArg<List>(
                   name: "permissions",
                   descr: "The permissions to request.",
@@ -23,9 +26,9 @@ Will open the user's browser to the authorization page, where they will decide i
             },
             returnType: String,
             isAsync: true,
-            (String name, List permissions) async =>
-                await AuthVeld.getAuthorization(
-                    name, permissions.whereType<SPolicy>().toList())),
+            (String name, String reasoning, List permissions) async =>
+                await AuthVeld.getAuthorization(name, reasoning,
+                    permissions.whereType<SPolicy>().toList())),
         LEntry(
             name: "loadCertificate",
             descr: "Loads an application's certificate, using a token.",
@@ -39,6 +42,8 @@ Will open the user's browser to the authorization page, where they will decide i
           lua.certificate = await AuthVeld.loadCertificate(token);
           if (lua.certificate == null) {
             Reyveld.talker.warning("No certificate with that token was found!");
+          } else if (!lua.certificate!.authorized) {
+            Reyveld.talker.warning("Certificate is not currently authorized!");
           }
           Reyveld.talker.verbose(
               "Loaded certificate for ${lua.certificate!.appname}: ${lua.certificate!.hash}");

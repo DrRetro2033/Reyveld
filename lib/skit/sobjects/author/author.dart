@@ -23,10 +23,10 @@ class SAuthor extends SRoot {
     if (cdata == null) {
       final pub = innerText!;
       clearInnerText();
-      cdata = decodeText(pub).codeUnits;
+      cdataString = pub;
     }
     return CryptoUtils.rsaPublicKeyFromPem(
-      String.fromCharCodes(cdata!),
+      cdataString!,
     );
   }
 

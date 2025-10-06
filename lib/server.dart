@@ -185,7 +185,7 @@ Future<void> runServer() async {
               await request.response.close();
               continue;
             }
-            AuthVeld.authorize(request.uri.queryParameters["ticket"]!);
+            await AuthVeld.authorize(request.uri.queryParameters["ticket"]!);
             request.response.headers.contentType = ContentType.json;
             request.response.add(jsonEncode({"allowed": true}).codeUnits);
             await request.response.close();
@@ -197,7 +197,7 @@ Future<void> runServer() async {
               await request.response.close();
               continue;
             }
-            AuthVeld.unauthorize(request.uri.queryParameters["ticket"]!);
+            await AuthVeld.deauthorize(request.uri.queryParameters["ticket"]!);
             request.response.headers.contentType = ContentType.json;
             request.response.add(jsonEncode({"allowed": false}).codeUnits);
             await request.response.close();
@@ -238,6 +238,7 @@ Future<void> runServer() async {
 }
 
 /// This function checks if the version of this Reyveld executable is already running.
+///
 /// If it is, it will return true, otherwise it will return false.
 Future<bool> isRunning(Version version) async {
   /// If the file does exist, double check to see if the version has a heartbeat.
