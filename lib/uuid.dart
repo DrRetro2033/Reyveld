@@ -1,7 +1,5 @@
-import 'package:uuid/uuid.dart';
+import 'package:ulid/ulid.dart';
 
-final _uuid = Uuid();
-
-String generateUUIDv4() {
-  return _uuid.v4();
+String generateUUID() {
+  return Ulid().toUuid();
 }

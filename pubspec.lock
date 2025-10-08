@@ -713,14 +713,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.0"
-  uuid:
+  ulid:
     dependency: "direct main"
     description:
-      name: uuid
-      sha256: "648e103079f7c64a36dc7d39369cabb358d377078a051d6ae2ad3aa539519313"
+      name: ulid
+      sha256: "6d1f44802679bc3e3cc824045546af2bf26b1d8d0551f45457fedb6c827409ba"
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.7"
+    version: "2.0.1"
   version:
     dependency: "direct main"
     description:

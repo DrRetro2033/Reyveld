@@ -381,7 +381,7 @@ class SKit {
   /// To save the changes to the file, use [save].
   Future<void> addRoot(SRoot root) async {
     // Generate a unique hash for the root
-    root.hash = generateUUIDv4();
+    root.hash = generateUUID();
 
     // Adding the root to [_loadedRoots] is necessary for the [save] function to work.
     _loadedRoots.add(root);

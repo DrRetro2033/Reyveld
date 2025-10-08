@@ -173,7 +173,7 @@ class Lua {
       }
     } else if (value is Object && getInterface(value) != null) {
       final interface_ = getInterface(value)!..object = value;
-      final hash = generateUUIDv4();
+      final hash = generateUUID();
       _setObject(state, hash, interface_);
       await _pushToStack(state, interface_.toLua(this, hash));
     } else if (value is FutureOr<dynamic> Function(Lua)) {

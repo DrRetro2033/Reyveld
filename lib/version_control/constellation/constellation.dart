@@ -74,7 +74,7 @@ class Constellation extends SObject {
         includeList: globs);
     await kit.addRoot(archive);
     final rootStar = await StarCreator(
-            "Initial Star", generateUUIDv4(), await archive.newIndent(),
+            "Initial Star", generateUUID(), await archive.newIndent(),
             branch: "main")
         .create();
     addChild(rootStar);

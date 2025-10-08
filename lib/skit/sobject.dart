@@ -16,20 +16,28 @@ part 'sobject.interface.dart';
 
 /// This file consists of three core elements for both creating and loading [SObject]s:
 /// - The [SObject] itself.
-/// - The [SFactory] of the [SObject] used for loading.
-/// - The [SCreator] of the [SObject] used for creating.
+/// - The [SFactory] of the [SObject] used for loading from a SKit file.
+/// - The [SCreator] of the [SObject] used for creating for the first time.
 ///
 /// A object that wraps around a [XmlNode] and provides a simple API to access its attributes, children, and more.
 /// SObjects must have a [SFactory] object inside [_sobjectFactories] (inside skit.factories.dart) in order to be parsed from xml properly.
+///
 /// If there is no [SFactory] object found, then the [GenericFactory] will be used, which is not recommended as it will not have strict,
 /// predetermined behavior.
 abstract class SObject {
+  /// This is a default (allowed, reason) tuple for [childAllowed].
+  ///
+  /// If you want to make an [SObject] not allow any children, use this as the return value for [childAllowed].
   static const (bool, String) zeroChildrenAllowed =
       (false, "This SObject cannot have any children.");
 
+  /// The xml node of the [SObject].
   final XmlElement _node;
   SKit? _kit;
 
+  /// Checks if the given [SObject] is allowed to be a child of this [SObject].
+  ///
+  /// Returns a tuple of (allowed, reason).
   (bool, String) childAllowed(SObject object);
 
   /// The kit file this [SObject] is current in.
