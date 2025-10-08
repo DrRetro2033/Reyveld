@@ -31,7 +31,7 @@ https://github.com/DrRetro2033/Reyveld.
   If you have any problems, questions, or suggestions; Please feel free to open an issue on GitHub: 
 https://github.com/DrRetro2033/Reyveld/issues/new.
 
-  If you want to support the development of Reyveld, you can consider sponsoring me on GitHub: 
+  If you want to support the development of Reyveld, consider sponsoring me on GitHub: 
 https://github.com/sponsors/DrRetro2033.
 
 Sincerely,
