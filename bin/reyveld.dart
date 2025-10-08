@@ -1,19 +1,12 @@
 import 'dart:async';
 
-import 'package:args/command_runner.dart';
 import 'package:chalkdart/chalkstrings.dart';
 import 'package:reyveld/commands/commands.dart';
 import 'package:reyveld/reyveld.dart';
 
 /// Entry point for the Reyveld CLI.
 Future<void> main(List<String> args) async {
-  final runner = CommandRunner("reyveld", """
-A multi-purpose toolbox for working with files, with a focus on simplicity and ease of use.
-""")
-    ..addCommand(RunCommand())
-    ..addCommand(StartCommand())
-    ..addCommand(AuthVeldCommand())
-    ..addCommand(DocRegenCommand());
+  final runner = commands;
   runner.argParser
       .addFlag("verbose", abbr: "v", help: "Run Reyveld in verbose mode.");
   final results = runner.parse(args);
