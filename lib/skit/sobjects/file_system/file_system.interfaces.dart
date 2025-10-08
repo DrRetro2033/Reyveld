@@ -70,6 +70,25 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
   @override
   get statics => {
         tagEntry(SFileFactory()),
+        LEntry(
+          name: "open",
+          descr: "Opens the file",
+          isAsync: true,
+          args: const {
+            LArg<String>(
+              name: "path",
+              descr: "The path of the file",
+            ),
+          },
+          securityCheck: (cert, args) {
+            if (cert.getPolicy<SPolicyExterFiles>() != null) {
+              return true;
+            }
+            return false;
+          },
+          returnType: SFile,
+          (String path) async => await SFileCreator.open(path),
+        ),
       };
 
   /// The default read check for files.
@@ -596,5 +615,12 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
             descr: "Returns the extension of the file.",
             returnType: String,
             () => object!.path.getExtensions()),
+        LEntry(
+            name: "launch",
+            descr: "Launch the app associated with the file.",
+            isAsync: true, securityCheck: (cert, _) {
+          if (cert.getPolicy<SPolicyLaunchApps>() != null) return true;
+          return false;
+        }, () async => await object!.launch()),
       };
 }

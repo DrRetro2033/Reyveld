@@ -3,10 +3,12 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:math';
 import 'dart:typed_data';
+import 'package:open_url/open_url.dart';
 import 'package:reyveld/extensions.dart';
 import 'package:reyveld/reyveld.dart';
 import 'package:reyveld/security/certificate/certificate.dart';
 import 'package:reyveld/security/policies/files/files.dart';
+import 'package:reyveld/security/policies/launch_apps/launch_apps.dart';
 import 'package:reyveld/skit/sobject.dart';
 import 'package:reyveld/skit/sobjects/file_system/filelist/filelist.dart';
 import 'package:rxdart/rxdart.dart';
@@ -408,6 +410,10 @@ class SFile extends SObject {
     return await SRFileCreator(getParent<SArchive>()!.hash, path, checksum)
         .create()
       ..kit = kit;
+  }
+
+  Future<void> launch() async {
+    await openUrl("file:$path");
   }
 }
 

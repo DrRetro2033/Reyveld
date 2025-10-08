@@ -15,7 +15,7 @@ class SCustomCreator extends SCreator<SCustom> {
         if (attributes != null) {
           for (var entry in attributes!.entries) {
             if (entry.key == "type") {
-              continue; // Avoid overwriting the type attribute
+              continue; // Avoid overwriting the type attribute with another attribute.
             }
             builder.attribute(entry.key, entry.value.toString());
           }

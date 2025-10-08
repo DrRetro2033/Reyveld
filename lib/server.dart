@@ -37,21 +37,6 @@ Future<void> runServer() async {
   File lockFile =
       File("${Reyveld.appDataPath}/locks/${Reyveld.version.toString()}.lock");
 
-  final spinner =
-      CliSpin(spinner: CliSpinners.bounce).start("Generating Docs...".skyBlue);
-
-  /// Regenerate the lua documentation.
-  await Lua.generateDocs().listen((doc) {
-    spinner.text = "Generating $doc...".skyBlue;
-  }).asFuture();
-
-  spinner.success(
-      "Generated Lua Docs at \"${Reyveld.appDataPath}/docs/${Reyveld.version.toString()}/\""
-          .skyBlue);
-
-  /// Verify the signature of the user.
-  await Reyveld.verifySignature();
-
   final serverSpinner =
       CliSpin(spinner: CliSpinners.bounce).start("Starting Server...".skyBlue);
 

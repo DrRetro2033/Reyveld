@@ -12,7 +12,8 @@ A multi-purpose toolbox for working with files, with a focus on simplicity and e
 """)
     ..addCommand(RunCommand())
     ..addCommand(StartCommand())
-    ..addCommand(AuthVeldCommand());
+    ..addCommand(AuthVeldCommand())
+    ..addCommand(DocRegenCommand());
   runner.argParser
       .addFlag("verbose", abbr: "v", help: "Run Reyveld in verbose mode.");
   final results = runner.parse(args);
@@ -48,5 +49,9 @@ P.S. If you want to disable this message, you can go to ${Reyveld.appDataPath}/c
 """
         .orange);
   }
+
+  /// Verify the signature of the user.
+  await Reyveld.verifySignature();
+
   await runner.run(args);
 }

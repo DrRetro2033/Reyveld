@@ -25,6 +25,7 @@ class SCustom extends SObject {
 
   /// Sets an attribute of the xml node as an int.
   void setInt(String key, int value) {
+    if (key == "type") return;
     set(key, value.toString());
   }
 
@@ -38,6 +39,7 @@ class SCustom extends SObject {
 
   /// Sets an attribute of the xml node as a string.
   void setString(String key, String value) {
+    if (key == "type") return;
     set(key, value);
   }
 
@@ -51,6 +53,7 @@ class SCustom extends SObject {
 
   /// Sets an attribute of the xml node as a bool.
   void setBool(String key, bool value) {
+    if (key == "type") return;
     set(key, value ? "1" : "0");
   }
 }
