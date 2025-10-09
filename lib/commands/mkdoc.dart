@@ -6,7 +6,7 @@ import 'package:reyveld/scripting/lua.dart';
 
 class DocRegenCommand extends Command {
   @override
-  String get name => 'doc-regen';
+  String get name => 'mkdoc';
 
   @override
   String get description => 'Regenerates the documentation.';
