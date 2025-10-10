@@ -9,7 +9,7 @@ class DirectoryInterface extends SInterface<Directory> {
   get className => "Directory";
 
   @override
-  get classDescription => "A directory on the file system.";
+  get classDescription => """A directory in the file system.""";
 
   @override
   get statics => {

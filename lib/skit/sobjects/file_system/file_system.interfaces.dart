@@ -615,12 +615,5 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
             descr: "Returns the extension of the file.",
             returnType: String,
             () => object!.path.getExtensions()),
-        LEntry(
-            name: "launch",
-            descr: "Launch the app associated with the file.",
-            isAsync: true, securityCheck: (cert, _) {
-          if (cert.getPolicy<SPolicyLaunchApps>() != null) return true;
-          return false;
-        }, () async => await object!.launch()),
       };
 }

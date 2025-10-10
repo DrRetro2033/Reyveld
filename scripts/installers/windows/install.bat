@@ -33,13 +33,16 @@ SETLOCAL
 REM Define variables
 SET APP_NAME=reyveld
 SET VERSION=1.0.0-beta
-SET INSTALL_DIR=%AppData%\%APP_NAME%\server\%VERSION%
+SET INSTALL_DIR=C:\Program Files\%APP_NAME%\server\%VERSION%
 
 REM Create the install directory
 if not exist "%INSTALL_DIR%" mkdir "%INSTALL_DIR%"
 
 REM Copy the executable to the install directory
 copy /Y "%~dp0%APP_NAME%.exe" "%INSTALL_DIR%"
+
+setx PATH "%PATH%;C:\Program Files\%APP_NAME%\server\" /M
+echo PATH updated. Please restart command prompt for changes to take effect.
 
 echo %APP_NAME% installed successfully!
 :end

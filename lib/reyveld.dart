@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'package:ini/ini.dart';
 import 'package:pool/pool.dart';
+import 'package:reyveld/apps.dart';
 import 'package:reyveld/extensions.dart';
 import 'package:reyveld/skit/skit.dart';
 import 'package:reyveld/skit/sobjects/author/author.dart';
@@ -37,8 +38,10 @@ class Reyveld {
   static RSAPrivateKey? _cachedPrivateKey;
   static RSAPublicKey? _cachedPublicKey;
 
+  /// The path to the Reyveld data directory.
   static File get signatureFile => File("$appDataPath/me.keys");
 
+  /// The private key of the user.
   static Future<RSAPrivateKey> get privateKey async {
     if (_cachedPrivateKey == null) {
       if (!await signatureFile.exists()) {
@@ -52,6 +55,7 @@ class Reyveld {
     return _cachedPrivateKey!;
   }
 
+  /// The public key of the user.
   static Future<RSAPublicKey> get publicKey async {
     if (_cachedPublicKey == null) {
       if (!await signatureFile.exists()) {
@@ -65,6 +69,7 @@ class Reyveld {
     return _cachedPublicKey!;
   }
 
+  /// Gets the user's author object.
   static Future<Author?> get author async => await Author.initialize();
 
   /// The logger for Reyveld.
@@ -247,6 +252,10 @@ $publicKeyPem""");
     if (dir.existsSync()) {
       await dir.delete(recursive: true);
     }
+  }
+
+  static Future<void> init() async {
+    await AppLauncher.initialize();
   }
 }
 

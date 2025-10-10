@@ -4,6 +4,7 @@ import 'run.dart';
 import 'start.dart';
 import 'authveld.dart';
 import 'mkdoc.dart';
+import 'apps.dart';
 
 CommandRunner get commands => CommandRunner("reyveld", """
 A multi-purpose toolbox for working with files, with a focus on simplicity and ease of use.
@@ -11,4 +12,5 @@ A multi-purpose toolbox for working with files, with a focus on simplicity and e
   ..addCommand(RunCommand())
   ..addCommand(StartCommand())
   ..addCommand(AuthVeldCommand())
-  ..addCommand(DocRegenCommand());
+  ..addCommand(DocRegenCommand())
+  ..addCommand(AppsCommands());

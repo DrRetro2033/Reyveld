@@ -7,12 +7,14 @@ class AuthVeldInterface extends SInterface<AuthVeld> {
   @override
   get staticDescription =>
       """AuthVeld is a service that allows users to authorize applications to access Reyveld.
+
 This interface provides methods to make authorization requests and load certificates. These certificates describe what an application can and cannot do inside of the constrained environment of Reyveld.""";
   @override
   get statics => {
         LEntry(
             name: "authorize",
             descr: """Makes an authorization request with AuthVeld.
+            
 Will open the user's browser to the authorization page, where they will decide if they allow the application to access Reyveld with the given permissions.""",
             args: {
               LArg<String>(name: "name", descr: "The name of the application."),

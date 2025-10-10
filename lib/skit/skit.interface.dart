@@ -64,6 +64,7 @@ They store a SHeader and any number of SRoots in a single file.
               LArg<int>(
                   name: "type",
                   descr: "The type of the SKit.",
+                  docTypeOverride: "SKitType",
                   kind: ArgKind.optionalNamed),
               LArg<String>(
                   name: "key",

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
 
+import 'package:reyveld/apps.dart';
 import 'package:reyveld/reyveld.dart';
 import 'package:reyveld/extensions.dart';
 import 'package:reyveld/scripting/extras/extras.dart';
@@ -68,6 +69,7 @@ class Lua {
         SPolicySKitInterface(),
         SPolicyAllInterface(),
         StringBufferInterface(),
+        AppLauncherInterface(),
       };
 
   /// A set of all interfaces in the lua state, sorted by priority.
@@ -507,7 +509,7 @@ ${enum_.key} = {
 }
 
 /// A reference to a lua function.
-/// 
+///
 /// This is used to call lua functions from dart.
 /// What it does is register the function in the lua registry, and then when [call] is called,
 /// it will push the function back to the stack, and then call it.

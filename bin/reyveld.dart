@@ -6,6 +6,7 @@ import 'package:reyveld/reyveld.dart';
 
 /// Entry point for the Reyveld CLI.
 Future<void> main(List<String> args) async {
+  await Reyveld.init();
   final runner = commands;
   runner.argParser
       .addFlag("verbose", abbr: "v", help: "Run Reyveld in verbose mode.");
