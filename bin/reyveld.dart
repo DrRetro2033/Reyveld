@@ -44,8 +44,5 @@ P.S. If you want to disable this message, you can go to ${Reyveld.appDataPath}/c
         .orange);
   }
 
-  /// Verify the signature of the user.
-  await Reyveld.verifySignature();
-
   await runner.run(args);
 }

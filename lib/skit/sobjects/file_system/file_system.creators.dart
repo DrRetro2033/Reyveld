@@ -38,9 +38,11 @@ class SArchiveCreator extends SCreator<SArchive> {
             return await ref.getFile(filePath)!.getRef();
           }
         }
-        final f = await SFileCreator(filePath, await e.checksum).create();
-        f.externalVersion = e;
-        await f.refreshData();
+        final f = await (await SFileCreator(
+          filePath,
+          await e.checksum,
+        ).create())
+            .toInternal();
         return f;
       });
     }

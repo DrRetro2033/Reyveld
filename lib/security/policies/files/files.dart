@@ -18,28 +18,28 @@ class SPolicyExterFiles extends SPolicy {
     return (false, "Cannot add a ${object.runtimeType} to an $runtimeType!");
   }
 
-  bool get read => get("read") == "1";
-  bool get write => get("write") == "1";
-  bool get create => get("create") == "1";
-  bool get delete => get("delete") == "1";
+  bool get _read => get("read") == "1";
+  bool get _write => get("write") == "1";
+  bool get _create => get("create") == "1";
+  bool get _delete => get("delete") == "1";
 
   Whitelist? get whitelist => getChild<Whitelist>();
 
-  bool readAllowed(String filepath) => read && whitelist!.included(filepath);
+  bool readAllowed(String filepath) => _read && whitelist!.included(filepath);
 
-  bool writeAllowed(String filepath) => write && whitelist!.included(filepath);
+  bool writeAllowed(String filepath) => _write && whitelist!.included(filepath);
 
   bool createAllowed(String filepath) =>
-      create && whitelist!.included(filepath);
+      _create && whitelist!.included(filepath);
 
   bool deleteAllowed(String filepath) =>
-      delete && whitelist!.included(filepath);
+      _delete && whitelist!.included(filepath);
 
   @override
   get safetyLevel {
-    if (write || delete) {
+    if (_write || _delete) {
       return SPolicySafetyLevel.unsafe;
-    } else if (create) {
+    } else if (_create) {
       return SPolicySafetyLevel.warn;
     } else {
       return SPolicySafetyLevel.safe;
@@ -49,10 +49,10 @@ class SPolicyExterFiles extends SPolicy {
   @override
   get description {
     final x = [
-      (read, "read"),
-      (write, "write"),
-      (create, "create"),
-      (delete, "delete")
+      (_read, "read"),
+      (_write, "write"),
+      (_create, "create"),
+      (_delete, "delete")
     ];
     return "Allow the application to ${x.where((e) => e.$1).map((e) => e.$2).join(", ")} external files.";
   }
@@ -60,10 +60,10 @@ class SPolicyExterFiles extends SPolicy {
   @override
   String details() {
     final x = [
-      (read, "read"),
-      (write, "write"),
-      (create, "create"),
-      (delete, "delete")
+      (_read, "read"),
+      (_write, "write"),
+      (_create, "create"),
+      (_delete, "delete")
     ];
     return """
 ## Allow the application to ${x.where((e) => e.$1).map((e) => e.$2).join(", ")} the following external files:

@@ -289,7 +289,7 @@ class Lua {
         result = state.toStr(state.getTop());
         if (T != String) {
           try {
-            result = int.parse(result);
+            result = num.parse(result);
           } catch (e) {
             result = result;
           }

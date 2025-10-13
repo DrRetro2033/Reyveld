@@ -256,6 +256,7 @@ $publicKeyPem""");
 
   static Future<void> init() async {
     await AppLauncher.initialize();
+    await Reyveld.verifySignature();
   }
 }
 

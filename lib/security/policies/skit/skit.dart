@@ -16,10 +16,10 @@ class SPolicySKit extends SPolicy {
   };
   SPolicySKit(super._node);
 
-  bool get read => get("read") == "1";
-  bool get write => get("write") == "1";
-  bool get create => get("create") == "1";
-  bool get delete => get("delete") == "1";
+  bool get _read => get("read") == "1";
+  bool get _write => get("write") == "1";
+  bool get _create => get("create") == "1";
+  bool get _delete => get("delete") == "1";
 
   bool isProtectedSKit(String path) {
     if (_protectedSKits.contains(path.getFilename())) {
@@ -32,7 +32,7 @@ class SPolicySKit extends SPolicy {
     if (isProtectedSKit(path)) {
       return false;
     }
-    return read;
+    return _read;
   }
 
   @override
@@ -41,10 +41,10 @@ class SPolicySKit extends SPolicy {
   @override
   get description {
     final x = [
-      (read, "read"),
-      (write, "write"),
-      (create, "create"),
-      (delete, "delete")
+      (_read, "read"),
+      (_write, "write"),
+      (_create, "create"),
+      (_delete, "delete")
     ];
     return "Allow the application to ${x.where((e) => e.$1).map((e) => e.$2).join(", ")} SKits.";
   }

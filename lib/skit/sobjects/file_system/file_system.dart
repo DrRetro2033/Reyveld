@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 import 'dart:math';
@@ -167,53 +168,82 @@ class SFile extends SObject {
 
   @override
   onSave(kit) async {
-    if (cdata == null || checksum != await file.then((e) => e.checksum)) {
+    if (cdata == null || checksum != await tempFile.then((e) => e.checksum)) {
       clearInnerText();
-      await refreshData();
+      await save();
     }
   }
 
   /// Returns the path of the file.
   String get path => get("path")!;
 
-  bool get isExternal => (get("extern") ?? "0") == "1";
+  bool get isExternal => externalVersion != null;
 
   /// This is the default endianness of the file.
+  ///
   /// Can be set to false to force big endian as the default.
   bool defaultEndian = true;
 
   File? externalVersion;
 
-  Future<File> get file async {
-    externalVersion ??=
-        await Reyveld.findTempFile(path.getFilename(), checksum) ??
-            await Reyveld.newTempFile(path.getFilename());
-    if (!await externalVersion!.exists()) {
-      await externalVersion!.create(recursive: true);
-      final write = externalVersion!.openWrite();
-      await write.addStream(Stream.fromIterable(cdata!.chunk(chunkSize))
-          .transform(gzip.decoder)
-          .rechunk(chunkSize));
+  File? _temp;
+
+  /// Converts the file to an internal file.
+  ///
+  /// If the file is already internal, it will be returned as is.
+  Future<SFile> toInternal() async {
+    if (!isExternal) return this;
+    final temp = await Reyveld.newTempFile(path.getFilename());
+    await temp.create(recursive: true);
+    final sink = temp.openWrite();
+    await sink.addStream(externalVersion!.openRead());
+    await sink.flush();
+    await sink.close();
+    return await SFileCreator(path, await temp.checksum).create();
+  }
+
+  Future<File> get tempFile async {
+    _temp ??= await Reyveld.findTempFile(path.getFilename(), checksum) ??
+        await Reyveld.newTempFile(path.getFilename());
+    if (!await _temp!.exists()) {
+      await _temp!.create(recursive: true);
+      final write = _temp!.openWrite();
+      if (isExternal) {
+        await write.addStream(externalVersion!.openRead());
+      } else {
+        await write.addStream(Stream.fromIterable(cdata!.chunk(chunkSize))
+            .transform(gzip.decoder)
+            .rechunk(chunkSize));
+      }
+
       await write.flush();
       await write.close();
     }
-
-    return externalVersion!;
+    return _temp!;
   }
 
   Future<RandomAccessFile> get ra async =>
-      await file.then((e) => e.open(mode: FileMode.append));
+      await tempFile.then((e) => e.open(mode: FileMode.append));
 
-  Future<int> get length async => await file.then((e) => e.length());
+  Future<int> get length async {
+    final file = await ra;
+    final length = await file.length();
+    await file.close();
+    return length;
+  }
 
   /// Returns the checksum of the file.
   String get checksum => get("checksum")!;
 
   /// Returns a stream of the bytes at the specified range.
   Future<List<int>> getRange(int start, int end) async {
-    return await Reyveld.withReadAndWritePool(() async => await ra
-        .then((e) => e.setPosition(start))
-        .then((e) => e.read(end - start)));
+    return await Reyveld.withReadAndWritePool(() async {
+      final file = await ra;
+      await file.setPosition(start);
+      final data = await file.read(end - start);
+      await file.close();
+      return data;
+    });
   }
 
   Future<void> setRange(
@@ -225,15 +255,15 @@ class SFile extends SObject {
     if (!(littleEndian ?? defaultEndian)) data = data.toList().reversed;
     await Reyveld.withReadAndWritePool(() async {
       await ra
-          .then((e) => e.setPosition(start))
-          .then((e) => e.writeFrom(data.toList()))
-          .then((e) => e.flush())
-          .then((e) => e.close());
+          .then((e) async => await e.setPosition(start))
+          .then((e) async => await e.writeFrom(data.toList()))
+          .then((e) async => await e.flush())
+          .then((e) async => await e.close());
     });
   }
 
-  Future<void> refreshData() async =>
-      await Reyveld.readAndWritePool.then((e) async => cdata = await file
+  Future<void> _refreshData() async =>
+      await Reyveld.readAndWritePool.then((e) async => cdata = await tempFile
           .then((e) => e
               .openRead()
               .rechunk(chunkSize)
@@ -241,12 +271,12 @@ class SFile extends SObject {
               .rechunk(chunkSize))
           .then((e) => e.expand((e) => e).toList()));
 
-  Future<int> getU8(int index) async =>
+  Future<int> readU8(int index) async =>
       await _formNumber(await getRange(index, index + 1), false);
 
-  Future<int> get8(int index) async => (await getU8(index)).toSigned(8);
+  Future<int> read8(int index) async => (await readU8(index)).toSigned(8);
 
-  Future<void> set8(int index, int value) async =>
+  Future<void> write8(int index, int value) async =>
       await setRange(index, index + 1, _seperateInt(value), true);
 
   /// Merges two bytes into one. This is used to form numbers larger than one byte.
@@ -269,50 +299,51 @@ class SFile extends SObject {
   }
 
   /// Forms a unsigned number from a stream of bytes.
-  Future<int> getU16(int index, {bool? littleEndian}) async =>
+  Future<int> readU16(int index, {bool? littleEndian}) async =>
       await _formNumber(await getRange(index, index + 2), littleEndian);
 
   /// Forms a signed number from a stream of bytes.
-  Future<int> get16(int index, {bool? littleEndian}) async =>
-      (await getU16(index, littleEndian: littleEndian)).toSigned(16);
+  Future<int> read16(int index, {bool? littleEndian}) async =>
+      (await readU16(index, littleEndian: littleEndian)).toSigned(16);
 
   /// Sets a 16 bit number at the specified index.
-  Future<void> set16(int index, int value, {bool? littleEndian}) async =>
+  Future<void> write16(int index, int value, {bool? littleEndian}) async =>
       await setRange(index, index + 2, _seperateInt(value), littleEndian);
 
   /// Forms a unsigned number from a stream of bytes.
-  Future<int> getU32(int index, {bool? littleEndian}) async =>
+  Future<int> readU32(int index, {bool? littleEndian}) async =>
       await _formNumber(await getRange(index, index + 4), littleEndian);
 
   /// Forms a signed number from a stream of bytes.
-  Future<int> get32(int index, {bool? littleEndian}) async =>
-      (await getU32(index, littleEndian: littleEndian)).toSigned(32);
+  Future<int> read32(int index, {bool? littleEndian}) async =>
+      (await readU32(index, littleEndian: littleEndian)).toSigned(32);
 
   /// Sets a 32 bit number at the specified index.
-  Future<void> set32(int index, int value, {bool? littleEndian}) async =>
+  Future<void> write32(int index, int value, {bool? littleEndian}) async =>
       await setRange(index, index + 4, _seperateInt(value), littleEndian);
 
   /// Forms a unsigned number from a stream of bytes.
-  Future<int> getU64(int index, {bool? littleEndian}) async =>
+  Future<int> readU64(int index, {bool? littleEndian}) async =>
       await _formNumber(await getRange(index, index + 8), littleEndian);
 
   /// Forms a signed number from a stream of bytes.
-  Future<int> get64(int index, {bool? littleEndian}) async =>
-      (await getU64(index, littleEndian: littleEndian)).toSigned(64);
+  Future<int> read64(int index, {bool? littleEndian}) async =>
+      (await readU64(index, littleEndian: littleEndian)).toSigned(64);
 
   /// Sets a 64 bit number at the specified index.
-  Future<void> set64(int index, int value, {bool? littleEndian}) async =>
+  Future<void> write64(int index, int value, {bool? littleEndian}) async =>
       await setRange(index, index + 8, _seperateInt(value), littleEndian);
 
   /// Forms a float from a U32.
-  Future<double> get32Float(int index, {bool? littleEndian}) async {
-    final getUnsigned = await getU32(index, littleEndian: littleEndian);
+  Future<double> read32Float(int index, {bool? littleEndian}) async {
+    final getUnsigned = await readU32(index, littleEndian: littleEndian);
     final buffer = ByteData(4);
     buffer.setUint32(0, getUnsigned);
     return buffer.getFloat32(0);
   }
 
-  Future<void> set32Float(int index, double value, {bool? littleEndian}) async {
+  Future<void> write32Float(int index, double value,
+      {bool? littleEndian}) async {
     final buffer = ByteData(4);
     buffer.setFloat32(0, value);
     final bytes = buffer.buffer.asUint8List();
@@ -320,21 +351,22 @@ class SFile extends SObject {
   }
 
   /// Forms a float from a U64.
-  Future<double> get64Float(int index, {bool? littleEndian}) async {
-    final getUnsigned = await getU64(index, littleEndian: littleEndian);
+  Future<double> read64Float(int index, {bool? littleEndian}) async {
+    final getUnsigned = await readU64(index, littleEndian: littleEndian);
     final buffer = ByteData(8);
     buffer.setUint64(0, getUnsigned);
     return buffer.getFloat64(0);
   }
 
-  Future<void> set64Float(int index, double value, {bool? littleEndian}) async {
+  Future<void> write64Float(int index, double value,
+      {bool? littleEndian}) async {
     final buffer = ByteData(8);
     buffer.setFloat64(0, value);
     final bytes = buffer.buffer.asUint8List();
     await setRange(index, index + 8, bytes, littleEndian);
   }
 
-  Future<String> getUtf16(int index, int length,
+  Future<String> readUtf16(int index, int length,
       {bool stopAtNull = false}) async {
     final bytes = await getRange(index, index + (length * 2));
     final buffer = StringBuffer();
@@ -345,7 +377,7 @@ class SFile extends SObject {
     return buffer.toString();
   }
 
-  Future<String> getUtf8(int index, int length,
+  Future<String> readUtf8(int index, int length,
       {bool stopAtNull = false}) async {
     final bytes = await getRange(index, index + length);
     final buffer = StringBuffer();
@@ -354,6 +386,36 @@ class SFile extends SObject {
       buffer.writeCharCode(char);
     }
     return buffer.toString();
+  }
+
+  Future<void> writeUtf8(int index, String value) async {
+    final bytes = utf8.encode(value);
+    for (final char in bytes) {
+      await write8(index, char);
+      index++;
+    }
+  }
+
+  Future<void> writeUtf16(int index, String value, {bool? littleEndian}) async {
+    final bytes = value.codeUnits;
+    for (final char in bytes) {
+      await write16(index, char, littleEndian: littleEndian);
+      index += 2;
+    }
+  }
+
+  /// Writes a string to the file.
+  Future<void> write(String value) async {
+    await ra
+        .then((e) async => await e.setPosition(await e.length()))
+        .then((e) => e.writeString(value));
+  }
+
+  /// Writes a line to the file.
+  Future<void> writeln(String value) async {
+    await ra
+        .then((e) async => await e.setPosition(await e.length()))
+        .then((e) => e.writeString("$value\n"));
   }
 
   /// Extracts the file to the specified folder.
@@ -367,27 +429,25 @@ class SFile extends SObject {
 
     await extFile.create(recursive: true);
     final sink = extFile.openWrite();
-    await sink.addStream((await file).openRead());
+    await sink.addStream((await tempFile).openRead());
     await sink.flush();
     await sink.close();
   }
 
-  /// Saves the file its path defined by [path].
+  /// Saves the all the changes of a file.
   Future<void> save() async {
-    if (!await kit.isVerifiedAndTrusted()) {
-      throw TrustException(kit, await kit.kitPublicKey);
+    if (isExternal) {
+      await externalVersion!.create(recursive: true);
+      final sink = externalVersion!.openWrite();
+      await sink.addStream((await tempFile).openRead());
+      await sink.flush();
+      await sink.close();
+    } else {
+      if (!await kit.isVerifiedAndTrusted()) {
+        throw TrustException(kit, await kit.kitPublicKey);
+      }
+      await _refreshData();
     }
-    if (!isExternal) throw Exception("Cannot save an internal file!");
-    final fileTo = File(path);
-    if (!fileTo.isAbsolute) {
-      throw Exception(
-          "File path is not absolute! To save a SFile onto disk using save(), its path must be absolute. See saveAs() instead.");
-    }
-    await fileTo.create(recursive: true);
-    final sink = fileTo.openWrite();
-    await sink.addStream((await file).openRead());
-    await sink.flush();
-    await sink.close();
   }
 
   /// Saves the file to the specified path.
@@ -399,10 +459,15 @@ class SFile extends SObject {
     if (overwrite && await fileAs.exists()) await fileAs.delete();
     await fileAs.create(recursive: true, exclusive: true);
     final sink = fileAs.openWrite();
-    await sink.addStream((await file).openRead());
+    await sink.addStream((await tempFile).openRead());
     await sink.flush();
     await sink.close();
   }
+
+  Future<void> discard() async => await Reyveld.withReadAndWritePool(() async {
+        await _temp!.delete();
+        _temp = null;
+      });
 
   Future<SRFile> getRef() async {
     return await SRFileCreator(getParent<SArchive>()!.hash, path, checksum)
@@ -446,9 +511,9 @@ class SRFile extends SFile {
   }
 
   @override
-  Future<File> get file async => await kit
+  Future<File> get tempFile async => await kit
       .getArchive(archiveHash)
-      .then((value) async => value!.getFile(filePath)!.file);
+      .then((value) async => value!.getFile(filePath)!.tempFile);
 
   SRFile(super._node);
   @override

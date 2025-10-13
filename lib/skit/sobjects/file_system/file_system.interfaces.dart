@@ -72,12 +72,12 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
         tagEntry(SFileFactory()),
         LEntry(
           name: "open",
-          descr: "Opens the file",
+          descr: "Opens a external file.",
           isAsync: true,
           args: const {
             LArg<String>(
               name: "path",
-              descr: "The path of the file",
+              descr: "The path to the file.",
             ),
           },
           securityCheck: (cert, args) {
@@ -89,6 +89,54 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
           returnType: SFile,
           (String path) async => await SFileCreator.open(path),
         ),
+        LEntry(
+          name: "create",
+          descr: """Creates a new file.
+
+If the already exists and overwrite is not true, it will throw an exception.
+
+If the file already exists and overwrite is true, it will delete the file and create a new one 
+(Must be permitted to delete the external file).
+""",
+          isAsync: true,
+          args: const {
+            LArg<String>(
+              name: "path",
+              descr: "The path to the file.",
+            ),
+            LArg<bool>(
+              name: "overwrite",
+              descr: "Whether to overwrite the file if it already exists.",
+              kind: ArgKind.optionalNamed,
+            ),
+          },
+          securityCheck: (cert, args) {
+            if (cert.getPolicy<SPolicyExterFiles>() != null) {
+              final policy = cert.getPolicy<SPolicyExterFiles>()!;
+              if (!policy.createAllowed(args.positional[0])) return false;
+              if (args.named["overwrite"] == true) {
+                return policy.deleteAllowed(args.positional[0]);
+              }
+              return true;
+            }
+            return false;
+          },
+          returnType: SFile,
+          (String path, {bool overwrite = false}) async {
+            if (await File(path).exists()) {
+              if (!overwrite) throw Exception("File already exists.");
+              await File(path).delete();
+            }
+            await File(path).create(recursive: true);
+            return await SFileCreator.open(path);
+          },
+        ),
+        LEntry(
+            name: "exists",
+            descr: "Checks if the file exists.",
+            returnType: bool,
+            isAsync: true,
+            (String path) async => await File(path).exists()),
       };
 
   /// The default read check for files.
@@ -159,7 +207,7 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
             },
             returnType: int,
             isAsync: true, (int index) async {
-          await object!.getU8(index);
+          await object!.readU8(index);
         }),
         LEntry(
             name: "get8",
@@ -173,7 +221,7 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
             },
             returnType: int,
             isAsync: true, (int index) async {
-          await object!.get8(index);
+          await object!.read8(index);
         }),
         LEntry(
             name: "set8",
@@ -191,7 +239,7 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
               ),
             },
             isAsync: true, (int index, int value) async {
-          await object!.set8(index, value);
+          await object!.write8(index, value);
         }),
         LEntry(
             name: "getU16",
@@ -210,7 +258,7 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
             },
             returnType: int,
             isAsync: true, (int index, [bool? littleEndian]) async {
-          return await object!.getU16(index, littleEndian: littleEndian);
+          return await object!.readU16(index, littleEndian: littleEndian);
         }),
         LEntry(
             name: "get16",
@@ -229,7 +277,7 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
             },
             returnType: int,
             isAsync: true, (int index, [bool? littleEndian]) async {
-          return await object!.get16(index, littleEndian: littleEndian);
+          return await object!.read16(index, littleEndian: littleEndian);
         }),
         LEntry(
             name: "set16",
@@ -252,7 +300,7 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
                   kind: ArgKind.optionalPositional)
             },
             isAsync: true, (int index, int value, [bool? littleEndian]) async {
-          await object!.set16(index, value, littleEndian: littleEndian);
+          await object!.write16(index, value, littleEndian: littleEndian);
         }),
         LEntry(
             name: "getU32",
@@ -272,7 +320,7 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
             returnType: int,
             isAsync: true,
             (int index, [bool? littleEndian]) async =>
-                await object!.getU32(index, littleEndian: littleEndian)),
+                await object!.readU32(index, littleEndian: littleEndian)),
         LEntry(
             name: "get32",
             descr: "Returns a signed 32 bit value at the specified index.",
@@ -291,7 +339,7 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
             returnType: int,
             isAsync: true,
             (int index, [bool? littleEndian]) async =>
-                await object!.get32(index, littleEndian: littleEndian)),
+                await object!.read32(index, littleEndian: littleEndian)),
         LEntry(
             name: "set32",
             descr:
@@ -313,7 +361,7 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
                   kind: ArgKind.optionalPositional)
             },
             isAsync: true, (int index, int value, [bool? littleEndian]) async {
-          await object!.set32(index, value, littleEndian: littleEndian);
+          await object!.write32(index, value, littleEndian: littleEndian);
         }),
         LEntry(
             name: "getU64",
@@ -333,7 +381,7 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
             returnType: int,
             isAsync: true,
             (int index, [bool? littleEndian]) async =>
-                await object!.getU64(index, littleEndian: littleEndian)),
+                await object!.readU64(index, littleEndian: littleEndian)),
         LEntry(
             name: "get64",
             descr: "Returns a signed 64 bit value at the specified index.",
@@ -352,7 +400,7 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
             returnType: int,
             isAsync: true,
             (int index, [bool? littleEndian]) async =>
-                object!.get64(index, littleEndian: littleEndian)),
+                await object!.read64(index, littleEndian: littleEndian)),
         LEntry(
             name: "set64",
             descr:
@@ -374,7 +422,7 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
                   kind: ArgKind.optionalPositional)
             },
             isAsync: true, (int index, int value, [bool? littleEndian]) async {
-          await object!.set64(index, value, littleEndian: littleEndian);
+          await object!.write64(index, value, littleEndian: littleEndian);
         }),
         LEntry(
             name: "getF32",
@@ -393,7 +441,7 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
             },
             returnType: double,
             isAsync: true, (int index, [bool? littleEndian]) async {
-          return await object!.get32Float(index, littleEndian: littleEndian);
+          return await object!.read32Float(index, littleEndian: littleEndian);
         }),
         LEntry(
             name: "getF64",
@@ -412,7 +460,7 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
             },
             returnType: double,
             isAsync: true, (int index, [bool? littleEndian]) async {
-          return await object!.get64Float(index, littleEndian: littleEndian);
+          return await object!.read64Float(index, littleEndian: littleEndian);
         }),
         LEntry(
             name: "setF32",
@@ -435,7 +483,7 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
             },
             isAsync: true, (int index, double value,
                 [bool? littleEndian]) async {
-          await object!.set32Float(index, value, littleEndian: littleEndian);
+          await object!.write32Float(index, value, littleEndian: littleEndian);
         }),
         LEntry(
             name: "setF64",
@@ -458,7 +506,7 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
             },
             isAsync: true, (int index, double value,
                 [bool? littleEndian]) async {
-          await object!.set64Float(index, value, littleEndian: littleEndian);
+          await object!.write64Float(index, value, littleEndian: littleEndian);
         }),
         LEntry(name: "defaultEndian", returnType: bool, args: {
           LArg<bool>(
@@ -494,7 +542,7 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
             returnType: String,
             isAsync: true, (int index, int length,
                 {bool stopAtNull = false}) async {
-          return await object!.getUtf16(index, length, stopAtNull: stopAtNull);
+          return await object!.readUtf16(index, length, stopAtNull: stopAtNull);
         }),
         LEntry(
             name: "getUtf8",
@@ -518,7 +566,7 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
             returnType: String,
             isAsync: true, (int index, int length,
                 {bool stopAtNull = false}) async {
-          return await object!.getUtf8(index, length, stopAtNull: stopAtNull);
+          return await object!.readUtf8(index, length, stopAtNull: stopAtNull);
         }),
         LEntry(
           name: "length",
@@ -528,6 +576,26 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
           isAsync: true,
           () async => await object!.length,
         ),
+        LEntry(
+            name: "write",
+            descr: "Writes a string to the file.",
+            args: const {
+              LArg<String>(name: "value", descr: "The string to write.")
+            },
+            securityCheck: writeCheck,
+            isAsync: true, (String value) async {
+          await object!.write(value);
+        }),
+        LEntry(
+            name: "writeln",
+            descr: "Writes a line to the file.",
+            args: const {
+              LArg<String>(name: "value", descr: "The string to write.")
+            },
+            securityCheck: writeCheck,
+            isAsync: true, (String value) async {
+          await object!.writeln(value);
+        }),
         LEntry(
           name: "getSpan",
           descr:
@@ -610,6 +678,11 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
             await object!.saveAs(path, overwrite: overwrite);
           },
         ),
+        LEntry(
+            name: "discard",
+            descr: "Discards any unsaved changes.",
+            isAsync: true,
+            () async => await object!.discard()),
         LEntry(
             name: "extension",
             descr: "Returns the extension of the file.",
