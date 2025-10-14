@@ -5,11 +5,11 @@ part of 'package:reyveld/builder.dart';
 class SGenGenerator extends GeneratorForAnnotation<SGen> {
   @override
   String generateForAnnotatedElement(
-    Element element,
+    Element2 element,
     ConstantReader annotation,
     BuildStep buildStep,
   ) {
-    if (element is! ClassElement) {
+    if (element is! ClassElement2) {
       throw InvalidGenerationSourceError(
         '@SGen can only be used on classes.',
         element: element,
@@ -22,7 +22,7 @@ class SGenGenerator extends GeneratorForAnnotation<SGen> {
         element: element,
       );
     }
-    final className = element.name;
+    final className = element.name3;
     final factoryClassName = '${className}Factory';
     final tagName = annotation.peek('tag')?.stringValue ?? className;
     return '''
