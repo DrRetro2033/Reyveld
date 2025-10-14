@@ -3,6 +3,8 @@ targets:
     builders:
       reyveld|sgen:
         enabled: true
+      reyveld|sinterface:
+        enabled: true
 
 builders:
   sgen:
@@ -10,5 +12,13 @@ builders:
     builder_factories: ["sgenBuilder"]
     build_extensions: { ".dart": [".g.dart"] }
     auto_apply: dependents
+    runs_before: ["source_gen|combining_builder"]
+    applies_builders: ["source_gen|combining_builder"]
+  sinterface:
+    import: "package:reyveld/builder.dart"
+    builder_factories: ["sinterfaceBuilder"]
+    build_extensions: { ".dart": [".interface.dart"] }
+    target: "lib/**"
+    build_to: source
     runs_before: ["source_gen|combining_builder"]
     applies_builders: ["source_gen|combining_builder"]

@@ -15,9 +15,11 @@ import 'package:version/version.dart';
 import 'package:talker/talker.dart';
 import 'package:reyveld/version.dart' as versi;
 
-part "reyveld.interface.dart";
+part 'reyveld.interface.dart';
 
 /// Contains global functions for Reyveld, for example, settings, paths, etc.
+@LuaClass(
+    "Contains global functions for Reyveld, for example, settings, paths, etc.")
 class Reyveld {
   /// The current version of Reyveld
   static Version get version => versi.currentVersion;
@@ -117,6 +119,7 @@ DISABLE_WELCOME_MESSAGE=False
     return Config.fromString(await file.readAsString());
   }
 
+  @LuaFunc(description: "Get a performance option.")
   static Future<String> getPerformanceOption(String option) async {
     final config = await _config;
     return config.get("performance", option) ??

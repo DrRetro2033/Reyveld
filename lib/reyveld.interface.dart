@@ -1,14 +1,37 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// dart format width=80
+
 part of 'reyveld.dart';
+
+// **************************************************************************
+// SInterfaceGenerator
+// **************************************************************************
 
 class ReyveldInterface extends SInterface<Reyveld> {
   @override
   get className => "Reyveld";
 
   @override
-  get staticDescription => """
-Contains global functions for Reyveld, for example, settings, paths, etc.
-""";
+  get classDescription =>
+      "Contains global functions for Reyveld, for example, settings, paths, etc.";
 
   @override
-  get statics => {};
+  get statics => {
+        LEntry(
+            name: "getPerformanceOption",
+            descr: "Get a performance option.",
+            returnType: String,
+            returnNullable: false,
+            isAsync: true,
+            passLua: false,
+            passState: false,
+            securityCheck: null,
+            args: const {
+              LArg<String>(name: "option", kind: ArgKind.requiredPositional)
+            },
+            (String option) async => Reyveld.getPerformanceOption((option)))
+      };
+
+  @override
+  get exports => {};
 }
