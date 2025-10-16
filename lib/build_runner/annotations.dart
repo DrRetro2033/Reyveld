@@ -18,5 +18,5 @@ class LuaFunc {
   final String? name;
   final String? description;
   final bool Function(SCertificate, LuaArgs)? securityCheck;
-  const LuaFunc({this.name, this.description, this.securityCheck});
+  const LuaFunc(this.description, {this.name, this.securityCheck});
 }

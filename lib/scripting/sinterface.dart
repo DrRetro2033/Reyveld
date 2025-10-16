@@ -61,11 +61,17 @@ class LEntry extends LExport {
   /// The actual function of the entrypoint.
   final Function func;
 
+  final String? docReturnTypeOverride;
+
+  String get docReturnType =>
+      docReturnTypeOverride ?? SInterface.convertDartTypeToLua(returnType!);
+
   LEntry(this.func,
       {required super.name,
       super.securityCheck,
       super.descr,
       this.args = const {},
+      this.docReturnTypeOverride,
       this.isAsync = false,
       this.passLua = false,
       this.passState = false,
@@ -315,7 +321,7 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
   /// This generates a lua field.
   String _luaField(LField export) {
     final field =
-        "---@field ${export.name} ${_convertDartToLua(export.type)} ${export.descr}";
+        "---@field ${export.name} ${convertDartTypeToLua(export.type)} ${export.descr}";
     return field;
   }
 
@@ -327,29 +333,27 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
   String _luaMethod(LEntry export) {
     StringBuffer method = StringBuffer();
     if (export.returnGeneric && export.returnType != null) {
-      method
-          .writeln("---@generic T : ${_convertDartToLua(export.returnType!)}");
+      method.writeln(
+          "---@generic T : ${convertDartTypeToLua(export.returnType!)}");
     }
     if (export.args.isNotEmpty) {
       for (final arg in export.args) {
         if (arg.positional) {
           method.writeln(
-              "---@param ${arg.name} ${(arg.docTypeOverride ?? _convertDartToLua(arg.type)) + (arg.required ? "" : "?")} ${arg.descr.replaceAll("\n", " ")}${arg.docDefaultValue != null ? " (default: ${arg.docDefaultValue})" : ""}");
+              "---@param ${arg.name} ${(arg.docTypeOverride ?? convertDartTypeToLua(arg.type)) + (arg.required ? "" : "?")} ${arg.descr.replaceAll("\n", " ")}${arg.docDefaultValue != null ? " (default: ${arg.docDefaultValue})" : ""}");
         }
         // Document the argument
       }
       if (export.hasNamedArgs) {
         // Document the named arguments
         method.writeln(
-            "---@param named {${export.args.where((e) => !e.positional).map((e) => "${e.name}: ${(e.docTypeOverride ?? _convertDartToLua(e.type))}${e.required ? "" : "?"}").join(", ")}}${export.args.any((e) => e.required && !e.positional) ? "" : "?"} Put any named arguments in a table here. See description below for more info.");
+            "---@param named {${export.args.where((e) => !e.positional).map((e) => "${e.name}: ${(e.docTypeOverride ?? convertDartTypeToLua(e.type))}${e.required ? "" : "?"}").join(", ")}}${export.args.any((e) => e.required && !e.positional) ? "" : "?"} Put any named arguments in a table here. See description below for more info.");
       }
     }
-    if (export.returnGeneric && export.returnType != null) {
-      method.writeln("---@return T");
-    } else if (export.returnType != null) {
+    if (export.returnType != null) {
       // Document the return type
       method.writeln(
-          "---@return ${_convertDartToLua(export.returnType!)}${export.returnNullable ? "?" : ""}");
+          "---@return ${export.docReturnType}${export.returnNullable ? "?" : ""}");
     }
     if (export.isAsync) {
       method.writeln("---@async");
@@ -364,7 +368,7 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
       for (final arg in export.args.where((e) => !e.positional)) {
         method.writeln("---");
         method.writeln(
-            "---- ${arg.name}: `${(arg.docTypeOverride ?? _convertDartToLua(arg.type))}${arg.required ? "" : "?"}` - ${arg.descr}");
+            "---- ${arg.name}: `${(arg.docTypeOverride ?? convertDartTypeToLua(arg.type))}${arg.required ? "" : "?"}` - ${arg.descr}");
       }
     }
     method.writeln("function $className.${export.name}(${[
@@ -375,7 +379,7 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
   }
 
   /// This converts a native dart type into a lua type.
-  String _convertDartToLua(Type type) {
+  static String convertDartTypeToLua(Type type) {
     if (type == String) {
       return "string";
     } else if (type == int) {

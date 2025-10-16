@@ -119,7 +119,7 @@ DISABLE_WELCOME_MESSAGE=False
     return Config.fromString(await file.readAsString());
   }
 
-  @LuaFunc(description: "Get a performance option.")
+  @LuaFunc("Get a performance option.")
   static Future<String> getPerformanceOption(String option) async {
     final config = await _config;
     return config.get("performance", option) ??
@@ -261,6 +261,11 @@ $publicKeyPem""");
     await AppLauncher.initialize();
     await Reyveld.verifySignature();
   }
+
+  @LuaFunc("Hello World!")
+  static Map<String, List<SKit>> sinterfaceTest(String hello,
+          {int a = 0, int b = 2}) =>
+      {};
 }
 
 /// The log file is created in the application data directory.
