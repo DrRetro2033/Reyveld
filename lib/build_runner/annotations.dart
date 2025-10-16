@@ -1,5 +1,4 @@
 import 'package:reyveld/scripting/lua.dart';
-import 'package:reyveld/scripting/sinterface.dart';
 import 'package:reyveld/security/certificate/certificate.dart';
 
 class SGen {
@@ -8,15 +7,15 @@ class SGen {
   final String tag;
 }
 
-class LuaClass<T extends SInterface> {
+class LuaClass {
   final String? name;
   final String description;
   const LuaClass(this.description, {this.name});
 }
 
-class LuaFunc {
+class LuaExport {
   final String? name;
   final String? description;
   final bool Function(SCertificate, LuaArgs)? securityCheck;
-  const LuaFunc(this.description, {this.name, this.securityCheck});
+  const LuaExport(this.description, {this.name, this.securityCheck});
 }

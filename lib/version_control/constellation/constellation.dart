@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:reyveld/extensions.dart';
+import 'package:reyveld/security/certificate/certificate.dart';
 import 'package:reyveld/skit/sobject.dart';
 import 'package:reyveld/skit/sobjects/file_system/file_system.dart';
 import 'package:reyveld/skit/sobjects/file_system/filelist/filelist.dart';
@@ -14,6 +15,12 @@ part 'constellation.creator.dart';
 /// This class represents a constellation in a kit file.
 /// A constellation is a collection of [Star]s, which describes the history of a folder.
 @SGen("const")
+@LuaClass(
+  """
+This class represents a constellation in a kit file.
+
+A constellation is a collection of [Star](lua://Star)s, which describes the history of a folder.""",
+)
 class Constellation extends SObject {
   Constellation(super._node);
 
@@ -25,7 +32,10 @@ class Constellation extends SObject {
     return (false, "Cannot add a ${object.runtimeType} to an $runtimeType!");
   }
 
+  static bool checkSecurity(SCertificate cert, LuaArgs args) => true;
+
   /// The name of the constellation.
+  @LuaExport("The name of the constellation.")
   String get name => get("name") ?? "Constellation";
   set name(String value) => set("name", value);
 

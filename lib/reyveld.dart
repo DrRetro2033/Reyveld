@@ -119,7 +119,7 @@ DISABLE_WELCOME_MESSAGE=False
     return Config.fromString(await file.readAsString());
   }
 
-  @LuaFunc("Get a performance option.")
+  @LuaExport("Get a performance option.")
   static Future<String> getPerformanceOption(String option) async {
     final config = await _config;
     return config.get("performance", option) ??
@@ -262,7 +262,7 @@ $publicKeyPem""");
     await Reyveld.verifySignature();
   }
 
-  @LuaFunc("Hello World!")
+  @LuaExport("Hello World!")
   static Map<String, List<SKit>> sinterfaceTest(String hello,
           {int a = 0, int b = 2}) =>
       {};

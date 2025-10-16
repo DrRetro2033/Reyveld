@@ -24,6 +24,7 @@ part 'sobject.interface.dart';
 ///
 /// If there is no [SFactory] object found, then the [GenericFactory] will be used, which is not recommended as it will not have strict,
 /// predetermined behavior.
+@LuaClass("The base class for all SObjects.")
 abstract class SObject {
   /// This is a default (allowed, reason) tuple for [childAllowed].
   ///
