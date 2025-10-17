@@ -267,10 +267,10 @@ Will never work on the root star, as it cannot be unanchored.""",
           return object!;
         }),
         LEntry(
-          name: "info",
+          name: "summary",
           descr: "Returns a string of information about this star.",
           returnType: Map,
-          () => object!.info(),
+          () => object!.summary(),
         )
       };
 }

@@ -44,11 +44,12 @@ class Lua {
 
   /// A set of all interfaces in the lua state.
   static Set<SInterface> get _interfaces => {
+        ReyveldInterface(),
         ListInterface(),
         SHeaderInterface(),
         SKitInterface(),
-        // ConstellationInterface(),
-        // StarInterface(),
+        ConstellationInterface(),
+        StarInterface(),
         SArchiveInterface(),
         SFileInterface(),
         SObjectInterface(),
