@@ -10,6 +10,7 @@ abstract class LExport {
   final String name;
   final String descr;
   final String? securityCheck;
+  bool? securityCheckPassed;
   SInterface? interface_;
 
   LExport({

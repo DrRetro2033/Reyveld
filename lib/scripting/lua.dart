@@ -241,13 +241,22 @@ class Lua {
                 "Certificate (Token: '${certificate!.hash}') not authorized!");
           }
           if (!(certificate?.completeAccess ?? false)) {
-            final result = await Lua().run(value.securityCheck!, args: {
-              "cert": certificate,
-              "args": finalArgs,
-              "named": namedArgs,
-              "object": value.interface_?.object
-            });
-            if (!result.result) {
+            if (value.securityCheckPassed == null) {
+              final result = await Lua().run(value.securityCheck!, args: {
+                "cert": certificate,
+                "args": finalArgs,
+                "named": namedArgs,
+                "object": value.interface_?.object
+              });
+              if (result.result is bool) {
+                value.securityCheckPassed = result.result;
+              } else if (result.result is String) {
+                throw AuthVeldException(result.result);
+              } else {
+                value.securityCheckPassed = false;
+              }
+            }
+            if (value.securityCheckPassed == false) {
               throw AuthVeldException("Access denied.");
             }
           }
