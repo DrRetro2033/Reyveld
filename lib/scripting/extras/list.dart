@@ -181,5 +181,23 @@ class ListInterface extends SInterface<List> {
           await function.unregister();
           return mapped;
         }),
+        LEntry(
+            name: "any",
+            descr:
+                "Returns true if any of the objects match the passed function.",
+            args: const {
+              LArg<LuaFuncRef>(
+                  name: "check",
+                  descr: "The function to check.",
+                  docTypeOverride: "fun(object: any):boolean")
+            },
+            returnType: bool, (LuaFuncRef function) async {
+          for (var e in object!) {
+            if (await function.call([e]) == true) {
+              return true;
+            }
+          }
+          return false;
+        }),
       };
 }

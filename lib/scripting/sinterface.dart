@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:reyveld/reyveld.dart';
-import 'package:reyveld/security/certificate/certificate.dart';
 import 'package:reyveld/skit/sobject.dart';
 
 /// An export for Lua.
@@ -10,7 +9,7 @@ import 'package:reyveld/skit/sobject.dart';
 abstract class LExport {
   final String name;
   final String descr;
-  final bool Function(SCertificate, LuaArgs)? securityCheck;
+  final String? securityCheck;
   SInterface? interface_;
 
   LExport({
@@ -18,6 +17,9 @@ abstract class LExport {
     this.descr = "",
     this.securityCheck,
   });
+
+  @override
+  String toString() => "LEntry(name: $name)->$interface_=${interface_?.object}";
 }
 
 /// This is a lua entrypoint.
@@ -63,8 +65,9 @@ class LEntry extends LExport {
 
   final String? docReturnTypeOverride;
 
-  String get docReturnType =>
-      docReturnTypeOverride ?? SInterface.convertDartTypeToLua(returnType!);
+  String get docReturnType => returnGeneric
+      ? "T"
+      : docReturnTypeOverride ?? SInterface.convertDartTypeToLua(returnType!);
 
   LEntry(this.func,
       {required super.name,
@@ -186,13 +189,16 @@ abstract class SInterface<T> {
   /// By default, [staticDescription] shares the same description as this.
   String get classDescription => "";
 
+  String get classHash => Lua.getClassHash(className);
+
   /// This converts the interface into a Lua table.
-  Map<String, dynamic> toLua(Lua state, String luaHash) {
+  Map<String, dynamic> toLua(String luaHash) {
     Map<String, LExport> exportTable = {};
     for (final export in allExports) {
-      exportTable[export.name] = export..interface_ = this;
+      export.interface_ = this;
+      exportTable[export.name] = export;
     }
-    return {"class": className, "objHash": luaHash, ...exportTable};
+    return {"class": classHash, "objHash": luaHash, ...exportTable};
   }
 
   /// This is the object that this interface wraps around.
@@ -230,9 +236,10 @@ abstract class SInterface<T> {
   Set<LEntry> get statics => {};
 
   /// Used to push statics as a global table.
-  Map<String, LEntry> get staticTable {
-    final map = <String, LEntry>{};
+  Map<String, dynamic> get staticTable {
+    final map = <String, dynamic>{"__hash__": classHash};
     for (final entry in statics) {
+      if (entry.name == "__hash__") continue;
       map[entry.name] = entry;
     }
     return map;
@@ -370,6 +377,19 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
         method.writeln(
             "---- ${arg.name}: `${(arg.docTypeOverride ?? convertDartTypeToLua(arg.type))}${arg.required ? "" : "?"}` - ${arg.descr}");
       }
+    }
+    if (export.securityCheck != null) {
+      method.writeln("---");
+      method.writeln("---## Security check:");
+      method.writeln("---```lua");
+      method.writeAll(
+          export.securityCheck!
+              .split("\n")
+              .where((e) => e.isNotEmpty)
+              .map((e) => "---$e"),
+          "\n");
+      method.writeln("");
+      method.writeln("---```");
     }
     method.writeln("function $className.${export.name}(${[
       ...export.args.where((e) => e.positional).map((e) => e.name),

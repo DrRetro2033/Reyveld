@@ -35,6 +35,27 @@ class SPolicySKit extends SPolicy {
     return _read;
   }
 
+  bool writeAllowed(String path) {
+    if (isProtectedSKit(path)) {
+      return false;
+    }
+    return _write;
+  }
+
+  bool createAllowed(String path) {
+    if (isProtectedSKit(path)) {
+      return false;
+    }
+    return _create;
+  }
+
+  bool deleteAllowed(String path) {
+    if (isProtectedSKit(path)) {
+      return false;
+    }
+    return _delete;
+  }
+
   @override
   get safetyLevel => SPolicySafetyLevel.safe;
 

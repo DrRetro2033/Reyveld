@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:reyveld/reyveld.dart';
 import 'package:reyveld/scripting/sinterface.dart';
-import 'package:reyveld/security/policies/launch_apps/launch_apps.dart';
 import 'package:yaml/yaml.dart';
 
 class AppLauncher {
@@ -101,10 +100,9 @@ class AppLauncherInterface extends SInterface<AppLauncher> {
                 kind: ArgKind.optionalPositional,
                 docTypeOverride: "string[]")
           },
-          securityCheck: (cert, _) {
-            if (cert.getPolicy<SPolicyLaunchApps>() != null) return true;
-            return false;
-          },
+          securityCheck: """
+return cert.hasPolicy(SPolicyLaunchApps)
+""",
           (String app, [List args = const []]) async =>
               await AppLauncher.launchApp(app, args.whereType()),
         )

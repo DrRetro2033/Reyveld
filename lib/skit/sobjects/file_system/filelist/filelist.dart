@@ -13,12 +13,14 @@ part 'filelist.g.dart';
 sealed class Globs extends SObject {
   Globs(super._node);
 
-  List<Glob> get globs => cdataString!
-      .split("\n")
-      .toSet() // Removes duplicates
-      .where((e) => e.isNotEmpty)
-      .map((e) => Glob(e))
-      .toList();
+  List<Glob> get globs => cdataString == null
+      ? []
+      : cdataString!
+          .split("\n")
+          .toSet() // Removes duplicates
+          .where((e) => e.isNotEmpty)
+          .map((e) => Glob(e))
+          .toList();
   set globs(List<Glob> value) =>
       cdataString = value.map((e) => e.pattern).toSet().join("\n");
 

@@ -17,11 +17,11 @@ They store a SHeader and any number of SRoots in a single file.
         LEntry(
             name: "open",
             descr: "Opens an SKit file.",
-            securityCheck: (cert, args) =>
-                cert
-                    .getPolicy<SPolicySKit>()
-                    ?.readAllowed(args.positional[0]) ??
-                false,
+            // securityCheck: (cert, args) =>
+            //     cert
+            //         .getPolicy<SPolicySKit>()
+            //         ?.readAllowed(args.positional[0]) ??
+            //     false,
             args: const {
               LArg<String>(
                 name: "path",

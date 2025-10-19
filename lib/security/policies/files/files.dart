@@ -1,10 +1,12 @@
+import 'package:reyveld/extensions.dart';
+import 'package:reyveld/security/authveld.dart';
 import 'package:reyveld/security/policies/policy.dart';
 import 'package:reyveld/skit/sobject.dart';
 import 'package:reyveld/skit/sobjects/sobjects.dart';
 
 part 'files.creator.dart';
 part 'files.g.dart';
-part 'files.interface.dart';
+part 'files.interfaces.dart';
 
 @SGen("polexterfiles")
 class SPolicyExterFiles extends SPolicy {
@@ -25,15 +27,33 @@ class SPolicyExterFiles extends SPolicy {
 
   Whitelist? get whitelist => getChild<Whitelist>();
 
-  bool readAllowed(String filepath) => _read && whitelist!.included(filepath);
+  bool readAllowed(String filepath) {
+    if (filepath.getExtensions() == "skit") {
+      throw AuthVeldException("Cannot read a skit file using this policy!");
+    }
+    return _read && whitelist!.included(filepath);
+  }
 
-  bool writeAllowed(String filepath) => _write && whitelist!.included(filepath);
+  bool writeAllowed(String filepath) {
+    if (filepath.getExtensions() == "skit") {
+      throw AuthVeldException("Cannot write to a skit file using this policy!");
+    }
+    return _write && whitelist!.included(filepath);
+  }
 
-  bool createAllowed(String filepath) =>
-      _create && whitelist!.included(filepath);
+  bool createAllowed(String filepath) {
+    if (filepath.getExtensions() == "skit") {
+      throw AuthVeldException("Cannot create a skit file using this policy!");
+    }
+    return _create && whitelist!.included(filepath);
+  }
 
-  bool deleteAllowed(String filepath) =>
-      _delete && whitelist!.included(filepath);
+  bool deleteAllowed(String filepath) {
+    if (filepath.getExtensions() == "skit") {
+      throw AuthVeldException("Cannot delete a skit file using this policy!");
+    }
+    return _delete && whitelist!.included(filepath);
+  }
 
   @override
   get safetyLevel {

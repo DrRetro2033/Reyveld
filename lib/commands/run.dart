@@ -36,8 +36,9 @@ class RunCommand extends Command {
         final r = await Lua(certificate: scriptCertificate).run(content);
         Reyveld.printToConsole(SocketEvent.completed(r.result));
         exit(0);
-      } catch (e) {
+      } catch (e, st) {
         Reyveld.printToConsole(SocketEvent.error(e));
+        Reyveld.talker.error("Error running script", e, st);
         exit(1);
       }
     }

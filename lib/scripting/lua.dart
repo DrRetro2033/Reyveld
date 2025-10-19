@@ -9,6 +9,7 @@ import 'package:reyveld/scripting/extras/extras.dart';
 import 'package:reyveld/scripting/extras/stringbuffer.dart';
 import 'package:reyveld/security/authveld.dart';
 import 'package:reyveld/security/certificate/certificate.dart';
+import 'package:reyveld/security/policies/launch_apps/launch_apps.dart';
 import 'package:reyveld/security/policies/policies.dart';
 import 'package:reyveld/skit/sobjects/sobjects.dart';
 import 'package:reyveld/uuid.dart';
@@ -42,6 +43,8 @@ class Lua {
   /// a duplicate of the SInterface with the object as its value is added to this map.
   final Map<LuaState, Map<String, SInterface>> _objects = {};
 
+  static final Map<String, String> classHashes = {};
+
   /// A set of all interfaces in the lua state.
   static Set<SInterface> get _interfaces => {
         ReyveldInterface(),
@@ -67,10 +70,15 @@ class Lua {
         SPolicyInterFilesInterface(),
         SPolicyExterFilesInterface(),
         SPolicySKitInterface(),
+        SPolicyLaunchAppsInterface(),
         SPolicyAllInterface(),
         StringBufferInterface(),
         AppLauncherInterface(),
+        SCertificateInterface(),
       };
+
+  static String getClassHash(String className) =>
+      classHashes[className] ??= generateUUID();
 
   /// A set of all interfaces in the lua state, sorted by priority.
   ///
@@ -135,20 +143,26 @@ class Lua {
         await addGlobal(state, interface_.className, interface_.staticTable);
       }
     }
+
+    await addGlobal(state, "is", (Lua lua, LuaState state) async {
+      final obj = await lua.getFromTop<Object>(state);
+      final interface = await lua.getFromTop<SInterface>(state);
+      return interface?.isType(obj) ?? false;
+    });
   }
 
   /// Adds a global to the Lua state.
   ///
   /// [name] is the name of the global.
   ///
-  /// [table] is the table to add as the global.
+  /// [value] is the table to add as the global.
   ///
   /// This will push the table to the stack and then set the global with the given name.
-  Future<void> addGlobal(LuaState state, String name, dynamic table) async {
+  Future<void> addGlobal(LuaState state, String name, dynamic value) async {
     // if (table == null) {
     //   return;
     // }
-    await _pushToStack(state, table);
+    await _pushToStack(state, value);
     await state.setGlobal(name);
   }
 
@@ -177,10 +191,10 @@ class Lua {
       final interface_ = getInterface(value)!..object = value;
       final hash = generateUUID();
       _setObject(state, hash, interface_);
-      await _pushToStack(state, interface_.toLua(this, hash));
-    } else if (value is FutureOr<dynamic> Function(Lua)) {
+      await _pushToStack(state, interface_.toLua(hash));
+    } else if (value is FutureOr<dynamic> Function(Lua, LuaState)) {
       state.pushDartFunction((state) async {
-        await _pushToStack(state, await value(this));
+        await _pushToStack(state, await value(this, state));
         return 1;
       });
     } else if (value is LEntry) {
@@ -216,6 +230,8 @@ class Lua {
         }
 
         /// If the function has a security check, check it with the arguments.
+        Reyveld.talker.verbose(
+            "Checking security for function '${value.name}' with $finalArgs$namedArgs.");
         if (value.securityCheck != null) {
           if (certificate == null) {
             throw AuthVeldException(
@@ -225,8 +241,13 @@ class Lua {
                 "Certificate (Token: '${certificate!.hash}') not authorized!");
           }
           if (!(certificate?.completeAccess ?? false)) {
-            if (!value.securityCheck!(
-                certificate!, (positional: finalArgs, named: namedArgs))) {
+            final result = await Lua().run(value.securityCheck!, args: {
+              "cert": certificate,
+              "args": finalArgs,
+              "named": namedArgs,
+              "object": value.interface_?.object
+            });
+            if (!result.result) {
               throw AuthVeldException("Access denied.");
             }
           }
@@ -311,6 +332,10 @@ class Lua {
           /// If the table has an objHash key, then it means it is an interface for an object,
           /// so get the object and return it.
           result = _getObject(state, table["objHash"])!.object;
+        } else if (table.containsKey("__hash__") &&
+            interfaces.any((key) => key.classHash == table["__hash__"])) {
+          result = interfaces
+              .firstWhere((key) => key.classHash == table["__hash__"]);
         } else if (table.keys.every((key) => key is int)) {
           result = table.values.toList();
         } else {
@@ -359,7 +384,7 @@ class Lua {
     final stringPlaceholder = "⭐🌃✨🌟";
     String compiled = entrypoint;
     final strings = [];
-    final strExp = RegExp("\"(.+?)\"|'(.+?)'");
+    final strExp = RegExp("\"([^\"]*)\"|'([^']*)'");
     while (strExp.hasMatch(compiled)) {
       final match = strExp.firstMatch(compiled)!;
 
@@ -394,15 +419,15 @@ class Lua {
     }
   }
 
-  final Queue<LuaState> _removeObjsQueue = Queue<LuaState>();
+  final Queue<LuaState> _removeQueue = Queue<LuaState>();
 
   /// Runs a lua script.
-  Future<LuaResult> run(String entrypoint) async {
+  Future<LuaResult> run(String entrypoint, {Map<String, dynamic>? args}) async {
     /// Resets the stopwatch and starts it, to track process time,
     /// and to notify if its done.
 
-    while (_removeObjsQueue.isNotEmpty) {
-      final state = _removeObjsQueue.removeFirst();
+    while (_removeQueue.isNotEmpty) {
+      final state = _removeQueue.removeFirst();
       _objects.remove(state);
     }
     final stopwatch = Stopwatch();
@@ -417,10 +442,28 @@ class Lua {
 
     await _init(state);
 
+    if (args != null) {
+      Reyveld.talker.info("Arguments: $args");
+      for (final arg in args.entries) {
+        await addGlobal(state, arg.key, arg.value);
+      }
+    }
+
+    final thread = state.loadString(code);
+
+    if (thread != ThreadStatus.luaOk) {
+      state.error();
+      return (
+        result: null,
+        processTime: stopwatch,
+        processId: _processIds[state]
+      );
+    }
+
     // Run the lua code and see if it was successful
-    final successful = await state.doString(code);
+    final successful = await state.pCall(0, 1, 0) == ThreadStatus.luaOk;
     stopwatch.stop();
-    _removeObjsQueue.add(state);
+    _removeQueue.add(state);
     if (!successful) {
       /// If it wasn't successful, print the error and return null
       state.error();
@@ -476,6 +519,8 @@ class Lua {
       }
       yield "Enums";
       await _generateEnumDocs();
+      yield "Others";
+      await _generateOtherDocs();
     } catch (e) {
       Reyveld.talker.error(e.toString());
     }
@@ -490,6 +535,21 @@ class Lua {
 ---@meta _
 
 ${_formatEnums()}
+""");
+  }
+
+  static Future<void> _generateOtherDocs() async {
+    final doc = File(
+        "${Reyveld.appDataPath}/docs/${Reyveld.version.toString()}/others.lua");
+    await doc.create(recursive: true);
+    await doc.writeAsString("""
+---@meta _
+
+---Checks if an object is an instance of a class.
+---@param obj table
+---@param class table
+---@return boolean
+function is(obj, class) end
 """);
   }
 

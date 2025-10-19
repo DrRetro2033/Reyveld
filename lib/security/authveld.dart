@@ -22,6 +22,15 @@ class AuthVeld {
   static final StreamController<AuthorizeEvent> _authorizationController =
       StreamController.broadcast();
 
+  /// Requests authorization for an application to use Reyveld.
+  ///
+  /// [name] is the name of the application.
+  /// [reasoning] is a human-readable string explaining why the application wants to use Reyveld.
+  /// [permissions] is a list of [SPolicy]s that the application wants to use.
+  ///
+  /// If the user authorizes the ticket, then the returned [Future] will complete with the token of the ticket.
+  /// If the user denies the ticket, then the returned [Future] will complete with null.
+  /// If the user closes the authorization dialog without making a decision, then the returned [Future] will not complete at all.
   static Future<String?> getAuthorization(
       String name, String reasoning, List<SPolicy> permissions) async {
     final ticket =

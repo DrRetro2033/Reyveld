@@ -80,12 +80,6 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
               descr: "The path to the file.",
             ),
           },
-          securityCheck: (cert, args) {
-            if (cert.getPolicy<SPolicyExterFiles>() != null) {
-              return true;
-            }
-            return false;
-          },
           returnType: SFile,
           (String path) async => await SFileCreator.open(path),
         ),
@@ -110,17 +104,17 @@ If the file already exists and overwrite is true, it will delete the file and cr
               kind: ArgKind.optionalNamed,
             ),
           },
-          securityCheck: (cert, args) {
-            if (cert.getPolicy<SPolicyExterFiles>() != null) {
-              final policy = cert.getPolicy<SPolicyExterFiles>()!;
-              if (!policy.createAllowed(args.positional[0])) return false;
-              if (args.named["overwrite"] == true) {
-                return policy.deleteAllowed(args.positional[0]);
-              }
-              return true;
-            }
-            return false;
-          },
+          securityCheck: """if (cert.hasPolicy(SPolicyExterFiles)) then
+        local policy = cert.getPolicyByType(SPolicyExterFiles)
+        if (policy == nil) then return false end
+        if (not policy.createAllowed(args.get(0))) then return false end
+        if (named["overwrite"] == true) then
+            return policy.deleteAllowed(args.get(0))
+        end
+        return true
+    end
+    return false
+""",
           returnType: SFile,
           (String path, {bool overwrite = false}) async {
             if (await File(path).exists()) {
@@ -140,34 +134,36 @@ If the file already exists and overwrite is true, it will delete the file and cr
       };
 
   /// The default read check for files.
-  bool readCheck(SCertificate cert, LuaArgs args) {
-    if (object!.isExternal) {
-      if (cert.getPolicy<SPolicyExterFiles>()?.readAllowed(object!.path) ??
-          false) {
-        return true;
-      }
-    } else {
-      if (cert.getPolicy<SPolicyInterFiles>()?.read ?? false) {
-        return true;
-      }
-    }
-    return false;
-  }
+  String get readCheck => """
+    if (object.isExternal()) then
+        if (cert.hasPolicy(SPolicyExterFiles)) then
+            local policy = cert.getPolicyByType(SPolicyExterFiles)
+            if (policy == nil) then return false end
+            if (policy.readAllowed(object.path())) then return true end
+        end
+    else
+        if (cert.hasPolicy(SPolicyInterFiles)) then
+            return cert.getPolicyByType(SPolicyInterFiles).readAllowed()
+        end
+    end
+    return false
+""";
 
   /// The default write check for files.
-  bool writeCheck(SCertificate cert, LuaArgs args) {
-    if (object!.isExternal) {
-      if (cert.getPolicy<SPolicyExterFiles>()?.writeAllowed(object!.path) ??
-          false) {
-        return true;
-      }
-    } else {
-      if (cert.getPolicy<SPolicyInterFiles>()?.write ?? false) {
-        return true;
-      }
-    }
-    return false;
-  }
+  String get writeCheck => """
+    if (object.isExternal()) then
+        if (cert.hasPolicy(SPolicyExterFiles)) then
+            local policy = cert.getPolicyByType(SPolicyExterFiles)
+            if (policy == nil) then return false end
+            if (policy.writeAllowed(object.path())) then return true end
+        end
+    else
+        if (cert.hasPolicy(SPolicyInterFiles)) then
+            return cert.getPolicyByType(SPolicyInterFiles).writeAllowed()
+        end
+    end
+    return false
+""";
 
   @override
   get exports => {
@@ -195,6 +191,12 @@ If the file already exists and overwrite is true, it will delete the file and cr
             descr: "Returns the checksum of the file",
             returnType: String,
             () => object!.checksum),
+        LEntry(
+          name: "isExternal",
+          descr: "Returns whether the file is external or not.",
+          returnType: bool,
+          () => object!.isExternal,
+        ),
         LEntry(
             name: "getU8",
             descr: "Returns a unsigned 8 bit value at the specified index.",
@@ -620,49 +622,38 @@ If the file already exists and overwrite is true, it will delete the file and cr
         LEntry(
             name: "save",
             descr: "Saves the file to disk if path is external.",
-            securityCheck: (cert, args) {
-              if (object!.isExternal) {
-                if (cert
-                        .getPolicy<SPolicyExterFiles>()
-                        ?.writeAllowed(object!.path) ??
-                    false) {
-                  return true;
-                }
-              }
-              return false;
-            },
-            isAsync: true,
-            () async {
-              await object!.save();
-            }),
+            securityCheck: """if (object.isExternal()) then
+        local policy = cert.getPolicyByType(SPolicyExterFiles)
+        if (policy == nil) then return false end
+        if (policy.writeAllowed(object.path())) then return true end
+    else
+        if (cert.hasPolicy(SPolicyInterFiles)) then
+            return cert.getPolicyByType(SPolicyInterFiles).writeAllowed()
+        end
+    end
+    return false""",
+            isAsync: true, () async {
+          await object!.save();
+        }),
         LEntry(
           name: "saveAs",
           descr: "Saves the file to the specified path.",
-          securityCheck: (cert, args) {
-            final externalPolicy = cert.getPolicy<SPolicyExterFiles>();
-            if (!object!.isExternal) {
-              /// If the file is internal, check if reading is allowed.
-              if (!(cert.getPolicy<SPolicyInterFiles>()?.read ?? false)) {
-                return false;
-              }
-            } else {
-              /// If the file is external, check if reading is allowed for the filename.
-              if (!(externalPolicy?.readAllowed(object!.path) ?? false)) {
-                return false;
-              }
-            }
-            if (args.positional.length == 2) {
-              if (args.positional[1]) {
-                if (!(cert.getPolicy<SPolicyInterFiles>()?.write ?? false)) {
-                  return false;
-                }
-              }
-            }
-            if (externalPolicy?.createAllowed(args.positional[0]) ?? false) {
-              return true;
-            }
-            return false;
-          },
+          securityCheck: """
+    if not object.isExternal() then
+        if (cert.hasPolicy(SPolicyInterFiles)) then return true end
+    else
+        --- If the file is external check if reading is allowed for the file.
+        local policy = cert.getPolicyByType(SPolicyExterFiles)
+        if (policy == nil) then return false end
+        if (not policy.writeAllowed(object.path())) then return false end
+    end
+    if (args.length() == 2) then
+        if (args.get(1)) then
+            if (not cert.getPolicyByType(SPolicyExterFiles).writeAllowed(args.get(0))) then return false end
+        end
+    end
+    if (cert.getPolicyByType(SPolicyExterFiles).createAllowed(args.get(0))) then return true end
+    return false""",
           args: const {
             LArg<String>(
               name: "path",
