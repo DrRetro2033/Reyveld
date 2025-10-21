@@ -9,7 +9,6 @@ class SCertificateInterface extends SInterface<SCertificate> {
 
   @override
   get statics => {
-        tagEntry(SCertificateFactory()),
         LEntry(
             name: "empty",
             descr:

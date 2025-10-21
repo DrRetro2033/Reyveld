@@ -8,5 +8,5 @@ class SPolicyLaunchAppsInterface extends SInterface<SPolicyLaunchApps> {
   get parent => SPolicyInterface();
 
   @override
-  get statics => {tagEntry(SPolicyLaunchAppsFactory())};
+  get statics => {};
 }

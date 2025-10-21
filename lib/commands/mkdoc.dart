@@ -19,7 +19,7 @@ class DocRegenCommand extends Command {
     /// Regenerate the lua documentation.
     await Lua.generateDocs().listen((doc) {
       spinner.text = "Generating $doc...".skyBlue;
-    }).asFuture();
+    }, onError: (e) => Reyveld.talker.error(e)).asFuture();
 
     spinner.success(
         "Generated Lua Docs at \"${Reyveld.appDataPath}/docs/${Reyveld.version.toString()}/\""

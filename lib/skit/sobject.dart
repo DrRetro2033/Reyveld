@@ -148,9 +148,9 @@ abstract class SObject {
   /// Should be used when checking if an attribute exists, if needed.
   bool has(String key) => _node.getAttribute(key) != null;
 
-  /// Adds a child [SObject] to the xml node.
-  ///
-  /// Removes the child from its current parent to safely move it to the new parent.
+  @LuaExport("""Adds a child [SObject](lua://SObject) to the xml node.
+
+If the child already has a parent, this will remove it from its current parent first before adding it to this one.""")
   void addChild(SObject child) {
     if (child._parent != null) child._node.remove();
     child.kit = _kit;
@@ -163,6 +163,10 @@ abstract class SObject {
   }
 
   /// Adds a list of children [SObject]s to the xml node.
+  @LuaExport(
+      """Adds a list of children [SObject](lua://SObject) to the xml node.
+
+If a child already has a parent, this will remove it from its current parent first before adding it to this one.""")
   void addChildren(List<SObject?> children) {
     for (var child in children) {
       addChild(child!);
@@ -170,6 +174,9 @@ abstract class SObject {
   }
 
   /// Removes a child [SObject] from the xml node.
+  @LuaExport("""Removes a child [SObject](lua://SObject) from this xml node.
+
+This will not do anything if this SObject is not a parent of the child.""")
   void removeChild(SObject child) {
     if (_node.contains(child._node)) {
       child._node.remove();
@@ -199,6 +206,13 @@ abstract class SObject {
     return children;
   }
 
+  @LuaExport(
+      """Returns a list of children of the [SObject](lua://SObject), with the specific type.""",
+      name: "getChildren")
+  List<SObject?> getChildrenInterface(SInterface type) {
+    return getChildren().where((e) => type.isType(e)).toList();
+  }
+
   /// Returns a child of the [SObject], with the specific type.
   /// If [filter] is provided, it will only return the first child that matches the filter.
   T? getChild<T extends SObject>({bool Function(T)? filter}) {
@@ -217,7 +231,20 @@ abstract class SObject {
     return null;
   }
 
+  @LuaExport(
+      "Gets the first child of the [SObject](lua://SObject), that matches the filter.",
+      name: "getChild")
+  SObject? getChildInterface(bool Function(SObject) filter) =>
+      getChild(filter: (e) => filter(e));
+
+  @LuaExport(
+      "Gets the child of the [SObject](lua://SObject), with the specific type.")
+  SObject? getChildByType(SInterface type) =>
+      getChild(filter: (e) => type.isType(e));
+
   /// Returns the parent of the [SObject], if it has one.
+  @LuaExport(
+      "Returns the parent of the [SObject](lua://SObject), if it has one.")
   T? getParent<T extends SObject>() {
     if (_node.parentElement == null) return null;
     final factory = getSFactory(_node.parentElement!.name.local);
@@ -227,6 +254,9 @@ abstract class SObject {
   }
 
   /// Returns a list of descendants of the [SObject], with the specific type.
+  @LuaExport(
+    "Returns a list of descendants of the [SObject](lua://SObject), with the specific type.",
+  )
   List<T?> getDescendants<T extends SObject>({bool Function(T)? filter}) {
     List<T?> descendants = [];
     for (var child in _node.descendantElements) {
@@ -244,6 +274,9 @@ abstract class SObject {
   }
 
   /// Returns the ancestors of the [SObject], if it has one.
+  @LuaExport(
+    "Returns the ancestors of the [SObject](lua://SObject), if it has one.",
+  )
   List<T?> getAncestors<T extends SObject>({bool Function(T)? filter}) {
     final ancest = <T>[];
     Iterable<XmlElement> ancestors = _node.ancestorElements;
@@ -260,6 +293,9 @@ abstract class SObject {
   }
 
   /// Returns the sibling of the [SObject] above it, if it has one.
+  @LuaExport(
+    "Returns the sibling of the [SObject](lua://SObject) above it, if it has one.",
+  )
   T? getSiblingAbove<T extends SObject>({bool Function(T)? filter}) {
     if (_node.previousElementSibling == null) return null;
     final factory = getSFactory(_node.previousElementSibling!.name.local);
@@ -270,6 +306,9 @@ abstract class SObject {
   }
 
   /// Returns the sibling of the [SObject] below it, if it has one.
+  @LuaExport(
+    "Returns the sibling of the [SObject](lua://SObject) below it, if it has one.",
+  )
   T? getSiblingBelow<T extends SObject>({bool Function(T)? filter}) {
     if (_node.nextElementSibling == null) return null;
     final factory = getSFactory(_node.nextElementSibling!.name.local);
@@ -280,11 +319,15 @@ abstract class SObject {
   }
 
   /// Returns the depth of the [SObject] relative to its root.
+  @LuaExport(
+    "Returns the depth of the [SObject](lua://SObject) relative to its root.",
+  )
   int getDepth() {
     return _node.depth;
   }
 
   /// Returns the [SObject] as a xml String.
+  @LuaExport("Returns the [SObject](lua://SObject) as a xml String.")
   String toXmlString() {
     return _node.toXmlString(pretty: true, newLine: "\n");
   }
@@ -292,6 +335,7 @@ abstract class SObject {
   /// Returns the [SObject] as a json map.
   ///
   /// This is used to serialize the [SObject] for sending to clients.
+  @LuaExport("Returns the [SObject](lua://SObject) as a json map.")
   Map<String, dynamic> toJson() => {
         tag: {
           ..._attrbutesToJson(),
@@ -305,9 +349,10 @@ abstract class SObject {
       .map((attr) => MapEntry(attr.name.local, decodeText(attr.value))));
 
   /// Creates a copy of the [SObject].
+  @LuaExport("Creates a copy of the [SObject](lua://SObject).")
   T copy<T extends SObject>() {
-    final factory = getSFactory<T>();
-    return factory.load(_node.copy())..kit = _kit;
+    final factory = getSFactory(_node.name.local);
+    return (factory.load(_node.copy())..kit = _kit) as T;
   }
 
   @override

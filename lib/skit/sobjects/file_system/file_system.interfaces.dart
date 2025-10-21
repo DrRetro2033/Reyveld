@@ -13,9 +13,7 @@ An archive in a SKit. Contains files.
   get parent => SObjectInterface();
 
   @override
-  get statics => {
-        tagEntry(SArchiveFactory()),
-      };
+  get statics => {};
 
   @override
   get exports => {
@@ -69,7 +67,6 @@ A file either stored on disk or in an SArchive. Contains the path of the file, a
 
   @override
   get statics => {
-        tagEntry(SFileFactory()),
         LEntry(
           name: "open",
           descr: "Opens a external file.",

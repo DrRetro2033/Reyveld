@@ -21,8 +21,6 @@ Set<SFactory> get sobjectFactories => {
       SCustomFactory(),
       SPolicyAllFactory(),
       SPolicySKitFactory(),
-      SPolicyExterFilesFactory(),
-      SPolicyInterFilesFactory(),
       SCertificateFactory(),
     };
 

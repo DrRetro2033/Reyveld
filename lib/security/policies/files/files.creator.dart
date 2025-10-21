@@ -1,49 +1,38 @@
 part of 'files.dart';
 
-class SPolicyExterFilesCreator extends SCreator<SPolicyExterFiles> {
-  final bool read;
-  final bool write;
+class SPolicyFilesCreator extends SCreator<SPolicyFiles> {
+  final bool readExternally;
+  final bool writeExternally;
+  final bool createExternally;
+  final bool deleteExternally;
 
-  /// Also known as "create".
-  final bool init;
-  final bool delete;
+  final bool readInternally;
+  final bool writeInternally;
+  final bool createInternally;
+  final bool deleteInternally;
 
   final Whitelist whitelist;
-  SPolicyExterFilesCreator(
-      {required this.read,
-      required this.write,
-      required this.init,
-      required this.delete,
+  SPolicyFilesCreator(
+      {this.readExternally = false,
+      this.writeExternally = false,
+      this.createExternally = false,
+      this.deleteExternally = false,
+      this.readInternally = false,
+      this.writeInternally = false,
+      this.createInternally = false,
+      this.deleteInternally = false,
       required this.whitelist});
   @override
   get creator => (builder) {
-        builder.boolAttri("read", read);
-        builder.boolAttri("write", write);
-        builder.boolAttri("create", init);
-        builder.boolAttri("delete", delete);
+        builder.boolAttri("rexter", readExternally);
+        builder.boolAttri("wexter", writeExternally);
+        builder.boolAttri("cexter", createExternally);
+        builder.boolAttri("dexter", deleteExternally);
+
+        builder.boolAttri("rinter", readInternally);
+        builder.boolAttri("winter", writeInternally);
+        builder.boolAttri("cinter", createInternally);
+        builder.boolAttri("dinter", deleteInternally);
         builder.sobject(whitelist);
-      };
-}
-
-class SPolicyInterFilesCreator extends SCreator<SPolicyInterFiles> {
-  final bool read;
-  final bool write;
-
-  /// Also known as "create".
-  final bool init;
-  final bool delete;
-
-  SPolicyInterFilesCreator({
-    required this.read,
-    required this.write,
-    required this.init,
-    required this.delete,
-  });
-  @override
-  get creator => (builder) {
-        builder.boolAttri("read", read);
-        builder.boolAttri("write", write);
-        builder.boolAttri("create", init);
-        builder.boolAttri("delete", delete);
       };
 }

@@ -8,5 +8,5 @@ class SPolicyAllInterface extends SInterface<SPolicyAll> {
   get parent => SPolicyInterface();
 
   @override
-  get statics => {tagEntry(SPolicyAllFactory())};
+  get statics => {};
 }

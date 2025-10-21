@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:reyveld/apps.dart';
 import 'package:reyveld/reyveld.dart';
 import 'package:reyveld/extensions.dart';
+import 'package:reyveld/scripting/extras/datetime.dart';
 import 'package:reyveld/scripting/extras/extras.dart';
 import 'package:reyveld/scripting/extras/stringbuffer.dart';
 import 'package:reyveld/security/authveld.dart';
@@ -49,6 +50,7 @@ class Lua {
   static Set<SInterface> get _interfaces => {
         ReyveldInterface(),
         ListInterface(),
+        DateTimeInterface(),
         SHeaderInterface(),
         SKitInterface(),
         ConstellationInterface(),
@@ -67,8 +69,6 @@ class Lua {
         TalkerInterface(),
         AuthVeldInterface(),
         SPolicyInterface(),
-        SPolicyInterFilesInterface(),
-        SPolicyExterFilesInterface(),
         SPolicySKitInterface(),
         SPolicyLaunchAppsInterface(),
         SPolicyAllInterface(),

@@ -287,7 +287,7 @@ final class ExportGen {
                 return e.$2;
               } else if (e.$3 == ArgKind.requiredNamed ||
                   e.$3 == ArgKind.optionalNamed) {
-                return "${e.$2}: ${e.$4}";
+                return "${e.$2}: ${e.$2}";
               }
             }).cast<String>().join(", ")});""";
       case ExportType.gettersetter:

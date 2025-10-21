@@ -46,10 +46,13 @@ typedef SKitKeyPair = ({RSAPrivateKey? private, RSAPublicKey public});
 /// while the [SRoot]s can contain much larger sets of data (e.g. save data, scripts, images, users, etc).
 ///
 /// [SKit]s are first compressed using GZip, then encrypted using Fernet, and finally is signed using RSA.
+@LuaClass(
+    """SKits are the file format used by Reyveld to store data in a sort of database format.""")
 class SKit {
   static final Set<SKit> _loadedKits = {};
 
   /// Opens a kit file.
+  @LuaExport("Opens a kit file.")
   static Future<SKit> open(
     String path, {
     SKitType? type,
@@ -117,6 +120,7 @@ class SKit {
   }
 
   /// Gets the author of the kit file.
+  @LuaExport("The [SAuthor](lua://SAuthor) of the kit file.")
   Future<SAuthor> get author async {
     final header = await getHeader();
     return (await header?.getChild<SRAuthor>()?.getRef()) ??

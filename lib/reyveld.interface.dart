@@ -13,13 +13,13 @@ class ReyveldInterface extends SInterface<Reyveld> {
 
   @override
   get classDescription =>
-      "Contains global functions for Reyveld, for example, settings, paths, etc.";
+      """Contains global functions for Reyveld, for example, settings, paths, etc.""";
 
   @override
   get statics => {
         LEntry(
             name: "getPerformanceOption",
-            descr: "Get a performance option.",
+            descr: """Get a performance option.""",
             returnType: String,
             returnNullable: false,
             docReturnTypeOverride: "string",
@@ -32,11 +32,12 @@ class ReyveldInterface extends SInterface<Reyveld> {
                   name: "option",
                   kind: ArgKind.requiredPositional,
                   docTypeOverride: "string")
-            },
-            (String option) async => Reyveld.getPerformanceOption(option)),
+            }, (String option) async {
+          return Reyveld.getPerformanceOption(option);
+        }),
         LEntry(
             name: "sinterfaceTest",
-            descr: "Hello World!",
+            descr: """Hello World!""",
             returnType: Map,
             returnNullable: false,
             docReturnTypeOverride: "table",
@@ -59,9 +60,9 @@ class ReyveldInterface extends SInterface<Reyveld> {
                   kind: ArgKind.optionalNamed,
                   docTypeOverride: "integer",
                   docDefaultValue: "2")
-            },
-            (String hello, {int a = 0, int b = 2}) =>
-                Reyveld.sinterfaceTest(hello, a: 0, b: 2))
+            }, (String hello, {int a = 0, int b = 2}) {
+          return Reyveld.sinterfaceTest(hello, a: 0, b: 2);
+        })
       };
 
   @override

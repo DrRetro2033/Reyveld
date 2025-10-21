@@ -17,6 +17,9 @@ part 'file_system.interfaces.dart';
 /// Represents an archive in a kit file.
 /// An archive is a collection of internal [SFile]s.
 @SGen("archive")
+@LuaClass("""An archive in a kit file.
+
+It is a collection of internal [SFile](lua://SFile)s.""")
 class SArchive extends SRoot {
   SArchive(super._node);
 
@@ -156,6 +159,8 @@ extension SArchiveExtensions on SKit {
 /// [isExternal] is used to determine if the file is stored on disk or in an [SArchive].
 /// Some functions will only work on external files, like [save].
 @SGen("file")
+@LuaClass(
+    "A handler for interfacing with files, either internally (meaning from inside of an [SArchive](lua://SArchive)) or externally (meaning on disk).")
 class SFile extends SObject {
   /// The chunk size is used to chunk the bytes properly for decompression.
   static const chunkSize = 65536;
@@ -172,9 +177,49 @@ class SFile extends SObject {
     }
   }
 
+  /// The default read check for files.
+  static const String readCheck = """
+    if (object.isExternal()) then
+        if (cert.hasPolicy(SPolicyExterFiles)) then
+            local policy = cert.getPolicyByType(SPolicyExterFiles)
+            if (policy.readAllowed(object.path())) then return true else return "Not allowed to read '" .. object.filename() .. "'." end
+        end
+        return "No policy for external files."
+    else
+        if (cert.hasPolicy(SPolicyInterFiles)) then
+            if (cert.getPolicyByType(SPolicyInterFiles).readAllowed()) then
+                return true
+            end
+            return "Not allowed to read '" .. object.filename() .. "'." 
+        end
+        return "No policy for internal files."
+    end
+""";
+
+  /// The default write check for files.
+  static const String writeCheck = """
+    if (object.isExternal()) then
+        if (cert.hasPolicy(SPolicyExterFiles)) then
+            local policy = cert.getPolicyByType(SPolicyExterFiles)
+            if (policy.writeAllowed(object.path())) then return true else return "Not allowed to write '" .. object.filename() .. "'." end
+        end
+        return "No policy for external files."
+    else
+        if (cert.hasPolicy(SPolicyInterFiles)) then
+            if (cert.getPolicyByType(SPolicyInterFiles).writeAllowed()) then
+                return true
+            end
+            return "Not allowed to write '" .. object.filename() .. "'."
+        end
+        return "No policy for internal files."
+    end
+""";
+
   /// Returns the path of the file.
+  @LuaExport("Returns the path of the file.")
   String get path => get("path")!;
 
+  @LuaExport("Returns true if the file is stored externally.")
   bool get isExternal => externalVersion != null;
 
   /// This is the default endianness of the file.
@@ -231,9 +276,12 @@ class SFile extends SObject {
   }
 
   /// Returns the checksum of the file.
+  @LuaExport("Returns the checksum of the file.")
   String get checksum => get("checksum")!;
 
   /// Returns a stream of the bytes at the specified range.
+  @LuaExport("Returns a stream of the bytes at the specified range.",
+      securityCheck: SFile.readCheck)
   Future<List<int>> getRange(int start, int end) async {
     return await Reyveld.withReadAndWritePool(() async {
       final file = await ra;
@@ -244,8 +292,10 @@ class SFile extends SObject {
     });
   }
 
-  Future<void> setRange(
-      int start, int end, Iterable<int> data, bool? littleEndian) async {
+  @LuaExport("Sets the bytes at the specified range.",
+      securityCheck: SFile.writeCheck)
+  Future<void> setRange(int start, int end, Iterable<int> data,
+      {bool? littleEndian}) async {
     if (data.length > end - start) {
       throw Exception(
           "Data is too large for the specified range of ${end - start} bytes! Please make sure the data is smaller than the range.");
@@ -269,13 +319,24 @@ class SFile extends SObject {
               .rechunk(chunkSize))
           .then((e) => e.expand((e) => e).toList()));
 
+  @LuaExport(
+      "Returns the unsigned (i.e. no negative numbers) byte at the specified index.",
+      securityCheck: SFile.readCheck)
   Future<int> readU8(int index) async =>
       await _formNumber(await getRange(index, index + 1), false);
 
+  @LuaExport(
+      "Returns the signed (i.e. negative numbers) byte at the specified index.",
+      securityCheck: SFile.readCheck)
   Future<int> read8(int index) async => (await readU8(index)).toSigned(8);
 
+  @LuaExport("""Writes the byte value at the specified index.
+  
+The value can either be signed or unsigned, it doesn't matter; 
+However, make sure that the value is within the range of the byte.""",
+      securityCheck: SFile.writeCheck)
   Future<void> write8(int index, int value) async =>
-      await setRange(index, index + 1, _seperateInt(value), true);
+      await setRange(index, index + 1, _seperateInt(value), littleEndian: true);
 
   /// Merges two bytes into one. This is used to form numbers larger than one byte.
   int _mergeInt(a, b) => (a << 8) | b;
@@ -296,43 +357,83 @@ class SFile extends SObject {
     return data.isEmpty ? 0 : data.reversed.reduce(_mergeInt);
   }
 
-  /// Forms a unsigned number from a stream of bytes.
+  @LuaExport(
+      "Returns the unsigned (i.e. no negative numbers) 16 bit number at the specified index.",
+      securityCheck: SFile.readCheck)
   Future<int> readU16(int index, {bool? littleEndian}) async =>
       await _formNumber(await getRange(index, index + 2), littleEndian);
 
-  /// Forms a signed number from a stream of bytes.
+  @LuaExport(
+      "Returns the signed (i.e. negative numbers) 16 bit number at the specified index.",
+      securityCheck: SFile.readCheck)
   Future<int> read16(int index, {bool? littleEndian}) async =>
       (await readU16(index, littleEndian: littleEndian)).toSigned(16);
 
-  /// Sets a 16 bit number at the specified index.
+  @LuaExport(
+    """Writes a 16 bit number at the specified index.
+    
+The value can either be signed or unsigned, it doesn't matter; 
+However, make sure that the value is within the range of 16 bits.""",
+    securityCheck: SFile.writeCheck,
+  )
   Future<void> write16(int index, int value, {bool? littleEndian}) async =>
-      await setRange(index, index + 2, _seperateInt(value), littleEndian);
+      await setRange(index, index + 2, _seperateInt(value),
+          littleEndian: littleEndian);
 
-  /// Forms a unsigned number from a stream of bytes.
+  @LuaExport(
+    "Returns the unsigned (i.e. no negative numbers) 32 bit number at the specified index.",
+    securityCheck: SFile.readCheck,
+  )
   Future<int> readU32(int index, {bool? littleEndian}) async =>
       await _formNumber(await getRange(index, index + 4), littleEndian);
 
-  /// Forms a signed number from a stream of bytes.
+  @LuaExport(
+    "Returns the signed (i.e. negative numbers) 32 bit number at the specified index.",
+    securityCheck: SFile.readCheck,
+  )
   Future<int> read32(int index, {bool? littleEndian}) async =>
       (await readU32(index, littleEndian: littleEndian)).toSigned(32);
 
-  /// Sets a 32 bit number at the specified index.
+  @LuaExport(
+    """Writes a 32 bit number at the specified index.
+    
+The value can either be signed or unsigned, it doesn't matter; 
+However, make sure that the value is within the range of 32 bits.""",
+    securityCheck: SFile.writeCheck,
+  )
   Future<void> write32(int index, int value, {bool? littleEndian}) async =>
-      await setRange(index, index + 4, _seperateInt(value), littleEndian);
+      await setRange(index, index + 4, _seperateInt(value),
+          littleEndian: littleEndian);
 
-  /// Forms a unsigned number from a stream of bytes.
+  @LuaExport(
+    "Returns the unsigned (i.e. no negative numbers) 64 bit number at the specified index.",
+    securityCheck: SFile.readCheck,
+  )
   Future<int> readU64(int index, {bool? littleEndian}) async =>
       await _formNumber(await getRange(index, index + 8), littleEndian);
 
-  /// Forms a signed number from a stream of bytes.
+  @LuaExport(
+    "Returns the signed (i.e. negative numbers) 64 bit number at the specified index.",
+    securityCheck: SFile.readCheck,
+  )
   Future<int> read64(int index, {bool? littleEndian}) async =>
       (await readU64(index, littleEndian: littleEndian)).toSigned(64);
 
-  /// Sets a 64 bit number at the specified index.
+  @LuaExport(
+    """Writes a 64 bit number at the specified index.
+    
+The value can either be signed or unsigned, it doesn't matter; 
+However, make sure that the value is within the range of 64 bits.""",
+    securityCheck: SFile.writeCheck,
+  )
   Future<void> write64(int index, int value, {bool? littleEndian}) async =>
-      await setRange(index, index + 8, _seperateInt(value), littleEndian);
+      await setRange(index, index + 8, _seperateInt(value),
+          littleEndian: littleEndian);
 
-  /// Forms a float from a U32.
+  @LuaExport(
+    "Returns a signed (i.e. negative numbers) 32 bit float at the specified index.",
+    securityCheck: SFile.readCheck,
+  )
   Future<double> read32Float(int index, {bool? littleEndian}) async {
     final getUnsigned = await readU32(index, littleEndian: littleEndian);
     final buffer = ByteData(4);
@@ -340,15 +441,24 @@ class SFile extends SObject {
     return buffer.getFloat32(0);
   }
 
+  @LuaExport(
+    """Writes a 32 bit float at the specified index.
+    
+Make sure that the value is within the range of 32 bits.""",
+    securityCheck: SFile.writeCheck,
+  )
   Future<void> write32Float(int index, double value,
       {bool? littleEndian}) async {
     final buffer = ByteData(4);
     buffer.setFloat32(0, value);
     final bytes = buffer.buffer.asUint8List();
-    await setRange(index, index + 4, bytes, littleEndian);
+    await setRange(index, index + 4, bytes, littleEndian: littleEndian);
   }
 
-  /// Forms a float from a U64.
+  @LuaExport(
+    "Returns a signed (i.e. negative numbers) 64 bit float at the specified index.",
+    securityCheck: SFile.readCheck,
+  )
   Future<double> read64Float(int index, {bool? littleEndian}) async {
     final getUnsigned = await readU64(index, littleEndian: littleEndian);
     final buffer = ByteData(8);
@@ -356,14 +466,26 @@ class SFile extends SObject {
     return buffer.getFloat64(0);
   }
 
+  @LuaExport(
+    """Writes a 64 bit float at the specified index.
+    
+Make sure that the value is within the range of 64 bits.""",
+    securityCheck: SFile.writeCheck,
+  )
   Future<void> write64Float(int index, double value,
       {bool? littleEndian}) async {
     final buffer = ByteData(8);
     buffer.setFloat64(0, value);
     final bytes = buffer.buffer.asUint8List();
-    await setRange(index, index + 8, bytes, littleEndian);
+    await setRange(index, index + 8, bytes, littleEndian: littleEndian);
   }
 
+  @LuaExport(
+    """Returns the UTF-16 string at the specified index.
+
+If stopAtNull is true, then the string will stop at the first null character (i.e. 0x00 in hexidecimal).""",
+    securityCheck: SFile.readCheck,
+  )
   Future<String> readUtf16(int index, int length,
       {bool stopAtNull = false}) async {
     final bytes = await getRange(index, index + (length * 2));
@@ -375,6 +497,12 @@ class SFile extends SObject {
     return buffer.toString();
   }
 
+  @LuaExport(
+    """Returns the UTF-8 string at the specified index.
+
+If stopAtNull is true, then the string will stop at the first null character (i.e. 0x00 in hexidecimal).""",
+    securityCheck: SFile.readCheck,
+  )
   Future<String> readUtf8(int index, int length,
       {bool stopAtNull = false}) async {
     final bytes = await getRange(index, index + length);
@@ -386,30 +514,57 @@ class SFile extends SObject {
     return buffer.toString();
   }
 
-  Future<void> writeUtf8(int index, String value) async {
+  @LuaExport(
+    """Writes a UTF-8 string to the file.
+    
+If terminate is true, then the string will be terminated with a null character (i.e. 0x00 in hexidecimal).""",
+    securityCheck: SFile.writeCheck,
+  )
+  Future<void> writeUtf8(int index, String value,
+      {bool terminate = false}) async {
     final bytes = utf8.encode(value);
     for (final char in bytes) {
       await write8(index, char);
       index++;
     }
+    if (terminate) await write8(index, 0);
   }
 
-  Future<void> writeUtf16(int index, String value, {bool? littleEndian}) async {
+  @LuaExport(
+    """Writes a UTF-16 string to the file.
+    
+If terminate is true, then the string will be terminated with a null character (i.e. 0x00 in hexidecimal).""",
+    securityCheck: SFile.writeCheck,
+  )
+  Future<void> writeUtf16(int index, String value,
+      {bool? littleEndian, bool terminate = false}) async {
     final bytes = value.codeUnits;
     for (final char in bytes) {
       await write16(index, char, littleEndian: littleEndian);
       index += 2;
     }
+    if (terminate) await write16(index, 0, littleEndian: littleEndian);
   }
 
   /// Writes a string to the file.
+  @LuaExport(
+    """Appends a plain string to the end of the file.
+
+If you are writing to a binary file, then you should use [writeUtf8](lua://SFile.writeUtf8) or [writeUtf16](lua://SFile.writeUtf16) instead.""",
+    securityCheck: SFile.writeCheck,
+  )
   Future<void> write(String value) async {
     await ra
         .then((e) async => await e.setPosition(await e.length()))
         .then((e) => e.writeString(value));
   }
 
-  /// Writes a line to the file.
+  @LuaExport(
+    """Appends a line to the end of the file.
+
+If you are writing to a binary file, then you should use [writelnUtf8](lua://SFile.writelnUtf8) or [writelnUtf16](lua://SFile.writelnUtf16) instead.""",
+    securityCheck: SFile.writeCheck,
+  )
   Future<void> writeln(String value) async {
     await ra
         .then((e) async => await e.setPosition(await e.length()))
@@ -433,6 +588,19 @@ class SFile extends SObject {
   }
 
   /// Saves the all the changes of a file.
+  @LuaExport("""Saves the file.
+
+This must be done to save changes in both external, and internal files.
+""", securityCheck: """if (object.isExternal()) then
+        local policy = cert.getPolicyByType(SPolicyExterFiles)
+        if (policy == nil) then return false end
+        if (policy.writeAllowed(object.path())) then return true end
+    else
+        if (cert.hasPolicy(SPolicyInterFiles)) then
+            return cert.getPolicyByType(SPolicyInterFiles).writeAllowed()
+        end
+    end
+    return false""")
   Future<void> save() async {
     if (isExternal) {
       await externalVersion!.create(recursive: true);
@@ -449,6 +617,25 @@ class SFile extends SObject {
   }
 
   /// Saves the file to the specified path.
+  @LuaExport("""Saves the file to the specified path.
+
+If overwrite is true, then the file will be overwritten if it already exists.""",
+      securityCheck: """
+    if not object.isExternal() then
+        if (cert.hasPolicy(SPolicyInterFiles)) then return true end
+    else
+        --- If the file is external check if reading is allowed for the file.
+        local policy = cert.getPolicyByType(SPolicyExterFiles)
+        if (policy == nil) then return false end
+        if (not policy.writeAllowed(object.path())) then return false end
+    end
+    if (args.length() == 2) then
+        if (args.get(1)) then
+            if (not cert.getPolicyByType(SPolicyExterFiles).writeAllowed(args.get(0))) then return false end
+        end
+    end
+    if (cert.getPolicyByType(SPolicyExterFiles).createAllowed(args.get(0))) then return true end
+    return false""")
   Future<void> saveAs(String path, {bool overwrite = false}) async {
     if (!await kit.isVerifiedAndTrusted()) {
       throw TrustException(kit, await kit.kitPublicKey);
@@ -462,6 +649,7 @@ class SFile extends SObject {
     await sink.close();
   }
 
+  @LuaExport("Discard all changes to the file.")
   Future<void> discard() async => await Reyveld.withReadAndWritePool(() async {
         await _temp!.delete();
         _temp = null;

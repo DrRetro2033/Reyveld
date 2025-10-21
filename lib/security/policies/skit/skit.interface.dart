@@ -8,7 +8,7 @@ class SPolicySKitInterface extends SInterface<SPolicySKit> {
   get parent => SPolicyInterface();
 
   @override
-  get statics => {tagEntry(SPolicySKitFactory())};
+  get statics => {};
 
   @override
   get exports => {

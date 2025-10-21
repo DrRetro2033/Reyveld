@@ -4,6 +4,10 @@ part of 'sobject.dart';
 /// Root objects are objects that are at the root of the skit file, except for the header.
 ///
 /// To reference a root object in the header, use the [SIndent] object.
+@LuaClass(
+    """Root objects are objects that are at the root of the skit file, except for the header.
+
+To reference a root object in the header, use a [SIndent](lua://SIndent) object.""")
 abstract class SRoot extends SObject {
   SRoot(super._node);
 
@@ -22,11 +26,11 @@ abstract class SRoot extends SObject {
   @override
   int get hashCode => hash.hashCode;
 
+  @LuaExport("Marks a root for deletion.")
   Future<void> markForDeletion() async {
     kit.addIndent(await newIndent()
       ..markForDeletion());
   }
 
-  /// Create a new [SIndent] for this [SRoot].
   Future<SIndent> newIndent();
 }

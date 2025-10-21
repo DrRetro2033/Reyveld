@@ -101,8 +101,7 @@ class Star extends SObject {
 
   /// Grows a new star from this star.
   /// Returns the new star.
-  @LuaExport("Grows a new star from this star.",
-      securityCheck: Constellation.checkSecurity)
+  @LuaExport("Grows a new star from this star.")
   Future<Star> grow(String name, {String? branchName}) async {
     /// The new star.
     Star star;

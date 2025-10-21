@@ -1,6 +1,3 @@
-import 'package:reyveld/scripting/lua.dart';
-import 'package:reyveld/security/certificate/certificate.dart';
-
 class SGen {
   const SGen(this.tag);
 
@@ -16,6 +13,6 @@ class LuaClass {
 class LuaExport {
   final String? name;
   final String? description;
-  final bool Function(SCertificate, LuaArgs)? securityCheck;
+  final String? securityCheck;
   const LuaExport(this.description, {this.name, this.securityCheck});
 }

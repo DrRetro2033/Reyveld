@@ -275,7 +275,7 @@ abstract class SInterface<T> {
 ---@meta _
 ${_sources()}
 
-${statics.isNotEmpty ? _luaStatics() : ""}
+${_luaStatics()}
 ${allExports.isNotEmpty || parent != null ? _luaExports() : ""}
 """);
   }

@@ -6,11 +6,12 @@ import 'package:reyveld/skit/sobjects/sobjects.dart';
 
 part 'files.creator.dart';
 part 'files.g.dart';
-part 'files.interfaces.dart';
+part 'files.interface.dart';
 
-@SGen("polexterfiles")
-class SPolicyExterFiles extends SPolicy {
-  SPolicyExterFiles(super._node);
+@SGen("polfiles")
+@LuaClass("""The policy for files.""")
+class SPolicyFiles extends SPolicy {
+  SPolicyFiles(super._node);
 
   @override
   childAllowed(object) {
@@ -20,46 +21,59 @@ class SPolicyExterFiles extends SPolicy {
     return (false, "Cannot add a ${object.runtimeType} to an $runtimeType!");
   }
 
-  bool get _read => get("read") == "1";
-  bool get _write => get("write") == "1";
-  bool get _create => get("create") == "1";
-  bool get _delete => get("delete") == "1";
+  bool get _externalRead => get("rexter") == "1";
+  bool get _externalWrite => get("wexter") == "1";
+  bool get _externalCreate => get("cexter") == "1";
+  bool get _externalDelete => get("delete") == "1";
+
+  bool get _internalRead => get("rinter") == "1";
+  bool get _internalWrite => get("winter") == "1";
+  bool get _internalCreate => get("cinter") == "1";
+  bool get _internalDelete => get("dinter") == "1";
 
   Whitelist? get whitelist => getChild<Whitelist>();
 
-  bool readAllowed(String filepath) {
+  @LuaExport("Returns whether or not the file is allowed to be read.")
+  bool readAllowed(String filepath, bool isExternal) {
     if (filepath.getExtensions() == "skit") {
       throw AuthVeldException("Cannot read a skit file using this policy!");
     }
-    return _read && whitelist!.included(filepath);
+    return (isExternal ? _externalRead : _internalRead) &&
+        whitelist!.included(filepath);
   }
 
-  bool writeAllowed(String filepath) {
+  @LuaExport("Returns whether or not the file is allowed to be written.")
+  bool writeAllowed(String filepath, bool isExternal) {
     if (filepath.getExtensions() == "skit") {
       throw AuthVeldException("Cannot write to a skit file using this policy!");
     }
-    return _write && whitelist!.included(filepath);
+    return (isExternal ? _externalWrite : _internalWrite) &&
+        whitelist!.included(filepath);
   }
 
-  bool createAllowed(String filepath) {
+  @LuaExport("Returns whether or not the file is allowed to be created.")
+  bool createAllowed(String filepath, bool isExternal) {
     if (filepath.getExtensions() == "skit") {
       throw AuthVeldException("Cannot create a skit file using this policy!");
     }
-    return _create && whitelist!.included(filepath);
+    return (isExternal ? _externalCreate : _internalCreate) &&
+        whitelist!.included(filepath);
   }
 
-  bool deleteAllowed(String filepath) {
+  @LuaExport("Returns whether or not the file is allowed to be deleted.")
+  bool deleteAllowed(String filepath, bool isExternal) {
     if (filepath.getExtensions() == "skit") {
       throw AuthVeldException("Cannot delete a skit file using this policy!");
     }
-    return _delete && whitelist!.included(filepath);
+    return (isExternal ? _externalDelete : _internalDelete) &&
+        whitelist!.included(filepath);
   }
 
   @override
   get safetyLevel {
-    if (_write || _delete) {
+    if (_externalWrite || _externalDelete) {
       return SPolicySafetyLevel.unsafe;
-    } else if (_create) {
+    } else if (_externalWrite) {
       return SPolicySafetyLevel.warn;
     } else {
       return SPolicySafetyLevel.safe;
@@ -69,62 +83,25 @@ class SPolicyExterFiles extends SPolicy {
   @override
   get description {
     final x = [
-      (_read, "read"),
-      (_write, "write"),
-      (_create, "create"),
-      (_delete, "delete")
+      (_externalRead || _internalRead, "read"),
+      (_externalWrite || _internalWrite, "write"),
+      (_externalCreate || _internalCreate, "create"),
+      (_externalDelete || _internalDelete, "delete")
     ];
-    return "Allow the application to ${x.where((e) => e.$1).map((e) => e.$2).join(", ")} external files.";
+    return "Allow the application to ${x.where((e) => e.$1).map((e) => e.$2).join(", ")} external and/or internal files.";
   }
 
   @override
   String details() {
     final x = [
-      (_read, "read"),
-      (_write, "write"),
-      (_create, "create"),
-      (_delete, "delete")
+      (_externalRead || _internalRead, "read"),
+      (_externalWrite || _internalWrite, "write"),
+      (_externalCreate || _internalCreate, "create"),
+      (_externalDelete || _internalDelete, "delete")
     ];
     return """
-## Allow the application to ${x.where((e) => e.$1).map((e) => e.$2).join(", ")} the following external files:
+## Allow the application to ${x.where((e) => e.$1).map((e) => e.$2).join(", ")} the following external and/or internal files:
 ${whitelist!.globs.map((e) => "- ${e.pattern}").join("\n")}
 """;
-  }
-}
-
-@SGen("polinterfiles")
-class SPolicyInterFiles extends SPolicy {
-  @override
-  childAllowed(object) => SObject.zeroChildrenAllowed;
-  SPolicyInterFiles(super._node);
-
-  bool get read => get("read") == "1";
-  bool get write => get("write") == "1";
-  bool get create => get("create") == "1";
-  bool get delete => get("delete") == "1";
-
-  @override
-  get safetyLevel => SPolicySafetyLevel.safe;
-
-  @override
-  get description {
-    final x = [
-      (read, "read"),
-      (write, "write"),
-      (create, "create"),
-      (delete, "delete")
-    ];
-    return "Allow the application to ${x.where((e) => e.$1).map((e) => e.$2).join(", ")} internal files (i.e. Inside SKits).";
-  }
-
-  @override
-  String details() {
-    final x = [
-      (read, "read"),
-      (write, "write"),
-      (create, "create"),
-      (delete, "delete")
-    ];
-    return "## Allow the application to ${x.where((e) => e.$1).map((e) => e.$2).join(", ")} every files inside of SKits.";
   }
 }

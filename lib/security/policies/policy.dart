@@ -15,6 +15,7 @@ enum SPolicySafetyLevel { safe, warn, unsafe }
 ///
 /// [description] is a human-readable description of the permission, and it is used for explaing what the user is permitting the application to do.
 /// For example, if a permission applies to SKits, it would most likely have the description "Allow the application to open, create, and edit SKits."
+@LuaClass("")
 abstract class SPolicy extends SObject {
   SPolicy(super._node);
   String get description;
@@ -22,4 +23,42 @@ abstract class SPolicy extends SObject {
 
   /// This is used to display the details of the policy to the user.
   String details();
+
+  @LuaExport("Creates a new policy for SKits.")
+  static Future<SPolicySKit> skit(
+          {bool read = false,
+          bool write = false,
+          bool create = false,
+          bool delete = false}) async =>
+      await SPolicySKitCreator(
+              read: read, write: write, init: create, delete: delete)
+          .create();
+
+  @LuaExport(
+    "Creates a new policy for files.",
+  )
+  static Future<SPolicyFiles> files(
+          {required Whitelist whitelist,
+          bool rexter = false,
+          bool wexter = false,
+          bool cexter = false,
+          bool dexter = false,
+          bool rinter = false,
+          bool winter = false,
+          bool cinter = false,
+          bool dinter = false}) async =>
+      await SPolicyFilesCreator(
+              readExternally: rexter,
+              writeExternally: wexter,
+              createExternally: cexter,
+              deleteExternally: dexter,
+              readInternally: rinter,
+              writeInternally: winter,
+              createInternally: cinter,
+              deleteInternally: dinter,
+              whitelist: whitelist)
+          .create();
+
+  @LuaExport("Creates a new policy for all permissions.")
+  static Future<SPolicyAll> all() async => await SPolicyAllCreator().create();
 }

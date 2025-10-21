@@ -6,22 +6,12 @@ part of 'files.dart';
 // SGenGenerator
 // **************************************************************************
 
-class SPolicyExterFilesFactory extends SFactory<SPolicyExterFiles> {
-  SPolicyExterFilesFactory();
+class SPolicyFilesFactory extends SFactory<SPolicyFiles> {
+  SPolicyFilesFactory();
 
   @override
-  SPolicyExterFiles load(XmlElement node) => SPolicyExterFiles(node);
+  SPolicyFiles load(XmlElement node) => SPolicyFiles(node);
 
   @override
-  String get tag => "polexterfiles";
-}
-
-class SPolicyInterFilesFactory extends SFactory<SPolicyInterFiles> {
-  SPolicyInterFilesFactory();
-
-  @override
-  SPolicyInterFiles load(XmlElement node) => SPolicyInterFiles(node);
-
-  @override
-  String get tag => "polinterfiles";
+  String get tag => "polfiles";
 }
