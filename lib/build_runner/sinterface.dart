@@ -67,6 +67,8 @@ class SInterfaceGenerator extends GeneratorForAnnotation<LuaClass> {
       final funcPassLuaState = args.where((arg) {
         return arg.type.getDisplayString() == 'LuaState';
       });
+
+      /// This is the arguments that are passed to the lua function.
       final funcArgs = args.where((arg) {
         return arg.type.getDisplayString() != 'Lua' &&
             arg.type.getDisplayString() != 'LuaState';
@@ -79,16 +81,28 @@ class SInterfaceGenerator extends GeneratorForAnnotation<LuaClass> {
         }
         String? defaultValue;
         if (arg.constantInitializer2 != null) {
-          defaultValue = arg.constantInitializer2!.expression.toString();
+          if (arg.constantInitializer2!.expression is StringLiteral) {
+            defaultValue =
+                (arg.constantInitializer2!.expression as StringLiteral)
+                    .stringValue;
+          } else if (arg.constantInitializer2!.expression is NullLiteral) {
+            defaultValue = null;
+          } else {
+            defaultValue = arg.constantInitializer2!.expression.toString();
+          }
         }
         return (
-          arg.type.getDisplayString().replaceFirst("?", ""),
+          arg.type,
           arg.name3!,
           kind,
           defaultValue,
         );
       });
-      String funcReturnType = method.returnType.getDisplayString();
+      DartType returnType = method.returnType;
+      if (returnType is TypeParameterType) {
+        returnType = returnType.bound;
+      }
+      String funcReturnType = returnType.getDisplayString();
       final genericRegex = RegExp(r"(\w*)<(.*)>");
       while (genericRegex.hasMatch(funcReturnType)) {
         final match = genericRegex.firstMatch(funcReturnType)!;
@@ -151,10 +165,10 @@ class SInterfaceGenerator extends GeneratorForAnnotation<LuaClass> {
         args: getter.correspondingSetter2 != null
             ? [
                 (
-                  getter.returnType.getDisplayString(),
+                  getter.returnType,
                   "value",
                   ArgKind.optionalPositional,
-                  null
+                  null,
                 )
               ]
             : [],
@@ -200,7 +214,7 @@ final class ExportGen {
   final bool passLua;
   final bool passLuaState;
   final ExportType exportType;
-  final Iterable<(String, String, ArgKind, String?)> args;
+  final Iterable<(DartType, String, ArgKind, String?)> args;
   final String? securityCheck;
   final String actualFunc;
   bool get hasNamedArgs => args.any(
@@ -273,7 +287,15 @@ final class ExportGen {
   }
 
   String _args() =>
-      "args: const {${args.map((e) => """LArg<${e.$1}>(name: "${e.$2}", kind: ${e.$3}${_convertDartTypeToLua(e.$1) != e.$1 ? ", docTypeOverride: \"${_convertDartTypeToLua(e.$1)}\"" : ""}${e.$4 != null ? ", docDefaultValue: \"${e.$4}\"" : ""})""").join(", ")}},";
+      "args: const {${args.map((e) => """LArg<${_formatArgType(e.$1)}>(name: "${e.$2}", kind: ${e.$3}${_convertDartTypeToLua(_formatArgType(e.$1)) != _formatArgType(e.$1) ? ", docTypeOverride: \"${_convertDartTypeToLua(_formatArgType(e.$1))}\"" : ""}${e.$4 != null ? ", docDefaultValue: \"${e.$4}\"" : ""})""").join(", ")}},";
+
+  String _formatArgType(DartType type) {
+    if (type is FunctionType || type.isDartCoreFunction) {
+      return "LuaFuncRef";
+    } else {
+      return type.toString().replaceFirst("?", "");
+    }
+  }
 
   String _func(String thing) =>
       "(${_funcParamters()})${isAsync ? " async" : ""} {${_body(thing)}}";
@@ -284,6 +306,16 @@ final class ExportGen {
         return """return $thing.$actualFunc(${passLua ? "lua, " : ""}${passLuaState ? "state, " : ""}${args.map((e) {
               if (e.$3 == ArgKind.requiredPositional ||
                   e.$3 == ArgKind.optionalPositional) {
+                if (e.$1 is FunctionType || e.$1.isDartCoreFunction) {
+                  print(e.$1);
+                  print((e.$1 as FunctionType).formalParameters);
+                  final returnType =
+                      (e.$1 as FunctionType).returnType.toString();
+                  final params = List<String>.generate(
+                      (e.$1 as FunctionType).formalParameters.length,
+                      (i) => "p$i");
+                  return "(${params.join(", ")}) async => await ${e.$2}.call<${returnType.replaceFirst("?", "")}>([${params.join(", ")}])";
+                }
                 return e.$2;
               } else if (e.$3 == ArgKind.requiredNamed ||
                   e.$3 == ArgKind.optionalNamed) {
@@ -306,12 +338,12 @@ final class ExportGen {
       "${passLua ? "Lua lua, " : ""}${passLuaState ? "LuaState state, " : ""}${[
         ...args
             .where((e) => e.$3 == ArgKind.requiredPositional)
-            .map((e) => "${e.$1} ${e.$2}"),
+            .map((e) => "${_formatArgType(e.$1)} ${e.$2}"),
         hasPositionalOptionalArgs
-            ? "[${args.where((e) => e.$3 == ArgKind.optionalPositional).map((e) => "${e.$1}${e.$4 == null ? "?" : ""} ${e.$2}${e.$4 != null ? " = ${e.$4}" : ""}").join(", ")}]"
+            ? "[${args.where((e) => e.$3 == ArgKind.optionalPositional).map((e) => "${_formatArgType(e.$1)}${e.$4 == null ? "?" : ""} ${e.$2}${e.$4 != null ? " = ${e.$4}" : ""}").join(", ")}]"
             : null,
         hasNamedArgs
-            ? "{${args.where((e) => e.$3 == ArgKind.requiredNamed || e.$3 == ArgKind.optionalNamed).map((e) => "${e.$1}${e.$4 == null ? "?" : ""} ${e.$2}${e.$4 != null ? " = ${e.$4}" : ""}").join(", ")}}"
+            ? "{${args.where((e) => e.$3 == ArgKind.requiredNamed || e.$3 == ArgKind.optionalNamed).map((e) => "${_formatArgType(e.$1)}${e.$4 == null && e.$3 != ArgKind.requiredNamed ? "?" : ""} ${e.$2}${e.$4 != null ? " = ${e.$4}" : ""}").join(", ")}}"
             : null,
       ].where((e) => e != null).join(", ")}";
 }

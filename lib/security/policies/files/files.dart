@@ -31,7 +31,7 @@ class SPolicyFiles extends SPolicy {
   bool get _internalCreate => get("cinter") == "1";
   bool get _internalDelete => get("dinter") == "1";
 
-  Whitelist? get whitelist => getChild<Whitelist>();
+  Whitelist? get whitelist => getChildSync<Whitelist>();
 
   @LuaExport("Returns whether or not the file is allowed to be read.")
   bool readAllowed(String filepath, bool isExternal) {

@@ -48,7 +48,7 @@ class SArchive extends SRoot {
 
   /// Returns a [SFile] from the archive.
   SFile? getFile(String path) {
-    return getChild<SFile>(filter: (e) => e.path == path);
+    return getChildSync<SFile>(filter: (e) => e.path == path);
   }
 
   /// Returns true if the archive has a file with the path provided (must be relative to the archive).

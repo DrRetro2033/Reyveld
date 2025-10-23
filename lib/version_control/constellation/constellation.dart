@@ -49,7 +49,7 @@ class Constellation extends SObject {
 
   /// Returns the root [Star] of the constellation.
   Star get root {
-    final root = getChild<Star>();
+    final root = getChildSync<Star>();
     if (root == null) {
       throw Exception(
           "Constellation has no root star! Please start the constellation by calling start() in Lua before using it!");
@@ -58,13 +58,13 @@ class Constellation extends SObject {
   }
 
   /// Returns true if the constellation has a root star.
-  bool get hasRoot => getChild<Star>() != null;
+  bool get hasRoot => getChildSync<Star>() != null;
 
   /// Returns the globs of the constellation.
-  Globs? get globs => getChild<Globs>();
+  Globs? get globs => getChildSync<Globs>();
   set globs(Globs? value) {
-    if (getChild<Globs>() != null) {
-      getChild<Globs>()!.unparent();
+    if (getChildSync<Globs>() != null) {
+      getChildSync<Globs>()!.unparent();
     } else {
       addChild(value!);
     }
@@ -95,7 +95,7 @@ class Constellation extends SObject {
   /// Returns the current star in the constellation.
   /// If the current star is not found, it returns the root star.
   Star getCurrentStar() {
-    final stars = getDescendants<Star>();
+    final stars = getDescendantsSync<Star>();
     for (final star in stars) {
       if (star!.hash == currentHash) {
         return star;
@@ -107,7 +107,7 @@ class Constellation extends SObject {
 
   /// Returns all of the hashes of the stars in the constellation.
   Set<String> getStarHashes() {
-    final stars = getDescendants<Star>();
+    final stars = getDescendantsSync<Star>();
     final hashes = <String>{};
     for (final star in stars) {
       hashes.add(star!.hash);
@@ -118,14 +118,14 @@ class Constellation extends SObject {
   /// Get the start of a branch.
   /// Also known as the anchor/stem star.
   Star? getStartOfBranch(String branch) {
-    return getDescendants<Star>(
+    return getDescendantsSync<Star>(
             filter: (star) => star.has("branch") && star.branchName == branch)
         .firstOrNull;
   }
 
   /// Returns all of the branches in the constellation.
   Set<String> getAllBranches() =>
-      getDescendants<Star>(filter: (star) => star.has("branch"))
+      getDescendantsSync<Star>(filter: (star) => star.has("branch"))
           .map((e) => e!.branchName)
           .toSet();
 
@@ -150,5 +150,5 @@ class Constellation extends SObject {
   }
 
   Star? getStarByHash(String hash) =>
-      getDescendants<Star>(filter: (star) => star.hash == hash).firstOrNull;
+      getDescendantsSync<Star>(filter: (star) => star.hash == hash).firstOrNull;
 }
