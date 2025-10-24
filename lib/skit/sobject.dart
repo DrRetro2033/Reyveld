@@ -213,33 +213,9 @@ This will not do anything if this SObject is not a parent of the child.""")
     return getChildren().where((e) => type.isType(e)).toList();
   }
 
-  @LuaExport(
-    """Returns a child of the [SObject](lua://SObject), with the specific type.
-
-If [filter] is provided, it will only return the first child that matches the filter.""",
-  )
-
-  /// DO NOT USE THIS IN REYVELD ITSELF; ONLY USED FOR LUA. USE [getChildSync] INSTEAD
-  Future<T?> getChild<T extends SObject>(
-      {Future<bool> Function(T)? filter}) async {
-    for (var child in _node.childElements) {
-      final factory = getSFactory(child.localName);
-      if (factory is! SFactory<T>) {
-        continue;
-      }
-      T obj = factory.load(child)..kit = _kit;
-      if (filter != null && !await filter(obj)) {
-        continue;
-      }
-
-      return obj;
-    }
-    return null;
-  }
-
   /// Returns a child of the [SObject], with the specific type.
   /// If [filter] is provided, it will only return the first child that matches the filter.
-  T? getChildSync<T extends SObject>({bool Function(T)? filter}) {
+  T? getChild<T extends SObject>({bool Function(T)? filter}) {
     for (var child in _node.childElements) {
       final factory = getSFactory(child.localName);
       if (factory is! SFactory<T>) {
@@ -256,9 +232,15 @@ If [filter] is provided, it will only return the first child that matches the fi
   }
 
   @LuaExport(
+      "Gets the first child of the [SObject](lua://SObject), that matches the filter.",
+      name: "getChild")
+  SObject? getChildInterface(bool Function(SObject) filter) =>
+      getChild(filter: (e) => filter(e));
+
+  @LuaExport(
       "Gets the child of the [SObject](lua://SObject), with the specific type.")
   SObject? getChildByType(SInterface type) =>
-      getChildSync(filter: (e) => type.isType(e));
+      getChild(filter: (e) => type.isType(e));
 
   /// Returns the parent of the [SObject], if it has one.
   @LuaExport(
@@ -275,35 +257,13 @@ If [filter] is provided, it will only return the first child that matches the fi
   @LuaExport(
     "Returns a list of descendants of the [SObject](lua://SObject), with the specific type.",
   )
-  List<T?> getDescendantsSync<T extends SObject>({bool Function(T)? filter}) {
+  List<T?> getDescendants<T extends SObject>({bool Function(T)? filter}) {
     List<T?> descendants = [];
     for (var child in _node.descendantElements) {
       final factory = getSFactory(child.name.local);
       if (factory is! SFactory<T>) continue;
       T obj = factory.load(child)..kit = _kit;
       if (filter != null && !filter(obj)) {
-        continue;
-      }
-      descendants.add(obj);
-    }
-    // sort descendants by depth, with the deepest last.
-    descendants.sort((a, b) => a!.getDepth().compareTo(b!.getDepth()));
-    return descendants;
-  }
-
-  @LuaExport(
-    "Returns a list of descendants of the [SObject](lua://SObject), with the specific type.",
-  )
-
-  /// DO NOT USE THIS IN REYVELD ITSELF; ONLY USED FOR LUA. USE [getDescendantsSync] INSTEAD
-  Future<List<T?>> getDescendants<T extends SObject>(
-      {Future<bool> Function(T)? filter}) async {
-    List<T?> descendants = [];
-    for (var child in _node.descendantElements) {
-      final factory = getSFactory(child.name.local);
-      if (factory is! SFactory<T>) continue;
-      T obj = factory.load(child)..kit = _kit;
-      if (filter != null && !await filter(obj)) {
         continue;
       }
       descendants.add(obj);
@@ -314,7 +274,10 @@ If [filter] is provided, it will only return the first child that matches the fi
   }
 
   /// Returns the ancestors of the [SObject], if it has one.
-  List<T?> getAncestorsSync<T extends SObject>({bool Function(T)? filter}) {
+  @LuaExport(
+    "Returns the ancestors of the [SObject](lua://SObject), if it has one.",
+  )
+  List<T?> getAncestors<T extends SObject>({bool Function(T)? filter}) {
     final ancest = <T>[];
     Iterable<XmlElement> ancestors = _node.ancestorElements;
     for (var ancestor in ancestors) {
@@ -329,74 +292,29 @@ If [filter] is provided, it will only return the first child that matches the fi
     return ancest;
   }
 
-  @LuaExport(
-    "Returns the ancestors of the [SObject](lua://SObject), if it has one.",
-  )
-
-  /// DO NOT USE THIS IN REYVELD ITSELF; ONLY USED FOR LUA. USE [getAncestorsSync] INSTEAD
-  Future<List<T?>> getAncestors<T extends SObject>(
-      {Future<bool> Function(T)? filter}) async {
-    final ancest = <T>[];
-    Iterable<XmlElement> ancestors = _node.ancestorElements;
-    for (var ancestor in ancestors) {
-      final factory = getSFactory(ancestor.name.local);
-      if (factory is! SFactory<T>) continue;
-      T obj = factory.load(ancestor)..kit = _kit;
-      if (filter != null && !await filter(obj)) {
-        continue;
-      }
-      ancest.add(obj);
-    }
-    return ancest;
-  }
-
   /// Returns the sibling of the [SObject] above it, if it has one.
-  T? getSiblingAboveSync<T extends SObject>({bool Function(T)? filter}) {
+  @LuaExport(
+    "Returns the sibling of the [SObject](lua://SObject) above it, if it has one.",
+  )
+  T? getSiblingAbove<T extends SObject>({bool Function(T)? filter}) {
     if (_node.previousElementSibling == null) return null;
     final factory = getSFactory(_node.previousElementSibling!.name.local);
     if (factory is! SFactory<T>) return null;
     T obj = factory.load(_node.previousElementSibling!)..kit = _kit;
     if (filter != null && !filter(obj)) return null;
-    return obj;
-  }
-
-  @LuaExport(
-    "Returns the sibling of the [SObject](lua://SObject) above it, if it has one.",
-  )
-
-  /// DO NOT USE THIS IN REYVELD ITSELF; ONLY USED FOR LUA. USE [getSiblingAboveSync] INSTEAD
-  Future<T?> getSiblingAbove<T extends SObject>(
-      {Future<bool> Function(T)? filter}) async {
-    if (_node.previousElementSibling == null) return null;
-    final factory = getSFactory(_node.previousElementSibling!.name.local);
-    if (factory is! SFactory<T>) return null;
-    T obj = factory.load(_node.previousElementSibling!)..kit = _kit;
-    if (filter != null && !await filter(obj)) return null;
     return obj;
   }
 
   /// Returns the sibling of the [SObject] below it, if it has one.
-  T? getSiblingBelowSync<T extends SObject>({bool Function(T)? filter}) {
+  @LuaExport(
+    "Returns the sibling of the [SObject](lua://SObject) below it, if it has one.",
+  )
+  T? getSiblingBelow<T extends SObject>({bool Function(T)? filter}) {
     if (_node.nextElementSibling == null) return null;
     final factory = getSFactory(_node.nextElementSibling!.name.local);
     if (factory is! SFactory<T>) return null;
     T obj = factory.load(_node.nextElementSibling!)..kit = _kit;
     if (filter != null && !filter(obj)) return null;
-    return obj;
-  }
-
-  @LuaExport(
-    "Returns the sibling of the [SObject](lua://SObject) below it, if it has one.",
-  )
-
-  /// DO NOT USE THIS IN REYVELD ITSELF; ONLY USED FOR LUA. USE [getSiblingBelowSync] INSTEAD
-  Future<T?> getSiblingBelow<T extends SObject>(
-      {Future<bool> Function(T)? filter}) async {
-    if (_node.nextElementSibling == null) return null;
-    final factory = getSFactory(_node.nextElementSibling!.name.local);
-    if (factory is! SFactory<T>) return null;
-    T obj = factory.load(_node.nextElementSibling!)..kit = _kit;
-    if (filter != null && !await filter(obj)) return null;
     return obj;
   }
 

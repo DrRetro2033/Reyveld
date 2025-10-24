@@ -592,13 +592,13 @@ final class LuaFuncRef {
 
   const LuaFuncRef(this.lua, this.state, this.ref);
 
-  Future<T> call<T>(List<dynamic> args) async {
+  Future<T?> call<T>(List<dynamic> args) async {
     await state.rawGetI(luaRegistryIndex, ref);
     for (final arg in args) {
       await lua._pushToStack(state, arg);
     }
     if (state.isNil(state.getTop())) {
-      return throw Exception("Function is nil!");
+      return null;
     }
     await state.call(args.length, 1);
     return await lua.getFromTop(state);

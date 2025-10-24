@@ -111,7 +111,7 @@ class SKit {
     } else {
       final header = await getHeader();
       if (header != null) {
-        final author = await header.getChildSync<SRAuthor>()!.getRef();
+        final author = await header.getChild<SRAuthor>()!.getRef();
         return author!.publicKey;
       } else {
         return await Reyveld.publicKey;
@@ -123,7 +123,7 @@ class SKit {
   @LuaExport("The [SAuthor](lua://SAuthor) of the kit file.")
   Future<SAuthor> get author async {
     final header = await getHeader();
-    return (await header?.getChildSync<SRAuthor>()?.getRef()) ??
+    return (await header?.getChild<SRAuthor>()?.getRef()) ??
         await Reyveld.author.then((e) => e!.toSAuthor());
   }
 
@@ -480,7 +480,7 @@ class SKit {
     // If the kit file has not been signed by the user, sign it with their keys.
     if (!await isSignedByMe()) {
       final header = await getHeader();
-      header!.getChildSync<SRAuthor>()!.markForDeletion();
+      header!.getChild<SRAuthor>()!.markForDeletion();
       final root = await Reyveld.author.then((e) => e!.toSAuthor());
       await addRoot(root);
       header.addChild(await root.newIndent());

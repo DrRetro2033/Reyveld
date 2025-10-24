@@ -35,12 +35,11 @@ class Star extends SObject {
   String get hash => get("hash")!;
   set hash(String value) => set("hash", value);
 
-  SRArchive? get archiveRef => getChildSync<SRArchive>();
+  SRArchive? get archiveRef => getChild<SRArchive>();
 
   /// Returns the archive of the star.
   @LuaExport("The archive of the star.")
-  Future<SArchive?> get archive async =>
-      await getChildSync<SRArchive>()?.getRef();
+  Future<SArchive?> get archive async => await getChild<SRArchive>()?.getRef();
 
   /// Returns the date the star was created.
   @LuaExport("The date the star was created.")
@@ -48,7 +47,7 @@ class Star extends SObject {
 
   /// Returns the constellation of the star.
   @LuaExport("The constellation of the star.")
-  Constellation get constellation => getAncestorsSync<Constellation>().first!;
+  Constellation get constellation => getAncestors<Constellation>().first!;
 
   /// Returns true if the star is the root star.
   @LuaExport("True if the star is the root star.")
@@ -77,7 +76,7 @@ class Star extends SObject {
   Star get stem {
     final stem = has("branch")
         ? this
-        : getAncestorsSync<Star>(filter: (star) => star.has("branch")).first!;
+        : getAncestors<Star>(filter: (star) => star.has("branch")).first!;
     return stem;
   }
 
@@ -110,9 +109,9 @@ class Star extends SObject {
     /// If there are no changes, create a new star with the exact same archive reference.
     /// If there are changes, create a new star with a new archive that references the old archive.
     if (!await checkForChanges()) {
-      star = await StarCreator(
-              name, generateUUID(), getChildSync<SRArchive>()!.copy())
-          .create();
+      star =
+          await StarCreator(name, generateUUID(), getChild<SRArchive>()!.copy())
+              .create();
     } else {
       final newArchive = await SArchiveCreator.archiveFolder(
           constellation.path.resolvePath(),
@@ -143,7 +142,7 @@ class Star extends SObject {
       throw Exception("Cannot trim root star!");
     }
     getParent<Star>()!.makeCurrent();
-    if (getAncestorsSync<Star>()
+    if (getAncestors<Star>()
         .every((e) => e!.archiveRef!.hash != archiveRef!.hash)) {
       archiveRef!.markForDeletion();
     }
@@ -201,7 +200,7 @@ When encountering a fork, the top most star will be chosen.""")
   Star foward([int x = 1]) {
     Star star = this;
     while (x > 0) {
-      star = star.getChildSync<Star>() ?? star;
+      star = star.getChild<Star>() ?? star;
       x--;
     }
     return star;
@@ -222,7 +221,7 @@ When encountering a fork, the top most star will be chosen.""")
   Star above([int x = 1]) {
     Star star = this;
     while (x > 0) {
-      star = star.getSiblingAboveSync() ?? star;
+      star = star.getSiblingAbove() ?? star;
       x--;
     }
     return star;
@@ -232,7 +231,7 @@ When encountering a fork, the top most star will be chosen.""")
   Star below([int x = 1]) {
     Star star = this;
     while (x > 0) {
-      star = star.getSiblingBelowSync() ?? star;
+      star = star.getSiblingBelow() ?? star;
       x--;
     }
     return star;
@@ -249,7 +248,7 @@ Will wrap around to the top if X is greater than the number of children.""")
 
   @LuaExport("Gets the most recent descendant star.")
   Star recent() {
-    final stars = getDescendantsSync<Star>();
+    final stars = getDescendants<Star>();
     stars.sort((a, b) => a!.createdOn.compareTo(b!.createdOn));
     return stars.last ?? this;
   }
