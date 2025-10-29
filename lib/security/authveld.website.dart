@@ -426,6 +426,7 @@ String buildAuthPage(
 """;
 }
 
+/// This is the page that is shown when the ticket is expired.
 String get expiredTicketPage => """<!DOCTYPE html>
 <html lang="en">
 

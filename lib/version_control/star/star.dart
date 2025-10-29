@@ -11,10 +11,6 @@ part 'star.creator.dart';
 /// This class represents a star in a constellation.
 /// A star is a node in the constellation tree, and contains a reference to an archive.
 @SGen("star")
-@LuaClass(
-  """This class represents a star in a constellation.
-A star is a point in time that represents a snapshot of an folder.""",
-)
 class Star extends SObject {
   Star(super._node);
 
@@ -38,35 +34,27 @@ class Star extends SObject {
   SRArchive? get archiveRef => getChild<SRArchive>();
 
   /// Returns the archive of the star.
-  @LuaExport("The archive of the star.")
   Future<SArchive?> get archive async => await getChild<SRArchive>()?.getRef();
 
   /// Returns the date the star was created.
-  @LuaExport("The date the star was created.")
   DateTime get createdOn => DateTime.parse(get("date")!);
 
   /// Returns the constellation of the star.
-  @LuaExport("The constellation of the star.")
   Constellation get constellation => getAncestors<Constellation>().first!;
 
   /// Returns true if the star is the root star.
-  @LuaExport("True if the star is the root star.")
   bool get isRoot => getParent<Constellation>() != null;
 
   /// Returns true if the star is the current star.
-  @LuaExport("True if the star is the current star.")
   bool get isCurrent => constellation.currentHash == hash;
 
   /// Returns true if the star is a single child.
-  @LuaExport("True if the star is a single child.")
   bool get isSingleChild => getParent<Star>()?.getChildren<Star>().length == 1;
 
   /// Returns true if the star is a leaf.
-  @LuaExport("True if the star is a leaf.")
   bool get isLeaf => getChildren<Star>().isEmpty;
 
   /// Returns true if the star is the stem of a branch.
-  @LuaExport("True if the star is the stem of a branch.")
   bool get isStem => has("branch");
 
   /// Returns the branch name of the star.
@@ -81,8 +69,6 @@ class Star extends SObject {
   }
 
   /// Anchors the star, making it the stem of a new branch.
-  @LuaExport("Anchors the star, making it the stem of a new branch.",
-      name: "anchor")
   void makeStem(String name) {
     /// If the branch name already exists, throw an exception.
     if (constellation.getAllBranches().contains(name)) {
@@ -92,7 +78,6 @@ class Star extends SObject {
   }
 
   /// Unanchors the star.
-  @LuaExport("Unanchors the star.", name: "unanchor")
   void unmakeStem() {
     /// If the star is the root star, it cannot be unanchored, so it will do nothing and return.
     if (isRoot) return;
@@ -101,7 +86,6 @@ class Star extends SObject {
 
   /// Grows a new star from this star.
   /// Returns the new star.
-  @LuaExport("Grows a new star from this star.")
   Future<Star> grow(String name, {String? branchName}) async {
     /// The new star.
     Star star;
@@ -136,7 +120,6 @@ class Star extends SObject {
   /// Trims a star from the constellation.
   /// Will throw an exception if the star is the root star.
   /// The parent star will become current, the archive will be marked for deletion, and the star will be unparented.
-  @LuaExport("Trims a star from the constellation.")
   Future<void> trim() async {
     if (isRoot) {
       throw Exception("Cannot trim root star!");
@@ -159,7 +142,6 @@ class Star extends SObject {
   }
 
   /// Gets a summary of the star.
-  @LuaExport("Gets a summary of the star.")
   Map<String, dynamic> summary() => {
         "name": name,
         "id": hash,
@@ -173,30 +155,20 @@ class Star extends SObject {
       };
 
   /// Makes this star the current star.
-  @LuaExport("Makes this star the current star.")
   void makeCurrent() {
     constellation.currentHash = hash;
   }
 
-  @LuaExport(
-      "Extracts the contents of this star, without needing to make it the current star.")
   Future<Stream<String>> checkout(String path) async =>
       await archive.then((e) async => e!.extract(path.resolvePath()));
 
   /// Checks for changes from the current star, and returns true if there are changes, false if there are none.
-  @LuaExport("""Checks for changes from the current star.
-
-Will return true if there are changes, false if there are none.""")
   Future<bool> checkForChanges() async {
     return await archive.then<bool>((value) => value!.checkForChanges(
         constellation.path.resolvePath(),
         includeList: constellation.globs));
   }
 
-  @LuaExport(
-      """Gets the star forward to this star X times, also known as children/descendants.
-      
-When encountering a fork, the top most star will be chosen.""")
   Star foward([int x = 1]) {
     Star star = this;
     while (x > 0) {
@@ -206,8 +178,6 @@ When encountering a fork, the top most star will be chosen.""")
     return star;
   }
 
-  @LuaExport(
-      "Gets the star backward to this star X times, also known as parents/ancestors.")
   Star backward([int x = 1]) {
     Star star = this;
     while (x > 0) {
@@ -217,7 +187,6 @@ When encountering a fork, the top most star will be chosen.""")
     return star;
   }
 
-  @LuaExport("Gets the star above this star X times, also known as siblings.")
   Star above([int x = 1]) {
     Star star = this;
     while (x > 0) {
@@ -227,7 +196,6 @@ When encountering a fork, the top most star will be chosen.""")
     return star;
   }
 
-  @LuaExport("Gets the star below this star X times, also known as siblings.")
   Star below([int x = 1]) {
     Star star = this;
     while (x > 0) {
@@ -237,16 +205,12 @@ When encountering a fork, the top most star will be chosen.""")
     return star;
   }
 
-  @LuaExport("""Gets the child star at position X.
-  
-Will wrap around to the top if X is greater than the number of children.""")
   Star next([int x = 1]) {
     List<Star?> stars = getChildren<Star>();
     Star star = stars[(x - 1) % stars.length] ?? this;
     return star;
   }
 
-  @LuaExport("Gets the most recent descendant star.")
   Star recent() {
     final stars = getDescendants<Star>();
     stars.sort((a, b) => a!.createdOn.compareTo(b!.createdOn));

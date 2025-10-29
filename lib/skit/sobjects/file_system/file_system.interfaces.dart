@@ -59,7 +59,9 @@ final class SFileInterface extends SInterface<SFile> {
 
   @override
   get classDescription => """
-A file either stored on disk or in an SArchive. Contains the path of the file, and its data in the form of compressed base64.
+A file either stored on disk or in an SArchive. 
+
+Contains the path of the file, and its data in the form of compressed base64.
 """;
 
   @override
@@ -101,19 +103,23 @@ If the file already exists and overwrite is true, it will delete the file and cr
               kind: ArgKind.optionalNamed,
             ),
           },
-          securityCheck: """if (cert.hasPolicy(SPolicyExterFiles)) then
-        local policy = cert.getPolicyByType(SPolicyExterFiles)
-        if (policy == nil) then return false end
-        if (not policy.createAllowed(args.get(0))) then
-            return "Not allowed to create '" ..
-                args.get(0) .. "'."
+          securityCheck: """---@type SPolicyFiles?
+    local policy = cert.getPolicy({
+        type = SPolicyFiles,
+        ---@param p SPolicyFiles
+        filter = function(p)
+            return p.isFileAssociated(object.path())
         end
-        if (named["overwrite"] == true) then
-            return policy.deleteAllowed(args.get(0))
-        end
-        return true
+    })
+    if (policy == nil) then return false end
+    if (not policy.createAllowed(args.get(0), true)) then
+        return "Not allowed to create '" ..
+            args.get(0) .. "'."
     end
-    return "No policy for external files."
+    if (named["overwrite"] == true) then
+        return policy.deleteAllowed(args.get(0), true)
+    end
+    return true
 """,
           returnType: SFile,
           (String path, {bool overwrite = false}) async {
@@ -135,40 +141,32 @@ If the file already exists and overwrite is true, it will delete the file and cr
 
   /// The default read check for files.
   String get readCheck => """
-    if (object.isExternal()) then
-        if (cert.hasPolicy(SPolicyExterFiles)) then
-            local policy = cert.getPolicyByType(SPolicyExterFiles)
-            if (policy.readAllowed(object.path())) then return true else return "Not allowed to read '" .. object.filename() .. "'." end
+    ---@type SPolicyFiles?
+    local policy = cert.getPolicy({
+        type = SPolicyFiles,
+        ---@param p SPolicyFiles
+        filter = function(p)
+            return p.isFileAssociated(object.path())
         end
-        return "No policy for external files."
-    else
-        if (cert.hasPolicy(SPolicyInterFiles)) then
-            if (cert.getPolicyByType(SPolicyInterFiles).readAllowed()) then
-                return true
-            end
-            return "Not allowed to read '" .. object.filename() .. "'." 
-        end
-        return "No policy for internal files."
-    end
+    })
+    if (policy == nil) then return false end
+    if (policy.readAllowed(object.path(), object.isExternal())) then return true end
+    return false
 """;
 
   /// The default write check for files.
   String get writeCheck => """
-    if (object.isExternal()) then
-        if (cert.hasPolicy(SPolicyExterFiles)) then
-            local policy = cert.getPolicyByType(SPolicyExterFiles)
-            if (policy.writeAllowed(object.path())) then return true else return "Not allowed to write '" .. object.filename() .. "'." end
+      ---@type SPolicyFiles?
+    local policy = cert.getPolicy({
+        type = SPolicyFiles,
+        ---@param p SPolicyFiles
+        filter = function(p)
+            return p.isFileAssociated(object.path())
         end
-        return "No policy for external files."
-    else
-        if (cert.hasPolicy(SPolicyInterFiles)) then
-            if (cert.getPolicyByType(SPolicyInterFiles).writeAllowed()) then
-                return true
-            end
-            return "Not allowed to write '" .. object.filename() .. "'."
-        end
-        return "No policy for internal files."
-    end
+    })
+    if (policy == nil) then return false end
+    if (policy.writeAllowed(object.path(), object.isExternal())) then return true end
+    return false
 """;
 
   @override
@@ -628,15 +626,16 @@ If the file already exists and overwrite is true, it will delete the file and cr
         LEntry(
             name: "save",
             descr: "Saves the file to disk if path is external.",
-            securityCheck: """if (object.isExternal()) then
-        local policy = cert.getPolicyByType(SPolicyExterFiles)
-        if (policy == nil) then return false end
-        if (policy.writeAllowed(object.path())) then return true end
-    else
-        if (cert.hasPolicy(SPolicyInterFiles)) then
-            return cert.getPolicyByType(SPolicyInterFiles).writeAllowed()
+            securityCheck: """---@type SPolicyFiles?
+    local policy = cert.getPolicy({
+        type = SPolicyFiles,
+        ---@param p SPolicyFiles
+        filter = function(p)
+            return p.isFileAssociated(object.path())
         end
-    end
+    })
+    if (policy == nil) then return false end
+    if (policy.writeAllowed(object.path(), object.isExternal())) then return true end
     return false""",
             isAsync: true, () async {
           await object!.save();
@@ -645,20 +644,21 @@ If the file already exists and overwrite is true, it will delete the file and cr
           name: "saveAs",
           descr: "Saves the file to the specified path.",
           securityCheck: """
-    if not object.isExternal() then
-        if (cert.hasPolicy(SPolicyInterFiles)) then return true end
-    else
-        --- If the file is external check if reading is allowed for the file.
-        local policy = cert.getPolicyByType(SPolicyExterFiles)
-        if (policy == nil) then return false end
-        if (not policy.writeAllowed(object.path())) then return false end
-    end
+    ---@type SPolicyFiles?
+    local policy = cert.getPolicy({
+        type = SPolicyFiles,
+        ---@param p SPolicyFiles
+        filter = function(p)
+            return p.isFileAssociated(object.path())
+        end
+    })
+    if (policy == nil) then return false end
     if (args.length() == 2) then
         if (args.get(1)) then
-            if (not cert.getPolicyByType(SPolicyExterFiles).writeAllowed(args.get(0))) then return false end
+            if (not policy.writeAllowed(args.get(0), true)) then return false end
         end
     end
-    if (cert.getPolicyByType(SPolicyExterFiles).createAllowed(args.get(0))) then return true end
+    if (policy.createAllowed(args.get(0), true)) then return true end
     return false""",
           args: const {
             LArg<String>(

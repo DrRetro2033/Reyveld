@@ -206,13 +206,6 @@ This will not do anything if this SObject is not a parent of the child.""")
     return children;
   }
 
-  @LuaExport(
-      """Returns a list of children of the [SObject](lua://SObject), with the specific type.""",
-      name: "getChildren")
-  List<SObject?> getChildrenInterface(SInterface type) {
-    return getChildren().where((e) => type.isType(e)).toList();
-  }
-
   /// Returns a child of the [SObject], with the specific type.
   /// If [filter] is provided, it will only return the first child that matches the filter.
   T? getChild<T extends SObject>({bool Function(T)? filter}) {
@@ -231,20 +224,7 @@ This will not do anything if this SObject is not a parent of the child.""")
     return null;
   }
 
-  @LuaExport(
-      "Gets the first child of the [SObject](lua://SObject), that matches the filter.",
-      name: "getChild")
-  SObject? getChildInterface(bool Function(SObject) filter) =>
-      getChild(filter: (e) => filter(e));
-
-  @LuaExport(
-      "Gets the child of the [SObject](lua://SObject), with the specific type.")
-  SObject? getChildByType(SInterface type) =>
-      getChild(filter: (e) => type.isType(e));
-
   /// Returns the parent of the [SObject], if it has one.
-  @LuaExport(
-      "Returns the parent of the [SObject](lua://SObject), if it has one.")
   T? getParent<T extends SObject>() {
     if (_node.parentElement == null) return null;
     final factory = getSFactory(_node.parentElement!.name.local);
@@ -254,9 +234,6 @@ This will not do anything if this SObject is not a parent of the child.""")
   }
 
   /// Returns a list of descendants of the [SObject], with the specific type.
-  @LuaExport(
-    "Returns a list of descendants of the [SObject](lua://SObject), with the specific type.",
-  )
   List<T?> getDescendants<T extends SObject>({bool Function(T)? filter}) {
     List<T?> descendants = [];
     for (var child in _node.descendantElements) {
@@ -274,9 +251,6 @@ This will not do anything if this SObject is not a parent of the child.""")
   }
 
   /// Returns the ancestors of the [SObject], if it has one.
-  @LuaExport(
-    "Returns the ancestors of the [SObject](lua://SObject), if it has one.",
-  )
   List<T?> getAncestors<T extends SObject>({bool Function(T)? filter}) {
     final ancest = <T>[];
     Iterable<XmlElement> ancestors = _node.ancestorElements;
@@ -293,9 +267,6 @@ This will not do anything if this SObject is not a parent of the child.""")
   }
 
   /// Returns the sibling of the [SObject] above it, if it has one.
-  @LuaExport(
-    "Returns the sibling of the [SObject](lua://SObject) above it, if it has one.",
-  )
   T? getSiblingAbove<T extends SObject>({bool Function(T)? filter}) {
     if (_node.previousElementSibling == null) return null;
     final factory = getSFactory(_node.previousElementSibling!.name.local);
@@ -306,9 +277,6 @@ This will not do anything if this SObject is not a parent of the child.""")
   }
 
   /// Returns the sibling of the [SObject] below it, if it has one.
-  @LuaExport(
-    "Returns the sibling of the [SObject](lua://SObject) below it, if it has one.",
-  )
   T? getSiblingBelow<T extends SObject>({bool Function(T)? filter}) {
     if (_node.nextElementSibling == null) return null;
     final factory = getSFactory(_node.nextElementSibling!.name.local);

@@ -25,12 +25,6 @@ class SPolicyFilesInterface extends SInterface<SPolicyFiles> {
             name: "readAllowed",
             descr: """Returns whether or not the file is allowed to be read.""",
             returnType: bool,
-            returnNullable: false,
-            docReturnTypeOverride: "boolean",
-            isAsync: false,
-            passLua: false,
-            passState: false,
-            securityCheck: null,
             args: const {
               LArg<String>(
                   name: "filepath",
@@ -48,12 +42,6 @@ class SPolicyFilesInterface extends SInterface<SPolicyFiles> {
             descr:
                 """Returns whether or not the file is allowed to be written.""",
             returnType: bool,
-            returnNullable: false,
-            docReturnTypeOverride: "boolean",
-            isAsync: false,
-            passLua: false,
-            passState: false,
-            securityCheck: null,
             args: const {
               LArg<String>(
                   name: "filepath",
@@ -71,12 +59,6 @@ class SPolicyFilesInterface extends SInterface<SPolicyFiles> {
             descr:
                 """Returns whether or not the file is allowed to be created.""",
             returnType: bool,
-            returnNullable: false,
-            docReturnTypeOverride: "boolean",
-            isAsync: false,
-            passLua: false,
-            passState: false,
-            securityCheck: null,
             args: const {
               LArg<String>(
                   name: "filepath",
@@ -94,12 +76,6 @@ class SPolicyFilesInterface extends SInterface<SPolicyFiles> {
             descr:
                 """Returns whether or not the file is allowed to be deleted.""",
             returnType: bool,
-            returnNullable: false,
-            docReturnTypeOverride: "boolean",
-            isAsync: false,
-            passLua: false,
-            passState: false,
-            securityCheck: null,
             args: const {
               LArg<String>(
                   name: "filepath",
@@ -111,6 +87,14 @@ class SPolicyFilesInterface extends SInterface<SPolicyFiles> {
                   docTypeOverride: "boolean")
             }, (String filepath, bool isExternal) {
           return object!.deleteAllowed(filepath, isExternal);
-        })
+        }),
+        LEntry(
+            name: "isFileAssociated",
+            descr:
+                "Returns true if the filepath is associated with this policy.",
+            returnType: bool,
+            args: const {LArg<String>(name: "filepath")}, (String filepath) {
+          return object!.isFileAssociated(filepath);
+        }),
       };
 }

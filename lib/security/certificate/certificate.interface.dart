@@ -25,8 +25,8 @@ class SCertificateInterface extends SInterface<SCertificate> {
             returnType: List,
             () => object!.policies),
         LEntry(
-            name: "getPolicyByType",
-            descr: "Gets a policy by type.",
+            name: "getPolicy",
+            descr: "Returns a policy with the specific type and/or filter.",
             returnType: SPolicy,
             returnGeneric: true,
             returnNullable: true,
@@ -34,10 +34,19 @@ class SCertificateInterface extends SInterface<SCertificate> {
               LArg<SInterface>(
                   name: "type",
                   descr: "The type of the policy.",
-                  docTypeOverride: "table")
-            }, (SInterface type) {
-          Reyveld.talker.info(type);
-          return object!.getChildren().firstWhere((e) => type.isType(e));
+                  docTypeOverride: "table",
+                  kind: ArgKind.optionalNamed),
+              LArg<LuaFuncRef>(
+                  name: "filter",
+                  descr: "The filter to use.",
+                  docTypeOverride: "function",
+                  kind: ArgKind.optionalNamed)
+            }, ({SInterface? type, LuaFuncRef? filter}) async {
+          for (final policy in object!.policies) {
+            if (type != null && !type.isType(policy)) continue;
+            if (filter != null && !await filter.call([policy])) continue;
+            return policy;
+          }
         }),
         LEntry(
             name: "hasPolicy",

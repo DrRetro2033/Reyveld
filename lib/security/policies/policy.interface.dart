@@ -44,6 +44,77 @@ class SPolicyInterface extends SInterface<SPolicy> {
                         read: read, write: write, init: create, delete: delete)
                     .create()),
         LEntry(
+            name: "files",
+            descr: "The files policy.",
+            returnType: SPolicyFiles,
+            args: const {
+              LArg<Whitelist>(
+                  name: "whitelist",
+                  descr: "The whitelist to use.",
+                  kind: ArgKind.requiredNamed),
+              LArg<bool>(
+                  name: "rexter",
+                  descr: "Require permission to read external files?",
+                  kind: ArgKind.optionalNamed,
+                  docDefaultValue: "false"),
+              LArg<bool>(
+                  name: "wexter",
+                  descr: "Require permission to write external files?",
+                  kind: ArgKind.optionalNamed,
+                  docDefaultValue: "false"),
+              LArg<bool>(
+                  name: "cexter",
+                  descr: "Require permission to create external files?",
+                  kind: ArgKind.optionalNamed,
+                  docDefaultValue: "false"),
+              LArg<bool>(
+                  name: "dexter",
+                  descr: "Require permission to delete external files?",
+                  kind: ArgKind.optionalNamed,
+                  docDefaultValue: "false"),
+              LArg<bool>(
+                  name: "rinter",
+                  descr: "Require permission to read internal files?",
+                  kind: ArgKind.optionalNamed,
+                  docDefaultValue: "false"),
+              LArg<bool>(
+                  name: "winter",
+                  descr: "Require permission to write internal files?",
+                  kind: ArgKind.optionalNamed,
+                  docDefaultValue: "false"),
+              LArg<bool>(
+                  name: "cinter",
+                  descr: "Require permission to create internal files?",
+                  kind: ArgKind.optionalNamed,
+                  docDefaultValue: "false"),
+              LArg<bool>(
+                  name: "dinter",
+                  descr: "Require permission to delete internal files?",
+                  kind: ArgKind.optionalNamed,
+                  docDefaultValue: "false"),
+            },
+            (
+                    {required Whitelist whitelist,
+                    bool rexter = false,
+                    bool wexter = false,
+                    bool cexter = false,
+                    bool dexter = false,
+                    bool rinter = false,
+                    bool winter = false,
+                    bool cinter = false,
+                    bool dinter = false}) =>
+                SPolicyFilesCreator(
+                        readExternally: rexter,
+                        writeExternally: wexter,
+                        createExternally: cexter,
+                        deleteExternally: dexter,
+                        readInternally: rinter,
+                        writeInternally: winter,
+                        createInternally: cinter,
+                        deleteInternally: dinter,
+                        whitelist: whitelist)
+                    .create()),
+        LEntry(
             name: "all",
             descr: "The all policy.",
             returnType: SPolicyAll,

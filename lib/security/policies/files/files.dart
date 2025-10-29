@@ -69,9 +69,11 @@ class SPolicyFiles extends SPolicy {
         whitelist!.included(filepath);
   }
 
+  bool isFileAssociated(String filepath) => whitelist!.included(filepath);
+
   @override
   get safetyLevel {
-    if (_externalWrite || _externalDelete) {
+    if (_externalDelete) {
       return SPolicySafetyLevel.unsafe;
     } else if (_externalWrite) {
       return SPolicySafetyLevel.warn;
@@ -88,7 +90,7 @@ class SPolicyFiles extends SPolicy {
       (_externalCreate || _internalCreate, "create"),
       (_externalDelete || _internalDelete, "delete")
     ];
-    return "Allow the application to ${x.where((e) => e.$1).map((e) => e.$2).join(", ")} external and/or internal files.";
+    return "Allow the application to ${x.where((e) => e.$1).map((e) => e.$2).join(", ")} ${whitelist!.globs.first.pattern}${whitelist!.globs.length > 1 ? " and ${whitelist!.globs.length - 1} other" : ""} files.";
   }
 
   @override

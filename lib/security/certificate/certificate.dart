@@ -31,6 +31,10 @@ class SCertificate extends SRoot {
 
   T? getPolicy<T extends SPolicy>() => policies.whereType<T>().firstOrNull;
 
+  Iterable<T?> getPolicies<T extends SPolicy>() => policies.whereType<T>();
+
+  bool hasPolicy<T extends SPolicy>() => getPolicy<T>() != null;
+
   @override
   Future<SIndent<SRoot>> newIndent() async =>
       await SISCertificateCreator(hash).create();

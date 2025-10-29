@@ -181,13 +181,7 @@ abstract class SInterface<T> {
   /// This is the name of the interface.
   String get className;
 
-  /// This is the description the type of the interface.
-  ///
-  /// By default, this will be the same as [staticDescription], unless overridden.
-  String get staticDescription => classDescription;
-
   /// This is the description of the object interface.
-  /// By default, [staticDescription] shares the same description as this.
   String get classDescription => "";
 
   String get classHash => Lua.getClassHash(className);
@@ -282,7 +276,7 @@ ${allExports.isNotEmpty || parent != null ? _luaExports() : ""}
 
   /// This generates the static, global table for the interface.
   String _luaStatics() => """
-${_covertDescriptionToComment(staticDescription)}
+${_covertDescriptionToComment(classDescription)}
 $className = {}
 
 ${statics.whereType<LField>().map(_luaField).join("\n")}
@@ -415,6 +409,8 @@ ${statics.whereType<LEntry>().map(_luaMethod).join("\n")}
       return "table";
     } else if (type == Object) {
       return "any";
+    } else if (type == SInterface) {
+      return "table";
     } else if (type == LuaFuncRef) {
       return "function";
     } else {
