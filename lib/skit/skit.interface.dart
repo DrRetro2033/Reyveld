@@ -111,7 +111,7 @@ They store a SHeader and any number of SRoots in a single file.
             descr: "Returns the SHeader of the SKit.",
             returnType: SHeader,
             isAsync: true,
-            () => object!.getHeader()),
+            () async => await object!.getHeader()),
         LEntry(
             name: "createdOn",
             descr: "Returns the creation date of the SKit.",

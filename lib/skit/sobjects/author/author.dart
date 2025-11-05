@@ -31,7 +31,7 @@ class SAuthor extends SRoot {
   }
 
   @override
-  Future<SRAuthor> newIndent() async => await SRAuthorCreator(hash).create();
+  Future<SRAuthor> newIndent() async => await SRAuthorCreator(id).create();
 
   SAuthor(super._node);
 

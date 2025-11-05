@@ -63,14 +63,14 @@ class AuthVeld {
               .create();
       await _kit.addRoot(certificate);
       await _kit.save(encryptKey: "AuthVeld");
-      ticket.token = certificate.hash;
+      ticket.token = certificate.id;
       _authorizationController.add((ticket, true));
       _authorizationTickets.remove(ticket);
     } else if (await _kit.exists() &&
         await AuthVeld.hasCertificate(tokenToAuthorize)) {
       await _kit
           .getRoot<SCertificate>(
-              filterRoots: (root) => root.hash == tokenToAuthorize)
+              filterRoots: (root) => root.id == tokenToAuthorize)
           .then((value) async => value!.reauthorize());
       await _kit.save(encryptKey: "AuthVeld");
     }
@@ -91,7 +91,7 @@ class AuthVeld {
         await AuthVeld.hasCertificate(tokenToUnauthorize)) {
       await _kit
           .getRoot<SCertificate>(
-              filterRoots: (root) => root.hash == tokenToUnauthorize)
+              filterRoots: (root) => root.id == tokenToUnauthorize)
           .then((value) async => value!.deauthorize());
       await _kit.save(encryptKey: "AuthVeld");
     }
@@ -166,7 +166,7 @@ ${ticket?.reasoning}
   static Future<SCertificate?> loadCertificate(String token) async {
     if (await _kit.exists()) {
       return await _kit.getRoot<SCertificate>(
-        filterRoots: (root) => root.hash == token,
+        filterRoots: (root) => root.id == token,
         addToCache: true,
       );
     }

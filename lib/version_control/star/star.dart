@@ -28,8 +28,8 @@ class Star extends SObject {
   set name(String value) => set("name", value);
 
   /// The hash of the star.
-  String get hash => get("hash")!;
-  set hash(String value) => set("hash", value);
+  String get id => get("hash")!;
+  set id(String value) => set("hash", value);
 
   SRArchive? get archiveRef => getChild<SRArchive>();
 
@@ -46,7 +46,7 @@ class Star extends SObject {
   bool get isRoot => getParent<Constellation>() != null;
 
   /// Returns true if the star is the current star.
-  bool get isCurrent => constellation.currentHash == hash;
+  bool get isCurrent => constellation.currentHash == id;
 
   /// Returns true if the star is a single child.
   bool get isSingleChild => getParent<Star>()?.getChildren<Star>().length == 1;
@@ -126,7 +126,7 @@ class Star extends SObject {
     }
     getParent<Star>()!.makeCurrent();
     if (getAncestors<Star>()
-        .every((e) => e!.archiveRef!.hash != archiveRef!.hash)) {
+        .every((e) => e!.archiveRef!.id != archiveRef!.id)) {
       archiveRef!.markForDeletion();
     }
 
@@ -144,7 +144,7 @@ class Star extends SObject {
   /// Gets a summary of the star.
   Map<String, dynamic> summary() => {
         "name": name,
-        "id": hash,
+        "id": id,
         "branch": branchName,
         "datetime": createdOn.toIso8601String(),
         "isRoot": isRoot,
@@ -156,7 +156,7 @@ class Star extends SObject {
 
   /// Makes this star the current star.
   void makeCurrent() {
-    constellation.currentHash = hash;
+    constellation.currentHash = id;
   }
 
   Future<Stream<String>> checkout(String path) async =>

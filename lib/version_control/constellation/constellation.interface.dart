@@ -44,6 +44,23 @@ A constellation is a collection of [Star](lua://Star)s, which describes the hist
             object!.name = value;
           }
           return object!.name;
-        })
+        }),
+        LEntry(
+            name: "path",
+            descr: """The tracked path of the constellation.""",
+            returnType: String,
+            () => object!.path),
+        LEntry(
+            name: "root",
+            descr: """The root star of the constellation.""",
+            returnType: Star,
+            () => object!.root),
+        LEntry(
+            name: "starByID",
+            descr: """Gets a star by its id.""",
+            returnType: Star,
+            returnNullable: true,
+            args: const {LArg<String>(name: "id")},
+            (String id) => object!.getStarByID(id)),
       };
 }

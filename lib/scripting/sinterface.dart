@@ -30,6 +30,9 @@ class LEntry extends LExport {
   /// The arguments of the entrypoint.
   final Set<LArg> args;
 
+  Set<LArg> get namedArgs => args.where((e) => !e.positional).toSet();
+
+  /// The number of the positional arguments of the entrypoint.
   int get positionalArgCount => args.where((e) => e.positional).length;
 
   /// This is used to define if the entrypoint is async.
@@ -82,6 +85,12 @@ class LEntry extends LExport {
       this.returnType,
       this.returnNullable = false,
       this.returnGeneric = false});
+
+  @override
+  bool operator ==(Object other) => other is LEntry && other.name == name;
+
+  @override
+  int get hashCode => name.hashCode;
 }
 
 /// The kind of the arg.
@@ -252,6 +261,16 @@ abstract class SInterface<T> {
   /// The higher the priority, the more specific the interface is, which in turn
   /// means that it should have a higher priority than its parents.
   int get priority => parent == null ? 0 : parent!.priority + 1;
+
+  Iterable<SInterface> get ancestors {
+    final list = <SInterface>[];
+    SInterface? current = parent;
+    while (current != null) {
+      list.add(current);
+      current = current.parent;
+    }
+    return list;
+  }
 
   @override
   String toString() => object.toString();

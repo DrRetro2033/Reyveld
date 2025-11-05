@@ -37,10 +37,10 @@ class SCertificate extends SRoot {
 
   @override
   Future<SIndent<SRoot>> newIndent() async =>
-      await SISCertificateCreator(hash).create();
+      await SISCertificateCreator(id).create();
 
   String toDisplayString() =>
-      "Certificate for '$appname' | '$hash' | ${policies.length} policies | ${authorized ? "Authorized".green : "Deauthorized".red}";
+      "Certificate for '$appname' | '$id' | ${policies.length} policies | ${authorized ? "Authorized".green : "Deauthorized".red}";
 
   void deauthorize() => authorized = false;
   void reauthorize() => authorized = true;

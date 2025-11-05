@@ -385,7 +385,7 @@ class SKit {
   /// To save the changes to the file, use [save].
   Future<void> addRoot(SRoot root) async {
     // Generate a unique hash for the root
-    root.hash = generateUUID();
+    root.id = generateUUID();
 
     // Adding the root to [_loadedRoots] is necessary for the [save] function to work.
     _loadedRoots.add(root);
@@ -395,7 +395,7 @@ class SKit {
 
   /// Returns true if the kit file has a root of the specified type and hash.
   Future<bool> hasRoot<T extends SRoot>(String hash) async =>
-      (await getRoots<T>(filterRoots: (root) => root.hash == hash)).isNotEmpty;
+      (await getRoots<T>(filterRoots: (root) => root.id == hash)).isNotEmpty;
 
   /// Removes a root from the kit file.
   /// This will remove the root from the kit file in memory, and will not save its changes to the file.
@@ -452,7 +452,7 @@ class SKit {
   Future<Set<String>> usedRootHashes() async => (await getRoots(
         addToCache: false,
       ))
-          .map((e) => e!.hash)
+          .map((e) => e!.id)
           .toSet();
 
   /// Adds an indent to the kit file.
@@ -461,7 +461,7 @@ class SKit {
 
   /// Checks to see if the hash is marked for deletion.
   bool isMarkedForDeletion(String hash) {
-    return _indents.any((e) => e.hash == hash && e.isDeleted);
+    return _indents.any((e) => e.id == hash && e.isDeleted);
   }
 
   Future<void> save({String? encryptKey, SKitKeyPair? keyPair}) async =>

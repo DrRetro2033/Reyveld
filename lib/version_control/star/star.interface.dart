@@ -23,6 +23,11 @@ A star is a point in time that represents a snapshot of an folder.""";
   @override
   get exports => {
         LEntry(
+            name: "archive",
+            descr: """The archive of this star.""",
+            returnType: SArchive,
+            () => object!.archive),
+        LEntry(
             name: "anchor",
             descr: """Anchors the star, making it the stem of a new branch.""",
             args: const {
@@ -61,11 +66,21 @@ A star is a point in time that represents a snapshot of an folder.""";
         }),
         LEntry(
             name: "summary",
-            descr: """Gets a summary of the star.
+            descr:
+                """Gets a detailed summary of the star (without any descendants).
 
-The summary does not contain any children information, and will only return the name, hash, and some other details (e.g. created on, is root, is current, etc).""",
+If you need a more detailed tree view (including descendants), use the [tree](lua://Star.tree) method instead.""",
             returnType: Map, () {
           return object!.summary();
+        }),
+        LEntry(
+            name: "tree",
+            descr:
+                """Gets a detailed tree view from the star (including descendants).
+
+If you only need only a summary (without any descendants), use the [summary](lua://Star.summary) method instead.""",
+            returnType: Map, () {
+          return object!.tree();
         }),
         LEntry(
             name: "makeCurrent",

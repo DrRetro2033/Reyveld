@@ -1,8 +1,8 @@
 part of 'sobject.dart';
 
 /// This [SObject] is used to indicate a [SRoot] reference inside the header of the skit file.
-/// The [hash] is the hash of the [SRoot] that is being referenced.
-/// The [hash] is unique to the type of [SRoot] that is being referenced.
+/// The [id] is the hash of the [SRoot] that is being referenced.
+/// The [id] is unique to the type of [SRoot] that is being referenced.
 abstract class SIndent<T extends SRoot> extends SObject {
   @override
   childAllowed(object) => SObject.zeroChildrenAllowed;
@@ -14,18 +14,18 @@ abstract class SIndent<T extends SRoot> extends SObject {
   bool get isDeleted => _delete;
 
   /// The hash of the [SRoot] that is being referenced.
-  String get hash => get("hash")!;
+  String get id => get("hash")!;
   SIndent(super._node);
 
   /// Returns the [SRoot] that is being referenced by the [SIndent].
   Future<T?> getRef() async {
-    return await kit.getRoot<T>(filterRoots: (e) => e.hash == hash);
+    return await kit.getRoot<T>(filterRoots: (e) => e.id == id);
   }
 
   /// Returns true if the [SIndent] is for the specified [SRoot].
   bool isFor(SRoot root) {
     if (root is T) {
-      return root.hash == hash;
+      return root.id == id;
     }
     return false;
   }
@@ -39,10 +39,10 @@ abstract class SIndent<T extends SRoot> extends SObject {
   }
 
   @override
-  operator ==(Object other) => other is SIndent<T> && other.hash == hash;
+  operator ==(Object other) => other is SIndent<T> && other.id == id;
 
   @override
-  int get hashCode => hash.hashCode;
+  int get hashCode => id.hashCode;
 }
 
 /// A base creator for creating [SIndent]s.
@@ -59,8 +59,8 @@ abstract class SIndent<T extends SRoot> extends SObject {
 /// typedef MySIndentCreator = SIndentCreator<MySIndent>;
 /// ```
 class SIndentCreator<T extends SIndent> extends SCreator {
-  final String hash;
-  SIndentCreator(this.hash);
+  final String id;
+  SIndentCreator(this.id);
 
   @override
   FutureOr<T> create() async {
@@ -70,7 +70,7 @@ class SIndentCreator<T extends SIndent> extends SCreator {
     await beforeCreate();
 
     builder.element(getSFactory<T>().tag, nest: () {
-      builder.attribute("hash", hash);
+      builder.attribute("hash", id);
       creator(builder);
     });
 

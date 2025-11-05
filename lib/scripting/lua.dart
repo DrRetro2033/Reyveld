@@ -104,9 +104,7 @@ class Lua {
 
     // Add all static exports as global object.
     for (final interface_ in interfaces) {
-      if (interface_.statics.isNotEmpty) {
-        await addGlobal(state, interface_.className, interface_.staticTable);
-      }
+      await addGlobal(state, interface_.className, interface_.staticTable);
     }
 
     await addGlobal(state, "is", (Lua lua, LuaState state) async {
@@ -154,9 +152,11 @@ class Lua {
       }
     } else if (value is Object && getInterface(value) != null) {
       final interface_ = getInterface(value)!..object = value;
+      Reyveld.talker.verbose("Wrapping $value in $interface_.");
       final hash = generateUUID();
       _setObject(state, hash, interface_);
-      await _pushToStack(state, interface_.toLua(hash));
+      final table = interface_.toLua(hash);
+      await _pushToStack(state, table);
     } else if (value is FutureOr<dynamic> Function(Lua, LuaState)) {
       state.pushDartFunction((state) async {
         await _pushToStack(state, await value(this, state));
@@ -168,7 +168,8 @@ class Lua {
 
         while (state.getTop() > 0) {
           args.add(await getFromTop(state));
-          if (args.length >= value.args.length) {
+          if (args.length >=
+              value.positionalArgCount + (value.hasNamedArgs ? 1 : 0)) {
             break;
           }
         }
@@ -178,11 +179,14 @@ class Lua {
 
         Map namedArgs = {};
 
-        if (value.hasNamedArgs && finalArgs.length > value.positionalArgCount) {
+        if (value.hasNamedArgs &&
+            finalArgs.length >= value.positionalArgCount) {
           if (finalArgs.lastOrNull is Map) {
             namedArgs = finalArgs.removeLast();
           }
         }
+
+        /// Checking positional arguments
         for (int i = 0; i < finalArgs.length; i++) {
           final argValue = finalArgs[i];
           final argType = value.args.elementAt(i);
@@ -191,6 +195,18 @@ class Lua {
                 "Type Mismatch for argument $argType at position $i! Expected ${argType.type} but got ${argValue.runtimeType}");
           } else {
             finalArgs[i] = argType.cast(argValue);
+          }
+        }
+
+        /// Checking named arguments
+        for (final key in namedArgs.keys) {
+          final argValue = namedArgs[key];
+          final argType = value.namedArgs.where((e) => e.name == key).single;
+          if (argType.cast(argValue) == null && argType.required) {
+            throw Exception(
+                "Type Mismatch for argument $argType at position $key! Expected ${argType.type} but got ${argValue.runtimeType}");
+          } else {
+            namedArgs[key] = argType.cast(argValue);
           }
         }
 
@@ -203,7 +219,7 @@ class Lua {
                 "Certificate not found, so assuming no access.");
           } else if (!certificate!.authorized) {
             throw AuthVeldException(
-                "Certificate (Token: '${certificate!.hash}') not authorized!");
+                "Certificate (Token: '${certificate!.id}') not authorized!");
           }
           if (!(certificate?.completeAccess ?? false)) {
             if (value.securityCheckPassed == null) {
@@ -334,20 +350,20 @@ class Lua {
 
   /// Returns a table from the lua state.
   Future<Map> _getTableFromState(LuaState state) async {
-    Map? resultTable;
+    Map resultTable = {};
     state.pushNil();
     while (state.next(state.getTop() - 1)) {
       dynamic value = await getFromTop(state);
       dynamic key = await getFromTop(state);
-      if (key is String && resultTable == null) {
+      if (key is String && resultTable.isEmpty) {
         resultTable = <String, dynamic>{};
-      } else if (key is int && resultTable == null) {
+      } else if (key is int && resultTable.isEmpty) {
         resultTable = <int, dynamic>{};
       }
-      resultTable![key] = value;
+      resultTable[key] = value;
       await _pushToStack(state, key);
     }
-    return resultTable!;
+    return resultTable;
   }
 
   String? getPID(LuaState state) => _processIds[state];
@@ -370,7 +386,6 @@ class Lua {
     for (final effect in codeEffects) {
       compiled = effect(compiled);
     }
-    Reyveld.talker.verbose("Compiled script:\n$compiled");
     while (compiled.contains(stringPlaceholder)) {
       compiled = compiled.replaceFirst(
           stringPlaceholder, "\"${_formatPaths(strings.removeAt(0))}\"");
@@ -394,6 +409,17 @@ class Lua {
   }
 
   final Queue<LuaState> _removeQueue = Queue<LuaState>();
+
+  Future<List<dynamic>> stack(LuaState state) async {
+    final stack = [];
+    while (state.getTop() > 0) {
+      stack.add(await getFromTop(state));
+    }
+    for (final x in stack) {
+      await _pushToStack(state, x);
+    }
+    return stack;
+  }
 
   /// Runs a lua script.
   Future<LuaResult> run(String entrypoint, {Map<String, dynamic>? args}) async {
@@ -440,6 +466,7 @@ class Lua {
     _removeQueue.add(state);
     if (!successful) {
       /// If it wasn't successful, print the error and return null
+      Reyveld.talker.error("Objects: ${_objects[state]}");
       state.error();
       return (
         result: null,

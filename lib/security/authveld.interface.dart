@@ -50,7 +50,7 @@ Will open the user's browser to the authorization page, where they will decide i
             Reyveld.talker.warning("Certificate is not currently authorized!");
           }
           Reyveld.talker.verbose(
-              "Loaded certificate for ${lua.certificate!.appname}: ${lua.certificate!.hash}");
+              "Loaded certificate for ${lua.certificate!.appname}: ${lua.certificate!.id}");
         }),
         LEntry(
             name: "hasCertificate",

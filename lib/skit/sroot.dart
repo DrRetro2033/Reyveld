@@ -11,20 +11,20 @@ To reference a root object in the header, use a [SIndent](lua://SIndent) object.
 abstract class SRoot extends SObject {
   SRoot(super._node);
 
-  String get hash => get("hash") ?? "";
-  set hash(String value) => set("hash", value);
+  String get id => get("hash") ?? "";
+  set id(String value) => set("hash", value);
 
   @override
   operator ==(other) {
     if (identical(this, other)) return true;
     if (other is! SRoot) return false;
     if (other.runtimeType != runtimeType) return false;
-    if (other.hash != hash) return false;
+    if (other.id != id) return false;
     return true;
   }
 
   @override
-  int get hashCode => hash.hashCode;
+  int get hashCode => id.hashCode;
 
   @LuaExport("Marks a root for deletion.")
   Future<void> markForDeletion() async {

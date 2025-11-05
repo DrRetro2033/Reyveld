@@ -143,13 +143,13 @@ class SArchive extends SRoot {
   }
 
   @override
-  Future<SRArchive> newIndent() async => await SRArchiveCreator(hash).create();
+  Future<SRArchive> newIndent() async => await SRArchiveCreator(id).create();
 }
 
 extension SArchiveExtensions on SKit {
   /// Returns an archive from the kit file with the specified hash.
   Future<SArchive?> getArchive(String hash) async {
-    return await getRoot<SArchive>(filterRoots: (e) => e.hash == hash);
+    return await getRoot<SArchive>(filterRoots: (e) => e.id == hash);
   }
 }
 
@@ -656,7 +656,7 @@ If overwrite is true, then the file will be overwritten if it already exists."""
       });
 
   Future<SRFile> getRef() async {
-    return await SRFileCreator(getParent<SArchive>()!.hash, path, checksum)
+    return await SRFileCreator(getParent<SArchive>()!.id, path, checksum)
         .create()
       ..kit = kit;
   }
@@ -670,7 +670,7 @@ class SRArchive extends SIndent<SArchive> {
 
   @override
   onSave(kit) async {
-    if (kit.isMarkedForDeletion(hash)) {
+    if (kit.isMarkedForDeletion(id)) {
       unparent();
     }
   }
@@ -679,7 +679,7 @@ class SRArchive extends SIndent<SArchive> {
 
   @override
   Future<SArchive?> getRef() async {
-    return await kit.getArchive(hash);
+    return await kit.getArchive(id);
   }
 }
 

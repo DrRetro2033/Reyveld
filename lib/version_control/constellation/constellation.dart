@@ -88,7 +88,7 @@ class Constellation extends SObject {
             branch: "main")
         .create();
     addChild(rootStar);
-    currentHash = rootStar.hash;
+    currentHash = rootStar.id;
     return rootStar;
   }
 
@@ -97,11 +97,11 @@ class Constellation extends SObject {
   Star getCurrentStar() {
     final stars = getDescendants<Star>();
     for (final star in stars) {
-      if (star!.hash == currentHash) {
+      if (star!.id == currentHash) {
         return star;
       }
     }
-    currentHash = root.hash;
+    currentHash = root.id;
     return root;
   }
 
@@ -110,7 +110,7 @@ class Constellation extends SObject {
     final stars = getDescendants<Star>();
     final hashes = <String>{};
     for (final star in stars) {
-      hashes.add(star!.hash);
+      hashes.add(star!.id);
     }
     return hashes;
   }
@@ -149,6 +149,7 @@ class Constellation extends SObject {
     return archive;
   }
 
-  Star? getStarByHash(String hash) =>
-      getDescendants<Star>(filter: (star) => star.hash == hash).firstOrNull;
+  /// Returns the star with the specified id.
+  Star? getStarByID(String id) =>
+      getDescendants<Star>(filter: (star) => star.id == id).firstOrNull;
 }
