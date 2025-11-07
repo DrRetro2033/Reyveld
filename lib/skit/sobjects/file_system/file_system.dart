@@ -665,22 +665,12 @@ If overwrite is true, then the file will be overwritten if it already exists."""
 /// A reference to an [SArchive].
 @SGen("rarchive")
 class SRArchive extends SIndent<SArchive> {
-  @override
-  childAllowed(object) => SObject.zeroChildrenAllowed;
-
-  @override
-  onSave(kit) async {
-    if (kit.isMarkedForDeletion(id)) {
-      unparent();
-    }
-  }
-
   SRArchive(super._node);
 
-  @override
-  Future<SArchive?> getRef() async {
-    return await kit.getArchive(id);
-  }
+  // @override
+  // Future<SArchive?> getRef() async {
+  //   return await kit.getArchive(id);
+  // }
 }
 
 /// A reference to an [SFile] in a [SArchive].
@@ -688,13 +678,6 @@ class SRArchive extends SIndent<SArchive> {
 class SRFile extends SFile {
   String get archiveHash => get("archive")!;
   String get filePath => get("path")!;
-
-  @override
-  onSave(kit) async {
-    if (kit.isMarkedForDeletion(archiveHash)) {
-      unparent();
-    }
-  }
 
   @override
   Future<File> get tempFile async => await kit

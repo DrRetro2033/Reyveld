@@ -11,6 +11,7 @@ import 'package:reyveld/skit/skit.dart' show SKitType;
 import 'package:reyveld/uuid.dart';
 import 'package:lua_dardo_async/lua.dart';
 import 'interfaces.dart' as portal;
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 typedef LuaArgs = ({List positional, Map named});
 typedef LuaResult = ({
@@ -21,7 +22,7 @@ typedef LuaResult = ({
 
 /// The main class for running lua scripts.
 class Lua {
-  final WebSocket? socket;
+  final WebSocketChannel? socket;
 
   final Set<Stopwatch> _stopwatches = {};
 

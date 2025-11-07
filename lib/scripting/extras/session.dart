@@ -6,11 +6,12 @@ import 'package:reyveld/event.dart';
 import 'package:reyveld/scripting/lua.dart';
 import 'package:reyveld/scripting/sinterface.dart';
 import 'package:talker/talker.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 /// This is the socket interface.
 /// This can be used from Lua to send data through the web socket,
 /// so the external client can know what the script is doing at a given time.
-class SessionInterface extends SInterface<WebSocket> {
+class SessionInterface extends SInterface<WebSocketChannel> {
   @override
   String get className => "Session";
 
@@ -49,7 +50,7 @@ This can be used to send data through the web socket, log messages, etc.""";
           } else if (lua.socket!.closeCode != null) {
             return;
           }
-          lua.socket!.add(
+          lua.socket!.sink.add(
               SocketEvent.data(data, pid: lua.getPID(state) ?? "").toString());
         }),
         LEntry(

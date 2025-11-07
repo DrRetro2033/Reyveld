@@ -19,13 +19,18 @@ class SCertificate extends SRoot {
 
   SCertificate(super._node);
 
+  /// Returns the polices of the [SCertificate].
   List<SPolicy> get policies =>
       getChildren<SPolicy>().whereType<SPolicy>().toList();
 
+  /// Returns true if the [SCertificate] has the [SPolicyAll] policy.
   bool get completeAccess => policies.any((policy) => policy is SPolicyAll);
 
+  /// Returns the application name.
   String get appname => get("appname") ?? "Default";
 
+  /// Is the certificate authorized?
+  /// The user may authorize or deauthorize a certificate at any time.
   bool get authorized => (get("authorized") ?? "1") == "1";
   set authorized(bool value) => set("authorized", value ? "1" : "0");
 

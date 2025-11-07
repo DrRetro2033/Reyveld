@@ -12,4 +12,11 @@ class ConstellationCreator extends SCreator<Constellation> {
         builder.attribute("name", name);
         builder.attribute("path", path);
       };
+
+  static Future<Constellation> start(String name, String path) async {
+    final creator = ConstellationCreator(name, path);
+    final constellation = await creator.create();
+    await constellation.createRootStar();
+    return constellation;
+  }
 }

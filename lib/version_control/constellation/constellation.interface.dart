@@ -20,7 +20,21 @@ A constellation is a collection of [Star](lua://Star)s, which describes the hist
   get parent => SObjectInterface();
 
   @override
-  get statics => {};
+  get statics => {
+        LEntry(
+            name: "new",
+            descr: """Creates a new constellation.""",
+            returnType: Constellation,
+            isAsync: true,
+            args: const {
+              LArg<String>(
+                  name: "name", descr: "The name of the constellation."),
+              LArg<String>(
+                  name: "path", descr: "The tracked path of the constellation.")
+            },
+            (String name, String path) =>
+                ConstellationCreator.start(name, path))
+      };
 
   @override
   get exports => {

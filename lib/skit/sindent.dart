@@ -7,6 +7,13 @@ abstract class SIndent<T extends SRoot> extends SObject {
   @override
   childAllowed(object) => SObject.zeroChildrenAllowed;
 
+  @override
+  onSave(kit) async {
+    if (kit.isMarkedForDeletion(id)) {
+      unparent();
+    }
+  }
+
   bool _delete = false;
 
   /// Returns true if the [SIndent] is marked for deletion.
