@@ -6,7 +6,7 @@ class SDescriptionCreator extends SCreator<SDescription> {
   SDescriptionCreator(this.text);
 
   @override
-  get creator => (builder) {
-        builder.cdata(text);
-      };
+  build(builder) {
+    builder.cdata(text);
+  }
 }

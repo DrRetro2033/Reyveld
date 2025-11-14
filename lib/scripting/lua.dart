@@ -6,7 +6,7 @@ import 'package:reyveld/extensions.dart';
 import 'package:reyveld/reyveld.dart';
 import 'package:reyveld/scripting/sinterface.dart';
 import 'package:reyveld/security/authveld.dart' show AuthVeldException;
-import 'package:reyveld/security/certificate/certificate.dart';
+import 'package:reyveld/security/certificate/contract.dart';
 import 'package:reyveld/skit/skit.dart' show SKitType;
 import 'package:reyveld/uuid.dart';
 import 'package:lua_dardo_async/lua.dart';
@@ -28,9 +28,9 @@ class Lua {
 
   final Map<LuaState, String?> _processIds = {};
 
-  SCertificate? certificate;
+  SContract? contract;
 
-  Lua({this.socket, this.certificate});
+  Lua({this.socket, this.contract});
 
   /// A map of all objects in the lua state.
   ///
@@ -215,17 +215,17 @@ class Lua {
         Reyveld.talker.verbose(
             "Checking security for function '${value.name}' with $finalArgs$namedArgs.");
         if (value.securityCheck != null) {
-          if (certificate == null) {
+          if (contract == null) {
             throw AuthVeldException(
                 "Certificate not found, so assuming no access.");
-          } else if (!certificate!.authorized) {
+          } else if (!contract!.authorized) {
             throw AuthVeldException(
-                "Certificate (Token: '${certificate!.id}') not authorized!");
+                "Certificate (Token: '${contract!.id}') not authorized!");
           }
-          if (!(certificate?.completeAccess ?? false)) {
+          if (!(contract?.completeAccess ?? false)) {
             if (value.securityCheckPassed == null) {
               final result = await Lua().run(value.securityCheck!, args: {
-                "cert": certificate,
+                "cert": contract,
                 "args": finalArgs,
                 "named": namedArgs,
                 "object": value.interface_?.object

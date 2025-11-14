@@ -16,7 +16,7 @@ class SDatabaseInterface extends SInterface<SDatabase> {
             returnType: SDatabase,
             docReturnTypeOverride: "SDatabase",
             isAsync: true,
-            () async => await SDatabaseCreator().create()),
+            () async => SDatabaseCreator().create()),
       };
 
   @override

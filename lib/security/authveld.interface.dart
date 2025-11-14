@@ -8,21 +8,19 @@ class AuthVeldInterface extends SInterface<AuthVeld> {
   get classDescription =>
       """AuthVeld is a service that allows users to authorize applications to access Reyveld.
 
-This interface provides methods to make authorization requests and load certificates. 
+This interface provides methods to make authorization requests and load contracts. 
 
-Certificates describe what an application can and cannot do inside of the constrained nevironment of Reyveld.""";
+Contracts describe what an application can and cannot do inside of the constrained environment of Reyveld.""";
   @override
   get statics => {
         LEntry(
-            name: "authorize",
-            descr: """Makes an authorization request with AuthVeld.
+            name: "newContract",
+            descr:
+                """Makes an authorization request with AuthVeld to create a new contract.
             
 Will open the user's browser to the authorization page, where they will decide if they allow the application to access Reyveld with the given permissions.""",
             args: {
               LArg<String>(name: "name", descr: "The name of the application."),
-              LArg<String>(
-                  name: "reasoning",
-                  descr: "The reasoning behind the request."),
               LArg<List>(
                   name: "permissions",
                   descr: "The permissions to request.",
@@ -30,48 +28,74 @@ Will open the user's browser to the authorization page, where they will decide i
             },
             returnType: String,
             isAsync: true,
-            (String name, String reasoning, List permissions) async =>
-                await AuthVeld.getAuthorization(name, reasoning,
-                    permissions.whereType<SPolicy>().toList())),
+            (String name, List permissions) async => await AuthVeld.newContract(
+                name, permissions.whereType<SPolicy>().toList())),
         LEntry(
-            name: "loadCertificate",
-            descr: "Loads an application's certificate, using a token.",
+            name: "deleteContract",
+            descr: "Deletes an application's contract, using a token.",
             args: const {
               LArg<String>(
                   name: "token",
-                  descr: "The token to use to load the certificate."),
+                  descr: "The token to use to delete the contract."),
+            },
+            isAsync: true,
+            (String token) async => await AuthVeld.deleteContract(token)),
+        LEntry(
+            name: "loadContract",
+            descr: "Loads an application's contract, using a token.",
+            args: const {
+              LArg<String>(
+                  name: "token",
+                  descr: "The token to use to load the contract."),
             },
             isAsync: true,
             passLua: true, (Lua lua, String token) async {
-          lua.certificate = await AuthVeld.loadCertificate(token);
-          if (lua.certificate == null) {
-            Reyveld.talker.warning("No certificate with that token was found!");
-          } else if (!lua.certificate!.authorized) {
-            Reyveld.talker.warning("Certificate is not currently authorized!");
+          lua.contract = await AuthVeld.getContract(token);
+          if (lua.contract == null) {
+            Reyveld.talker.warning("No contract with that token was found!");
+          } else if (!lua.contract!.authorized) {
+            Reyveld.talker.warning("Contract is not currently authorized!");
           }
           Reyveld.talker.verbose(
-              "Loaded certificate for ${lua.certificate!.appname}: ${lua.certificate!.id}");
+              "Loaded contract for ${lua.contract!.appname}: ${lua.contract!.id}");
         }),
         LEntry(
-            name: "hasCertificate",
+            name: "hasContract",
             descr:
-                "Checks if the certificate exists in AuthVeld. Should be checked before trying to load a certificate, as the user might have deleted it.",
+                "Checks if the contract exists in AuthVeld. Should be checked before trying to load a contract, as the user might have deleted it.",
             args: const {
               LArg<String>(
                   name: "token",
-                  descr: "The token to use to load the certificate."),
+                  descr: "The token to use to load the contract."),
             },
             returnType: bool,
             isAsync: true,
-            (String token) async => await AuthVeld.hasCertificate(token)),
+            (String token) async => await AuthVeld.hasContract(token)),
         LEntry(
             name: "currentPolicies",
             descr:
                 "The policies of the currently loaded certificate. Will return null if no certificate has been loaded.",
             returnType: List,
             passLua: true, (Lua lua) {
-          if (lua.certificate == null) return null;
-          return lua.certificate!.policies;
+          if (lua.contract == null) return null;
+          return lua.contract!.policies;
         }),
+        LEntry(
+            name: "requiresUpdate",
+            descr: "Checks if a certificate needs to be updated.",
+            args: const {
+              LArg<String>(
+                  name: "token",
+                  descr: "The token to use to load the contract."),
+              LArg<List>(
+                  name: "policies",
+                  descr: "The policies to check.",
+                  docTypeOverride: "SPolicy[]"),
+            },
+            returnType: bool,
+            isAsync: true,
+            (String token, List policies) async =>
+                await AuthVeld.requiresUpdate(
+                    token, policies.whereType<SPolicy>().toList())),
       };
 }

@@ -1,6 +1,7 @@
 import 'package:reyveld/extensions.dart';
 import 'package:reyveld/security/policies/policy.dart';
 import 'package:reyveld/skit/skit.dart';
+import 'package:reyveld/skit/sobjects/description/description.dart';
 
 part 'skit.g.dart';
 part 'skit.creator.dart';
@@ -69,7 +70,4 @@ class SPolicySKit extends SPolicy {
     ];
     return "Allow the application to ${x.where((e) => e.$1).map((e) => e.$2).join(", ")} SKits.";
   }
-
-  @override
-  String details() => description;
 }

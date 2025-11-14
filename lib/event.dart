@@ -29,7 +29,7 @@ class SocketEvent {
   @override
   String toString() => jsonEncode({
         "type": type.name,
-        "processId": processId,
+        "pid": processId,
         "timestamp": timestamp.toIso8601String(),
         "data": data
       });

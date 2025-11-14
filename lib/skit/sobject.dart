@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:hashlib/hashlib.dart';
 import 'package:reyveld/skit/skit.dart';
 
 export 'package:xml/xml.dart';
@@ -332,6 +333,8 @@ This will not do anything if this SObject is not a parent of the child.""")
       (identical(other._node, _node) ||
           other._node == _node ||
           other._node.isEqualNode(_node));
+
+  String get checksum => md5.convert(utf8.encode(toXmlString())).toString();
 }
 
 /// Encodes a string to base64 so no conflicts happen with the xml parser.

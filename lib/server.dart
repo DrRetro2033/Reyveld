@@ -78,6 +78,8 @@ Future<void> runServer() async {
         Reyveld.talker.verbose("(SID:$id) Received data:\n$data");
         final result =
             await luaPool.withResource(() async => await lua.run(data));
+        Reyveld.talker
+            .info("(SID:$id, PID:${result.processId ?? ""}) Result: $result");
         webSocket.sink.add(
             SocketEvent.completed(result.result, pid: result.processId ?? "")
                 .toString());
@@ -114,7 +116,12 @@ Future<void> runServer() async {
     if (origin == null || origin.isEmpty) {
       return Response.forbidden("No origin provided in request.");
     }
-    await AuthVeld.authorize(origin);
+    Reyveld.talker.info("Origin for authorization: $origin");
+    // if (origin != Reyveld.origi) {
+    //   return Response.forbidden("Invalid origin.");
+    // }
+
+    await AuthVeld.acceptTicket(request.url.queryParameters["ticket"]!);
 
     return Response.ok(jsonEncode({"allowed": true}).codeUnits);
   });
@@ -124,7 +131,8 @@ Future<void> runServer() async {
     if (origin == null || origin.isEmpty) {
       return Response.forbidden("No origin provided in request.");
     }
-    await AuthVeld.deauthorize(origin);
+
+    await AuthVeld.rejectTicket(request.url.queryParameters["ticket"]!);
 
     return Response.ok(jsonEncode({"allowed": true}).codeUnits);
   });

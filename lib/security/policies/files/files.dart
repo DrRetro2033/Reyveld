@@ -102,8 +102,11 @@ class SPolicyFiles extends SPolicy {
       (_externalDelete || _internalDelete, "delete")
     ];
     return """
-## Allow the application to ${x.where((e) => e.$1).map((e) => e.$2).join(", ")} the following external and/or internal files:
+## Permission
+Allow the application to ${x.where((e) => e.$1).map((e) => e.$2).join(", ")} the following external and/or internal files:
 ${whitelist!.globs.map((e) => "- ${e.pattern}").join("\n")}
+## Reasoning
+$reasoning
 """;
   }
 }

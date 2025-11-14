@@ -9,10 +9,10 @@ class SAuthorCreator extends SCreator<SAuthor> {
   SAuthorCreator({required this.name, required this.publicKey});
 
   @override
-  get creator => (builder) {
-        builder.attribute("name", name);
-        builder.cdata(CryptoUtils.encodeRSAPublicKeyToPem(publicKey));
-      };
+  build(builder) {
+    builder.attribute("name", name);
+    builder.cdata(CryptoUtils.encodeRSAPublicKeyToPem(publicKey));
+  }
 }
 
 typedef SRAuthorCreator = SIndentCreator<SRAuthor>;

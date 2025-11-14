@@ -8,14 +8,14 @@ class ConstellationCreator extends SCreator<Constellation> {
   ConstellationCreator(this.name, this.path);
 
   @override
-  get creator => (builder) {
-        builder.attribute("name", name);
-        builder.attribute("path", path);
-      };
+  build(builder) {
+    builder.attribute("name", name);
+    builder.attribute("path", path);
+  }
 
   static Future<Constellation> start(String name, String path) async {
     final creator = ConstellationCreator(name, path);
-    final constellation = await creator.create();
+    final constellation = creator.create();
     await constellation.createRootStar();
     return constellation;
   }

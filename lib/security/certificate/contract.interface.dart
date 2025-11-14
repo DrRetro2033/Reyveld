@@ -1,8 +1,8 @@
-part of 'certificate.dart';
+part of 'contract.dart';
 
-class SCertificateInterface extends SInterface<SCertificate> {
+class SContractInterface extends SInterface<SContract> {
   @override
-  get className => "SCertificate";
+  get className => "SContract";
 
   @override
   get parent => SObjectInterface();
@@ -12,9 +12,9 @@ class SCertificateInterface extends SInterface<SCertificate> {
         LEntry(
             name: "empty",
             descr:
-                "Creates an empty certificate. Used for testing sercurity checks.",
-            returnType: SCertificate,
-            () => SCertificateCreator("", []).create())
+                "Creates an empty contract. Used as a dummy contract for testing security checks, if no contract is provided.",
+            returnType: SContract,
+            () => SContractCreator("", []).create())
       };
 
   @override

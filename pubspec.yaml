@@ -30,7 +30,6 @@ dependencies:
   ulid: ^2.0.1 # Used for generating ULIDs.
   vector_math: ^2.2.0 # Used for vector math.
   shelf: ^1.4.2
-  jaspr: ^0.21.6
   shelf_router: ^1.1.4
   shelf_web_socket: ^3.0.0
   web_socket_channel: ^3.0.3

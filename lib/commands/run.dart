@@ -23,7 +23,7 @@ class RunCommand extends Command {
   Future<void> run() async {
     final script = argResults!.option("file");
     final scriptCertificate =
-        await AuthVeld.loadCertificate(argResults!.option("token") ?? "");
+        await AuthVeld.getContract(argResults!.option("token") ?? "");
 
     if (script != null) {
       final file = File(script);
@@ -33,7 +33,7 @@ class RunCommand extends Command {
       }
       final content = await file.readAsString();
       try {
-        final r = await Lua(certificate: scriptCertificate).run(content);
+        final r = await Lua(contract: scriptCertificate).run(content);
         Reyveld.printToConsole(SocketEvent.completed(r.result));
         exit(0);
       } catch (e, st) {

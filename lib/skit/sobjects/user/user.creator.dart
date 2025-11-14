@@ -8,8 +8,8 @@ class SUserCreator extends SCreator<SUser> {
   SUserCreator(this.name, this.id);
 
   @override
-  get creator => (builder) {
-        builder.attribute("name", name);
-        builder.attribute("hash", id);
-      };
+  build(builder) {
+    builder.attribute("name", name);
+    builder.attribute("hash", id);
+  }
 }

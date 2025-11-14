@@ -19,16 +19,17 @@ class AuthVeldCommand extends Command {
 
 class AuthVeldShowCertCommand extends Command {
   @override
-  final name = "show-certs";
+  final name = "contracts";
 
   @override
-  final description = "Show all of the current certificates.";
+  final description =
+      "Show all of the contracts currently registered with AuthVeld.";
 
   AuthVeldShowCertCommand();
 
   @override
   Future<void> run() async {
-    await AuthVeld.getCertificates().then((certs) {
+    await AuthVeld.getContracts().then((certs) {
       for (final cert in certs) {
         Reyveld.printToConsole(cert.toDisplayString());
       }
@@ -41,7 +42,7 @@ class AuthVeldDeauthorizeCommand extends Command {
   final name = "deauthorize";
 
   @override
-  final description = "Deauthorize a certificate by its token.";
+  final description = "Deauthorize a contract by its token.";
 
   AuthVeldDeauthorizeCommand() {
     argParser.addOption("token", abbr: "t");
@@ -51,7 +52,7 @@ class AuthVeldDeauthorizeCommand extends Command {
   Future<void> run() async {
     final spinner =
         CliSpin(spinner: CliSpinners.bounce).start("Deauthorizing...");
-    await AuthVeld.deauthorize(argResults!.option("token")!);
+    await AuthVeld.deauthorizeContract(argResults!.option("token")!);
     spinner.success("Deauthorization complete.");
   }
 }
@@ -61,7 +62,7 @@ class AuthVeldAuthorizeCommand extends Command {
   final name = "reauthorize";
 
   @override
-  final description = "Reauthorize a certificate by its token.";
+  final description = "Reauthorize a contract by its token.";
 
   AuthVeldAuthorizeCommand() {
     argParser.addOption("token", abbr: "t");
@@ -71,7 +72,7 @@ class AuthVeldAuthorizeCommand extends Command {
   Future<void> run() async {
     final spinner =
         CliSpin(spinner: CliSpinners.bounce).start("Reauthorizing...");
-    await AuthVeld.authorize(argResults!.option("token")!);
+    await AuthVeld.authorizeContract(argResults!.option("token")!);
     spinner.success("Reauthorization complete.");
   }
 }

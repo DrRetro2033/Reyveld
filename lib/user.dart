@@ -21,7 +21,7 @@ name: Default Author
 
   Future<SAuthor> toSAuthor() async {
     YamlMap doc = loadYaml(await _file.readAsString());
-    final author = await SAuthorCreator(
+    final author = SAuthorCreator(
             name: doc["name"], publicKey: await Reyveld.publicKey)
         .create();
     return author;

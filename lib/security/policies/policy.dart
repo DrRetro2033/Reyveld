@@ -1,9 +1,12 @@
 import 'package:reyveld/security/policies/files/files.dart';
 import 'package:reyveld/security/policies/skit/skit.dart';
 import 'package:reyveld/skit/sobject.dart';
+import 'package:reyveld/skit/sobjects/sobjects.dart';
 
-import '../../skit/sobjects/file_system/filelist/filelist.dart';
-import 'all/all.dart';
+import 'all/all.dart' show SPolicyAll, SPolicyAllCreator;
+
+export 'package:reyveld/skit/sobjects/sobjects.dart'
+    show SDescription, Whitelist;
 
 part 'policy.interface.dart';
 
@@ -15,30 +18,38 @@ enum SPolicySafetyLevel { safe, warn, unsafe }
 ///
 /// [description] is a human-readable description of the permission, and it is used for explaing what the user is permitting the application to do.
 /// For example, if a permission applies to SKits, it would most likely have the description "Allow the application to open, create, and edit SKits."
-@LuaClass("")
 abstract class SPolicy extends SObject {
   SPolicy(super._node);
+  String get reasoning =>
+      getChild<SDescription>()?.text ?? "No reasoning provided.";
   String get description;
   SPolicySafetyLevel get safetyLevel;
 
   /// This is used to display the details of the policy to the user.
-  String details();
+  String details() => """
+## Permission
+$description
+## Reasoning
+$reasoning
+""";
 
-  @LuaExport("Creates a new policy for SKits.")
   static Future<SPolicySKit> skit(
-          {bool read = false,
+          {String? reasoning,
+          bool read = false,
           bool write = false,
           bool create = false,
           bool delete = false}) async =>
-      await SPolicySKitCreator(
-              read: read, write: write, init: create, delete: delete)
+      SPolicySKitCreator(
+              reasoning: reasoning,
+              read: read,
+              write: write,
+              init: create,
+              delete: delete)
           .create();
 
-  @LuaExport(
-    "Creates a new policy for files.",
-  )
   static Future<SPolicyFiles> files(
           {required Whitelist whitelist,
+          String? reasoning,
           bool rexter = false,
           bool wexter = false,
           bool cexter = false,
@@ -47,7 +58,8 @@ abstract class SPolicy extends SObject {
           bool winter = false,
           bool cinter = false,
           bool dinter = false}) async =>
-      await SPolicyFilesCreator(
+      SPolicyFilesCreator(
+              reasoning: reasoning,
               readExternally: rexter,
               writeExternally: wexter,
               createExternally: cexter,
@@ -59,6 +71,6 @@ abstract class SPolicy extends SObject {
               whitelist: whitelist)
           .create();
 
-  @LuaExport("Creates a new policy for all permissions.")
-  static Future<SPolicyAll> all() async => await SPolicyAllCreator().create();
+  static Future<SPolicyAll> all([String? reasoning]) async =>
+      SPolicyAllCreator(reasoning: reasoning).create();
 }

@@ -17,7 +17,7 @@ class SDatabase extends SRoot {
   }
 
   @override
-  Future<SRDatabase> newIndent() async => await SRDatabaseCreator(id).create();
+  Future<SRDatabase> newIndent() async => SRDatabaseCreator(id).create();
 }
 
 class SRDatabase extends SIndent<SDatabase> {

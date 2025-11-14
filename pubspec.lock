@@ -241,14 +241,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.6"
-  csslib:
-    dependency: transitive
-    description:
-      name: csslib
-      sha256: "09bad715f418841f976c77db72d5398dc1253c21fb9c0c7f0b0b985860b2d58e"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.2"
   dart_style:
     dependency: transitive
     description:
@@ -345,22 +337,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.6.0"
-  hotreloader:
-    dependency: transitive
-    description:
-      name: hotreloader
-      sha256: bc167a1163807b03bada490bfe2df25b0d744df359227880220a5cbd04e5734b
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.3.0"
-  html:
-    dependency: transitive
-    description:
-      name: html
-      sha256: "6d1264f2dffa1b1101c25a91dff0dc2daee4c18e87cd8538729773c073dbf602"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.15.6"
   http:
     dependency: "direct main"
     description:
@@ -417,14 +393,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.5"
-  jaspr:
-    dependency: "direct main"
-    description:
-      name: jaspr
-      sha256: "11f1ff59b18dae5fd430ce8a7f558b7541c2a89e599d329dfd7d0df2bffacb3e"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.21.6"
   js:
     dependency: transitive
     description:
@@ -585,14 +553,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.2"
-  shelf_gzip:
-    dependency: transitive
-    description:
-      name: shelf_gzip
-      sha256: "4f4b793c0f969f348aece1ab4cc05fceba9fea431c1ce76b1bc0fa369cecfc15"
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.1.0"
   shelf_packages_handler:
     dependency: transitive
     description:
@@ -601,14 +561,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
-  shelf_proxy:
-    dependency: transitive
-    description:
-      name: shelf_proxy
-      sha256: a71d2307f4393211930c590c3d2c00630f6c5a7a77edc1ef6436dfd85a6a7ee3
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.4"
   shelf_router:
     dependency: "direct main"
     description:
@@ -785,14 +737,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.1"
-  universal_web:
-    dependency: transitive
-    description:
-      name: universal_web
-      sha256: "618a9d8659e9429875f69d4da0fb9c0c143d3d4cdab28b4545502088aa50ed62"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.1.1+1"
   vector_math:
     dependency: "direct main"
     description:

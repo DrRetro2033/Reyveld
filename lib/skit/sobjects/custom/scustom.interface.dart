@@ -23,7 +23,7 @@ class SCustomInterface extends SInterface<SCustom> {
                   descr: "Attributes to set on the SCustom object",
                   kind: ArgKind.optionalNamed)
             }, (String type, {Map? attribs}) async {
-          return await SCustomCreator(type, attribs?.cast<String, dynamic>())
+          return SCustomCreator(type, attribs?.cast<String, dynamic>())
               .create();
         })
       };

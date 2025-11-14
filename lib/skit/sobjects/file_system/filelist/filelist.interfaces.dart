@@ -15,13 +15,13 @@ class GlobsInterface<T extends Globs> extends SInterface<Globs> {
             name: "whitelist",
             descr: "The list of files to include.",
             returnType: Whitelist, () async {
-          return await WhitelistCreator([]).create();
+          return WhitelistCreator([]).create();
         }),
         LEntry(
             name: "blacklist",
             descr: "The list of files to exclude.",
             returnType: Blacklist, (List<String> globs) async {
-          return await BlacklistCreator([]).create();
+          return BlacklistCreator([]).create();
         }),
       };
 

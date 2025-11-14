@@ -14,6 +14,11 @@ class SPolicyInterface extends SInterface<SPolicy> {
             descr: "The SKits policy.",
             returnType: SPolicySKit,
             args: const {
+              LArg<String>(
+                  name: "reasoning",
+                  descr: "The reasoning behind the policy.",
+                  kind: ArgKind.optionalNamed,
+                  docDefaultValue: "null"),
               LArg<bool>(
                   name: "read",
                   descr: "Require permission to read SKits?",
@@ -36,13 +41,17 @@ class SPolicyInterface extends SInterface<SPolicy> {
                   docDefaultValue: "false"),
             },
             (
-                    {bool read = false,
+                    {String? reasoning,
+                    bool read = false,
                     bool write = false,
                     bool create = false,
                     bool delete = false}) =>
-                SPolicySKitCreator(
-                        read: read, write: write, init: create, delete: delete)
-                    .create()),
+                SPolicy.skit(
+                    reasoning: reasoning,
+                    read: read,
+                    write: write,
+                    create: create,
+                    delete: delete)),
         LEntry(
             name: "files",
             descr: "The files policy.",
@@ -52,6 +61,11 @@ class SPolicyInterface extends SInterface<SPolicy> {
                   name: "whitelist",
                   descr: "The whitelist to use.",
                   kind: ArgKind.requiredNamed),
+              LArg<String>(
+                  name: "reasoning",
+                  descr: "The reasoning behind the policy.",
+                  kind: ArgKind.optionalNamed,
+                  docDefaultValue: "null"),
               LArg<bool>(
                   name: "rexter",
                   descr: "Require permission to read external files?",
@@ -95,6 +109,7 @@ class SPolicyInterface extends SInterface<SPolicy> {
             },
             (
                     {required Whitelist whitelist,
+                    String? reasoning,
                     bool rexter = false,
                     bool wexter = false,
                     bool cexter = false,
@@ -103,21 +118,27 @@ class SPolicyInterface extends SInterface<SPolicy> {
                     bool winter = false,
                     bool cinter = false,
                     bool dinter = false}) =>
-                SPolicyFilesCreator(
-                        readExternally: rexter,
-                        writeExternally: wexter,
-                        createExternally: cexter,
-                        deleteExternally: dexter,
-                        readInternally: rinter,
-                        writeInternally: winter,
-                        createInternally: cinter,
-                        deleteInternally: dinter,
-                        whitelist: whitelist)
-                    .create()),
+                SPolicy.files(
+                    whitelist: whitelist,
+                    reasoning: reasoning,
+                    rexter: rexter,
+                    wexter: wexter,
+                    cexter: cexter,
+                    dexter: dexter,
+                    rinter: rinter,
+                    winter: winter,
+                    cinter: cinter,
+                    dinter: dinter)),
         LEntry(
             name: "all",
             descr: "The all policy.",
+            args: const {
+              LArg<String>(
+                  name: "reasoning",
+                  kind: ArgKind.optionalNamed,
+                  docDefaultValue: "null"),
+            },
             returnType: SPolicyAll,
-            () => SPolicyAllCreator().create()),
+            ({String? reasoning}) => SPolicy.all(reasoning)),
       };
 }

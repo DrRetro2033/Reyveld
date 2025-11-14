@@ -3,12 +3,12 @@ import 'package:reyveld/reyveld.dart';
 import 'package:reyveld/security/policies/policies.dart';
 import 'package:reyveld/skit/sobject.dart';
 
-part 'certificate.g.dart';
-part 'certificate.interface.dart';
-part 'certificate.creator.dart';
+part 'contract.g.dart';
+part 'contract.interface.dart';
+part 'contract.creator.dart';
 
 @SGen("cert")
-class SCertificate extends SRoot {
+class SContract extends SRoot {
   @override
   childAllowed(object) {
     if (object is SPolicy) {
@@ -17,13 +17,13 @@ class SCertificate extends SRoot {
     return (false, "Cannot add a ${object.runtimeType} to an $runtimeType!");
   }
 
-  SCertificate(super._node);
+  SContract(super._node);
 
-  /// Returns the polices of the [SCertificate].
+  /// Returns the polices of the [SContract].
   List<SPolicy> get policies =>
       getChildren<SPolicy>().whereType<SPolicy>().toList();
 
-  /// Returns true if the [SCertificate] has the [SPolicyAll] policy.
+  /// Returns true if the [SContract] has the [SPolicyAll] policy.
   bool get completeAccess => policies.any((policy) => policy is SPolicyAll);
 
   /// Returns the application name.
@@ -41,19 +41,24 @@ class SCertificate extends SRoot {
   bool hasPolicy<T extends SPolicy>() => getPolicy<T>() != null;
 
   @override
-  Future<SIndent<SRoot>> newIndent() async =>
-      await SISCertificateCreator(id).create();
+  Future<SIndent<SRoot>> newIndent() async => SISContractCreator(id).create();
 
   String toDisplayString() =>
-      "Certificate for '$appname' | '$id' | ${policies.length} policies | ${authorized ? "Authorized".green : "Deauthorized".red}";
+      "Contract for '$appname' | '$id' | ${policies.length} policies | ${authorized ? "Authorized".green : "Deauthorized".red}";
 
   void deauthorize() => authorized = false;
   void reauthorize() => authorized = true;
+
+  /// Returns true if the [SContract] has all the [SPolicy]s in the [policies] list.
+  bool verify(List<SPolicy> policies) => policies
+      .map((e) => e.checksum)
+      .every((policy) => this.policies.map((e) => e.checksum).contains(policy));
 }
 
-class SCertificateIndent extends SIndent<SCertificate> {
-  SCertificateIndent(super.hash);
+@SGen("rcert")
+class SContractIndent extends SIndent<SContract> {
+  SContractIndent(super.hash);
 }
 
-/// Creates [SCertificateIndent]s.
-typedef SISCertificateCreator = SIndentCreator<SCertificateIndent>;
+/// Creates [SContractIndent]s.
+typedef SISContractCreator = SIndentCreator<SContractIndent>;

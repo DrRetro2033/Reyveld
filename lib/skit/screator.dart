@@ -21,7 +21,7 @@ part of 'sobject.dart';
 ///   MySCreator(this.name, {this.date = null});
 ///
 ///   @override
-///   get creator => (builder) {
+///   build(builder) {
 ///     /// No need to add element here, it will be added by the creator function
 ///     /// as it is a nested builder.
 ///     builder.attribute("name", name);
@@ -36,17 +36,12 @@ part of 'sobject.dart';
 abstract class SCreator<T extends SObject> {
   SCreator();
 
-  FutureOr<T> create() async {
+  T create() {
     final builder = ModifiedXmlBuilder();
-
-    /// Does something before creation asyncronously
-    await beforeCreate();
 
     /// Create the outer element with the correct tag,
     /// and then call the [creator] function
-    builder.element(getSFactory<T>().tag, nest: () {
-      creator(builder);
-    });
+    builder.element(getSFactory<T>().tag, nest: () => build(builder));
 
     final frag = builder
         .buildDocument(); // Builds the document that contains our element.
@@ -54,26 +49,18 @@ abstract class SCreator<T extends SObject> {
     /// Load the [SObject].
     final obj = getSFactory<T>().load(frag.rootElement);
 
-    /// Does something after creation asynchronously.
-    await afterCreate(obj);
-
     return obj;
   }
 
-  FutureOr<void> Function() get beforeCreate => () async {
-        return;
-      };
-
-  FutureOr<void> Function(T) get afterCreate => (T obj) async {
-        return;
-      };
-
-  /// Creator must never be asynchronous, as the xml package does not play nicely with it.
-  /// It must be synchronous. However, if you need to use asyncronous code,
-  /// use [beforeCreate] to do stuff before creating the [SObject].
-  void Function(ModifiedXmlBuilder builder) get creator;
+  /// [build] must never be asynchronous, as the xml package does not play nicely with it.
+  ///
+  /// If you need to do asynchronous work, create a static function in the [SCreator] instead.
+  void build(ModifiedXmlBuilder builder);
 }
 
+/// This is a modified version of the [XmlBuilder] that will automatically encode text using [encodeText].
+///
+/// This is done so that there are no conflicts with the xml parser.
 class ModifiedXmlBuilder extends XmlBuilder {
   @override
   void attribute(String name, Object? value,
@@ -87,5 +74,7 @@ class ModifiedXmlBuilder extends XmlBuilder {
       attribute(name, value ? "1" : "0",
           namespace: namespace, attributeType: attributeType);
 
+  /// Use this to add a [SObject] to the xml document.
+  /// The [SObject] will be converted to xml and added to the node.
   void sobject(SObject obj) => xml(obj.toXmlString());
 }

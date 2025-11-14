@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:reyveld/extensions.dart';
-import 'package:reyveld/security/certificate/certificate.dart';
+import 'package:reyveld/security/certificate/contract.dart';
 import 'package:reyveld/skit/sobject.dart';
 import 'package:reyveld/skit/sobjects/file_system/file_system.dart';
 import 'package:reyveld/skit/sobjects/file_system/filelist/filelist.dart';
@@ -32,7 +32,7 @@ class Constellation extends SObject {
     return (false, "Cannot add a ${object.runtimeType} to an $runtimeType!");
   }
 
-  static bool checkSecurity(SCertificate cert, LuaArgs args) => true;
+  static bool checkSecurity(SContract cert, LuaArgs args) => true;
 
   /// The name of the constellation.
   @LuaExport("The name of the constellation.")
@@ -83,7 +83,7 @@ class Constellation extends SObject {
     final archive = await SArchiveCreator.archiveFolder(path.resolvePath(),
         includeList: globs);
     await kit.addRoot(archive);
-    final rootStar = await StarCreator(
+    final rootStar = StarCreator(
             "Initial Star", generateUUID(), await archive.newIndent(),
             branch: "main")
         .create();

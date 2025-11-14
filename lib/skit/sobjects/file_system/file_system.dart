@@ -143,7 +143,7 @@ class SArchive extends SRoot {
   }
 
   @override
-  Future<SRArchive> newIndent() async => await SRArchiveCreator(id).create();
+  Future<SRArchive> newIndent() async => SRArchiveCreator(id).create();
 }
 
 extension SArchiveExtensions on SKit {
@@ -242,7 +242,7 @@ class SFile extends SObject {
     await sink.addStream(externalVersion!.openRead());
     await sink.flush();
     await sink.close();
-    return await SFileCreator(path, await temp.checksum).create();
+    return SFileCreator(path, await temp.checksum).create();
   }
 
   Future<File> get tempFile async {
@@ -656,8 +656,7 @@ If overwrite is true, then the file will be overwritten if it already exists."""
       });
 
   Future<SRFile> getRef() async {
-    return await SRFileCreator(getParent<SArchive>()!.id, path, checksum)
-        .create()
+    return SRFileCreator(getParent<SArchive>()!.id, path, checksum).create()
       ..kit = kit;
   }
 }

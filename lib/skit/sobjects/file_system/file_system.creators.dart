@@ -13,7 +13,7 @@ class SArchiveCreator extends SCreator<SArchive> {
     if (!await dir.exists()) {
       throw Exception("Path does not exist.");
     }
-    final archive = await SArchiveCreator().create();
+    final archive = SArchiveCreator().create();
 
     await for (final file in _archiveFolderStream(
       dir.list(recursive: true).whereType<File>().where((e) =>
@@ -38,7 +38,7 @@ class SArchiveCreator extends SCreator<SArchive> {
             return await ref.getFile(filePath)!.getRef();
           }
         }
-        final f = await (await SFileCreator(
+        final f = await (SFileCreator(
           filePath,
           await e.checksum,
         ).create())
@@ -49,7 +49,7 @@ class SArchiveCreator extends SCreator<SArchive> {
   }
 
   @override
-  get creator => (builder) {};
+  build(_) {}
 }
 
 /// Creates [SFile]s.
@@ -63,16 +63,15 @@ class SFileCreator extends SCreator<SFile> {
   static Future<SFile> open(String path) async {
     final file =
         SFileCreator(path, await File(path).checksum, isExternal: true);
-    return await file.create()
-      ..externalVersion = File(path);
+    return file.create()..externalVersion = File(path);
   }
 
   @override
-  get creator => (builder) {
-        builder.attribute("path", path);
-        builder.attribute("checksum", checksum);
-        builder.attribute("extern", isExternal ? "1" : "0");
-      };
+  build(builder) {
+    builder.attribute("path", path);
+    builder.attribute("checksum", checksum);
+    builder.attribute("extern", isExternal ? "1" : "0");
+  }
 }
 
 /// Creates [SRFile]s.
@@ -83,11 +82,11 @@ class SRFileCreator extends SCreator<SRFile> {
   SRFileCreator(this.archiveHash, this.filePath, this.checksum);
 
   @override
-  get creator => (builder) {
-        builder.attribute("archive", archiveHash);
-        builder.attribute("path", filePath);
-        builder.attribute("checksum", checksum);
-      };
+  build(builder) {
+    builder.attribute("archive", archiveHash);
+    builder.attribute("path", filePath);
+    builder.attribute("checksum", checksum);
+  }
 }
 
 /// Creates [SRArchive]s.

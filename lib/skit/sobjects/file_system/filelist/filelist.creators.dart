@@ -6,9 +6,9 @@ class WhitelistCreator extends SCreator<Whitelist> {
   WhitelistCreator(this.list);
 
   @override
-  get creator => (builder) {
-        builder.text(base64Encode(utf8.encode(list.join("\n"))));
-      };
+  build(builder) {
+    builder.text(base64Encode(utf8.encode(list.join("\n"))));
+  }
 }
 
 class BlacklistCreator extends SCreator<Blacklist> {
@@ -17,7 +17,7 @@ class BlacklistCreator extends SCreator<Blacklist> {
   BlacklistCreator(this.list);
 
   @override
-  get creator => (builder) {
-        builder.text(base64Encode(utf8.encode(list.join("\n"))));
-      };
+  build(builder) {
+    builder.text(base64Encode(utf8.encode(list.join("\n"))));
+  }
 }

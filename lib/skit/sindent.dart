@@ -70,15 +70,12 @@ class SIndentCreator<T extends SIndent> extends SCreator {
   SIndentCreator(this.id);
 
   @override
-  FutureOr<T> create() async {
+  T create() {
     final builder = ModifiedXmlBuilder();
-
-    /// Does something before creation asyncronously
-    await beforeCreate();
 
     builder.element(getSFactory<T>().tag, nest: () {
       builder.attribute("hash", id);
-      creator(builder);
+      build(builder);
     });
 
     final frag = builder.buildDocument(); // build the document
@@ -88,5 +85,5 @@ class SIndentCreator<T extends SIndent> extends SCreator {
   }
 
   @override
-  get creator => (builder) {};
+  build(_) {}
 }

@@ -1,6 +1,7 @@
 part of 'files.dart';
 
 class SPolicyFilesCreator extends SCreator<SPolicyFiles> {
+  final String? reasoning;
   final bool readExternally;
   final bool writeExternally;
   final bool createExternally;
@@ -13,7 +14,8 @@ class SPolicyFilesCreator extends SCreator<SPolicyFiles> {
 
   final Whitelist whitelist;
   SPolicyFilesCreator(
-      {this.readExternally = false,
+      {this.reasoning,
+      this.readExternally = false,
       this.writeExternally = false,
       this.createExternally = false,
       this.deleteExternally = false,
@@ -23,16 +25,19 @@ class SPolicyFilesCreator extends SCreator<SPolicyFiles> {
       this.deleteInternally = false,
       required this.whitelist});
   @override
-  get creator => (builder) {
-        builder.boolAttri("rexter", readExternally);
-        builder.boolAttri("wexter", writeExternally);
-        builder.boolAttri("cexter", createExternally);
-        builder.boolAttri("dexter", deleteExternally);
+  build(builder) {
+    builder.boolAttri("rexter", readExternally);
+    builder.boolAttri("wexter", writeExternally);
+    builder.boolAttri("cexter", createExternally);
+    builder.boolAttri("dexter", deleteExternally);
 
-        builder.boolAttri("rinter", readInternally);
-        builder.boolAttri("winter", writeInternally);
-        builder.boolAttri("cinter", createInternally);
-        builder.boolAttri("dinter", deleteInternally);
-        builder.sobject(whitelist);
-      };
+    builder.boolAttri("rinter", readInternally);
+    builder.boolAttri("winter", writeInternally);
+    builder.boolAttri("cinter", createInternally);
+    builder.boolAttri("dinter", deleteInternally);
+    builder.sobject(whitelist);
+    if (reasoning != null) {
+      builder.sobject(SDescriptionCreator(reasoning!).create());
+    }
+  }
 }

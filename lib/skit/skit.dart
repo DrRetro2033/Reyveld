@@ -7,7 +7,7 @@ import "dart:io";
 import "dart:typed_data";
 import "package:reyveld/reyveld.dart";
 import "package:reyveld/extensions.dart";
-import "package:reyveld/security/certificate/certificate.dart";
+import "package:reyveld/security/certificate/contract.dart";
 import "package:reyveld/security/policies/policies.dart";
 import "package:reyveld/uuid.dart";
 import "package:pointycastle/pointycastle.dart"
@@ -278,7 +278,7 @@ class SKit {
       await _file.delete();
     }
     discardChanges(); // clear the current kit from memory.
-    _header = await SHeaderCreator(type: type).create();
+    _header = SHeaderCreator(type: type).create();
     final author = await Reyveld.author.then((e) => e!.toSAuthor());
     await addRoot(author);
     final ref = await author.newIndent();
@@ -296,7 +296,7 @@ class SKit {
     return await Reyveld.withReadAndWritePool(() async {
       if (_header == null) {
         if (!await exists()) {
-          return await SHeaderCreator().create();
+          return SHeaderCreator().create();
         }
         final factory = getSFactory<SHeader>();
 

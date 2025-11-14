@@ -3,7 +3,7 @@ import 'dart:math';
 
 import 'package:reyveld/reyveld.dart';
 import 'package:reyveld/security/authorize_ticket.dart';
-import 'package:reyveld/security/certificate/certificate.dart';
+import 'package:reyveld/security/certificate/contract.dart';
 import 'package:reyveld/security/policies/policy.dart';
 import 'package:reyveld/skit/skit.dart';
 import 'package:open_url/open_url.dart';
@@ -14,6 +14,8 @@ part 'authveld.website.dart';
 typedef AuthorizeEvent = (AuthorizeTicket, bool);
 
 class AuthVeld {
+  static const _encryptKey = "AuthVeld";
+
   static final SKit _kit = SKit("${Reyveld.appDataPath}/authveld.skit");
 
   /// A list of all the tickets that are currently being authorized.
@@ -25,75 +27,81 @@ class AuthVeld {
   /// Requests authorization for an application to use Reyveld.
   ///
   /// [name] is the name of the application.
-  /// [reasoning] is a human-readable string explaining why the application wants to use Reyveld.
   /// [permissions] is a list of [SPolicy]s that the application wants to use.
   ///
   /// If the user authorizes the ticket, then the returned [Future] will complete with the token of the ticket.
   /// If the user denies the ticket, then the returned [Future] will complete with null.
   /// If the user closes the authorization dialog without making a decision, then the returned [Future] will not complete at all.
-  static Future<String?> getAuthorization(
-      String name, String reasoning, List<SPolicy> permissions) async {
-    final ticket =
-        AuthorizeTicket(generateTicketID(), name, reasoning, permissions);
+  static Future<String?> newContract(
+      String name, List<SPolicy> permissions) async {
+    final ticket = AuthorizeTicket(generateTicketID(), name, permissions);
     _authorizationTickets.add(ticket);
     await openUrl(
         "http://127.0.0.1:7274/authveld?ticket=${Uri.encodeQueryComponent(ticket.ticket)}");
     await for (final event in _authorizationController.stream) {
       if (event.$1 == ticket) {
-        if (event.$2) return ticket.token;
+        if (event.$2) {
+          if (!await _kit.exists()) {
+            await _kit.create(type: SKitType.authveld);
+          }
+          final certificate =
+              SContractCreator(ticket.applicationName, ticket.policies)
+                  .create();
+          await _kit.addRoot(certificate);
+          await _kit.save(encryptKey: _encryptKey);
+          ticket.token = certificate.id;
+          return ticket.token;
+        }
         return null;
       }
     }
     return null;
   }
 
-  /// Authorizes a ticket by creating a certificate and adding it to the kit file.
-  ///
-  /// If the kit file does not exist, it will be created.
-  ///
-  /// If the certificate already exists inside the kit file, it will be reauthorized.
-  static Future<void> authorize(String tokenToAuthorize) async {
-    final ticket = _authorizationTickets[tokenToAuthorize];
-    if (ticket != null) {
-      if (!await _kit.exists()) {
-        await _kit.create(type: SKitType.authveld);
-      }
-      final certificate =
-          await SCertificateCreator(ticket.applicationName, ticket.policies)
-              .create();
-      await _kit.addRoot(certificate);
-      await _kit.save(encryptKey: "AuthVeld");
-      ticket.token = certificate.id;
-      _authorizationController.add((ticket, true));
-      _authorizationTickets.remove(ticket);
-    } else if (await _kit.exists() &&
-        await AuthVeld.hasCertificate(tokenToAuthorize)) {
-      await _kit
-          .getRoot<SCertificate>(
-              filterRoots: (root) => root.id == tokenToAuthorize)
-          .then((value) async => value!.reauthorize());
-      await _kit.save(encryptKey: "AuthVeld");
+  static Future<void> deleteContract(String token) async {
+    if (await AuthVeld.hasContract(token)) {
+      await AuthVeld.getContract(token).then((e) => e!.markForDeletion());
+      await _kit.save(encryptKey: _encryptKey);
     }
   }
 
-  /// Revokes the authorization of a ticket.
-  ///
-  /// If the ticket is currently being authorized, removes it from the authorization list.
-  ///
-  /// If the ticket is not currently being authorized, but the corresponding exists in the AuthVeld kit file,
-  /// then it will deauthorize the certificate.
-  static Future<void> deauthorize(String tokenToUnauthorize) async {
-    final ticket = _authorizationTickets[tokenToUnauthorize];
+  /// Reauthorizes a contract.
+  static Future<void> authorizeContract(String tokenToAuthorize) async {
+    if (await _kit.exists() && await AuthVeld.hasContract(tokenToAuthorize)) {
+      await _kit
+          .getRoot<SContract>(
+              filterRoots: (root) => root.id == tokenToAuthorize)
+          .then((value) async => value!.reauthorize());
+      await _kit.save(encryptKey: _encryptKey);
+    }
+  }
+
+  /// Revokes the authorization of a contract.
+  static Future<void> deauthorizeContract(String tokenToUnauthorize) async {
+    if (await _kit.exists() && await AuthVeld.hasContract(tokenToUnauthorize)) {
+      await _kit
+          .getRoot<SContract>(
+              filterRoots: (root) => root.id == tokenToUnauthorize)
+          .then((value) async => value!.deauthorize());
+      await _kit.save(encryptKey: _encryptKey);
+    }
+  }
+
+  /// Accepts an authorization ticket.
+  static Future<void> acceptTicket(String ticketId) async {
+    final ticket = _authorizationTickets[ticketId];
+    if (ticket != null) {
+      _authorizationController.add((ticket, true));
+      _authorizationTickets.remove(ticket);
+    }
+  }
+
+  /// Rejects an authorization ticket.
+  static Future<void> rejectTicket(String ticketId) async {
+    final ticket = _authorizationTickets[ticketId];
     if (ticket != null) {
       _authorizationController.add((ticket, false));
       _authorizationTickets.remove(ticket);
-    } else if (await _kit.exists() &&
-        await AuthVeld.hasCertificate(tokenToUnauthorize)) {
-      await _kit
-          .getRoot<SCertificate>(
-              filterRoots: (root) => root.id == tokenToUnauthorize)
-          .then((value) async => value!.deauthorize());
-      await _kit.save(encryptKey: "AuthVeld");
     }
   }
 
@@ -151,10 +159,7 @@ class AuthVeld {
     <script>
         const markdownText = `
 # Requested Permissions
-${ticket?.policies.map((p) => p.details()).join('\n\n')}
-
-# Reasoning
-${ticket?.reasoning}
+${ticket?.policies.map((p) => p.details()).join('\n')}
 `;
         document.getElementById('markdown-content').innerHTML = marked.parse(markdownText);
     </script>
@@ -163,9 +168,9 @@ ${ticket?.reasoning}
 """;
   }
 
-  static Future<SCertificate?> loadCertificate(String token) async {
+  static Future<SContract?> getContract(String token) async {
     if (await _kit.exists()) {
-      return await _kit.getRoot<SCertificate>(
+      return await _kit.getRoot<SContract>(
         filterRoots: (root) => root.id == token,
         addToCache: true,
       );
@@ -173,17 +178,31 @@ ${ticket?.reasoning}
     return null;
   }
 
-  static Future<bool> hasCertificate(String token) async {
+  static Future<bool> hasContract(String token) async {
     if (await _kit.exists()) {
       return await _kit.hasRoot(token);
     }
     return false;
   }
 
-  static Future<Iterable<SCertificate>> getCertificates() async {
+  static Future<bool> requiresUpdate(
+      String token, List<SPolicy> policies) async {
     if (await _kit.exists()) {
-      final certs = await _kit.getRoots<SCertificate>(addToCache: true);
-      return certs.whereType<SCertificate>();
+      final contract = await getContract(token);
+      if (contract != null) {
+        if (!contract.verify(policies)) {
+          return true;
+        }
+        return false;
+      }
+    }
+    return true;
+  }
+
+  static Future<Iterable<SContract>> getContracts() async {
+    if (await _kit.exists()) {
+      final certs = await _kit.getRoots<SContract>(addToCache: true);
+      return certs.whereType<SContract>();
     }
     return [];
   }

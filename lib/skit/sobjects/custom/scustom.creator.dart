@@ -10,15 +10,15 @@ class SCustomCreator extends SCreator<SCustom> {
   SCustomCreator(this.type, this.attributes);
 
   @override
-  get creator => (builder) {
-        builder.attribute("type", type);
-        if (attributes != null) {
-          for (var entry in attributes!.entries) {
-            if (entry.key == "type") {
-              continue; // Avoid overwriting the type attribute with another attribute.
-            }
-            builder.attribute(entry.key, entry.value.toString());
-          }
+  build(builder) {
+    builder.attribute("type", type);
+    if (attributes != null) {
+      for (var entry in attributes!.entries) {
+        if (entry.key == "type") {
+          continue; // Avoid overwriting the type attribute with another attribute.
         }
-      };
+        builder.attribute(entry.key, entry.value.toString());
+      }
+    }
+  }
 }

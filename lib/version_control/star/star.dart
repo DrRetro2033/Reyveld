@@ -93,18 +93,16 @@ class Star extends SObject {
     /// If there are no changes, create a new star with the exact same archive reference.
     /// If there are changes, create a new star with a new archive that references the old archive.
     if (!await checkForChanges()) {
-      star =
-          await StarCreator(name, generateUUID(), getChild<SRArchive>()!.copy())
-              .create();
+      star = StarCreator(name, generateUUID(), getChild<SRArchive>()!.copy())
+          .create();
     } else {
       final newArchive = await SArchiveCreator.archiveFolder(
           constellation.path.resolvePath(),
           ref: await archive,
           includeList: constellation.globs);
       await kit.addRoot(newArchive);
-      star =
-          await StarCreator(name, generateUUID(), await newArchive.newIndent())
-              .create();
+      star = StarCreator(name, generateUUID(), await newArchive.newIndent())
+          .create();
     }
     addChild(star);
 
