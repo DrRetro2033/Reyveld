@@ -2,6 +2,7 @@ import 'package:chalkdart/chalkstrings.dart';
 import 'package:reyveld/reyveld.dart';
 import 'package:reyveld/security/policies/policies.dart';
 import 'package:reyveld/skit/sobject.dart';
+import 'package:yaml/yaml.dart';
 
 part 'contract.g.dart';
 part 'contract.interface.dart';
@@ -53,6 +54,16 @@ class SContract extends SRoot {
   bool verify(List<SPolicy> policies) => policies
       .map((e) => e.checksum)
       .every((policy) => this.policies.map((e) => e.checksum).contains(policy));
+
+  static SContract fromYaml(YamlMap yaml) {
+    final appname = yaml["appname"] as String;
+    final policies = yaml["policies"] as YamlList;
+    final finalPolicies = <SPolicy>[];
+    for (final YamlMap policy in policies) {
+      finalPolicies.add(SPolicy.fromYaml(policy));
+    }
+    return SContractCreator(appname, finalPolicies).create();
+  }
 }
 
 @SGen("rcert")

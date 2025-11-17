@@ -8,8 +8,8 @@ class SContractCreator extends SCreator<SContract> {
 
   @override
   build(builder) {
+    builder.attribute("appname", appname);
     for (final policy in policies) {
-      builder.attribute("appname", appname);
       builder.sobject(policy);
     }
   }

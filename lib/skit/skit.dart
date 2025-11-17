@@ -7,7 +7,7 @@ import "dart:io";
 import "dart:typed_data";
 import "package:reyveld/reyveld.dart";
 import "package:reyveld/extensions.dart";
-import "package:reyveld/security/certificate/contract.dart";
+import "package:reyveld/security/contract/contract.dart";
 import "package:reyveld/security/policies/policies.dart";
 import "package:reyveld/uuid.dart";
 import "package:pointycastle/pointycastle.dart"
@@ -288,6 +288,8 @@ class SKit {
 
   /// Returns true if the kit file exists.
   Future<bool> exists() => _file.exists();
+
+  Future<void> delete() async => await _file.delete();
 
   /// Gets the header of the kit file.
   ///

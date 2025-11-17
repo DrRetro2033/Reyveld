@@ -109,4 +109,38 @@ ${whitelist!.globs.map((e) => "- ${e.pattern}").join("\n")}
 $reasoning
 """;
   }
+
+  static SPolicyFiles fromYaml(YamlMap yaml) {
+    final actions = yaml["actions"] as YamlMap;
+    final external_ = actions["external"] as YamlList;
+    final internal_ = actions["internal"] as YamlList;
+    final eread = external_.contains("read");
+    final ewrite = external_.contains("write");
+    final ecreate = external_.contains("create");
+    final edelete = external_.contains("delete");
+    final iread = internal_.contains("read");
+    final iwrite = internal_.contains("write");
+    final icreate = internal_.contains("create");
+    final idelete = internal_.contains("delete");
+
+    final whitelist = <String>[];
+
+    for (final item in yaml["whitelist"] as YamlList) {
+      if (item is String) {
+        whitelist.add(item);
+      }
+    }
+
+    return SPolicyFilesCreator(
+            readExternally: eread,
+            writeExternally: ewrite,
+            createExternally: ecreate,
+            deleteExternally: edelete,
+            readInternally: iread,
+            writeInternally: iwrite,
+            createInternally: icreate,
+            deleteInternally: idelete,
+            whitelist: WhitelistCreator(whitelist).create())
+        .create();
+  }
 }

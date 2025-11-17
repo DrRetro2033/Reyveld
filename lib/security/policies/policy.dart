@@ -2,11 +2,14 @@ import 'package:reyveld/security/policies/files/files.dart';
 import 'package:reyveld/security/policies/skit/skit.dart';
 import 'package:reyveld/skit/sobject.dart';
 import 'package:reyveld/skit/sobjects/sobjects.dart';
+import 'package:yaml/yaml.dart';
 
 import 'all/all.dart' show SPolicyAll, SPolicyAllCreator;
 
 export 'package:reyveld/skit/sobjects/sobjects.dart'
     show SDescription, Whitelist;
+
+export 'package:yaml/yaml.dart';
 
 part 'policy.interface.dart';
 
@@ -73,4 +76,18 @@ $reasoning
 
   static Future<SPolicyAll> all([String? reasoning]) async =>
       SPolicyAllCreator(reasoning: reasoning).create();
+
+  static SPolicy fromYaml(YamlMap yaml) {
+    final type = yaml["type"] as String;
+    switch (type) {
+      case "skit":
+        return SPolicySKit.fromYaml(yaml);
+      case "files":
+        return SPolicyFiles.fromYaml(yaml);
+      case "all":
+        return SPolicyAll.fromYaml(yaml);
+      default:
+        throw Exception("Unknown policy type: $type.");
+    }
+  }
 }

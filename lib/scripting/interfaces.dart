@@ -6,7 +6,7 @@ import 'package:reyveld/scripting/extras/datetime.dart';
 import 'package:reyveld/scripting/extras/extras.dart';
 import 'package:reyveld/scripting/extras/stringbuffer.dart';
 import 'package:reyveld/security/authveld.dart';
-import 'package:reyveld/security/certificate/contract.dart';
+import 'package:reyveld/security/contract/contract.dart';
 import 'package:reyveld/security/policies/launch_apps/launch_apps.dart';
 import 'package:reyveld/security/policies/policies.dart';
 import 'package:reyveld/skit/sobjects/sobjects.dart';

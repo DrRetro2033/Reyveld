@@ -3,7 +3,7 @@ import 'dart:math';
 
 import 'package:reyveld/reyveld.dart';
 import 'package:reyveld/security/authorize_ticket.dart';
-import 'package:reyveld/security/certificate/contract.dart';
+import 'package:reyveld/security/contract/contract.dart';
 import 'package:reyveld/security/policies/policy.dart';
 import 'package:reyveld/skit/skit.dart';
 import 'package:open_url/open_url.dart';
@@ -58,6 +58,9 @@ class AuthVeld {
     return null;
   }
 
+  static Future<String?> verifyContract(SContract contract) async =>
+      await newContract(contract.appname, contract.policies);
+
   static Future<void> deleteContract(String token) async {
     if (await AuthVeld.hasContract(token)) {
       await AuthVeld.getContract(token).then((e) => e!.markForDeletion());
@@ -102,6 +105,20 @@ class AuthVeld {
     if (ticket != null) {
       _authorizationController.add((ticket, false));
       _authorizationTickets.remove(ticket);
+    }
+  }
+
+  /// Clears all contracts.
+  static Future<void> clearContracts() async => await _kit.delete();
+
+  static Future<void> revokeContracts(String appName) async {
+    if (await _kit.exists()) {
+      final contract = await _kit.getRoot<SContract>(
+          filterRoots: (root) => root.appname == appName);
+      if (contract != null) {
+        contract.markForDeletion();
+      }
+      await _kit.save(encryptKey: _encryptKey);
     }
   }
 

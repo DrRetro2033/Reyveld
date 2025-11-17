@@ -18,4 +18,6 @@ class SPolicyAll extends SPolicy {
 
   @override
   get description => "Give all permissions to this application.";
+
+  static SPolicyAll fromYaml(YamlMap yaml) => SPolicyAllCreator().create();
 }

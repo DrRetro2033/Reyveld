@@ -70,4 +70,15 @@ class SPolicySKit extends SPolicy {
     ];
     return "Allow the application to ${x.where((e) => e.$1).map((e) => e.$2).join(", ")} SKits.";
   }
+
+  static SPolicySKit fromYaml(YamlMap yaml) {
+    final actions = yaml["actions"] as YamlList;
+    final read = actions.contains("read");
+    final write = actions.contains("write");
+    final create = actions.contains("create");
+    final delete = actions.contains("delete");
+    return SPolicySKitCreator(
+            read: read, write: write, init: create, delete: delete)
+        .create();
+  }
 }

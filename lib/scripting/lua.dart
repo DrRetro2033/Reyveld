@@ -6,7 +6,7 @@ import 'package:reyveld/extensions.dart';
 import 'package:reyveld/reyveld.dart';
 import 'package:reyveld/scripting/sinterface.dart';
 import 'package:reyveld/security/authveld.dart' show AuthVeldException;
-import 'package:reyveld/security/certificate/contract.dart';
+import 'package:reyveld/security/contract/contract.dart';
 import 'package:reyveld/skit/skit.dart' show SKitType;
 import 'package:reyveld/uuid.dart';
 import 'package:lua_dardo_async/lua.dart';
