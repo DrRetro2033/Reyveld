@@ -280,9 +280,8 @@ abstract class SInterface<T> {
   bool isType(dynamic object) => typeCheck<T>(object) != null;
 
   /// This generates the docs for the interface.
-  Future<void> generateDocs() async {
-    final doc = File(
-        "${Reyveld.appDataPath}/docs/${Reyveld.version.toString()}/${className.toLowerCase()}.lua");
+  Future<void> generateDocs(String path) async {
+    final doc = File("$path/${className.toLowerCase()}.lua");
     await doc.create(recursive: true);
     await doc.writeAsString("""
 ---@meta _

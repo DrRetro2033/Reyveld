@@ -9,7 +9,7 @@ class Author {
   const Author(this._file);
 
   static Future<Author> initialize() async {
-    final file = File("${Reyveld.appDataPath}/me.yaml");
+    final file = File("${Reyveld.versionDataPath}/me.yaml");
     if (!await file.exists()) {
       await file.writeAsString(
           """# This file contains everything about you, and is used to indentify your kit files.

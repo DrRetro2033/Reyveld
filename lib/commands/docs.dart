@@ -35,9 +35,7 @@ class MakeCommand extends Command {
       spinner.text = "Generating $doc...".skyBlue;
     }, onError: (e) => Reyveld.talker.error(e)).asFuture();
 
-    spinner.success(
-        "Generated Lua Docs at \"${Reyveld.appDataPath}/docs/${Reyveld.version.toString()}/\""
-            .skyBlue);
+    spinner.success("Generated Lua Docs at \"${Reyveld.docsPath}\"".skyBlue);
   }
 }
 

@@ -16,7 +16,7 @@ typedef AuthorizeEvent = (AuthorizeTicket, bool);
 class AuthVeld {
   static const _encryptKey = "AuthVeld";
 
-  static final SKit _kit = SKit("${Reyveld.appDataPath}/authveld.skit");
+  static final SKit _kit = SKit("${Reyveld.versionDataPath}/authveld.skit");
 
   /// A list of all the tickets that are currently being authorized.
   static final Set<AuthorizeTicket> _authorizationTickets = {};

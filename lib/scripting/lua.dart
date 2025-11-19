@@ -508,8 +508,7 @@ class Lua {
 
   /// Generates a docs file for all of the interfaces.
   static Stream<String> generateDocs() async* {
-    final dir =
-        Directory("${Reyveld.appDataPath}/docs/${Reyveld.version.toString()}");
+    final dir = Directory(Reyveld.docsPath);
     try {
       if (await dir.exists()) {
         await dir.delete(recursive: true);
@@ -517,21 +516,20 @@ class Lua {
       await dir.create(recursive: true);
       for (final interface_ in interfaces) {
         yield interface_.className;
-        await interface_.generateDocs();
+        await interface_.generateDocs(dir.path);
       }
       yield "Enums";
-      await _generateEnumDocs();
+      await _generateEnumDocs(dir.path);
       yield "Others";
-      await _generateOtherDocs();
+      await _generateOtherDocs(dir.path);
     } catch (e) {
       Reyveld.talker.error(e.toString());
     }
   }
 
   // Generates a docs file for all of the enums.
-  static Future<void> _generateEnumDocs() async {
-    final doc = File(
-        "${Reyveld.appDataPath}/docs/${Reyveld.version.toString()}/enums.lua");
+  static Future<void> _generateEnumDocs(String path) async {
+    final doc = File("$path/enums.lua");
     await doc.create(recursive: true);
     await doc.writeAsString("""
 ---@meta _
@@ -540,9 +538,8 @@ ${_formatEnums()}
 """);
   }
 
-  static Future<void> _generateOtherDocs() async {
-    final doc = File(
-        "${Reyveld.appDataPath}/docs/${Reyveld.version.toString()}/others.lua");
+  static Future<void> _generateOtherDocs(String path) async {
+    final doc = File("$path/others.lua");
     await doc.create(recursive: true);
     await doc.writeAsString("""
 ---@meta _

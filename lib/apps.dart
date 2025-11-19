@@ -5,16 +5,18 @@ import 'package:reyveld/scripting/sinterface.dart';
 import 'package:yaml/yaml.dart';
 
 class AppLauncher {
-  static File get appDirFile => File("${Reyveld.appDataPath}/apps.yaml");
+  static File get appDirFile => File("${Reyveld.versionDataPath}/apps.yaml");
+
+  static String _structure(String body) => """
+# This file contains all of the app paths that Reyveld can launch.
+$body
+""";
 
   /// Initializes the apps.yaml file.
   static Future<void> initialize() async {
     if (!await appDirFile.exists()) {
       await appDirFile.create(recursive: true);
-      await appDirFile.writeAsString(
-          """# This file contains all of the app paths that Reyveld can launch.
-
-""");
+      await appDirFile.writeAsString(_structure(""));
     }
   }
 
@@ -31,29 +33,33 @@ class AppLauncher {
     }
   }
 
+  /// Adds an app.
   static Future<void> addApp(String name, String path) async {
     final apps = await getApps();
     if (apps.any((e) => e.$1 == name)) throw Exception("App already exists.");
     apps.add((name, path));
-    final content =
-        """# This file contains all of the app paths that Reyveld can launch.
-${apps.map((e) => "${e.$1}: ${e.$2}").join("\n")}""";
+    final content = _structure(apps.map((e) => "${e.$1}: ${e.$2}").join("\n"));
     try {
       loadYaml(content);
       await appDirFile.writeAsString(content);
     } catch (e) {
-      throw Exception("App name and/pr path are invalid for YAML file.");
+      throw Exception("App name and/or path are invalid for YAML file.");
     }
   }
 
+  /// Removes an app.
   static Future<void> removeApp(String name) async {
     final apps = await getApps();
     apps.removeWhere((e) => e.$1 == name);
     await appDirFile.writeAsString(
-        """# This file contains all of the app paths that Reyveld can launch.
-${apps.map((e) => "${e.$1}: ${e.$2}").join("\n")}""");
+        _structure(apps.map((e) => "${e.$1}: ${e.$2}").join("\n")));
   }
 
+  /// Checks if an app exists.
+  static Future<bool> hasApp(String name) async =>
+      (await getApps()).any((e) => e.$1 == name);
+
+  /// Launches an app.
   static Future<void> launchApp(String app, Iterable<String> args,
       {ProcessStartMode mode = ProcessStartMode.detached}) async {
     final apps = await getApps();
@@ -89,14 +95,21 @@ class AppLauncherInterface extends SInterface<AppLauncher> {
             args: const {LArg<String>(name: "name")},
             (String name) async => await AppLauncher.removeApp(name)),
         LEntry(
+            name: "hasApp",
+            descr: "Check if an app exists.",
+            isAsync: true,
+            args: const {LArg<String>(name: "name")},
+            (String name) async => await AppLauncher.hasApp(name)),
+        LEntry(
           name: "launchApp",
           descr: "Launch an app from Reyveld.",
           isAsync: true,
           returnType: int,
           args: const {
-            LArg<String>(name: "app"),
+            LArg<String>(name: "app", descr: "The app to launch."),
             LArg<List>(
                 name: "args",
+                descr: "The arguments to pass to the app.",
                 kind: ArgKind.optionalPositional,
                 docTypeOverride: "string[]")
           },

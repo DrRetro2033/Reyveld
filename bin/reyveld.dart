@@ -38,7 +38,7 @@ https://github.com/sponsors/DrRetro2033.
 Sincerely,
 DrRetro2033 - Creator of Reyveld.
 
-P.S. If you want to disable this message, you can go to ${Reyveld.appDataPath}/config.ini and set 
+P.S. If you want to disable this message, you can go to ${Reyveld.versionDataPath}/config.ini and set 
 "DISABLE_WELCOME_MESSAGE" to "1", in the "other" section.
 """
         .orange);

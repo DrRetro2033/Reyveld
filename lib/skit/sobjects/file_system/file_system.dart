@@ -276,6 +276,7 @@ class SFile extends SObject {
   }
 
   /// Returns the checksum of the file.
+  @override
   @LuaExport("Returns the checksum of the file.")
   String get checksum => get("checksum")!;
 

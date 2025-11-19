@@ -33,7 +33,7 @@ class Reyveld {
   static SKit? _cachedAuthorsKit;
 
   static Future<SKit> get _trustedAuthorsKit async {
-    _cachedAuthorsKit ??= SKit("$appDataPath/trusted_authors.skit");
+    _cachedAuthorsKit ??= SKit("$versionDataPath/trusted_authors.skit");
     return _cachedAuthorsKit!;
   }
 
@@ -41,7 +41,7 @@ class Reyveld {
   static RSAPublicKey? _cachedPublicKey;
 
   /// The path to the Reyveld data directory.
-  static File get signatureFile => File("$appDataPath/me.keys");
+  static File get signatureFile => File("$globalDataPath/me.keys");
 
   /// The private key of the user.
   static Future<RSAPrivateKey> get privateKey async {
@@ -81,7 +81,7 @@ class Reyveld {
       logger: TalkerLogger(
           formatter: ReyveldLogFormatter(),
           output: ReyveldLogger(
-                  "$appDataPath/logs/$version/reyveld-$version-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log")
+                  "$versionDataPath/logs/$version/reyveld-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log")
               .output,
           filter: ReyveldLogFilter()),
     );
@@ -89,16 +89,20 @@ class Reyveld {
   }
 
   static File get mostRecentLog => File(
-      "$appDataPath/logs/$version/reyveld-$version-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log");
+      "$versionDataPath/logs/$version/reyveld-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log");
 
-  /// The path to the application data directory.
-  static String get appDataPath {
+  /// The path to the version's data directory.
+  static String get versionDataPath => "$globalDataPath/$version";
+
+  static String get globalDataPath {
     if (!Platform.environment.containsKey("APPDATA")) {
-      return Directory.current.path;
+      return "${Directory.current.path}/.reyveld";
     } else {
       return "${Platform.environment["APPDATA"]!.resolvePath()}/reyveld";
     }
   }
+
+  static String get docsPath => "$versionDataPath/docs";
 
   static const String _defaultConfig = """
 [performance]
@@ -111,7 +115,7 @@ DISABLE_WELCOME_MESSAGE=False
 """;
 
   static Future<Config> get _config async {
-    final file = File("$appDataPath/config.ini");
+    final file = File("$globalDataPath/config.ini");
     if (!await file.exists()) {
       await file.create(recursive: true);
       await file.writeAsString(_defaultConfig);
@@ -223,7 +227,7 @@ $publicKeyPem""");
   }
 
   static Directory get _tempFileDirectory {
-    final dir = Directory("$appDataPath/temp/${version.toString()}/");
+    final dir = Directory("$versionDataPath/temp/${version.toString()}/");
     if (!dir.existsSync()) {
       dir.createSync(recursive: true);
     }
@@ -261,11 +265,6 @@ $publicKeyPem""");
     await AppLauncher.initialize();
     await Reyveld.verifySignature();
   }
-
-  @LuaExport("Hello World!")
-  static Map<String, List<SKit>> sinterfaceTest(String hello,
-          {int a = 0, int b = 2}) =>
-      {};
 }
 
 /// The log file is created in the application data directory.
