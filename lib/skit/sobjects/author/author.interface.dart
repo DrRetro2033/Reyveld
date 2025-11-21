@@ -8,7 +8,6 @@ class SAuthorInterface extends SInterface<SAuthor> {
   String get className => "SAuthor";
 
   @override
-  // TODO: implement allExports
   get exports => {
         LEntry(
             name: "isTrusted",

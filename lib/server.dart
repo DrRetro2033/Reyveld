@@ -36,8 +36,7 @@ Future<void> runServer() async {
 
   isRunningSpinner.success("Ready to Start!".skyBlue);
 
-  File lockFile = File(
-      "${Reyveld.versionDataPath}/locks/${Reyveld.version.toString()}.lock");
+  File lockFile = File(Reyveld.lockFilePath);
 
   final serverSpinner =
       CliSpin(spinner: CliSpinners.bounce).start("Starting Server...".skyBlue);
@@ -85,14 +84,14 @@ Future<void> runServer() async {
                 .toString());
       } catch (e, st) {
         Reyveld.printToConsole(
-            "There was a crash on a websocket, please check the log folder (${Reyveld.versionDataPath}/logs) for more information."
+            "There was a crash on a websocket, please check the log folder (${Reyveld.logsPath}) for more information."
                 .red);
         webSocket.sink.add(SocketEvent.error(e).toString());
         Reyveld.talker.error("(SID:$id)", e, st);
       }
     }, onError: (e) {
       Reyveld.printToConsole(
-          "There was a crash on a websocket, please check the log folder (${Reyveld.versionDataPath}/logs) for more information."
+          "There was a crash on a websocket, please check the log folder (${Reyveld.logsPath}) for more information."
               .red);
       Reyveld.talker.error("(SID:$id)", e);
     }, onDone: () {
@@ -152,8 +151,7 @@ Future<void> runServer() async {
 /// If it is, it will return true, otherwise it will return false.
 Future<bool> isRunning(Version version) async {
   /// If the file does exist, double check to see if the version has a heartbeat.
-  File lockFile =
-      File("${Reyveld.versionDataPath}/locks/${version.toString()}.lock");
+  File lockFile = File(Reyveld.lockFilePath);
   if (await lockFile.exists()) {
     final uri = Uri.http("127.0.0.1:7274", "${version.toString()}/heartbeat");
     Reyveld.talker.verbose("Checking for Heartbeat at '$uri'.");
@@ -173,7 +171,7 @@ Future<bool> isRunning(Version version) async {
 }
 
 Future<Version> getMostRecentVersion() async {
-  Directory lockDir = Directory("${Reyveld.versionDataPath}/locks/");
+  Directory lockDir = Directory(Reyveld.locksPath);
   if (!await lockDir.exists()) {
     await lockDir.create(recursive: true);
   }

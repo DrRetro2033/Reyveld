@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:reyveld/reyveld.dart';
 import 'package:reyveld/skit/sobject.dart';
 
 /// An export for Lua.

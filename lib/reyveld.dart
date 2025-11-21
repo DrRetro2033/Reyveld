@@ -102,7 +102,15 @@ class Reyveld {
     }
   }
 
+  static String get locksPath => "$globalDataPath/locks";
+
+  static String get lockFilePath => "$locksPath/${version.toString()}.lock";
+
   static String get docsPath => "$versionDataPath/docs";
+
+  static String get logsPath => "$versionDataPath/logs";
+
+  static String get configPath => "$globalDataPath/config.ini";
 
   static const String _defaultConfig = """
 [performance]
@@ -115,7 +123,7 @@ DISABLE_WELCOME_MESSAGE=False
 """;
 
   static Future<Config> get _config async {
-    final file = File("$globalDataPath/config.ini");
+    final file = File(configPath);
     if (!await file.exists()) {
       await file.create(recursive: true);
       await file.writeAsString(_defaultConfig);
