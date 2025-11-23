@@ -80,16 +80,14 @@ class Reyveld {
     _logger ??= Talker(
       logger: TalkerLogger(
           formatter: ReyveldLogFormatter(),
-          output: ReyveldLogger(
-                  "$versionDataPath/logs/$version/reyveld-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log")
-              .output,
+          output: ReyveldLogger(mostRecentLog.path).output,
           filter: ReyveldLogFilter()),
     );
     return _logger!;
   }
 
   static File get mostRecentLog => File(
-      "$versionDataPath/logs/$version/reyveld-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log");
+      "$logsPath/reyveld-${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}.log");
 
   /// The path to the version's data directory.
   static String get versionDataPath => "$globalDataPath/$version";
@@ -116,6 +114,7 @@ class Reyveld {
 [performance]
 READ&WRITEPOOL=20
 LUAPOOL=2
+SQLPOOL=8
 LUAPOOL_TIMEOUT=1h
 
 [other]

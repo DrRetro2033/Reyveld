@@ -78,8 +78,8 @@ class SInterfaceGenerator extends GeneratorForAnnotation<LuaClass> {
           kind = arg.isOptional ? ArgKind.optionalNamed : ArgKind.requiredNamed;
         }
         String? defaultValue;
-        if (arg.constantInitializer2 != null) {
-          defaultValue = arg.constantInitializer2!.expression.toString();
+        if (arg.constantInitializer != null) {
+          defaultValue = arg.constantInitializer!.toString();
         }
         return (
           arg.type.getDisplayString().replaceFirst("?", ""),

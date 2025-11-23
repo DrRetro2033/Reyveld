@@ -1,5 +1,6 @@
 import 'package:reyveld/skit/skit.dart';
 import 'package:reyveld/tools/3d/threed.dart';
+import 'package:reyveld/tools/db/sqlite.dart';
 import 'package:reyveld/version_control/constellation/constellation.dart';
 import 'package:reyveld/version_control/star/star.dart';
 import 'package:reyveld/scripting/extras/datetime.dart';
@@ -46,4 +47,5 @@ Set<SInterface> get interfaces => {
       Vector3Interface(),
       Vector4Interface(),
       QuaternionInterface(),
+      SQLDatabaseInterface(),
     };

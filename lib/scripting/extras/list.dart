@@ -62,6 +62,15 @@ class ListInterface extends SInterface<List> {
             returnType: Object,
             () => object!.last),
         LEntry(
+          name: "single",
+          descr: """Returns the only object in the list.
+
+If there are multiple objects in the list, nil is returned.""",
+          returnType: Object,
+          returnNullable: true,
+          () => object!.singleOrNull,
+        ),
+        LEntry(
             name: "contains",
             descr: "Returns true if the list contains the object.",
             args: const {

@@ -367,29 +367,50 @@ class Lua {
     return resultTable;
   }
 
+  /// Gets the Process ID of the lua state.
   String? getPID(LuaState state) => _processIds[state];
+
+  /// Sets the Process ID of the lua state.
   void setPID(LuaState state, String? pid) => _processIds[state] = pid;
 
   /// Compiles a lua project.
   Future<String> _compile(String entrypoint) async {
     final stringPlaceholder = "⭐🌃✨🌟";
     String compiled = entrypoint;
-    final strings = [];
-    final strExp = RegExp("\"([^\"]*)\"|'([^']*)'");
+    final strings = <(String, String)>[];
+    final strExp =
+        RegExp("(\")([^\"]*)\"|(')([^']*)'|(\\[\\[)([^\\]\\]]*)\\]\\]");
     while (strExp.hasMatch(compiled)) {
       final match = strExp.firstMatch(compiled)!;
 
       /// Replace the string with a placeholder to add string back later.
       /// This is done so that anything inside the string is not effected by code effects.
       compiled = compiled.replaceFirst(match[0]!, stringPlaceholder);
-      strings.add(match[1] ?? match[2]!);
+      strings.add((
+        match[1] ?? match[3] ?? match[5]!,
+        match[2] ?? match[4] ?? match[6]!
+      ));
     }
     for (final effect in codeEffects) {
       compiled = effect(compiled);
     }
     while (compiled.contains(stringPlaceholder)) {
-      compiled = compiled.replaceFirst(
-          stringPlaceholder, "\"${_formatPaths(strings.removeAt(0))}\"");
+      switch (strings.first.$1) {
+        // Single line strings
+        case '"':
+          compiled = compiled.replaceFirst(
+              stringPlaceholder, "\"${_formatPaths(strings.removeAt(0).$2)}\"");
+          break;
+        case "'":
+          compiled = compiled.replaceFirst(
+              stringPlaceholder, "'${_formatPaths(strings.removeAt(0).$2)}'");
+          break;
+        // Multiline strings
+        case "[[":
+          compiled = compiled.replaceFirst(
+              stringPlaceholder, "[[${_formatPaths(strings.removeAt(0).$2)}]]");
+          break;
+      }
     }
 
     return compiled;
