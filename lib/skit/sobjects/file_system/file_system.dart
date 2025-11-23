@@ -4,10 +4,10 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:math';
 import 'dart:typed_data';
-import 'package:reyveld/extensions.dart';
-import 'package:reyveld/reyveld.dart';
-import 'package:reyveld/skit/sobject.dart';
-import 'package:reyveld/skit/sobjects/file_system/filelist/filelist.dart';
+import '/extensions.dart';
+import '/reyveld.dart';
+import '/skit/sobject.dart';
+import '/skit/sobjects/file_system/filelist/filelist.dart';
 import 'package:rxdart/rxdart.dart';
 
 part 'file_system.g.dart';

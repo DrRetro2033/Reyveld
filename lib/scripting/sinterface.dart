@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:reyveld/skit/sobject.dart';
+import '/skit/sobject.dart';
 
 /// An export for Lua.
 /// An export is a function or field for a [SInterface].

@@ -1,4 +1,4 @@
-import 'package:reyveld/skit/sobject.dart';
+import '/skit/sobject.dart';
 
 part 'scustom.creator.dart';
 part 'scustom.g.dart';

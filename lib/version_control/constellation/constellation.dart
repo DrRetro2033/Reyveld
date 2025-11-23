@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:reyveld/extensions.dart';
-import 'package:reyveld/skit/sobject.dart';
-import 'package:reyveld/skit/sobjects/file_system/file_system.dart';
-import 'package:reyveld/skit/sobjects/file_system/filelist/filelist.dart';
-import 'package:reyveld/uuid.dart';
-import 'package:reyveld/version_control/star/star.dart';
+import '/extensions.dart';
+import '/skit/sobject.dart';
+import '/skit/sobjects/file_system/file_system.dart';
+import '/skit/sobjects/file_system/filelist/filelist.dart';
+import '/uuid.dart';
+import '/version_control/star/star.dart';
 
 part 'constellation.g.dart';
 part 'constellation.interface.dart';

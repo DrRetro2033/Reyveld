@@ -1,4 +1,4 @@
-import 'package:reyveld/scripting/sinterface.dart';
+import '/scripting/sinterface.dart';
 import 'package:talker/talker.dart';
 
 class TalkerInterface extends SInterface<Talker> {

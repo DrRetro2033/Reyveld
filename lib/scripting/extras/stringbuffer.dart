@@ -1,4 +1,4 @@
-import 'package:reyveld/scripting/sinterface.dart';
+import '/scripting/sinterface.dart';
 
 class StringBufferInterface extends SInterface<StringBuffer> {
   @override

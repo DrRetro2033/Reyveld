@@ -1,5 +1,5 @@
 import 'package:args/command_runner.dart';
-import 'package:reyveld/server.dart' as server;
+import '/server.dart' as server;
 
 class StartCommand extends Command {
   @override

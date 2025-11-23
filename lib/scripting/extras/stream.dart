@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:reyveld/scripting/lua.dart';
-import 'package:reyveld/scripting/sinterface.dart';
+import '/scripting/lua.dart';
+import '/scripting/sinterface.dart';
 import 'package:rxdart/rxdart.dart';
 
 class StreamInterface extends SInterface<Stream> {

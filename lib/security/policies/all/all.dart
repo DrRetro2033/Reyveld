@@ -1,7 +1,7 @@
-import 'package:reyveld/skit/sobject.dart';
+import '/skit/sobject.dart';
 
-import 'package:reyveld/security/policies/policy.dart';
-import 'package:reyveld/skit/sobjects/sobjects.dart' show SDescriptionCreator;
+import '/security/policies/policy.dart';
+import '/skit/sobjects/sobjects.dart' show SDescriptionCreator;
 
 part 'all.g.dart';
 part 'all.creator.dart';

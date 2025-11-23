@@ -1,5 +1,5 @@
-import 'package:reyveld/scripting/lua.dart';
-import 'package:reyveld/scripting/sinterface.dart';
+import '/scripting/lua.dart';
+import '/scripting/sinterface.dart';
 
 class ListInterface extends SInterface<List> {
   @override

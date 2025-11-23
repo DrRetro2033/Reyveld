@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:reyveld/extensions.dart';
-import 'package:reyveld/skit/sobject.dart';
+import '/extensions.dart';
+import '/skit/sobject.dart';
 import 'package:glob/glob.dart';
 
 part 'filelist.creators.dart';

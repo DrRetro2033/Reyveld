@@ -1,6 +1,6 @@
 import 'package:pool/pool.dart';
-import 'package:reyveld/reyveld.dart';
-import 'package:reyveld/scripting/sinterface.dart';
+import '/reyveld.dart';
+import '/scripting/sinterface.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 part 'sqlite.interface.dart';

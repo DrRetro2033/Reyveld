@@ -2,10 +2,10 @@ import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:chalkdart/chalkstrings.dart';
-import 'package:reyveld/event.dart';
-import 'package:reyveld/reyveld.dart';
-import 'package:reyveld/scripting/lua.dart';
-import 'package:reyveld/security/authveld.dart';
+import '/event.dart';
+import '/reyveld.dart';
+import '/scripting/lua.dart';
+import '/security/authveld.dart';
 
 class RunCommand extends Command {
   @override

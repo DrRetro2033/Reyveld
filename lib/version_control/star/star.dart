@@ -1,8 +1,8 @@
-import 'package:reyveld/extensions.dart';
-import 'package:reyveld/skit/sobject.dart';
-import 'package:reyveld/skit/sobjects/file_system/file_system.dart';
-import 'package:reyveld/uuid.dart';
-import 'package:reyveld/version_control/constellation/constellation.dart';
+import '/extensions.dart';
+import '/skit/sobject.dart';
+import '/skit/sobjects/file_system/file_system.dart';
+import '/uuid.dart';
+import '/version_control/constellation/constellation.dart';
 
 part 'star.g.dart';
 part 'star.interface.dart';

@@ -1,4 +1,4 @@
-import 'package:reyveld/scripting/sinterface.dart';
+import '/scripting/sinterface.dart';
 
 class DateTimeInterface extends SInterface<DateTime> {
   @override

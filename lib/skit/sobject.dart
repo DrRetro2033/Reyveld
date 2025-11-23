@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:hashlib/hashlib.dart';
-import 'package:reyveld/skit/skit.dart';
+import '/skit/skit.dart';
 
 export 'package:xml/xml.dart';
-export 'package:reyveld/skit/skit.dart';
-export 'package:reyveld/build_runner/annotations.dart';
-export 'package:reyveld/scripting/lua.dart';
-export 'package:reyveld/scripting/sinterface.dart';
+export '/skit/skit.dart';
+export '/build_runner/annotations.dart';
+export '/scripting/lua.dart';
+export '/scripting/sinterface.dart';
 
 part 'sroot.dart';
 part 'sindent.dart';

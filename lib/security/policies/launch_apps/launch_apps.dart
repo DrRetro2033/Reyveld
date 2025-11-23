@@ -1,6 +1,6 @@
-import 'package:reyveld/security/policies/policy.dart';
-import 'package:reyveld/skit/skit.dart';
-import 'package:reyveld/skit/sobjects/sobjects.dart';
+import '/security/policies/policy.dart';
+import '/skit/skit.dart';
+import '/skit/sobjects/sobjects.dart';
 
 part 'launch_apps.creator.dart';
 part 'launch_apps.g.dart';

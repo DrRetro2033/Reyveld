@@ -1,4 +1,4 @@
-part of 'package:reyveld/builder.dart';
+part of '/builder.dart';
 
 class SInterfaceGenerator extends GeneratorForAnnotation<LuaClass> {
   @override

@@ -3,11 +3,11 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:chalkdart/chalkstrings.dart';
 import 'package:cli_spin/cli_spin.dart';
-import 'package:reyveld/reyveld.dart';
-import 'package:reyveld/security/authveld.dart';
-import 'package:reyveld/security/contract/contract.dart' show SContract;
-import 'package:reyveld/security/policies/policy.dart';
-import 'package:reyveld/server.dart' as server;
+import '/reyveld.dart';
+import '/security/authveld.dart';
+import '/security/contract/contract.dart' show SContract;
+import '/security/policies/policy.dart';
+import '/server.dart' as server;
 
 class AuthVeldCommand extends Command {
   @override

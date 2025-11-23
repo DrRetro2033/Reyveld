@@ -1,10 +1,10 @@
 import 'dart:io';
 
 import 'package:lua_dardo_async/lua.dart';
-import 'package:reyveld/reyveld.dart';
-import 'package:reyveld/event.dart';
-import 'package:reyveld/scripting/lua.dart';
-import 'package:reyveld/scripting/sinterface.dart';
+import '/reyveld.dart';
+import '/event.dart';
+import '/scripting/lua.dart';
+import '/scripting/sinterface.dart';
 import 'package:talker/talker.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 

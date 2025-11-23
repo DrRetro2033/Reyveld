@@ -1,5 +1,5 @@
-import 'package:reyveld/skit/sobject.dart';
-import 'package:reyveld/skit/sobjects/custom/scustom.dart';
+import '/skit/sobject.dart';
+import '/skit/sobjects/custom/scustom.dart';
 
 part 'sdatabase.g.dart';
 part 'sdatabase.creator.dart';

@@ -1,5 +1,5 @@
 import 'package:args/command_runner.dart';
-import 'package:reyveld/apps.dart';
+import '/apps.dart';
 
 class AppsCommands extends Command {
   @override

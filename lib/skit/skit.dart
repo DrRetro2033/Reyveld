@@ -5,23 +5,23 @@ import "dart:convert";
 import "dart:core";
 import "dart:io";
 import "dart:typed_data";
-import "package:reyveld/reyveld.dart";
-import "package:reyveld/extensions.dart";
-import "package:reyveld/security/contract/contract.dart";
-import "package:reyveld/security/policies/policies.dart";
-import "package:reyveld/uuid.dart";
+import "/reyveld.dart";
+import "/extensions.dart";
+import "/security/contract/contract.dart";
+import "/security/policies/policies.dart";
+import "/uuid.dart";
 import "package:pointycastle/pointycastle.dart"
     show RSAPublicKey, RSAPrivateKey;
 import "package:rxdart/rxdart.dart";
 import 'package:xml/xml_events.dart';
 
-import 'package:reyveld/skit/sobject.dart' hide SInterface;
-import 'package:reyveld/skit/sobjects/sobjects.dart';
-import 'package:reyveld/version_control/version_control.dart';
-import 'package:reyveld/scripting/sinterface.dart' show SInterface;
+import '/skit/sobject.dart' hide SInterface;
+import '/skit/sobjects/sobjects.dart';
+import '/version_control/version_control.dart';
+import '/scripting/sinterface.dart' show SInterface;
 
 import 'package:encrypt/encrypt.dart';
-export "package:reyveld/skit/sobject.dart";
+export "/skit/sobject.dart";
 
 part 'skit.factories.dart';
 part 'skit.interface.dart';

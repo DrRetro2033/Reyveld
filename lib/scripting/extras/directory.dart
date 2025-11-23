@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:reyveld/scripting/sinterface.dart';
-import 'package:reyveld/skit/sobjects/file_system/file_system.dart';
+import '/scripting/sinterface.dart';
+import '/skit/sobjects/file_system/file_system.dart';
 import 'package:rxdart/rxdart.dart';
 
 class DirectoryInterface extends SInterface<Directory> {

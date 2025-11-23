@@ -3,17 +3,17 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'package:ini/ini.dart';
 import 'package:pool/pool.dart';
-import 'package:reyveld/apps.dart';
-import 'package:reyveld/extensions.dart';
-import 'package:reyveld/skit/skit.dart';
-import 'package:reyveld/skit/sobjects/author/author.dart';
-import 'package:reyveld/user.dart';
+import '/apps.dart';
+import '/extensions.dart';
+import '/skit/skit.dart';
+import '/skit/sobjects/author/author.dart';
+import '/user.dart';
 import 'package:pointycastle/export.dart';
 import 'package:basic_utils/basic_utils.dart';
 import 'package:rxdart/transformers.dart';
 import 'package:version/version.dart';
 import 'package:talker/talker.dart';
-import 'package:reyveld/version.dart' as versi;
+import '/version.dart' as versi;
 
 part 'reyveld.interface.dart';
 

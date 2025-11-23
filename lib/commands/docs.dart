@@ -1,9 +1,9 @@
 import 'package:args/command_runner.dart';
 import 'package:chalkdart/chalkstrings.dart';
 import 'package:cli_spin/cli_spin.dart';
-import 'package:reyveld/reyveld.dart';
-import 'package:reyveld/scripting/interfaces.dart';
-import 'package:reyveld/scripting/lua.dart';
+import '/reyveld.dart';
+import '/scripting/interfaces.dart';
+import '/scripting/lua.dart';
 
 class DocsCommand extends Command {
   @override

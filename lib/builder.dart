@@ -2,11 +2,11 @@
 
 import 'package:build/build.dart';
 import 'package:source_gen/source_gen.dart';
-import 'package:reyveld/skit/sobject.dart';
+import '/skit/sobject.dart';
 import 'package:analyzer/dart/element/element2.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
-part 'package:reyveld/build_runner/sgen.dart';
-part 'package:reyveld/build_runner/sinterface.dart';
+part '/build_runner/sgen.dart';
+part '/build_runner/sinterface.dart';
 
 Builder sgenBuilder(BuilderOptions options) =>
     SharedPartBuilder([SGenGenerator()], 'sgen');

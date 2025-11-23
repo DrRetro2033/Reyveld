@@ -1,7 +1,7 @@
 import 'package:chalkdart/chalkstrings.dart';
-import 'package:reyveld/reyveld.dart';
-import 'package:reyveld/security/policies/policies.dart';
-import 'package:reyveld/skit/sobject.dart';
+import '/reyveld.dart';
+import '/security/policies/policies.dart';
+import '/skit/sobject.dart';
 
 part 'contract.g.dart';
 part 'contract.interface.dart';

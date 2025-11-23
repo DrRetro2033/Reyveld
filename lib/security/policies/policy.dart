@@ -1,13 +1,12 @@
-import 'package:reyveld/security/policies/files/files.dart';
-import 'package:reyveld/security/policies/skit/skit.dart';
-import 'package:reyveld/skit/sobject.dart';
-import 'package:reyveld/skit/sobjects/sobjects.dart';
+import '/security/policies/files/files.dart';
+import '/security/policies/skit/skit.dart';
+import '/skit/sobject.dart';
+import '/skit/sobjects/sobjects.dart' show Whitelist, SDescription;
 import 'package:yaml/yaml.dart';
 
 import 'all/all.dart' show SPolicyAll, SPolicyAllCreator;
 
-export 'package:reyveld/skit/sobjects/sobjects.dart'
-    show SDescription, Whitelist;
+export '/skit/sobjects/sobjects.dart' show SDescription, Whitelist;
 
 export 'package:yaml/yaml.dart';
 

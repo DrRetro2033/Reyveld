@@ -1,5 +1,5 @@
-import 'package:reyveld/reyveld.dart';
-import 'package:reyveld/skit/sobject.dart';
+import '/reyveld.dart';
+import '/skit/sobject.dart';
 import 'package:basic_utils/basic_utils.dart';
 
 part 'author.creator.dart';

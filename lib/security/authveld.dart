@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:reyveld/reyveld.dart';
-import 'package:reyveld/security/authorize_ticket.dart';
-import 'package:reyveld/security/contract/contract.dart';
-import 'package:reyveld/security/policies/policy.dart';
-import 'package:reyveld/skit/skit.dart';
+import '/reyveld.dart';
+import '/security/authorize_ticket.dart';
+import '/security/contract/contract.dart';
+import '/security/policies/policy.dart';
+import '/skit/skit.dart';
 import 'package:open_url/open_url.dart';
 
 part 'authveld.interface.dart';

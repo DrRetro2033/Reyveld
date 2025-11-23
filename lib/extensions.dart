@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:hashlib/hashlib.dart';
-import 'package:reyveld/reyveld.dart';
+import '/reyveld.dart';
 
 Map<String, String> environment() {
   final env = <String, String>{};

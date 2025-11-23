@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:reyveld/reyveld.dart';
-import 'package:reyveld/scripting/sinterface.dart';
+import '/reyveld.dart';
+import '/scripting/sinterface.dart';
 import 'package:yaml/yaml.dart';
 
 class AppLauncher {

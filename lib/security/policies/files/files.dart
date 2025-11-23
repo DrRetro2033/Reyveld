@@ -1,8 +1,8 @@
-import 'package:reyveld/extensions.dart';
-import 'package:reyveld/security/authveld.dart';
-import 'package:reyveld/security/policies/policy.dart';
-import 'package:reyveld/skit/sobject.dart';
-import 'package:reyveld/skit/sobjects/sobjects.dart';
+import '/extensions.dart';
+import '/security/authveld.dart';
+import '/security/policies/policy.dart';
+import '/skit/sobject.dart';
+import '/skit/sobjects/sobjects.dart';
 
 part 'files.creator.dart';
 part 'files.g.dart';

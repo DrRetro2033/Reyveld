@@ -1,6 +1,6 @@
-import 'package:reyveld/reyveld.dart';
-import 'package:reyveld/skit/sobject.dart';
-import 'package:reyveld/skit/sobjects/file_system/file_system.dart';
+import '/reyveld.dart';
+import '/skit/sobject.dart';
+import '/skit/sobjects/file_system/file_system.dart';
 
 part 'header.g.dart';
 part 'header.interface.dart';

@@ -1,5 +1,5 @@
 import 'package:vector_math/vector_math_64.dart';
-import 'package:reyveld/scripting/sinterface.dart';
+import '/scripting/sinterface.dart';
 
 class Vector3Interface extends SInterface<Vector3> {
   @override

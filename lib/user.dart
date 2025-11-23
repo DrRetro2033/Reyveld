@@ -1,6 +1,6 @@
 import 'dart:io';
-import 'package:reyveld/reyveld.dart';
-import 'package:reyveld/skit/sobjects/author/author.dart';
+import '/reyveld.dart';
+import '/skit/sobjects/author/author.dart';
 import 'package:yaml/yaml.dart';
 
 class Author {

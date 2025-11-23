@@ -1,5 +1,5 @@
 import 'package:vector_math/vector_math_64.dart';
-import 'package:reyveld/scripting/sinterface.dart';
+import '/scripting/sinterface.dart';
 
 class Matrix4Interface extends SInterface<Matrix4> {
   @override
