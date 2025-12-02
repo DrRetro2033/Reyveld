@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:hashlib/hashlib.dart';
 import '/reyveld.dart';
@@ -183,5 +184,19 @@ extension DirectoryChecksum on Directory {
       digests.add(await file.checksum);
     }
     return md5.convert(digests.join().codeUnits).toString();
+  }
+}
+
+extension KeepInRange on num {
+  /// Keep this number within the given range.
+  T keepInRange<T extends num>({T? min, T? max}) {
+    T currentNum = this as T;
+    if (min != null) {
+      currentNum = math.max(min, currentNum);
+    }
+    if (max != null && currentNum > max) {
+      currentNum = math.min(max, currentNum);
+    }
+    return currentNum;
   }
 }

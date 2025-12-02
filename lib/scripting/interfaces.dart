@@ -7,7 +7,6 @@ import '/scripting/extras/datetime.dart';
 import '/scripting/extras/extras.dart';
 import '/scripting/extras/stringbuffer.dart';
 import '/security/authveld.dart';
-import '/security/contract/contract.dart';
 import '/security/policies/launch_apps/launch_apps.dart';
 import '/security/policies/policies.dart';
 import '/skit/sobjects/sobjects.dart';

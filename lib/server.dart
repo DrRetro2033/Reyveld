@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:pool/pool.dart';
+import 'package:reyveld/config.dart';
 import '/reyveld.dart';
 import '/event.dart';
 import '/scripting/lua.dart';
@@ -14,7 +15,6 @@ import 'package:rxdart/rxdart.dart';
 import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:version/version.dart';
 import '/extensions.dart';
-import '/extras.dart';
 import 'package:http/http.dart' as http;
 import 'package:shelf_router/shelf_router.dart';
 import 'package:shelf/shelf.dart';
@@ -42,9 +42,8 @@ Future<void> runServer() async {
       CliSpin(spinner: CliSpinners.bounce).start("Starting Server...".skyBlue);
 
   await Reyveld.deleteTempFiles();
-  Pool luaPool = Pool(int.parse(await Reyveld.getPerformanceOption("LUAPOOL")),
-      timeout: parseDurationFromString(
-          await Reyveld.getPerformanceOption("LUAPOOL_TIMEOUT")));
+  Pool luaPool =
+      Pool(await RConfig.luaPool, timeout: await RConfig.luaPoolTimeout);
 
   HttpServer? server;
 

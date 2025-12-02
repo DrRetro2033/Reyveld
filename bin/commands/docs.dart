@@ -1,9 +1,7 @@
 import 'package:args/command_runner.dart';
 import 'package:chalkdart/chalkstrings.dart';
 import 'package:cli_spin/cli_spin.dart';
-import '/reyveld.dart';
-import '/scripting/interfaces.dart';
-import '/scripting/lua.dart';
+import 'package:reyveld/library.dart';
 
 class DocsCommand extends Command {
   @override
@@ -14,7 +12,6 @@ class DocsCommand extends Command {
 
   DocsCommand() {
     addSubcommand(MakeCommand());
-    addSubcommand(TypesCommand());
   }
 }
 
@@ -37,19 +34,4 @@ class MakeCommand extends Command {
 
     spinner.success("Generated Lua Docs at \"${Reyveld.docsPath}\"".skyBlue);
   }
-}
-
-class TypesCommand extends Command {
-  @override
-  String get name => 'types';
-
-  @override
-  String get description => 'Lists all of the types of objects in Reyveld.';
-
-  @override
-  Future<void> run() async => Reyveld.printToConsole(interfaces
-      .map((e) =>
-          "${e.className.paleTurquoise} ${e.ancestors.map((e) => "${'← '.paleGreen}${e.className} ").join()}")
-      .join("\n")
-      .toString());
 }

@@ -1,5 +1,5 @@
 import 'package:pool/pool.dart';
-import '/reyveld.dart';
+import '/config.dart';
 import '/scripting/sinterface.dart';
 import 'package:sqlite3/sqlite3.dart';
 
@@ -13,8 +13,7 @@ class SQLDatabase {
 
   Pool? _pool;
 
-  Future<Pool> get pool async => _pool ??=
-      Pool(int.tryParse(await Reyveld.getPerformanceOption("SQLPOOL")) ?? 5);
+  Future<Pool> get pool async => _pool ??= Pool(await RConfig.sqlPool);
 
   Future<List> select(String query, List params) async {
     return await pool.then((e) => e.withResource<List>(

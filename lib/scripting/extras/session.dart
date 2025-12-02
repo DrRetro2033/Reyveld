@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:lua_dardo_async/lua.dart';
 import '/reyveld.dart';
 import '/event.dart';
-import '/scripting/lua.dart';
 import '/scripting/sinterface.dart';
 import 'package:talker/talker.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -17,7 +16,8 @@ class SessionInterface extends SInterface<WebSocketChannel> {
 
   @override
   String get classDescription =>
-      """Contains methods for the current session with Reyveld. 
+      """Contains methods for the current session with Reyveld.
+
 This can be used to send data through the web socket, log messages, etc.""";
 
   @override

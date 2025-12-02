@@ -1,5 +1,5 @@
 import 'package:args/command_runner.dart';
-import '/server.dart' as server;
+import 'package:reyveld/library.dart';
 
 class StartCommand extends Command {
   @override
@@ -7,5 +7,5 @@ class StartCommand extends Command {
   @override
   final description = "Start Reyveld as a WebSocket server.";
   @override
-  Future<void> run() async => await server.runServer();
+  Future<void> run() async => await runServer();
 }

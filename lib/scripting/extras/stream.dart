@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import '/scripting/lua.dart';
 import '/scripting/sinterface.dart';
 import 'package:rxdart/rxdart.dart';
 

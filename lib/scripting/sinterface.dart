@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import '/skit/sobject.dart';
+export 'lua.dart';
 
 /// An export for Lua.
 /// An export is a function or field for a [SInterface].
@@ -9,6 +10,7 @@ abstract class LExport {
   final String name;
   final String descr;
   final String? securityCheck;
+  final Iterable<String> alsoKnownAs;
   bool? securityCheckPassed;
   SInterface? interface_;
 
@@ -16,6 +18,7 @@ abstract class LExport {
     required this.name,
     this.descr = "",
     this.securityCheck,
+    this.alsoKnownAs = const [],
   });
 
   @override

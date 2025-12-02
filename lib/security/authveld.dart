@@ -8,6 +8,8 @@ import '/security/policies/policy.dart';
 import '/skit/skit.dart';
 import 'package:open_url/open_url.dart';
 
+export '/security/contract/contract.dart';
+
 part 'authveld.interface.dart';
 part 'authveld.website.dart';
 

@@ -3,11 +3,8 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:chalkdart/chalkstrings.dart';
 import 'package:cli_spin/cli_spin.dart';
-import '/reyveld.dart';
-import '/security/authveld.dart';
-import '/security/contract/contract.dart' show SContract;
-import '/security/policies/policy.dart';
-import '/server.dart' as server;
+import 'package:reyveld/library.dart';
+import 'package:yaml/yaml.dart';
 
 class AuthVeldCommand extends Command {
   @override
@@ -114,7 +111,7 @@ class AuthVeldNewCommand extends Command {
   @override
   Future<void> run() async {
     if (argResults!.option("file") == null) return;
-    await server.runServer();
+    await runServer();
     final spinner = CliSpin(spinner: CliSpinners.bounce)
         .start("Creating new contract...".skyBlue);
     final file = File(argResults!.option("file")!);

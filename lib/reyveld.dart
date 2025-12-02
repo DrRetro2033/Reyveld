@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
-import 'package:ini/ini.dart';
 import 'package:pool/pool.dart';
+import '/config.dart';
 import '/apps.dart';
 import '/extensions.dart';
 import '/skit/skit.dart';
@@ -18,8 +18,6 @@ import '/version.dart' as versi;
 part 'reyveld.interface.dart';
 
 /// Contains global functions for Reyveld, for example, settings, paths, etc.
-@LuaClass(
-    "Contains global functions for Reyveld, for example, settings, paths, etc.")
 class Reyveld {
   /// The current version of Reyveld
   static Version get version => versi.currentVersion;
@@ -110,43 +108,10 @@ class Reyveld {
 
   static String get configPath => "$globalDataPath/config.ini";
 
-  static const String _defaultConfig = """
-[performance]
-READ&WRITEPOOL=20
-LUAPOOL=2
-SQLPOOL=8
-LUAPOOL_TIMEOUT=1h
-
-[other]
-DISABLE_WELCOME_MESSAGE=False
-""";
-
-  static Future<Config> get _config async {
-    final file = File(configPath);
-    if (!await file.exists()) {
-      await file.create(recursive: true);
-      await file.writeAsString(_defaultConfig);
-    }
-    return Config.fromString(await file.readAsString());
-  }
-
-  @LuaExport("Get a performance option.")
-  static Future<String> getPerformanceOption(String option) async {
-    final config = await _config;
-    return config.get("performance", option) ??
-        Config.fromString(_defaultConfig).get("performance", option)!;
-  }
-
-  static Future<String> getOtherOption(String option) async {
-    final config = await _config;
-    return config.get("other", option) ??
-        Config.fromString(_defaultConfig).get("other", option)!;
-  }
-
   static Pool? _readAndWritePool;
 
-  static Future<Pool> get readAndWritePool async => _readAndWritePool ??=
-      Pool(int.parse(await Reyveld.getPerformanceOption("READ&WRITEPOOL")));
+  static Future<Pool> get readAndWritePool async =>
+      _readAndWritePool ??= Pool(await RConfig.readWritePool);
 
   static Future<R> withReadAndWritePool<R>(Future<R> Function() f) async {
     return await readAndWritePool.then((e) => e.withResource(f));
@@ -290,7 +255,7 @@ class ReyveldLogger {
   OS                    ${Platform.operatingSystemVersion}
   Number of Processors  ${Platform.numberOfProcessors}
   Locale                ${Platform.localeName}
-  
+
 [App Info]
   Version               ${Reyveld.version.toString()}
 

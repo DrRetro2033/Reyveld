@@ -125,6 +125,6 @@ class DirectoryInterface extends SInterface<Directory> {
           returnType: bool,
           isAsync: true,
           () async => await object!.delete(),
-        )
+        ),
       };
 }
