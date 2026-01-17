@@ -28,6 +28,8 @@ class Lua {
 
   final Map<LuaState, String?> _processIds = {};
 
+  static final Map<LuaState, String> _loadedScripts = {};
+
   SContract? contract;
 
   Lua({this.socket, this.contract});
@@ -88,6 +90,67 @@ class Lua {
             code = code.replaceRange(match.start, match.end, match.group(1)!);
           }
           return code;
+        },
+        (code) {
+          /// This effect is called to add line and column numbers to the beginning of each function call.
+          /// Will try to avoid adding line and column numbers to functions that are local and not Reyveld functions.
+
+          /// The call expression is used to find lua functions in the code.
+          final callExp = RegExp(r"(function\s)?([\w_][\w\d_-]*)\((\))?");
+          final lines = code.split("\n");
+          final buffer = StringBuffer();
+
+          /// A list of all local functions in the code.
+          final localFuncs = <String>[];
+
+          /// A list containing all function replacements in the code.
+          final functionReplacements = <(int, RegExpMatch)>[];
+
+          /// Row is the line number, and col is the column number.
+          for (int row = 0; row < lines.length; row++) {
+            final line = lines[row];
+
+            for (final match in callExp.allMatches(line)) {
+              final functionKeyword = match.group(1);
+              final functionName = match.group(2);
+              if (functionKeyword != null) {
+                localFuncs.add(functionName!);
+              } else if (functionName != null && functionName != "function") {
+                // If group 2 (the function name) is not null, then that means that the function is not a local function definition, and is one from Reyveld.
+                // If the name of the function is "function", then that means we accidentally matched a lambda function, and so we should ignore it.
+                functionReplacements.add((row, match));
+              }
+            }
+          }
+
+          for (int row = 0; row < lines.length; row++) {
+            final funcReplacements =
+                functionReplacements.where((r) => r.$1 == row);
+            final line = lines[row];
+            String replacedLine = line;
+            int calDeficit() => replacedLine.length - line.length;
+            for (final replacement in funcReplacements) {
+              final match = replacement.$2;
+              final funcName = match.group(2)!;
+              if (!localFuncs.contains(funcName)) {
+                final col = match.start;
+                if (match.group(3) == null) {
+                  replacedLine = replacedLine.replaceRange(
+                      match.start + calDeficit(),
+                      match.end + calDeficit(),
+                      "$funcName($row,$col,");
+                } else {
+                  replacedLine = replacedLine.replaceRange(
+                      match.start + calDeficit(),
+                      match.end + calDeficit(),
+                      "$funcName($row,$col)");
+                }
+              }
+            }
+            buffer.writeln(replacedLine);
+          }
+
+          return buffer.toString();
         },
       ];
 
@@ -170,13 +233,18 @@ class Lua {
         while (state.getTop() > 0) {
           args.add(await getFromTop(state));
           if (args.length >=
-              value.positionalArgCount + (value.hasNamedArgs ? 1 : 0)) {
+              2 + value.positionalArgCount + (value.hasNamedArgs ? 1 : 0)) {
             break;
           }
         }
 
         /// Reverse the args so that they are in the correct order.
         final finalArgs = args.reversed.toList()..removeWhere((e) => e == null);
+
+        Reyveld.talker.verbose("Arguments: $finalArgs");
+
+        int row = finalArgs.removeAt(0);
+        int col = finalArgs.removeAt(0);
 
         Map namedArgs = {};
 
@@ -276,11 +344,14 @@ class Lua {
             await _pushToStack(state, result);
             return 1;
           }
-        } catch (e, st) {
-          Reyveld.talker.error(
-              "Error when calling '${value.name}' with $finalArgs$namedArgs.",
-              e,
-              st);
+        } catch (e) {
+          _pushToStack(
+              state,
+              ReyveldCallException(
+                      "Failed to call function '${value.name}' with $finalArgs$namedArgs",
+                      traceback: Traceback(getLoadedScript(state), row, col))
+                  .toString());
+          state.error();
           return 0;
         }
       });
@@ -288,6 +359,8 @@ class Lua {
       await _pushToStack(state, value.value);
     } else if (value == null) {
       state.pushNil();
+    } else if (value is Exception) {
+      await _pushToStack(state, value.toString());
     } else {
       Reyveld.talker.error("Could not push to stack: $value");
     }
@@ -456,11 +529,12 @@ class Lua {
     _stopwatches.add(stopwatch);
     stopwatch.start();
     final code = await _compile(entrypoint).then((value) => value.trim());
-
+    Reyveld.talker.verbose("Compiled code:\n$code");
     final state = LuaState.newState();
 
     _processIds[state] = null;
     _objects[state] = {};
+    _loadedScripts[state] = entrypoint;
 
     await _init(state);
 
@@ -481,7 +555,6 @@ class Lua {
         processId: _processIds[state]
       );
     }
-
     // Run the lua code and see if it was successful
     final successful = await state.pCall(0, 1, 0) == ThreadStatus.luaOk;
     stopwatch.stop();
@@ -490,6 +563,8 @@ class Lua {
       /// If it wasn't successful, print the error and return null
       Reyveld.talker.error("Objects: ${_objects[state]}");
       state.error();
+      stopwatch.stop();
+      _removeQueue.add(state);
       return (
         result: null,
         processTime: stopwatch,
@@ -586,6 +661,8 @@ ${enum_.key} = {
     }
     return formattedEnums.join("\n\n");
   }
+
+  static String getLoadedScript(LuaState state) => _loadedScripts[state] ?? "";
 }
 
 /// A reference to a lua function.
@@ -619,4 +696,47 @@ final class LuaFuncRef {
   ///
   /// This should always be called when the reference is no longer needed.
   Future<void> unregister() async => await state.unRef(luaRegistryIndex, ref);
+}
+
+class ReyveldCallException implements Exception {
+  ReyveldCallException(
+    this.message, {
+    this.traceback,
+  });
+  final String message;
+  final Traceback? traceback;
+
+  @override
+  String toString() => """$message
+${traceback ?? ""}
+"""
+      .trim();
+}
+
+class Traceback {
+  final int row;
+  final int col;
+  final String code;
+  const Traceback(this.code, this.row, this.col);
+
+  @override
+  String toString() =>
+      "At line ${row + 1}, column ${col + 1}:\n${codeSlice(row)}";
+
+  /// Returns a slice of the code.
+  /// [linesShown] is the odd number (so the focused line of the slice is in the middle) of lines to show around the focused line.
+  /// If [linesShown] is even, it will be increased by 1.
+  String codeSlice(int line, [int linesShown = 5]) {
+    final lines = code.split("\n");
+    final buffer = StringBuffer();
+
+    final start = line - linesShown ~/ 2;
+    final end = line + linesShown ~/ 2 + (linesShown % 2);
+    for (int i = start; i < end; i++) {
+      if (i < 0 || i >= lines.length) continue;
+      buffer.write(i == line ? "🔴" : "   ");
+      buffer.writeln("${i + 1}: ${lines[i]}");
+    }
+    return buffer.toString();
+  }
 }

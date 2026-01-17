@@ -36,16 +36,12 @@ Future<void> runServer() async {
 
   isRunningSpinner.success("Ready to Start!".skyBlue);
 
-  File lockFile = File(Reyveld.lockFilePath);
-
   final serverSpinner =
       CliSpin(spinner: CliSpinners.bounce).start("Starting Server...".skyBlue);
 
   await Reyveld.deleteTempFiles();
   Pool luaPool =
       Pool(await RConfig.luaPool, timeout: await RConfig.luaPoolTimeout);
-
-  HttpServer? server;
 
   final app = Router();
 
@@ -83,14 +79,14 @@ Future<void> runServer() async {
                 .toString());
       } catch (e, st) {
         Reyveld.printToConsole(
-            "There was a crash on a websocket, please check the log folder (${Reyveld.logsPath}) for more information."
+            "*(SID:$id) There was a crash on a websocket, please check the log folder (${Reyveld.logsPath}) for more information."
                 .red);
         webSocket.sink.add(SocketEvent.error(e).toString());
         Reyveld.talker.error("(SID:$id)", e, st);
       }
     }, onError: (e) {
       Reyveld.printToConsole(
-          "There was a crash on a websocket, please check the log folder (${Reyveld.logsPath}) for more information."
+          "*(SID:$id) There was a crash on a websocket, please check the log folder (${Reyveld.logsPath}) for more information."
               .red);
       Reyveld.talker.error("(SID:$id)", e);
     }, onDone: () {
@@ -140,7 +136,7 @@ Future<void> runServer() async {
   final handler =
       const Pipeline().addMiddleware(versionRedirect).addHandler(app.call);
 
-  server = await io.serve(handler, "127.0.0.1", 7274);
+  await io.serve(handler, "127.0.0.1", 7274);
 
   serverSpinner.success("Server Started!".skyBlue);
 }

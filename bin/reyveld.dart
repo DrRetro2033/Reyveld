@@ -12,7 +12,7 @@ Future<void> main(List<String> args) async {
       .addFlag("verbose", abbr: "v", help: "Run Reyveld in verbose mode.");
   final results = runner.parse(args);
   Reyveld.verbose = results.flag("verbose");
-  if (await RConfig.disableWelcomeMessage) {
+  if (!await RConfig.disableWelcomeMessage) {
     Reyveld.printToConsole("""
 Dear user/developer,
   Thank you for using Reyveld! ❤️

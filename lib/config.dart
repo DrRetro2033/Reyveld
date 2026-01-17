@@ -4,6 +4,7 @@ import 'package:reyveld/extensions.dart';
 import 'package:reyveld/extras.dart';
 import 'package:reyveld/reyveld.dart';
 
+/// Contains the settings and options for Reyveld.
 class RConfig {
   static const String _defaultConfig = """
 [performance]

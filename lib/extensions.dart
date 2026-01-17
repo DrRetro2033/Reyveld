@@ -155,6 +155,8 @@ extension ReChunkStream on Stream<List<int>> {
       yield buffer;
     }
   }
+
+  Stream<int> flatten() => expand((chunk) => chunk);
 }
 
 extension CreateParentDirectory on File {

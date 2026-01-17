@@ -12,6 +12,7 @@ import '/security/policies/policies.dart';
 import '/skit/sobjects/sobjects.dart';
 import '/apps.dart';
 import '/reyveld.dart';
+import '/tools/tracker/tracker.dart';
 
 Set<SInterface> get interfaces => {
       ReyveldInterface(),
@@ -47,4 +48,5 @@ Set<SInterface> get interfaces => {
       Vector4Interface(),
       QuaternionInterface(),
       SQLDatabaseInterface(),
+      ChangeTrackerInterface(),
     };

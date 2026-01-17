@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:lua_dardo_async/lua.dart';
+
 import '/skit/sobject.dart';
 export 'lua.dart';
 
@@ -134,7 +136,7 @@ final class LArg<T> {
   /// You can use this to have a more specific type than the default one.
   /// For example:
   /// ```lua
-  /// ---@param addfunc fun(a: int, b: int):int  Do this to specify the return and parmeters of a function parameter
+  /// ---@param addfunc fun(a: int, b: int): int
   /// ```
   final String? docTypeOverride;
 
@@ -219,16 +221,16 @@ abstract class SInterface<T> {
   /// This is a combination of [exports] and [parent] exports.
   /// Used in [toLua].
   Set<LExport> get allExports {
-    /// Initialize the map with the current exports.
+    /// Initialize the set with the current exports.
     final map = exports;
 
-    /// If there is no parent, then return the map.
+    /// If there is no parent, then return the set.
     if (parent == null) return map;
 
     /// If there is a parent, then set the parent interface's object to the current object.
     final parentInstance = parent!..object = object;
 
-    /// Add the parent's exports to the map.
+    /// Add the parent's exports to the set.
     for (final entry in parentInstance.allExports) {
       map.add(entry);
     }
