@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:lua_dardo_async/lua.dart';
+import 'package:reyveld/reyveld.dart';
 
 import '/skit/sobject.dart';
 export 'lua.dart';
@@ -95,6 +96,19 @@ class LEntry extends LExport {
 
   @override
   int get hashCode => name.hashCode;
+}
+
+class LVar<T> extends LExport {
+  final bool nullable;
+  final T Function() getter;
+  final void Function(T)? setter;
+
+  LVar(
+      {required super.name,
+      super.descr = "",
+      this.nullable = false,
+      required this.getter,
+      this.setter});
 }
 
 /// The kind of the arg.
@@ -200,13 +214,45 @@ abstract class SInterface<T> {
   String get classHash => Lua.getClassHash(className);
 
   /// This converts the interface into a Lua table.
-  Map<String, dynamic> toLua(String luaHash) {
-    Map<String, LExport> exportTable = {};
-    for (final export in allExports) {
-      export.interface_ = this;
-      exportTable[export.name] = export;
+  Map<String, dynamic> toLua() {
+    // Map<String, LExport> exportTable = {};
+    // for (final export in allExports) {
+    //   export.interface_ = this;
+    //   exportTable[export.name] = export;
+    // }
+    return {"className": className};
+  }
+
+  Object? index(String key) =>
+      allExports.where((e) => e.name == key).singleOrNull;
+
+  static Future<dynamic> betterIndex(Lua lua, LuaState state) async {
+    final indexKey = await lua.getFromTop<String>(state);
+    Reyveld.talker.verbose("Index key: $indexKey");
+    if (indexKey == null) {
+      throw Exception("No index key found.");
+    } else if (await state.getMetafield(state.getTop(), "__objHash") ==
+        LuaType.luaString) {
+      final hash = await lua.getFromTop<String>(state);
+      if (hash == null) {
+        throw ReyveldCallException("No hash found.");
+      } else {
+        final interface_ = lua.getObject(state, hash);
+        if (interface_ == null) {
+          throw Exception("No interface found.");
+        } else {
+          final result = interface_.index(indexKey);
+          if (result == null) {
+            Reyveld.talker.verbose("No result found for $indexKey");
+            return Undefined();
+          } else {
+            return result;
+          }
+        }
+      }
+    } else {
+      return Undefined();
     }
-    return {"class": classHash, "objHash": luaHash, ...exportTable};
   }
 
   /// This is the object that this interface wraps around.
@@ -245,9 +291,8 @@ abstract class SInterface<T> {
 
   /// Used to push statics as a global table.
   Map<String, dynamic> get staticTable {
-    final map = <String, dynamic>{"__hash__": classHash};
+    final map = <String, dynamic>{};
     for (final entry in statics) {
-      if (entry.name == "__hash__") continue;
       map[entry.name] = entry;
     }
     return map;

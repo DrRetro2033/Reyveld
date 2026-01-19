@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:io';
+import 'dart:math';
 
 import '/extensions.dart';
 import '/reyveld.dart';
@@ -22,6 +23,9 @@ typedef LuaResult = ({
 
 /// The main class for running lua scripts.
 class Lua {
+  static const String _classMetafield = "__classHash";
+  static const String _objMetafield = "__objHash";
+
   final WebSocketChannel? socket;
 
   final Set<Stopwatch> _stopwatches = {};
@@ -168,7 +172,33 @@ class Lua {
 
     // Add all static exports as global object.
     for (final interface_ in interfaces) {
-      await addGlobal(state, interface_.className, interface_.staticTable);
+      await addGlobal(state, interface_.className, {
+        "className": "_Type"
+      }, metatable: {
+        _classMetafield: getClassHash(interface_.className),
+        "__index": (Lua lua, LuaState state) async {
+          final indexKey = await lua.getFromTop<String>(state);
+          Reyveld.talker.verbose("Index key: $indexKey");
+          if (await state.getMetafield(state.getTop(), _classMetafield) ==
+              LuaType.luaString) {
+            final hash = await lua.getFromTop<String>(state);
+            final interface_ = interfaces
+                .where((i) => getClassHash(i.className) == hash)
+                .singleOrNull;
+            if (interface_ == null) {
+              throw Exception("No interface found.");
+            }
+            final result = interface_.staticTable[indexKey];
+            if (result == null) {
+              return Undefined("No result found for $indexKey");
+            } else {
+              return result;
+            }
+          } else {
+            return Undefined("No index key found.");
+          }
+        },
+      });
     }
 
     await addGlobal(state, "is", (Lua lua, LuaState state) async {
@@ -185,21 +215,67 @@ class Lua {
   /// [value] is the table to add as the global.
   ///
   /// This will push the table to the stack and then set the global with the given name.
-  Future<void> addGlobal(LuaState state, String name, dynamic value) async {
-    // if (table == null) {
-    //   return;
-    // }
+  Future<void> addGlobal(LuaState state, String name, dynamic value,
+      {Map<String, dynamic>? metatable}) async {
     await _pushToStack(state, value);
+    if (metatable != null) {
+      await _applyMetatableToTop(state, metatable);
+    }
     await state.setGlobal(name);
   }
 
-  SInterface? _getObject(LuaState state, String hash) => _objects[state]?[hash];
+  SInterface? getObject(LuaState state, String hash) => _objects[state]?[hash];
   void _setObject(LuaState state, String hash, SInterface interface_) =>
       _objects[state]![hash] = interface_;
 
+  /// Applies a metatable to the top of the stack.
+  ///
+  /// This will create a new table on top of the previous table, and then add all key-value pairs from [metatable] to the table.
+  /// Then, it will set the newly created table as the metatable of the top of the stack.
+  Future<void> _applyMetatableToTop(
+      LuaState state, Map<String, dynamic> metatable) async {
+    state.newTable();
+    for (final key in metatable.keys) {
+      await _pushToStack(state, key);
+      await _pushToStack(state, metatable[key]);
+      await state.setTable(state.getTop() - 2);
+    }
+    state.setMetatable(state.getTop() - 1);
+  }
+
+  /// Handles undefined calls.
+  Future<void> _undefined(Lua lua, LuaState state) async {
+    while (state.getTop() > 3) {
+      state.pop(1);
+    }
+
+    final col = await getFromTop<int>(state) ?? 0;
+    final row = await getFromTop<int>(state) ?? 0;
+    final undefined = await getFromTop(state);
+    String message = "Undefined";
+
+    if (undefined is Map) {
+      if (undefined["message"] != null) {
+        message = undefined["message"];
+      }
+    }
+
+    throw ReyveldCallException(message,
+        traceback: Traceback(getLoadedScript(state), row, col));
+  }
+
   /// Pushes a value to the stack.
   Future<void> _pushToStack(LuaState state, dynamic value) async {
-    if (value is String) {
+    Reyveld.talker.verbose("Pushing $value to stack.");
+    if (value is Undefined) {
+      // Reyveld.talker.verbose("Pushing undefined to stack.");
+      await _pushToStack(state, {"message": value.message});
+      await _applyMetatableToTop(state, {
+        "__call": _undefined,
+        "__index": _undefined,
+        "__newindex": _undefined,
+      });
+    } else if (value is String) {
       state.pushString(value);
     } else if (value is int) {
       state.pushInteger(value);
@@ -219,11 +295,20 @@ class Lua {
       Reyveld.talker.verbose("Wrapping $value in $interface_.");
       final hash = generateUUID();
       _setObject(state, hash, interface_);
-      final table = interface_.toLua(hash);
+      final table = interface_.toLua();
       await _pushToStack(state, table);
+      await _applyMetatableToTop(
+          state, {_objMetafield: hash, "__index": SInterface.betterIndex});
     } else if (value is FutureOr<dynamic> Function(Lua, LuaState)) {
+      // Reyveld.talker.verbose("Pushing function to stack.");
       state.pushDartFunction((state) async {
-        await _pushToStack(state, await value(this, state));
+        try {
+          await _pushToStack(state, await value(this, state));
+        } catch (e, st) {
+          state.pushString("${e.toString()}\n$st");
+          state.error();
+          return 0;
+        }
         return 1;
       });
     } else if (value is LEntry) {
@@ -246,6 +331,8 @@ class Lua {
         int row = finalArgs.removeAt(0);
         int col = finalArgs.removeAt(0);
 
+        final trackback = Traceback(getLoadedScript(state), row, col);
+
         Map namedArgs = {};
 
         if (value.hasNamedArgs &&
@@ -260,8 +347,9 @@ class Lua {
           final argValue = finalArgs[i];
           final argType = value.args.elementAt(i);
           if (argType.cast(argValue) == null && argType.required) {
-            throw Exception(
-                "Type Mismatch for argument $argType at position $i! Expected ${argType.type} but got ${argValue.runtimeType}");
+            throw ReyveldCallException(
+                "Type Mismatch for argument $argType at position $i! Expected ${argType.type} but got ${argValue.runtimeType}",
+                traceback: trackback);
           } else {
             finalArgs[i] = argType.cast(argValue);
           }
@@ -272,8 +360,9 @@ class Lua {
           final argValue = namedArgs[key];
           final argType = value.namedArgs.where((e) => e.name == key).single;
           if (argType.cast(argValue) == null && argType.required) {
-            throw Exception(
-                "Type Mismatch for argument $argType at position $key! Expected ${argType.type} but got ${argValue.runtimeType}");
+            throw ReyveldCallException(
+                "Type Mismatch for argument $argType at position $key! Expected ${argType.type} but got ${argValue.runtimeType}",
+                traceback: trackback);
           } else {
             namedArgs[key] = argType.cast(argValue);
           }
@@ -345,14 +434,9 @@ class Lua {
             return 1;
           }
         } catch (e) {
-          _pushToStack(
-              state,
-              ReyveldCallException(
-                      "Failed to call function '${value.name}' with $finalArgs$namedArgs",
-                      traceback: Traceback(getLoadedScript(state), row, col))
-                  .toString());
-          state.error();
-          return 0;
+          throw ReyveldCallException(
+              "Failed to call function '${value.name}' with $finalArgs$namedArgs",
+              traceback: trackback);
         }
       });
     } else if (value is LField) {
@@ -390,20 +474,36 @@ class Lua {
         await state.rawGetI(luaRegistryIndex, (result as LuaFuncRef).ref);
       } else if (state.isTable(state.getTop())) {
         /// If the top of the stack is a table, get the table and check if it has an objHash key.
-        final table = await _getTableFromState(state);
-        if (table.containsKey("objHash") &&
-            _getObject(state, table["objHash"]) != null) {
-          /// If the table has an objHash key, then it means it is an interface for an object,
-          /// so get the object and return it.
-          result = _getObject(state, table["objHash"])!.object;
-        } else if (table.containsKey("__hash__") &&
-            interfaces.any((key) => key.classHash == table["__hash__"])) {
-          result = interfaces
-              .firstWhere((key) => key.classHash == table["__hash__"]);
-        } else if (table.keys.every((key) => key is int)) {
-          result = table.values.toList();
+        final success = state.getMetatable(state.getTop());
+        Reyveld.talker.verbose("Success: $success");
+        if (success) {
+          final metatable = await getFromTop<Map>(state);
+          final table = await _getTableFromState(state);
+          Reyveld.talker.verbose("Table: $table Metatable: $metatable");
+          if (metatable != null &&
+              metatable.containsKey(_objMetafield) &&
+              getObject(state, metatable[_objMetafield]) != null) {
+            result = getObject(state, metatable[_objMetafield])!.object;
+          } else if (metatable != null &&
+              metatable.containsKey(_classMetafield) &&
+              interfaces
+                  .any((key) => key.classHash == metatable[_classMetafield])) {
+            result = interfaces
+                .where((key) => key.classHash == metatable[_classMetafield])
+                .singleOrNull;
+          } else if (table.keys.every((key) => key is int)) {
+            result = table.values.toList();
+          } else {
+            result = table;
+          }
         } else {
-          result = table;
+          final table = await _getTableFromState(state);
+          Reyveld.talker.verbose("Table: $table");
+          if (table.keys.every((key) => key is int)) {
+            result = table.values.toList();
+          } else {
+            result = table;
+          }
         }
       } else if (state.isNoneOrNil(state.getTop())) {
         result = null;
@@ -429,11 +529,13 @@ class Lua {
     while (state.next(state.getTop() - 1)) {
       dynamic value = await getFromTop(state);
       dynamic key = await getFromTop(state);
-      if (key is String && resultTable.isEmpty) {
-        resultTable = <String, dynamic>{};
-      } else if (key is int && resultTable.isEmpty) {
-        resultTable = <int, dynamic>{};
-      }
+      // if (key is String && resultTable.isEmpty) {
+      //   Reyveld.talker.verbose("Keys are is string.");
+      //   resultTable = <String, dynamic>{};
+      // } else if (key is int && resultTable.isEmpty) {
+      //   Reyveld.talker.verbose("Keys are is int.");
+      //   resultTable = <int, dynamic>{};
+      // }
       resultTable[key] = value;
       await _pushToStack(state, key);
     }
@@ -662,7 +764,10 @@ ${enum_.key} = {
     return formattedEnums.join("\n\n");
   }
 
-  static String getLoadedScript(LuaState state) => _loadedScripts[state] ?? "";
+  static String getLoadedScript(LuaState state) {
+    Reyveld.talker.verbose("Getting script.");
+    return _loadedScripts[state] ?? "";
+  }
 }
 
 /// A reference to a lua function.
@@ -730,8 +835,9 @@ class Traceback {
     final lines = code.split("\n");
     final buffer = StringBuffer();
 
-    final start = line - linesShown ~/ 2;
-    final end = line + linesShown ~/ 2 + (linesShown % 2);
+    final start = line - max<int>(linesShown ~/ 2, 0);
+    final end =
+        min<int>(line + linesShown ~/ 2 + (linesShown % 2), lines.length);
     for (int i = start; i < end; i++) {
       if (i < 0 || i >= lines.length) continue;
       buffer.write(i == line ? "🔴" : "   ");
@@ -739,4 +845,10 @@ class Traceback {
     }
     return buffer.toString();
   }
+}
+
+class Undefined {
+  final String? message;
+
+  const Undefined([this.message]);
 }
