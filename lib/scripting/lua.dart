@@ -14,6 +14,8 @@ import 'package:lua_dardo_async/lua.dart';
 import 'interfaces.dart' as portal;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
+part 'lua.context.dart';
+
 typedef LuaArgs = ({List positional, Map named});
 typedef LuaResult = ({
   dynamic result,
@@ -28,21 +30,11 @@ class Lua {
 
   final WebSocketChannel? socket;
 
-  final Set<Stopwatch> _stopwatches = {};
-
-  final Map<LuaState, String?> _processIds = {};
-
-  static final Map<LuaState, String> _loadedScripts = {};
+  final Map<LuaState, LuaContext> _contexts = {};
 
   SContract? contract;
 
   Lua({this.socket, this.contract});
-
-  /// A map of all objects in the lua state.
-  ///
-  /// When pushing a object to the stack, an unique hash is generated and
-  /// a duplicate of the SInterface with the object as its value is added to this map.
-  final Map<LuaState, Map<String, SInterface>> _objects = {};
 
   static final Map<String, String> classHashes = {};
 
@@ -128,15 +120,14 @@ class Lua {
           }
 
           for (int row = 0; row < lines.length; row++) {
-            final funcReplacements =
-                functionReplacements.where((r) => r.$1 == row);
             final line = lines[row];
             String replacedLine = line;
             int calDeficit() => replacedLine.length - line.length;
-            for (final replacement in funcReplacements) {
+            for (final replacement
+                in functionReplacements.where((r) => r.$1 == row)) {
               final match = replacement.$2;
               final funcName = match.group(2)!;
-              if (!localFuncs.contains(funcName)) {
+              if (!localFuncs.any((f) => f == funcName)) {
                 final col = match.start;
                 if (match.group(3) == null) {
                   replacedLine = replacedLine.replaceRange(
@@ -157,6 +148,13 @@ class Lua {
           return buffer.toString();
         },
       ];
+
+  LuaContext getContext(LuaState state) => _contexts[state]!;
+
+  void newContext(LuaState state, String script) =>
+      _contexts[state] = LuaContext(script: script);
+
+  void removeContext(LuaState state) => _contexts.remove(state);
 
   /// Initializes the lua state.
   /// This includes opening all libraries and adding all enums and statics to the global table.
@@ -217,16 +215,14 @@ class Lua {
   /// This will push the table to the stack and then set the global with the given name.
   Future<void> addGlobal(LuaState state, String name, dynamic value,
       {Map<String, dynamic>? metatable}) async {
-    await _pushToStack(state, value);
-    if (metatable != null) {
-      await _applyMetatableToTop(state, metatable);
-    }
+    await _pushToStack(state, value, metatable: metatable);
     await state.setGlobal(name);
   }
 
-  SInterface? getObject(LuaState state, String hash) => _objects[state]?[hash];
+  SInterface? getObject(LuaState state, String hash) =>
+      getContext(state).objects[hash];
   void _setObject(LuaState state, String hash, SInterface interface_) =>
-      _objects[state]![hash] = interface_;
+      getContext(state).objects[hash] = interface_;
 
   /// Applies a metatable to the top of the stack.
   ///
@@ -261,11 +257,12 @@ class Lua {
     }
 
     throw ReyveldCallException(message,
-        traceback: Traceback(getLoadedScript(state), row, col));
+        traceback: Traceback(lua.getContext(state).script, row, col));
   }
 
   /// Pushes a value to the stack.
-  Future<void> _pushToStack(LuaState state, dynamic value) async {
+  Future<void> _pushToStack(LuaState state, dynamic value,
+      {Map<String, dynamic>? metatable}) async {
     Reyveld.talker.verbose("Pushing $value to stack.");
     if (value is Undefined) {
       // Reyveld.talker.verbose("Pushing undefined to stack.");
@@ -331,7 +328,7 @@ class Lua {
         int row = finalArgs.removeAt(0);
         int col = finalArgs.removeAt(0);
 
-        final trackback = Traceback(getLoadedScript(state), row, col);
+        final trackback = Traceback(getContext(state).script, row, col);
 
         Map namedArgs = {};
 
@@ -448,6 +445,9 @@ class Lua {
     } else {
       Reyveld.talker.error("Could not push to stack: $value");
     }
+    if (metatable != null) {
+      await _applyMetatableToTop(state, metatable);
+    }
   }
 
   /// Gets a value from the top of the stack.
@@ -543,10 +543,10 @@ class Lua {
   }
 
   /// Gets the Process ID of the lua state.
-  String? getPID(LuaState state) => _processIds[state];
+  String? getPID(LuaState state) => getContext(state).pid;
 
   /// Sets the Process ID of the lua state.
-  void setPID(LuaState state, String? pid) => _processIds[state] = pid;
+  void setPID(LuaState state, String pid) => getContext(state).pid = pid;
 
   /// Compiles a lua project.
   Future<String> _compile(String entrypoint) async {
@@ -600,7 +600,7 @@ class Lua {
   }
 
   Future<void> awaitForCompletion() async {
-    while (_stopwatches.any((stopwatch) => stopwatch.isRunning)) {
+    while (_contexts.values.any((e) => e.stopwatch.isRunning)) {
       await Future.delayed(Duration(milliseconds: 10));
     }
   }
@@ -625,18 +625,13 @@ class Lua {
 
     while (_removeQueue.isNotEmpty) {
       final state = _removeQueue.removeFirst();
-      _objects.remove(state);
+      removeContext(state);
     }
-    final stopwatch = Stopwatch();
-    _stopwatches.add(stopwatch);
-    stopwatch.start();
     final code = await _compile(entrypoint).then((value) => value.trim());
     Reyveld.talker.verbose("Compiled code:\n$code");
     final state = LuaState.newState();
 
-    _processIds[state] = null;
-    _objects[state] = {};
-    _loadedScripts[state] = entrypoint;
+    newContext(state, entrypoint);
 
     await _init(state);
 
@@ -649,28 +644,31 @@ class Lua {
 
     final thread = state.loadString(code);
 
+    final context = getContext(state);
+
     if (thread != ThreadStatus.luaOk) {
       state.error();
+      context.stopwatch.stop();
       return (
         result: null,
-        processTime: stopwatch,
-        processId: _processIds[state]
+        processTime: context.stopwatch,
+        processId: context.pid
       );
     }
     // Run the lua code and see if it was successful
     final successful = await state.pCall(0, 1, 0) == ThreadStatus.luaOk;
-    stopwatch.stop();
+    context.stopwatch.stop();
     _removeQueue.add(state);
     if (!successful) {
       /// If it wasn't successful, print the error and return null
-      Reyveld.talker.error("Objects: ${_objects[state]}");
+      Reyveld.talker.error("Objects: ${context.objects}");
       state.error();
-      stopwatch.stop();
+      context.stopwatch.stop();
       _removeQueue.add(state);
       return (
         result: null,
-        processTime: stopwatch,
-        processId: _processIds[state]
+        processTime: context.stopwatch,
+        processId: context.pid
       );
     }
 
@@ -678,8 +676,8 @@ class Lua {
     final result = await getFromTop(state);
     return (
       result: result,
-      processTime: stopwatch,
-      processId: _processIds[state]
+      processTime: context.stopwatch,
+      processId: context.pid
     );
   }
 
@@ -762,11 +760,6 @@ ${enum_.key} = {
 """);
     }
     return formattedEnums.join("\n\n");
-  }
-
-  static String getLoadedScript(LuaState state) {
-    Reyveld.talker.verbose("Getting script.");
-    return _loadedScripts[state] ?? "";
   }
 }
 
